@@ -1,0 +1,87 @@
+{% extends 'html-partials/standart.html' %}
+
+{% block content %}
+  <div class="box">
+    <div class="panel">
+      <div id="container" class="moved">
+        <h2 style="text-align: center;">Менюшка с настройками 😯</h2>
+
+        <div class="text-field">
+          <div class="text-field__icon">
+            <input class="text-field__input" onchange="namerEvent()" type="search" name="find" id="param-name" placeholder="Поиск по имени">
+            <span class="text-field__aicon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                  d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+        
+        <select onchange="pageSizeReselect()" id="page-size-selector" title="Установи какое количество карточек будет загружаться на страницу :)">
+          <option value="10">10 карточек на странице</option>
+          <option value="25" selected>25 карточек на странице</option>
+          <option value="30">30 карточек на странице</option>
+        </select>
+        <article class="game-selector-in-menu">
+          <div>
+            <input onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
+            <label for="game-selector-in-menu-checkbox">Выбрать игру</label>
+          </div>
+          <div id="currectGames">
+            <button onclick="gameReset()" id="currectGamesReset"><img src="assets/images/reset.png" alt="Кнопка сброса игры"></button>
+            <label id="game-selector-in-menu-currect-game" title="Отображаются все моды">Игра не выбрана</label>
+          </div>
+        </article>
+      </div>
+      
+      <div class="space-h"></div>
+
+      <div style="display: flex; width: 50pt;">
+        <label class="switch">
+          <input onclick="moveContainer()" type="checkbox" hidden>
+          <div class="switch__wrapper">
+            <div class="switch__toggle"></div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="cards">
+      <div class="pager-selector">
+        <a id="pager-start" onclick="movePager('pager-start')" class="pager-page">1</a>
+        <a id="pager-1" onclick="movePager('pager-1')" class="pager-space">...</a>
+        <a id="pager-2" onclick="movePager('pager-2')" class="pager-page">1</a>
+        <a id="pager-3" onclick="movePager('pager-3')" class="pager-currect">1</a>
+        <a id="pager-4" onclick="movePager('pager-4')" class="pager-page">1</a>
+        <a id="pager-5" onclick="movePager('pager-5')" class="pager-space">...</a>
+        <a id="pager-end" onclick="movePager('pager-end')" class="pager-page">1</a>
+      </div>
+
+      <div id="cards">
+        <!-- Тута карточки -->  
+      </div>
+
+      <div class="pager-selector">
+        <a id="pager-start-" onclick="movePager('pager-start-')" class="pager-page">1</a>
+        <a id="pager-1-" onclick="movePager('pager-1-')" class="pager-space">...</a>
+        <a id="pager-2-" onclick="movePager('pager-2-')" class="pager-page">1</a>
+        <a id="pager-3-" onclick="movePager('pager-3-')" class="pager-currect">1</a>
+        <a id="pager-4-" onclick="movePager('pager-4-')" class="pager-page">1</a>
+        <a id="pager-5-" onclick="movePager('pager-5-')" class="pager-space">...</a>
+        <a id="pager-end-" onclick="movePager('pager-end-')" class="pager-page">1</a>
+      </div>
+    </div>
+
+    <script src='//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
+    <script src='https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'></script>
+    
+    <script src="assets/scripts/validation.js"></script>
+    <script src="assets/scripts/markdown.js"></script>
+
+  </div>
+{% endblock %}
+
+{% block title %}
+Open Workshop: Catalog
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+    <div style="margin: 2pt;">
+        <article class="mod-container">
+            <div style="width: 100%">
+              <h1 id="mod-name-title">{{ data[0]['result']['name'] }}</h1>
+              <h4 id="mod-tags-title">
+                  <a title="Мод для этой игры" href="" class="tag-link-green">🎮ERROR!!!</a>
+                  <a title="Размер мода" class="tag-link-blue">📦{{ data[0]['result']['size'] }}</a>
+                  <a title="Кол-во загрузок" class="tag-link-orange">📥{{ data[0]['result']['downloads'] }}</a>
+                  <a title="Последнее обновление" class="tag-link">⏳{{ data[0]['result']['date_update'] }}</a>
+                  <a title="Дата появления" class="tag-link">📝{{ data[0]['result']['date_creation'] }}</a>
+              </h4>
+              
+              <article id="mod-description">
+                {{ data[0]['result']['description'] }}
+              </article>
+              <script src="assets/scripts/mod.js"></script>
+            </div>
+
+            <div class="right-bar-mod">
+              <div class="wrapper" style="{% if data[1]['results']|length ==0 %}display: none;{% endif %}">
+                <div class="slider">
+                  <ul class="js__slider__images slider__images">
+                    {% for item in data[1]['results'] %}
+                      <a href="{{ item['url'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
+                        <img src="{{ item['url'] }}" style="min-width: 100%;" class="slider__images-image" />  
+                      </a>
+                    {% endfor %}
+                  </ul>
+              
+                  <div class="slider__controls">
+                    <ol class="js__slider__pagers slider__pagers"></ol>
+                  </div>
+                </div>
+              </div>
+
+              <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+              <script src="assets/scripts/images-list.js"></script>
+              <div class="mod-dependence-list" {% if data[0]['dependencies_count'] <= 0 %}style="display: none;"{% endif %}>
+                Зависимости мода
+                {% for item in data[2].values() %}
+                  <a class="mod-dependence" href="/mod?mod_id={{ item.id }}">
+                    <img src="{{ item.img }}" alt="Логотип мода">
+                    <h3>{{ item.name }}</h3>
+                  </a>
+                {% endfor %}
+              </div>
+              <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
+            </div>
+        </article>
+
+    </div>
+
+{% endblock %}
+
+{% block title %}
+{{ data[0]['result']['name'] }} - Open Work
+{% endblock %}
