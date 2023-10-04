@@ -194,8 +194,8 @@ window.OpenWS = {
         flapButtons.classList.add('flap-buttons');
 
         if (toLink) {
-            const to = document.createElement('button');
-            to.setAttribute("onclick", "toModLink("+cardData.id+")");
+            const to = document.createElement('a');
+            to.href = "/mod?mod_id="+cardData.id+cardData.doplink;
             to.id = "tomodlink"+cardData.id;
 
             const to_img = document.createElement('img');

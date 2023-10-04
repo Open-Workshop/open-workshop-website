@@ -57,3 +57,20 @@
 {% block title %}
 {{ data[0]['result']['name'] }} - Open Work
 {% endblock %}
+
+{% block description %}
+{{ data[0]['result']['short_description'] }}
+{% endblock %}
+
+
+{% block metaimage %}
+{{ is_mod_data["logo"] }}
+{% endblock %}
+
+{% block published_time %}
+{{ is_mod_data["date_creation"] }}
+{% endblock %}
+
+{% block modified_time %}
+{{ is_mod_data["date_update"] }}
+{% endblock %}

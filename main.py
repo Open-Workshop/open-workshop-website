@@ -6,7 +6,7 @@ import datetime
 
 app = Flask(__name__, template_folder='website')
 
-SERVER_ADDRESS = "http://127.0.0.1:8000"
+SERVER_ADDRESS = "http://127.0.0.1:8000"#"https://api.openworkshop.su"
 
 @app.route('/')
 async def index():
@@ -31,7 +31,7 @@ async def mod():
             return await page_not_found(-1)
 
         urls = [
-            SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&dates=true&general=true",
+            SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true",
             SERVER_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
         print(urls)
@@ -49,6 +49,12 @@ async def mod():
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1048576, 1))+" MB"
         else:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1024, 1))+" KB"
+
+        is_mod = {
+            "date_creation": info[0]['result'].get('date_creation', ""),
+            "date_update": info[0]['result'].get("date_update", ""),
+            "logo": ""
+        }
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
         info[0]['result']['date_creation'] = input_date.strftime("%d.%m.%Y")
@@ -77,11 +83,13 @@ async def mod():
                 depen[mod["id"]]["name"] = mod["name"]
             for img in info[2][1]["results"]:
                 depen[img["owner_id"]]["img"] = img["url"]
+                if img["type"] == "logo":
+                    is_mod["logo"] = img["url"]
             info[2] = depen
             print(info[2])
             {}.values()
 
-        return render_template("mod.html", data=info)
+        return render_template("mod.html", data=info, is_mod_data=is_mod)
     except:
         return await page_not_found(-1)
 

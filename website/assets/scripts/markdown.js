@@ -196,7 +196,9 @@ async function renderMods() {
     return -2
   }
 
+  const doplink = "&"+window.location.href.split("?").pop();
   dictionary.results.forEach(cardData => {
+    cardData.doplink = doplink;
     const card = OpenWS.createCard(cardData, true, OpenWS.getFromDict(params, "name", ""));
     cardsElement.appendChild(card);
   });
@@ -393,10 +395,6 @@ function pageSizeReselect() {
   window.history.pushState('page_size'+selectedValue, 'Open Workshop', updatedUrl);
   
   renderCards()
-}
-
-function toModLink(modId) {
-  window.location.href = "/mod?mod_id="+modId+"&"+window.location.href.split("?").pop();
 }
 
 function gameSelectMode() {
