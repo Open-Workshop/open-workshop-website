@@ -7,6 +7,10 @@ import datetime
 app = Flask(__name__, template_folder='website')
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"#"https://api.openworkshop.su"
+SHORT_WORDS = [
+    "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u"
+]
+
 
 @app.route('/')
 async def index():
@@ -25,6 +29,7 @@ async def fetch(url):
 @app.route('/mod')
 async def mod():
     try:
+        global SHORT_WORDS
         mod_id = request.args.get('mod_id')
 
         if not mod_id.isdigit():
@@ -56,6 +61,10 @@ async def mod():
             "logo": ""
         }
 
+        for img in info[1]["results"]:
+            if img is not None and img["type"] == "logo":
+                is_mod["logo"] = img["url"]
+
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
         info[0]['result']['date_creation'] = input_date.strftime("%d.%m.%Y")
 
@@ -63,6 +72,8 @@ async def mod():
         info[0]['result']['date_update'] = input_date.strftime("%d.%m.%Y")
 
         info[0]['result']['id'] = mod_id
+
+        info[0]['result']['short_description'] = await remove_words(text=info[0]['result']['short_description'], words=SHORT_WORDS)
 
         print(info)
         info.append({})
@@ -83,8 +94,6 @@ async def mod():
                 depen[mod["id"]]["name"] = mod["name"]
             for img in info[2][1]["results"]:
                 depen[img["owner_id"]]["img"] = img["url"]
-                if img["type"] == "logo":
-                    is_mod["logo"] = img["url"]
             info[2] = depen
             print(info[2])
             {}.values()
@@ -92,6 +101,11 @@ async def mod():
         return render_template("mod.html", data=info, is_mod_data=is_mod)
     except:
         return await page_not_found(-1)
+async def remove_words(text, words):
+    for word in words:
+        text = text.replace("["+word+"]", '')
+        text = text.replace("[/"+word+"]", '')
+    return text
 
 @app.route('/<path:filename>')
 async def serve_static(filename):
