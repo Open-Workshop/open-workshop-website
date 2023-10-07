@@ -19,7 +19,7 @@
             </div>
 
             <div class="right-bar-mod">
-              <div class="wrapper" style="{% if data[1]['results']|length ==0 %}display: none;{% endif %}">
+              <div class="wrapper" style="width: 100%; {% if data[1]['results']|length ==0 %}display: none;{% endif %}">
                 <div class="slider">
                   <ul class="js__slider__images slider__images">
                     {% for item in data[1]['results'] %}
