@@ -3,12 +3,13 @@ import aiohttp
 import asyncio
 import json
 import datetime
+import re
 
 app = Flask(__name__, template_folder='website')
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"#"https://api.openworkshop.su"
 SHORT_WORDS = [
-    "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u"
+    "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
 
 
@@ -73,9 +74,8 @@ async def mod():
 
         info[0]['result']['id'] = mod_id
 
-        info[0]['result']['short_description'] = await remove_words(text=info[0]['result']['short_description'], words=SHORT_WORDS)
+        info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
 
-        print(info)
         info.append({})
         if info[0]['dependencies_count'] > 0:
             urls = [
@@ -101,10 +101,15 @@ async def mod():
         return render_template("mod.html", data=info, is_mod_data=is_mod)
     except:
         return await page_not_found(-1)
-async def remove_words(text, words):
+async def remove_words_short(text, words):
     for word in words:
         text = text.replace("["+word+"]", '')
         text = text.replace("[/"+word+"]", '')
+
+    text = re.sub(r"\[url=.*?\]", "", text)
+    text = re.sub(r"\[img\].*?\[/img\]", "", text)
+
+    text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
     return text
 
 @app.route('/<path:filename>')

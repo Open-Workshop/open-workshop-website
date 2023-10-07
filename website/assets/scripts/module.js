@@ -18,7 +18,9 @@ function urlImageProcess(text) {
     });
 }
 
-function steamSyntax(text) {
+function steamSyntax(text, short = false) {
+    
+    console.log(text)
     text = text.replace(steamUrl, (match, url, randomText) => {
         return `<a class="steam-link" href="${url}">${randomText}</a>`;
     });
@@ -60,7 +62,14 @@ function steamSyntax(text) {
     text = text.replace(/\[strike\](.*?)\[\/strike\]/gm, '<strike>$1</strike>');
     text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gm, '<span class="spoiler">$1</span>');
     text = text.replace(/\[hr\](.*?)\[\/hr\]/gm, '<hr></hr>');
-    text = text.replace(/\\n/g, '<br>');
+
+    // Перенос строки
+    text = text.replace(/\n/g, '<br>');
+    console.log(text);
+    text = text.replace(/^<br>/, '');
+    if (short) {
+        text = text.replace(/(<br>\s*)+<br>+/g, '<br>');
+    }
 
     text = text.replace(/\[list\]/g, '<list>');
     text = text.replace(/\[\*\]/g, '<li>');
@@ -116,9 +125,9 @@ window.OpenWS = {
             return {name: "ERROR"}; // Если возникла ошибка, возвращаем пустой массив
         }
     },
-    syntaxToHTML: function(text) {
+    syntaxToHTML: function(text, short = false) {
         text = urlTextProcess(text)
-        text = steamSyntax(text)
+        text = steamSyntax(text, short)
         text = urlImageProcess(text)
         
         return text;
@@ -183,7 +192,7 @@ window.OpenWS = {
         description.classList.add('card-description');
 
         var desc = cardData.short_description;
-        description.innerHTML = window.OpenWS.syntaxToHTML(desc);
+        description.innerHTML = window.OpenWS.syntaxToHTML(desc, true);
 
         flap.appendChild(description);
 
@@ -218,6 +227,20 @@ window.OpenWS = {
             tog.classList.add('button-flap');
             flapButtons.appendChild(tog);
         }
+
+        const tog = document.createElement('button');
+        tog.id = "togamelink"+cardData.id;
+        tog.setAttribute("onclick", "cardCancel("+cardData.id+")");
+
+        const to_img = document.createElement('img');
+        to_img.src = "/assets/images/cancel.webp";
+        to_img.classList.add('img-to-mod');
+        tog.appendChild(to_img);
+
+        tog.classList.add('button-cancel');
+        tog.classList.add('button-flap');
+        tog.title = "Завернуть карточку"
+        flapButtons.appendChild(tog);
 
         flap.appendChild(flapButtons);
 

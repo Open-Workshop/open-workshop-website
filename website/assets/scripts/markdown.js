@@ -455,3 +455,8 @@ function gameReset() {
   window.history.pushState('game', 'Open Workshop', updatedUrl);
   renderCards();
 }
+
+function cardCancel(id) {
+  document.getElementById(id).classList.remove("show");
+  document.getElementById("cards-container").classList.remove("showing");
+}

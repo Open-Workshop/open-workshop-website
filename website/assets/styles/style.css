@@ -333,11 +333,12 @@ div.card.show div.card-flap {
   margin-top: -6pt;
   pointer-events: all;
   cursor: pointer;
+  transition: background-color 0.1s;
 }
 
 .button-card {
   width: 50pt;
-  background: rgb(68, 68, 68);
+  background-color: rgb(68, 68, 68);
   border: none;
   border-radius: 1pt;
   border-top-right-radius: 20pt;
@@ -345,11 +346,29 @@ div.card.show div.card-flap {
 }
 
 .button-card:hover {
-  background: rgb(58, 58, 58);
+  background-color: rgb(58, 58, 58);
 }
 
 .button-card:active {
-  background: rgb(48, 48, 48);
+  background-color: rgb(48, 48, 48);
+}
+
+.button-cancel {
+  background-color: rgb(133 83 0);;
+  border: none;
+  border-radius: 3pt;
+  margin-right: 3pt;
+}
+.button-cancel > img {
+  padding: 2pt;
+}
+
+.button-cancel:hover {
+  background-color: rgb(113 63 0);;
+}
+
+.button-cancel:active {
+  background-color: rgb(93 43 0);;
 }
 
 .button-game {
@@ -752,7 +771,7 @@ nav li li a:hover {
   color: rgb(230, 238, 255);
   font-style: normal;
   text-decoration: inherit;
-  transition: background-color 0.1s;
+ transition : background-color 0.1s;
 }
 
 .tag-link-green {
@@ -1363,6 +1382,15 @@ article {
   margin: 4pt;
   border-radius: 10pt;
   padding: 10pt;
+}
+br {
+  display: block;
+  height: 5px;
+  line-height: 22px;
+  content: " ";
+}
+#mod-description {
+  margin-left: 0px;
 }
 
 h1, h2, h3, h4, h5, h6 {
