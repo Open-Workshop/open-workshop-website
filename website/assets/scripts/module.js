@@ -79,7 +79,6 @@ window.OpenWS = {
         url += "&page_size=" + OpenWS.getFromDict(params, "page_size", 10);
         url += "&name=" + OpenWS.getFromDict(params, "name", "");
         url += "&games=%5B" + OpenWS.getFromDict(params, "game", "") + "%5D";
-        console.log(url)
   
         try {
             const response = await fetch(url);
@@ -95,7 +94,6 @@ window.OpenWS = {
         url += "&page=" + (Number(OpenWS.getFromDict(params, "page", 0))-1);
         url += "&page_size=" + OpenWS.getFromDict(params, "page_size", 10);
         url += "&name=" + OpenWS.getFromDict(params, "name", "");
-        console.log(url)
   
         try {
             const response = await fetch(url);
@@ -108,7 +106,6 @@ window.OpenWS = {
     },
     fetchGame: async function(game) {
         let url = 'https://api.openworkshop.su/info/game/'+game;
-        console.log(url)
   
         try {
             const response = await fetch(url);
@@ -283,11 +280,8 @@ window.OpenWS = {
                 paramsDict[key] = value;
             }
 
-            // Выводим полученный словарь в консоль
-            console.log("Словарь параметров:", paramsDict);
             return paramsDict
         } else {
-            console.log("URL-адрес не содержит параметров.");
             return {}
         }
     },

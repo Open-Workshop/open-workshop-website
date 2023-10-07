@@ -14,7 +14,7 @@ SHORT_WORDS = [
 
 @app.route('/')
 async def index():
-    return render_template("index.html")
+    return render_template("index.html", catalog=True)
 
 @app.route('/about')
 async def about():
@@ -36,7 +36,7 @@ async def mod():
             return await page_not_found(-1)
 
         urls = [
-            SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true",
+            SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
             SERVER_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
         print(urls)

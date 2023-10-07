@@ -79,7 +79,6 @@ function checkImageHeight() {
   });
   if (visibleSliderImage) {
       var sliderWidth = visibleSliderImage.offsetWidth;
-      console.log(sliderHeight)
       Array.from(sliderImages).forEach(function(image) {
         image.style.width = sliderWidth + 'px';
       });
@@ -88,12 +87,9 @@ function checkImageHeight() {
 
 checkImageHeight()
 var sliderImages = document.getElementsByClassName('slider__images-image');
-console.log(sliderImage)
 Array.from(sliderImages).forEach(function(sliderImage) {
-  console.log("LLLLLLLLLLLLLll")
   sliderImage.addEventListener('load', function() {
       checkImageHeight();
-      console.log("LLLLLLLLLLLLLll")
       Array.from(sliderImages).forEach(function(image) {
           image.classList.add('loaded');
       });

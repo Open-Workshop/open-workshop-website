@@ -29,6 +29,4 @@ $(document).ready(function ($) {
             enabled: true
         }
     });
-
-    console.log("TEST", $('.with-caption'))
 });

@@ -5,7 +5,7 @@
             <div style="width: 100%">
               <h1 id="mod-name-title">{{ data[0]['result']['name'] }}</h1>
               <h4 id="mod-tags-title">
-                  <a title="Мод для этой игры" href="" class="tag-link-green">🎮ERROR!!!</a>
+                  <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green">🎮{{ data[0]['result']['game']['name'] }}</a>
                   <a title="Размер мода" class="tag-link-blue">📦{{ data[0]['result']['size'] }}</a>
                   <a title="Кол-во загрузок" class="tag-link-orange">📥{{ data[0]['result']['downloads'] }}</a>
                   <a title="Последнее обновление" class="tag-link">⏳{{ data[0]['result']['date_update'] }}</a>
@@ -55,7 +55,7 @@
 {% endblock %}
 
 {% block title %}
-{{ data[0]['result']['name'] }} - Open Work
+{{ data[0]['result']['name'] }} - Open Work для {{ data[0]['result']['game']['name'] }}
 {% endblock %}
 
 {% block description %}

@@ -127,8 +127,6 @@ async function renderCards() {
   let params = new URLSearchParams(queryParams);
   let paramsDict = OpenWS.urlParams(window.location.href);
 
-  console.log(params, queryParams, OpenWS.getFromDict(params, "game_select", "false"))
-
   if (OpenWS.getFromDict(paramsDict, "game_select", "false") === "false") {
     let rendRes = await renderMods();
     if (rendRes > -1) {
@@ -163,7 +161,6 @@ async function renderCards() {
       rendRes = await renderGames();
     } else if (rendRes == -2) {
       document.title = "Open Workshop - games not found :("
-      console.log("kkk")
       const cardData = {
         "id": -1,
         "name": "Игр нет 😭",
@@ -300,9 +297,6 @@ function namerEvent() {
   let url = window.location.href
   let params = OpenWS.urlParams(url);
 
-  console.log(namer.value);
-  console.log(OpenWS.getFromDict(params, "name", ""));
-
   if (namer.value != OpenWS.getFromDict(params, "name", "")) {
     // Разбиваем URL на части
     let [baseUrl, queryParams] = url.split("?");
@@ -315,12 +309,8 @@ function namerEvent() {
     let updatedUrl = `${baseUrl}?${params}`;
 
     if (updatedUrl === window.location.href) { 
-      console.log("RETURN ERROR")
       return 
     }
-    console.log("NAME UPDATE")
-
-    console.log(updatedUrl); // Выводим обновленный URL в консоль
 
     window.history.pushState('name'+namer.value, 'Open Workshop', updatedUrl);
     
@@ -345,12 +335,8 @@ function movePager(pageId) {
     let updatedUrl = `${baseUrl}?${params}`;
 
     if (updatedUrl === window.location.href) { 
-      console.log("RETURN ERROR")
       return 
     }
-    console.log("PAGE UPDATE")
-
-    console.log(updatedUrl); // Выводим обновленный URL в консоль
 
     window.history.pushState('page'+N, 'Open Workshop', updatedUrl);
     
@@ -370,8 +356,6 @@ function pageSizeReselect() {
   // Получаем значение выбранного элемента
   var selectedValue = Number(selectElement.value.split(' ')[0]);
 
-  console.log("Выбранная опция: " + selectedValue);
-
   let url = window.location.href;
 
   // Разбиваем URL на части
@@ -384,13 +368,9 @@ function pageSizeReselect() {
   // Собираем обновленный URL
   let updatedUrl = `${baseUrl}?${params}`;
 
-  if (updatedUrl === window.location.href) { 
-    console.log("RETURN ERROR")
+  if (updatedUrl === window.location.href) {
     return 
   }
-  console.log("PAGE UPDATE")
-
-  console.log(updatedUrl); // Выводим обновленный URL в консоль
 
   window.history.pushState('page_size'+selectedValue, 'Open Workshop', updatedUrl);
   
@@ -447,8 +427,6 @@ function gameSelect(selectGameID) {
   gameCurrect.innerText = gameName;
   gameCurrect.title = gameName;
 
-  console.log(updatedUrl); // Выводим обновленный URL в консоль
-
   window.history.pushState('game'+selectGameID, 'Open Workshop', updatedUrl);
   renderCards();
 }
@@ -473,8 +451,6 @@ function gameReset() {
   const gameCurrect = document.getElementById("game-selector-in-menu-currect-game");
   gameCurrect.innerText = "Игра не выбрана";
   gameCurrect.title = "Отображаются все моды";
-
-  console.log(updatedUrl); // Выводим обновленный URL в консоль
 
   window.history.pushState('game', 'Open Workshop', updatedUrl);
   renderCards();

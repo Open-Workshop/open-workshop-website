@@ -43,15 +43,12 @@ const gameSelectorMode = document.getElementById("game-selector-in-menu-checkbox
 gameSelectorMode.checked = (OpenWS.getFromDict(params, "game_select", false) === "true");
 
 const gameID = OpenWS.getFromDict(params, "game", "");
-console.log(gameID)
 if (gameID != "") {
   gameNameSetter(gameID);
 }
 
 async function gameNameSetter(gameID) {
-  console.log("TESSS")
   const gameData = await OpenWS.fetchGame(gameID);
-  console.log(gameData)
   const gameCurrect = document.getElementById("game-selector-in-menu-currect-game");
   if (gameData != null && "name" in gameData) {
     gameCurrect.innerText = gameData.name;

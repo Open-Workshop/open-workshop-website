@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}Open Workshop{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{% block description %}Free catalog of mods{% endblock %}">
+    <meta name="description" content="{% block description %}Свободный каталог модификаций{% endblock %}">
 
     <meta property="og:site_name" content="Open Workshop" />
     <meta property="og:title" content="{{ self.title() }}">
@@ -22,9 +22,11 @@
 
     <link href="assets/styles/style.css" rel="stylesheet"/>
 
+    {% if catalog %}
     <link rel="preload" as="image" href="assets/images/loading.webp"/>
     <link rel="prefetch" as="image" href="assets/images/image-not-found.webp"/>
     <link rel="preconnect" href="https://api.openworkshop.su" />
+    {% endif %}
 
     <link href="assets/styles/vendors/toast.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.css?_cacheOverride=1695405606905">
