@@ -759,11 +759,11 @@ nav li li a:hover {
 .result-search {
   border-radius: 3pt;
   display: inline;
-  background-color: rgba(229, 255, 0, 0.411);
+  background-color: rgba(229, 255, 0, 0.4);
 }
 
 .steam-link, .tag-link, .tag-link-green, .tag-link-blue, .tag-link-red, .tag-link-orange {
-  background-color: rgb(61, 61, 61);
+  background-color: rgb(61, 61, 61, 0.5);
   border-radius: 4pt;
   padding: 1pt;
   padding-left: 3pt;
@@ -771,7 +771,9 @@ nav li li a:hover {
   color: rgb(230, 238, 255);
   font-style: normal;
   text-decoration: inherit;
- transition : background-color 0.1s;
+  transition : background-color 0.1s;
+  height: 100%;
+  display: inline-flex;
 }
 
 .tag-link-green {
@@ -801,7 +803,7 @@ nav li li a:hover {
   margin-top: 3pt;
   padding: 4pt;
   border-radius: 3pt;
-  background-color: rgba(0, 0, 0, 0.7333333333);
+  background-color: #212121d4;
 }
 .game-selector-in-menu #currectGames {
   background-color: rgba(85, 85, 85, 0.4392156863);
@@ -1433,6 +1435,25 @@ b {
   font-weight: bold;
 }
 
+blockquote {
+  display: flex;
+}
+blockquote > .content {
+  display: inline-table;
+  background: linear-gradient(90deg, rgb(0, 0, 0, 0.8) 80%, rgb(0, 0, 0, 0.0) 100%);
+  border-top-right-radius: 10pt;
+  border-bottom-right-radius: 10pt;
+  padding: 5pt;
+}
+blockquote > .light {
+  min-height: 100%;
+  width: 10px;
+  border-top-left-radius: 5pt;
+  border-bottom-left-radius: 5pt;
+  background-color: rgb(0, 80, 0);
+}
+
+
 .ad-button-b {
   -webkit-animation: 1.5s ease infinite alternate running shimmer;
           animation: 1.5s ease infinite alternate running shimmer;
@@ -1590,6 +1611,15 @@ b {
   vertical-align: middle;
 }
 
+select {
+  margin-top: 3pt;
+  height: 25pt;
+  border-radius: 5pt;
+  font-size: 12pt;
+  color: white;
+  background-color: #414141;
+}
+
 .text-field__input {
   display: block;
   width: 100%;
@@ -1600,10 +1630,10 @@ b {
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
-  color: #212529;
-  background-color: #fff;
+  color: #ffffff;
+  background-color: #414141;
   background-clip: padding-box;
-  border: 1px solid #bdbdbd;
+  border: 1px solid #919191;
   border-radius: 0.25rem;
   -webkit-transition: border-color 0.15s ease-in-out, -webkit-box-shadow 0.15s ease-in-out;
   transition: border-color 0.15s ease-in-out, -webkit-box-shadow 0.15s ease-in-out;
@@ -1622,34 +1652,34 @@ b {
 }
 
 .text-field__input::-webkit-input-placeholder {
-  color: #212529;
+  color: #ebebeb;
   opacity: 0.4;
 }
 
 .text-field__input::-moz-placeholder {
-  color: #212529;
+  color: #ebebeb;
   opacity: 0.4;
 }
 
 .text-field__input:-ms-input-placeholder {
-  color: #212529;
+  color: #ebebeb;
   opacity: 0.4;
 }
 
 .text-field__input::-ms-input-placeholder {
-  color: #212529;
+  color: #ebebeb;
   opacity: 0.4;
 }
 
 .text-field__input::placeholder {
-  color: #212529;
+  color: #ebebeb;
   opacity: 0.4;
 }
 
 .text-field__input:focus {
-  color: #212529;
-  background-color: #fff;
-  border-color: #bdbdbd;
+  color: #ebebeb;
+  background-color: #363636;
+  border-color: #919191;
   outline: 0;
   -webkit-box-shadow: 0 0 0 0.2rem rgba(158, 158, 158, 0.25);
           box-shadow: 0 0 0 0.2rem rgba(158, 158, 158, 0.25);
@@ -1657,7 +1687,7 @@ b {
 
 .text-field__input:disabled,
 .text-field__input[readonly] {
-  background-color: #f5f5f5;
+  background-color: #313131;
   opacity: 1;
 }
 
@@ -1686,8 +1716,8 @@ b {
   bottom: 0;
   right: 0;
   width: 2.5rem;
-  border: 1px solid #bdbdbd;
-  background-color: #f5f5f5;
+  border: 1px solid #919191;
+  background-color: #5b5b5b;
   cursor: pointer;
   color: #212529;
   -webkit-transition: background-color 0.15s ease-in-out;
@@ -1697,7 +1727,7 @@ b {
 }
 
 .text-field__aicon:hover {
-  background-color: #e0e0e0;
+  background-color: #474747;
 }
 
 .image-link {

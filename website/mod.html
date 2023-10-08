@@ -3,7 +3,7 @@
     <div style="margin: 2pt;">
         <article class="mod-container">
             <div style="width: 100%">
-              <h1 id="mod-name-title">{{ data[0]['result']['name'] }}</h1>
+              <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }}</h1>
               <h4 id="mod-tags-title">
                   <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green">🎮{{ data[0]['result']['game']['name'] }}</a>
                   <a title="Размер мода" class="tag-link-blue">📦{{ data[0]['result']['size'] }}</a>
@@ -42,7 +42,7 @@
                 {% for item in data[2].values() %}
                   <a class="mod-dependence" href="/mod/{{ item.id }}">
                     <img src="{{ item.img }}" alt="Логотип мода">
-                    <h3>{{ item.name }}</h3>
+                    <h3 translate="no">{{ item.name }}</h3>
                   </a>
                 {% endfor %}
               </div>

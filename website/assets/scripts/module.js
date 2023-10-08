@@ -19,7 +19,6 @@ function urlImageProcess(text) {
 }
 
 function steamSyntax(text, short = false) {
-    
     console.log(text)
     text = text.replace(steamUrl, (match, url, randomText) => {
         return `<a class="steam-link" href="${url}">${randomText}</a>`;
@@ -28,40 +27,37 @@ function steamSyntax(text, short = false) {
     // Заменим ссылки
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="steam-link" href="$2">$1</a>');
 
-    // Заменим заголовки
-    text = text.replace(/^######\s*(.*?)\s*$/gm, '<h6>$1</h6>');
-    text = text.replace(/^#####\s*(.*?)\s*$/gm, '<h5>$1</h5>');
-    text = text.replace(/^####\s*(.*?)\s*$/gm, '<h4>$1</h4>');
-    text = text.replace(/^###\s*(.*?)\s*$/gm, '<h3>$1</h3>');
-    text = text.replace(/^##\s*(.*?)\s*$/gm, '<h2>$1</h2>');
-    text = text.replace(/^#\s*(.*?)\s*$/gm, '<h1>$1</h1>');
+    text = text.replace(/(?:\[url=)(.*?)](.*?)(?:\[\/url\])/ig, (match, url, randomText) => {
+        console.log(url)
+        return `<a class="steam-link" href="https://${url}">${randomText}</a>`;
+    });
 
     // Заменим выделение жирным текстом
-    text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    text = text.replace(/\*\*(.*?)\*\*/gs, '<b>$1</b>');
 
     // Заменим выделение курсивом
-    text = text.replace(/\*(.*?)\*/g, '<i>$1</i>');
+    text = text.replace(/\*(.*?)\*/gm, '<i>$1</i>');
 
     // Заменим список элементов
-    text = text.replace(/^\* (.*?)$/gm, '<li>$1</li>');
-    text = text.replace(/^(\s*)\* /gm, '$1<ul>');
-    text = text.replace(/<\/li>\n(?!<li>)/g, '</li></ul>');
+    text = text.replace(/^\* (.*?)$/gs, '<li>$1</li>');
+    text = text.replace(/^(\s*)\* /gs, '$1<ul>');
+    text = text.replace(/<\/li>\n(?!<li>)/gs, '</li></ul>');
 
     // Заменим цитаты
-    text = text.replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>');
+    text = text.replace(/\[quote\](.*?)\[\/quote\]/gs, '<blockquote><div class="light"></div><div class="content">$1</div></blockquote>');
 
     // Заменим код
-    text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+    text = text.replace(/`(.+?)`/gs, '<code>$1</code>');
 
 
-    text = text.replace(/\[(h[1-6])\](.*?)\[\/\1\]/gm, '<$1>$2</$1>');
+    text = text.replace(/\[(h[1-6])\](.*?)\[\/\1\]/gs, '<$1>$2</$1>');
 
-    text = text.replace(/\[b\](.*?)\[\/b\]/gm, '<b>$1</b>');
-    text = text.replace(/\[u\](.*?)\[\/u\]/gm, '<u>$1</u>');
-    text = text.replace(/\[i\](.*?)\[\/i\]/gm, '<i>$1</i>');
-    text = text.replace(/\[strike\](.*?)\[\/strike\]/gm, '<strike>$1</strike>');
-    text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gm, '<span class="spoiler">$1</span>');
-    text = text.replace(/\[hr\](.*?)\[\/hr\]/gm, '<hr></hr>');
+    text = text.replace(/\[b\](.*?)\[\/b\]/gs, '<b>$1</b>');
+    text = text.replace(/\[u\](.*?)\[\/u\]/gs, '<u>$1</u>');
+    text = text.replace(/\[i\](.*?)\[\/i\]/gs, '<i>$1</i>');
+    text = text.replace(/\[strike\](.*?)\[\/strike\]/gs, '<strike>$1</strike>');
+    text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gs, '<span class="spoiler">$1</span>');
+    text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr></hr>');
 
     // Перенос строки
     text = text.replace(/\n/g, '<br>');
@@ -71,9 +67,9 @@ function steamSyntax(text, short = false) {
         text = text.replace(/(<br>\s*)+<br>+/g, '<br>');
     }
 
-    text = text.replace(/\[list\]/g, '<list>');
-    text = text.replace(/\[\*\]/g, '<li>');
-    text = text.replace(/\[\/list\]/g, '</list>');
+    text = text.replace(/\[list\]/gm, '<list>');
+    text = text.replace(/\[\*\]/gm, '<li>');
+    text = text.replace(/\[\/list\]/gm, '</list>');
 
     return text;
 }
