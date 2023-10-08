@@ -201,7 +201,7 @@ window.OpenWS = {
 
         if (toLink) {
             const to = document.createElement('a');
-            to.href = "/mod?mod_id="+cardData.id+cardData.doplink;
+            to.href = "/mod/"+cardData.id+cardData.doplink;
             to.id = "tomodlink"+cardData.id;
 
             const to_img = document.createElement('img');

@@ -27,14 +27,10 @@ async def fetch(url):
         text = await response.text()
         return json.loads(text)
 
-@app.route('/mod')
-async def mod():
+@app.route('/mod/<int:mod_id>')
+async def mod(mod_id):
     try:
         global SHORT_WORDS
-        mod_id = request.args.get('mod_id')
-
-        if not mod_id.isdigit():
-            return await page_not_found(-1)
 
         urls = [
             SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",

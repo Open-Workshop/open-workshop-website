@@ -193,7 +193,7 @@ async function renderMods() {
     return -2
   }
 
-  const doplink = "&"+window.location.href.split("?").pop();
+  const doplink = "?"+window.location.href.split("?").pop();
   dictionary.results.forEach(cardData => {
     cardData.doplink = doplink;
     const card = OpenWS.createCard(cardData, true, OpenWS.getFromDict(params, "name", ""));
