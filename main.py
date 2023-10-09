@@ -124,7 +124,7 @@ async def test_sitemap():
     print("RENDER START FROM: "+str(time.time()-start))
 
     start = time.time()
-    page = render_template("sitemap.xml", data=data, catalog=True)
+    page = render_template("test_sitemap.xml", data=data, catalog=True)
     print("RENDER FINISH: "+str(time.time()-start))
 
     page_ret = make_response(page)
