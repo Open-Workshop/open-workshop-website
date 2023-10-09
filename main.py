@@ -1,9 +1,10 @@
-from flask import Flask, render_template, send_from_directory, request
+from flask import Flask, render_template, send_from_directory, request, make_response
 import aiohttp
 import asyncio
 import json
 import datetime
 import re
+import time
 
 app = Flask(__name__, template_folder='website')
 
@@ -36,13 +37,10 @@ async def mod(mod_id):
             SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
             SERVER_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
-        print(urls)
         tasks = []
         for url in urls:
             tasks.append(fetch(url))
         info = await asyncio.gather(*tasks)
-
-        print(info)
 
         if info[0]['result'] is None:
             return await page_not_found(-1)
@@ -91,8 +89,6 @@ async def mod(mod_id):
             for img in info[2][1]["results"]:
                 depen[img["owner_id"]]["img"] = img["url"]
             info[2] = depen
-            print(info[2])
-            {}.values()
 
         return render_template("mod.html", data=info, is_mod_data=is_mod)
     except:
@@ -115,6 +111,28 @@ async def serve_static(filename):
 @app.errorhandler(404)
 async def page_not_found(_error):
     return render_template("404.html"), 404
+
+
+@app.route('/test_sitemap.xml')
+async def test_sitemap():
+    start = time.time()
+    print("START")
+
+    data = []
+    for i in range(50000):
+        data.append({"id": i, "date": "нету"})
+    print("RENDER START FROM: "+str(time.time()-start))
+
+    start = time.time()
+    page = render_template("sitemap.xml", data=data, catalog=True)
+    print("RENDER FINISH: "+str(time.time()-start))
+
+    page_ret = make_response(page)
+    page_ret.headers["Content-Type"] = "application/rss+xml"
+    page_ret.mimetype = "application/xml"
+
+    return page_ret
+
 
 if __name__ == '__main__':
     #app.run()
