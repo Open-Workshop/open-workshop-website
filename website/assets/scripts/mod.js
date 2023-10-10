@@ -10,6 +10,7 @@ $(document).ready(function() {
         depen.href = depen.href+"?"+dopLink;
     });
     
+    let params = dopLink.split('&');
     params = params.filter(param => !param.startsWith('game=') && !param.startsWith('game_select='));
     result = params.join('&');
 
