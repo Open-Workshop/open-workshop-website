@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+sitemap.db
+website/sitemaps/
+
 # Distribution / packaging
 .idea/
 .Python

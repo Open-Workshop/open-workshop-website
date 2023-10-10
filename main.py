@@ -5,6 +5,10 @@ import json
 import datetime
 import re
 import time
+import os
+from pathlib import Path
+from sql_client import Page, engine
+from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__, template_folder='website')
 
@@ -113,25 +117,56 @@ async def page_not_found(_error):
     return render_template("404.html"), 404
 
 
-@app.route('/test_sitemap.xml')
-async def test_sitemap():
-    start = time.time()
-    print("START")
+@app.route('/sitemap.xml')
+async def sitemap():
+    file_path = "website/sitemaps/"
+    if "www." in request.url_root:
+        file_path += "www."
+    file_path += "sitemap.xml"
 
-    data = []
-    for i in range(50000):
-        data.append({"id": i, "date": "нету"})
-    print("RENDER START FROM: "+str(time.time()-start))
+    now = datetime.datetime.now()
 
-    start = time.time()
-    page = render_template("test_sitemap.xml", data=data, catalog=True)
-    print("RENDER FINISH: "+str(time.time()-start))
+    if Path(file_path).exists():
+        created_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+        diff = now - created_time
+
+        if diff > datetime.timedelta(days=1):
+            print("sitemap.xml regenerate")
+            page = await sitemap_generator(file_path)
+    else:
+        print("sitemap.xml generate")
+        page = await sitemap_generator(file_path)
+
+    if "page" not in locals():
+        print("sitemap.xml relevant")
+        with open(file_path, "r") as file:
+            page = file.read()
 
     page_ret = make_response(page)
     page_ret.headers["Content-Type"] = "application/rss+xml"
     page_ret.mimetype = "application/xml"
 
     return page_ret
+async def sitemap_generator(file_path:str):
+    with open(file_path, "w") as file:
+        start = time.time()
+
+        # Создание сессии
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        # Выполнение запроса
+        query = session.query(Page).limit(49000).all()
+        result = [obj.__dict__ for obj in query]
+
+        print("SITEMAP RENDER START FROM: " + str(time.time() - start))
+
+        start = time.time()
+        page = render_template("html-partials/standart_sitemap.xml", data=result, www="www." in file_path)
+
+        file.write(page)
+        print("SITEMAP RENDER FINISH: " + str(time.time() - start))
+        return page
 
 
 if __name__ == '__main__':
