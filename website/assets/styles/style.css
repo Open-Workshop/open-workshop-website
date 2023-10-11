@@ -816,8 +816,6 @@ nav li li a:hover {
   transform: scale(1.7);
   margin: 5pt;
   transition: all;
-}
-input {
   pointer-events: none;
 }
 
