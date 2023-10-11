@@ -10,4 +10,5 @@ class Page(base): # Таблица "игры"
     game_id = Column(Integer)
     date_update = Column(Date)
 
+
 base.metadata.create_all(engine)

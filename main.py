@@ -1,14 +1,15 @@
 from flask import Flask, render_template, send_from_directory, request, make_response
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import insert, delete
+from sql_client import Page, engine
+from pathlib import Path
+import datetime
 import aiohttp
 import asyncio
 import json
-import datetime
-import re
 import time
+import re
 import os
-from pathlib import Path
-from sql_client import Page, engine
-from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__, template_folder='website')
 
@@ -46,10 +47,10 @@ async def mod(mod_id):
             tasks.append(fetch(url))
         info = await asyncio.gather(*tasks)
 
-        if info[0]['result'] is None:
-            return await page_not_found(-1)
 
-        if info[0]['result']['size'] > 1100000:
+        if info[0]['result']['size'] > 1000000000:
+            info[0]['result']['size'] = str(round(info[0]['result']['size']/1073741824, 1))+" GB"
+        elif info[0]['result']['size'] > 1100000:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1048576, 1))+" MB"
         else:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1024, 1))+" KB"
@@ -67,7 +68,7 @@ async def mod(mod_id):
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
         info[0]['result']['date_creation'] = input_date.strftime("%d.%m.%Y")
 
-        input_date = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
+        input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
         info[0]['result']['date_update'] = input_date.strftime("%d.%m.%Y")
 
         info[0]['result']['id'] = mod_id
@@ -94,8 +95,47 @@ async def mod(mod_id):
                 depen[img["owner_id"]]["img"] = img["url"]
             info[2] = depen
 
+        # Создание сессии
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        # Выполнение запроса
+        query = session.query(Page)
+        query = query.filter_by(mod_id=mod_id)
+        query = query.first()
+
+        if query is None:
+            insert_statement = insert(Page).values(
+                mod_id=info[0]['result']['id'],
+                game_id=info[0]['result']["game"]['id'],
+                date_update=input_date_update
+            )
+
+            session.execute(insert_statement)
+        else:
+            session.query(Page).filter_by(mod_id=mod_id).update({'date_update': input_date_update, "game_id": info[0]['result']["game"]['id']})
+        session.commit()
+
+        session.close()
+
         return render_template("mod.html", data=info, is_mod_data=is_mod)
     except:
+        try:
+            # Создание сессии
+            Session = sessionmaker(bind=engine)
+            session = Session()
+
+            # Выполнение операции DELETE
+            delete_query = delete(Page).where(Page.mod_id == int(mod_id))
+            session.execute(delete_query)
+
+            # Завершение операции
+            session.commit()
+            session.close()
+            print("PAGE DELETE: "+str(mod_id))
+        except:
+            print("DELETE ERROR! PAGE: "+str(mod_id))
+
         return await page_not_found(-1)
 async def remove_words_short(text, words):
     for word in words:
@@ -107,6 +147,7 @@ async def remove_words_short(text, words):
 
     text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
     return text
+
 
 @app.route('/<path:filename>')
 async def serve_static(filename):
@@ -130,7 +171,7 @@ async def sitemap():
         created_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
         diff = now - created_time
 
-        if diff > datetime.timedelta(days=1):
+        if diff > datetime.timedelta(hours=5):
             print("sitemap.xml regenerate")
             page = await sitemap_generator(file_path)
     else:
@@ -168,6 +209,41 @@ async def sitemap_generator(file_path:str):
         print("SITEMAP RENDER FINISH: " + str(time.time() - start))
         return page
 
+
+@app.route('/api/regist/page/', methods=["POST"])
+async def regist_cards_sitemap():
+    try:
+        data = request.get_json(force=True)
+
+        ids = [id.get("id", -1) for id in data["results"]]
+        conditions = await fetch(SERVER_ADDRESS+"/list/mods/?page_size=50&dates=true&general=false&allowed_ids="+str(ids))
+
+        # Создание сессии
+        Session = sessionmaker(bind=engine)
+        session = Session()
+
+        # Выполнение запроса
+        real_ids = session.query(Page).filter(Page.mod_id.in_(ids)).all()
+        real_ids = [obj.__dict__.get("mod_id", -1) for obj in real_ids]
+
+        for mod_data in conditions["results"]:
+            if mod_data["id"] not in real_ids:
+                insert_statement = insert(Page).values(
+                    mod_id=mod_data["id"],
+                    date_update=datetime.datetime.fromisoformat(mod_data["date_update"])
+                )
+
+                session.execute(insert_statement)
+            else:
+                session.query(Page).filter_by(mod_id=mod_data["id"]).update(
+                    {'date_update': datetime.datetime.fromisoformat(mod_data["date_update"])})
+
+        session.commit()
+        session.close()
+
+        return "ok"
+    except:
+        return "error"
 
 if __name__ == '__main__':
     #app.run()

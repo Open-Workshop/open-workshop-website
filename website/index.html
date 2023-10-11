@@ -23,6 +23,12 @@
           <option value="25" selected>25 карточек на странице</option>
           <option value="30">30 карточек на странице</option>
         </select>
+
+        <div title="В выдаче будут только моды не имеющие зависимостей" hidden>
+          <input onchange="gameSelectMode()" id="independence-mods-selector-in-menu-checkbox" type="checkbox">
+          <label for="independence-mods-selector-in-menu-checkbox">Независимые моды</label>
+        </div>
+
         <article class="game-selector-in-menu">
           <div>
             <input onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">

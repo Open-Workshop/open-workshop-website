@@ -2,8 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	<url>
 		<loc>https://{% if www %}www.{% endif %}openworkshop.su/about</loc>
-		<lastmod>2023-10-10</lastmod>
+		<lastmod>2023-10-11</lastmod>
+        <changefreq>weekly</changefreq>
 		<priority>0.7</priority>
+	</url>
+	<url>
+		<loc>https://{% if www %}www.{% endif %}openworkshop.su/</loc>
+		<lastmod>2023-10-11</lastmod>
+        <changefreq>weekly</changefreq>
+		<priority>0.4</priority>
 	</url>
 {% for item in data %}
 	<url>

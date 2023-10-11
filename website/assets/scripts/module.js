@@ -75,6 +75,19 @@ function steamSyntax(text, short = false) {
 }
 
 
+// Регистрация новых полей в sitemap
+
+async function sitemap_register(data) {
+    console.log(data)
+    fetch('http://127.0.0.1:5000/api/regist/page/', {
+        method: 'POST', 
+        mode: 'no-cors',
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify(data) 
+    });
+}
+
+
 // Публичные функции
 
 window.OpenWS = {
@@ -88,6 +101,7 @@ window.OpenWS = {
         try {
             const response = await fetch(url);
             const data = await response.json();
+            sitemap_register(data)
             return data; // Поправил поле "result" на "results"
         } catch (error) {
             console.error('Ошибка:', error);
