@@ -401,6 +401,30 @@ function gameSelectMode() {
   renderCards()
 }
 
+function modDependenceSelectMode() {
+  let gameChecker = document.getElementById("independence-mods-selector-checkbox");
+  
+  let url = window.location.href;
+
+  // Разбиваем URL на части
+  let [baseUrl, queryParams] = url.split("?");
+  let params = new URLSearchParams(queryParams);
+
+  // Заменяем значение параметра "page" на N
+  params.set("dependencies", gameChecker.checked);
+
+  // Собираем обновленный URL
+  let updatedUrl = `${baseUrl}?${params}`;
+
+  if (updatedUrl === window.location.href) { 
+    return
+  }
+
+  window.history.pushState('mod_dependencies'+gameChecker.checked, 'Open Workshop', updatedUrl);
+  
+  renderCards()
+}
+
 function gameSelect(selectGameID) {
   let url = window.location.href;
 

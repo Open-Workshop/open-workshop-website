@@ -2,7 +2,7 @@
 let currentUrl = window.location.href;
 
 // Проверяем, содержит ли URL-адрес параметры "page" и "page_size"
-if (!currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !currentUrl.includes("name=") || !currentUrl.includes("game=") || !currentUrl.includes("game_select=")) {
+if (!currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !currentUrl.includes("name=") || !currentUrl.includes("game=") || !currentUrl.includes("game_select=") || !currentUrl.includes("dependencies=")) {
   function addParam(param) {
     if (currentUrl.includes("?")) {
       return "&"+param;
@@ -26,6 +26,9 @@ if (!currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !curr
   if (!currentUrl.includes("game_select=")) {
     currentUrl += addParam("game_select=true");
   }
+  if (!currentUrl.includes("dependencies=")) {
+    currentUrl += addParam("dependencies=false");
+  }
 
   // Перенаправляем на обновленный URL-адрес
   window.history.pushState('init catalog', 'Open Workshop', currentUrl);
@@ -41,6 +44,9 @@ pageSizer.value = OpenWS.getFromDict(params, "page_size", "25");
 
 const gameSelectorMode = document.getElementById("game-selector-in-menu-checkbox");
 gameSelectorMode.checked = (OpenWS.getFromDict(params, "game_select", false) === "true");
+
+const modDependenceMode = document.getElementById("independence-mods-selector-checkbox");
+modDependenceMode.checked = (OpenWS.getFromDict(params, "dependencies", false) === "true");
 
 const gameID = OpenWS.getFromDict(params, "game", "");
 if (gameID != "") {

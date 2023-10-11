@@ -24,15 +24,15 @@
           <option value="30">30 карточек на странице</option>
         </select>
 
-        <div title="В выдаче будут только моды не имеющие зависимостей" hidden>
-          <input onchange="gameSelectMode()" id="independence-mods-selector-in-menu-checkbox" type="checkbox">
-          <label for="independence-mods-selector-in-menu-checkbox">Независимые моды</label>
+        <div title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
+          <input class="input-checkbox" onchange="modDependenceSelectMode()" id="independence-mods-selector-checkbox" type="checkbox">
+          <label style="margin-left: 2pt;">Независимые моды</label>
         </div>
 
-        <article class="game-selector-in-menu">
-          <div>
-            <input onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
-            <label for="game-selector-in-menu-checkbox">Выбрать игру</label>
+        <article style="margin-top: 6pt;" class="game-selector-in-menu">
+          <div style="margin-bottom: 3pt;" onclick="document.getElementById('game-selector-in-menu-checkbox').click();">
+            <input class="input-checkbox" onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
+            <label>Выбрать игру</label>
           </div>
           <div id="currectGames">
             <button onclick="gameReset()" id="currectGamesReset"><img src="assets/images/reset.webp" alt="Кнопка сброса фильтрации по игре"></button>

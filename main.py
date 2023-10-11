@@ -243,6 +243,7 @@ async def regist_cards_sitemap():
 
         return "ok"
     except:
+        print("BIG PAGE PARSE: ERROR")
         return "error"
 
 if __name__ == '__main__':

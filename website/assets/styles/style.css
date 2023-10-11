@@ -798,6 +798,30 @@ nav li li a:hover {
   background-color: rgb(194, 126, 0);
 }
 
+.independence-mods-selector {
+  margin: 0;
+  margin-top: 3pt;
+  padding: 4pt;
+  border-radius: 3pt;
+  background-color: #212121d4;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.independence-mods-selector > label {
+  font-size: 12pt;
+}
+
+.input-checkbox {
+  transform: scale(1.7);
+  margin: 5pt;
+  transition: all;
+}
+input {
+  pointer-events: none;
+}
+
+
 .game-selector-in-menu {
   margin: 0;
   margin-top: 3pt;
