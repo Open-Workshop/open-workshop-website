@@ -79,7 +79,7 @@ function steamSyntax(text, short = false) {
 
 async function sitemap_register(data) {
     console.log(data)
-    fetch('http://127.0.0.1:5000/api/regist/page/', {
+    fetch('https://openworkshop.su/api/regist/page/', {
         method: 'POST', 
         mode: 'no-cors',
         headers: {'Content-Type': 'application/json'}, 
