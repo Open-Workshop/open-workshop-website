@@ -50,7 +50,7 @@ async def mod(mod_id):
 
         if info[0]['result']['size'] > 1000000000:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1073741824, 1))+" GB"
-        elif info[0]['result']['size'] > 1100000:
+        elif info[0]['result']['size'] > 1000000:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1048576, 1))+" MB"
         else:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1024, 1))+" KB"

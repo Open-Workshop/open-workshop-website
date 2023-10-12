@@ -19,7 +19,6 @@ function urlImageProcess(text) {
 }
 
 function steamSyntax(text, short = false) {
-    console.log(text)
     text = text.replace(steamUrl, (match, url, randomText) => {
         return `<a class="steam-link" href="${url}">${randomText}</a>`;
     });
@@ -28,7 +27,6 @@ function steamSyntax(text, short = false) {
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="steam-link" href="$2">$1</a>');
 
     text = text.replace(/(?:\[url=)(.*?)](.*?)(?:\[\/url\])/ig, (match, url, randomText) => {
-        console.log(url)
         return `<a class="steam-link" href="https://${url}">${randomText}</a>`;
     });
 
@@ -61,7 +59,6 @@ function steamSyntax(text, short = false) {
 
     // Перенос строки
     text = text.replace(/\n/g, '<br>');
-    console.log(text);
     text = text.replace(/^<br>/, '');
     if (short) {
         text = text.replace(/(<br>\s*)+<br>+/g, '<br>');
@@ -78,7 +75,6 @@ function steamSyntax(text, short = false) {
 // Регистрация новых полей в sitemap
 
 async function sitemap_register(data) {
-    console.log(data)
     fetch('https://openworkshop.su/api/regist/page/', {
         method: 'POST', 
         mode: 'no-cors',
@@ -110,7 +106,7 @@ window.OpenWS = {
         }
     },
     fetchGames: async function(params = {}) {
-        let url = 'https://api.openworkshop.su/list/games/?short_description=true';
+        let url = 'https://api.openworkshop.su/list/games/?short_description=true&statistics=true';
         url += "&page=" + (Number(OpenWS.getFromDict(params, "page", 0))-1);
         url += "&page_size=" + OpenWS.getFromDict(params, "page_size", 10);
         url += "&name=" + OpenWS.getFromDict(params, "name", "");
@@ -187,8 +183,44 @@ window.OpenWS = {
         heading.innerHTML = titleText;
         heading.title = cardData.name;
 
+        const paramsList = document.createElement('div');
+        paramsList.classList.add('card-params-list');
+
+        if (cardData.hasOwnProperty("mods_count")) {
+            const tagModCount = document.createElement('a');
+            tagModCount.classList.add('tag-link');
+            tagModCount.classList.add('card-params-list-tag');
+
+            tagModCount.innerText = "🔭"+cardData.mods_count
+            tagModCount.title = "Количество модов для игры"
+
+            paramsList.appendChild(tagModCount);
+        }
+
+        if (cardData.hasOwnProperty("size")) {
+            const tagModCount = document.createElement('a');
+            tagModCount.classList.add('tag-link');
+            tagModCount.classList.add('card-params-list-tag');
+            
+            if (cardData.size > 1000000000) {
+                cardData.size = (cardData.size / 1073741824).toFixed(0) + " GB";
+            } else if (cardData.size > 1000000) {
+                cardData.size = (cardData.size / 1048576).toFixed(0) + " MB";
+            } else {
+                cardData.size = (cardData.size / 1024).toFixed(0) + " KB";
+            }
+
+            tagModCount.innerText = "📦"+cardData.size
+            tagModCount.title = "Размер мода"
+
+            paramsList.appendChild(tagModCount);
+        }
+
+        cardClick.appendChild(paramsList);
+
         title.appendChild(heading);
         cardClick.appendChild(title);
+        
         card.appendChild(cardClick);
 
         // Создаем всплывашку с описанием
