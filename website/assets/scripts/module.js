@@ -92,9 +92,11 @@ window.OpenWS = {
         url += "&page=" + (Number(OpenWS.getFromDict(params, "page", 0))-1);
         url += "&page_size=" + OpenWS.getFromDict(params, "page_size", 10);
         url += "&name=" + OpenWS.getFromDict(params, "name", "");
-        url += "&games=%5B" + OpenWS.getFromDict(params, "game", "") + "%5D";
         url += "&dependencies=" + OpenWS.getFromDict(params, "dependencies", "");
-  
+        if (OpenWS.getFromDict(params, "game", "") != "") {
+            url += "&game=" + OpenWS.getFromDict(params, "game", "-1");
+        }
+
         try {
             const response = await fetch(url);
             const data = await response.json();
