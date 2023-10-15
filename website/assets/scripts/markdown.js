@@ -129,7 +129,38 @@ async function renderCards() {
 
   document.getElementById("cards-container").classList.remove("showing");
 
+  function sortElements(mode) {
+    const elementsMod = document.querySelectorAll('.sortOptionMod');
+    elementsMod.forEach(element => {
+      if (mode) {
+        element.removeAttribute('hidden')
+      } else {
+        element.setAttribute('hidden', true);
+      }
+    });
+    const elementsGame = document.querySelectorAll('.sortOptionGame');
+    elementsGame.forEach(element => {
+      if (!mode) {
+        element.removeAttribute('hidden')
+      } else {
+        element.setAttribute('hidden', true);
+      }
+    });
+  }
+
+  const sortLessMany = document.getElementById("sort-button-mode-icon-lm");
+  const sortManyLess = document.getElementById("sort-button-mode-icon-ml");
+  if (OpenWS.getFromDict(paramsDict, "sort", "").startsWith("i")) {
+    sortLessMany.setAttribute('hidden', true);
+    sortManyLess.removeAttribute('hidden');
+  } else {
+    sortManyLess.setAttribute('hidden', true);
+    sortLessMany.removeAttribute('hidden');
+  }
+
   if (OpenWS.getFromDict(paramsDict, "game_select", "false") === "false") {
+    sortElements(true);
+
     let rendRes = await renderMods();
     if (rendRes > -1) {
       // Заменяем значение параметра "page" на N
@@ -152,6 +183,8 @@ async function renderCards() {
       addCard(10);
     };
   } else {
+    sortElements(false);
+
     let rendRes = await renderGames();
     if (rendRes > -1) {
       // Заменяем значение параметра "page" на N
@@ -427,7 +460,8 @@ function cardCancel(id) {
 }
 
 function sortReselectMode() {
-  let sortChecker = document.getElementById("sort-checkbox-mode").checked;
+  let sortChecker = !document.getElementById("sort-checkbox-mode").checked;
+  console.log(sortChecker)
 
   let url = window.location.href;
 
@@ -464,6 +498,8 @@ function sortReselectMode() {
   if (updatedUrl === window.location.href) { 
     return;
   }
+
+  document.getElementById("sort-checkbox-mode").checked = sortChecker;
 
   window.history.pushState('sort'+sortChecker, 'Open Workshop', updatedUrl);
   renderCards();

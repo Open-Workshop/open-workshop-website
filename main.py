@@ -61,9 +61,12 @@ async def mod(mod_id):
             "logo": ""
         }
 
-        for img in info[1]["results"]:
+        for img_id in range(len(info[1]["results"])):
+            img = info[1]["results"][img_id]
             if img is not None and img["type"] == "logo":
                 is_mod["logo"] = img["url"]
+                if len(info[1]["results"]) > 1:
+                    info[1]["results"].pop(img_id)
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
         info[0]['result']['date_creation'] = input_date.strftime("%d.%m.%Y")

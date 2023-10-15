@@ -24,7 +24,7 @@
           <option value="30">30 карточек на странице</option>
         </select>
         
-        <div class="independence-mods-selector" style="padding-top: 0pt;">
+        <div class="sort-selector">
           <select onchange="sortReselect()" id="sort-selector" title="Сортировка">
             <option class="sortOptionGame" value="TYPE" title="Игра/программа">Сортировка по типу</option>
             <option class="sortOptionGame" value="MODS_COUNT" selected>Сортировка по количеству модов</option>
@@ -35,7 +35,11 @@
             <option value="NAME">Сортировка по алфавиту</option>
             <option value="SOURCE">Сортировка по источнику</option>
           </select>
-          <input onchange="sortReselectMode()" class="input-checkbox" id="sort-checkbox-mode" title="Инверсия сортировки" type="checkbox" style="pointer-events: all;">
+          <button onclick="sortReselectMode()" id="sort-button-mode" title="Инверсия сортировки">
+            <img src="/assets/images/from-less-to-more-sort.svg" id="sort-button-mode-icon-lm" alt="От меньшего к большему">
+            <img src="/assets/images/from-more-to-less-sort.svg" id="sort-button-mode-icon-ml" alt="От большего к меньшему">
+          </button>
+          <input class="input-checkbox" id="sort-checkbox-mode" type="checkbox" hidden>
         </div>
 
         <div style="margin-top: 6pt;" style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
