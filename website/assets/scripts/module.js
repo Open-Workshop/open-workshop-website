@@ -96,6 +96,7 @@ window.OpenWS = {
         if (OpenWS.getFromDict(params, "game", "") != "") {
             url += "&game=" + OpenWS.getFromDict(params, "game", "-1");
         }
+        url += "&sort=" + OpenWS.getFromDict(params, "sort", "");
 
         try {
             const response = await fetch(url);
@@ -112,6 +113,7 @@ window.OpenWS = {
         url += "&page=" + (Number(OpenWS.getFromDict(params, "page", 0))-1);
         url += "&page_size=" + OpenWS.getFromDict(params, "page_size", 10);
         url += "&name=" + OpenWS.getFromDict(params, "name", "");
+        url += "&sort=" + OpenWS.getFromDict(params, "sort", "");
   
         try {
             const response = await fetch(url);
@@ -208,8 +210,10 @@ window.OpenWS = {
                 cardData.size = (cardData.size / 1073741824).toFixed(0) + " GB";
             } else if (cardData.size > 1000000) {
                 cardData.size = (cardData.size / 1048576).toFixed(0) + " MB";
-            } else {
+            } else if (cardData.size > 1000) {
                 cardData.size = (cardData.size / 1024).toFixed(0) + " KB";
+            } else {
+                cardData.size = cardData.size  + " B";
             }
 
             tagModCount.innerText = "📦"+cardData.size
@@ -362,5 +366,24 @@ window.OpenWS = {
             articleText = articleText.replace(regex, '<p class="result-search">$&</p>');
         };
         return articleText;
+    },
+    reselectParam(paramName, paramValue) {
+        let url = window.location.href;
+      
+        // Разбиваем URL на части
+        let [baseUrl, queryParams] = url.split("?");
+        let params = new URLSearchParams(queryParams);
+      
+        // Заменяем значение параметра "page" на N
+        params.set(paramName, paramValue);
+      
+        // Собираем обновленный URL
+        let updatedUrl = `${baseUrl}?${params}`;
+      
+        if (updatedUrl === window.location.href) { 
+          return false
+        } else {
+          return updatedUrl
+        }
     }
 }

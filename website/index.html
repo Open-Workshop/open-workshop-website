@@ -23,13 +23,27 @@
           <option value="25" selected>25 карточек на странице</option>
           <option value="30">30 карточек на странице</option>
         </select>
-
-        <div style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
-          <input class="input-checkbox" onchange="modDependenceSelectMode()" id="independence-mods-selector-checkbox" type="checkbox">
-          <label style="margin-left: 2pt; pointer-events: none;">Независимые моды</label>
+        
+        <div class="independence-mods-selector" style="padding-top: 0pt;">
+          <select onchange="sortReselect()" id="sort-selector" title="Сортировка">
+            <option class="sortOptionGame" value="TYPE" title="Игра/программа">Сортировка по типу</option>
+            <option class="sortOptionGame" value="MODS_COUNT" selected>Сортировка по количеству модов</option>
+            <option class="sortOptionMod" value="SIZE">Сортировка по размеру</option>
+            <option class="sortOptionMod" value="UPDATE_DATE">Сортировка по дате обновления</option>
+            <option value="MOD_DOWNLOADS">Сортировка по загрузкам</option>
+            <option value="CREATION_DATE">Сортировка по дате создания</option>
+            <option value="NAME">Сортировка по алфавиту</option>
+            <option value="SOURCE">Сортировка по источнику</option>
+          </select>
+          <input onchange="sortReselectMode()" class="input-checkbox" id="sort-checkbox-mode" title="Инверсия сортировки" type="checkbox" style="pointer-events: all;">
         </div>
 
-        <article style="margin-top: 6pt;" class="game-selector-in-menu">
+        <div style="margin-top: 6pt;" style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
+          <input class="input-checkbox" onchange="modDependenceSelectMode()" id="independence-mods-selector-checkbox" type="checkbox">
+          <label style="margin-left: 2pt; pointer-events: none; margin-top: 1pt;">Независимые моды</label>
+        </div>
+
+        <article style="margin-top: 9pt;" class="game-selector-in-menu">
           <div style="margin-bottom: 3pt; cursor: pointer;" onclick="document.getElementById('game-selector-in-menu-checkbox').click();">
             <input class="input-checkbox" onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
             <label style="pointer-events: none;">Выбрать игру</label>

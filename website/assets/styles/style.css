@@ -827,6 +827,7 @@ nav li li a:hover {
   height: 100%;
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 .independence-mods-selector > label {
   font-size: 12pt;

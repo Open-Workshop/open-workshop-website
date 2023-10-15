@@ -127,6 +127,8 @@ async function renderCards() {
   let params = new URLSearchParams(queryParams);
   let paramsDict = OpenWS.urlParams(window.location.href);
 
+  document.getElementById("cards-container").classList.remove("showing");
+
   if (OpenWS.getFromDict(paramsDict, "game_select", "false") === "false") {
     let rendRes = await renderMods();
     if (rendRes > -1) {
@@ -350,79 +352,30 @@ window.addEventListener('popstate', function(event) {
 });
 
 function pageSizeReselect() {
-  // Получаем элемент <select> по его ID
-  var selectElement = document.getElementById("page-size-selector");
-
-  // Получаем значение выбранного элемента
-  var selectedValue = Number(selectElement.value.split(' ')[0]);
-
-  let url = window.location.href;
-
-  // Разбиваем URL на части
-  let [baseUrl, queryParams] = url.split("?");
-  let params = new URLSearchParams(queryParams);
-
-  // Заменяем значение параметра "page_size" на selectedValue
-  params.set("page_size", selectedValue);
-
-  // Собираем обновленный URL
-  let updatedUrl = `${baseUrl}?${params}`;
-
-  if (updatedUrl === window.location.href) {
-    return 
+  const selectedValue = Number(document.getElementById("page-size-selector").value.split(' ')[0]);
+  const res = OpenWS.reselectParam("page_size", selectedValue);
+  if (res != false) {
+    window.history.pushState('page_size'+selectedValue, 'Open Workshop', res);
+    renderCards();
   }
-
-  window.history.pushState('page_size'+selectedValue, 'Open Workshop', updatedUrl);
-  
-  renderCards()
 }
 
 function gameSelectMode() {
   let gameChecker = document.getElementById("game-selector-in-menu-checkbox");
-  
-  let url = window.location.href;
-
-  // Разбиваем URL на части
-  let [baseUrl, queryParams] = url.split("?");
-  let params = new URLSearchParams(queryParams);
-
-  // Заменяем значение параметра "page" на N
-  params.set("game_select", gameChecker.checked);
-
-  // Собираем обновленный URL
-  let updatedUrl = `${baseUrl}?${params}`;
-
-  if (updatedUrl === window.location.href) { 
-    return
+  const res = OpenWS.reselectParam("game_select", gameChecker.checked)
+  if (res != false) {
+    window.history.pushState('game_select'+gameChecker.checked, 'Open Workshop', res);
+    renderCards()
   }
-
-  window.history.pushState('game_select'+gameChecker.checked, 'Open Workshop', updatedUrl);
-  
-  renderCards()
 }
 
 function modDependenceSelectMode() {
   let gameChecker = document.getElementById("independence-mods-selector-checkbox");
-  
-  let url = window.location.href;
-
-  // Разбиваем URL на части
-  let [baseUrl, queryParams] = url.split("?");
-  let params = new URLSearchParams(queryParams);
-
-  // Заменяем значение параметра "page" на N
-  params.set("dependencies", gameChecker.checked);
-
-  // Собираем обновленный URL
-  let updatedUrl = `${baseUrl}?${params}`;
-
-  if (updatedUrl === window.location.href) { 
-    return
+  const res = OpenWS.reselectParam("dependencies", gameChecker.checked)
+  if (res != false) {
+    window.history.pushState('mod_dependencies'+gameChecker.checked, 'Open Workshop', res);
+    renderCards()
   }
-
-  window.history.pushState('mod_dependencies'+gameChecker.checked, 'Open Workshop', updatedUrl);
-  
-  renderCards()
 }
 
 function gameSelect(selectGameID) {
@@ -456,31 +409,75 @@ function gameSelect(selectGameID) {
 }
 
 function gameReset() {
+  const res = OpenWS.reselectParam("game", "");
+  if (res != false) {
+    const gameCurrect = document.getElementById("game-selector-in-menu-currect-game");
+    gameCurrect.innerText = "Игра не выбрана";
+    gameCurrect.title = "Отображаются все моды";
+
+    window.history.pushState('game', 'Open Workshop', res);
+    renderCards();
+  }
+}
+
+
+function cardCancel(id) {
+  document.getElementById(id).classList.remove("show");
+  document.getElementById("cards-container").classList.remove("showing");
+}
+
+function sortReselectMode() {
+  let sortChecker = document.getElementById("sort-checkbox-mode").checked;
+
   let url = window.location.href;
 
   // Разбиваем URL на части
   let [baseUrl, queryParams] = url.split("?");
   let params = new URLSearchParams(queryParams);
 
+  // Создаем пустой словарь
+  let paramsDict = {};
+  // Итерируемся по всем параметрам и добавляем их в словарь
+  for (let param of params.entries()) {
+      let [key, value] = param;
+      paramsDict[key] = value;
+  }
+
+  let result = OpenWS.getFromDict(paramsDict, "sort", "");
+
+  console.log(result)
+  if (sortChecker && !result.startsWith('i')) {
+    result = "i" + result;
+  } else if (!sortChecker && result.startsWith('i')) {
+    result = result.replace(/^i/, "");
+  }
+
+  console.log(result)
+
   // Заменяем значение параметра "page" на N
-  params.set("game", "");
+  console.log(url)
+  params.set("sort", result);
 
   // Собираем обновленный URL
   let updatedUrl = `${baseUrl}?${params}`;
 
   if (updatedUrl === window.location.href) { 
-    return
+    return;
   }
 
-  const gameCurrect = document.getElementById("game-selector-in-menu-currect-game");
-  gameCurrect.innerText = "Игра не выбрана";
-  gameCurrect.title = "Отображаются все моды";
-
-  window.history.pushState('game', 'Open Workshop', updatedUrl);
+  window.history.pushState('sort'+sortChecker, 'Open Workshop', updatedUrl);
   renderCards();
 }
 
-function cardCancel(id) {
-  document.getElementById(id).classList.remove("show");
-  document.getElementById("cards-container").classList.remove("showing");
+function sortReselect() {
+  let selectedValue = document.getElementById("sort-selector").value;
+  if (document.getElementById("sort-checkbox-mode").checked) {
+    selectedValue = "i"+selectedValue
+  }
+  
+  const res = OpenWS.reselectParam("sort", selectedValue);
+  if (res != false) {
+    window.history.pushState('sort'+selectedValue, 'Open Workshop', res);
+    renderCards();
+  }
 }

@@ -2,7 +2,7 @@
 let currentUrl = window.location.href;
 
 // Проверяем, содержит ли URL-адрес параметры "page" и "page_size"
-if (!currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !currentUrl.includes("name=") || !currentUrl.includes("game=") || !currentUrl.includes("game_select=") || !currentUrl.includes("dependencies=")) {
+if (!currentUrl.includes("sort=") || !currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !currentUrl.includes("name=") || !currentUrl.includes("game=") || !currentUrl.includes("game_select=") || !currentUrl.includes("dependencies=")) {
   function addParam(param) {
     if (currentUrl.includes("?")) {
       return "&"+param;
@@ -29,6 +29,9 @@ if (!currentUrl.includes("page=") || !currentUrl.includes("page_size=") || !curr
   if (!currentUrl.includes("dependencies=")) {
     currentUrl += addParam("dependencies=false");
   }
+  if (!currentUrl.includes("sort=")) {
+    currentUrl += addParam("sort=iMOD_DOWNLOADS");
+  }
 
   // Перенаправляем на обновленный URL-адрес
   window.history.pushState('init catalog', 'Open Workshop', currentUrl);
@@ -41,6 +44,12 @@ namer.value = OpenWS.getFromDict(params, "name", "");
 
 const pageSizer = document.getElementById("page-size-selector");
 pageSizer.value = OpenWS.getFromDict(params, "page_size", "25");
+
+const sortSelector = document.getElementById("sort-selector");
+sortSelector.value = OpenWS.getFromDict(params, "sort", "NAME").replace(/^i/, "");
+
+const sortSelectorMode = document.getElementById("sort-checkbox-mode");
+sortSelectorMode.checked = OpenWS.getFromDict(params, "sort", "NAME").startsWith("i");
 
 const gameSelectorMode = document.getElementById("game-selector-in-menu-checkbox");
 gameSelectorMode.checked = (OpenWS.getFromDict(params, "game_select", false) === "true");
