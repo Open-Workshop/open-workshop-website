@@ -1283,6 +1283,12 @@ footer div.social-media-links a:hover svg circle {
   -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+.one_slider {
+  padding-bottom: 0;
+}
+.one_slider > .slider__images > a > .slider__images-image {
+  border-radius: 10pt;
+}
 
 
 

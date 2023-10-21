@@ -20,7 +20,7 @@
 
             <div class="right-bar-mod">
               <div class="wrapper" style="width: 100%; {% if data[1]['results']|length ==0 %}display: none;{% endif %}">
-                <div class="slider">
+                <div class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
                   <ul class="js__slider__images slider__images">
                     {% for item in data[1]['results'] %}
                       <a href="{{ item['url'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
@@ -29,9 +29,11 @@
                     {% endfor %}
                   </ul>
               
+                  {% if data[0]["no_many_screenshots"] == false %}
                   <div class="slider__controls">
                     <ol class="js__slider__pagers slider__pagers"></ol>
                   </div>
+                  {% endif %}
                 </div>
               </div>
 
