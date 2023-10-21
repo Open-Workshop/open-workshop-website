@@ -20,6 +20,7 @@ SHORT_WORDS = [
 
 
 @app.route('/')
+@app.route('/index')
 async def index():
     return render_template("index.html", catalog=True)
 
@@ -77,6 +78,7 @@ async def mod(mod_id):
         info[0]['result']['id'] = mod_id
 
         info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
+        info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
 
         info.append({})
         if info[0]['dependencies_count'] > 0:
@@ -150,10 +152,18 @@ async def remove_words_short(text, words):
 
     text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
     return text
+async def remove_words_long(text):
+    return text
 
 
 @app.route('/<path:filename>')
 async def serve_static(filename):
+    if filename.startswith("/html-partials/"):
+        return await page_not_found(404)
+
+    if filename.endswith(".html"):
+        return render_template(filename)
+
     return send_from_directory("website", filename)
 
 @app.errorhandler(404)

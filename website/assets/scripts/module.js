@@ -43,6 +43,8 @@ function steamSyntax(text, short = false) {
 
     // Заменим цитаты
     text = text.replace(/\[quote\](.*?)\[\/quote\]/gs, '<blockquote><div class="light"></div><div class="content">$1</div></blockquote>');
+    // Заменим цитаты с заголовком
+    text = text.replace(/\[.*?quote\.*?=(.*?)](.*?)\[.*?\/.*?quote.*?\]/gs, '<blockquote><div class="light"></div><div class="content"><h2 style="text-align: center;">$1</h2><br>$2</div></blockquote>');
 
     // Заменим код
     text = text.replace(/`(.+?)`/gs, '<code>$1</code>');
