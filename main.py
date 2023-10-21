@@ -158,11 +158,14 @@ async def remove_words_long(text):
 
 @app.route('/<path:filename>')
 async def serve_static(filename):
-    if filename.startswith("/html-partials/"):
+    if filename.startswith("/html-partials/") or filename.startswith("html-partials/"):
         return await page_not_found(404)
 
     if filename.endswith(".html"):
-        return render_template(filename)
+        try:
+            return render_template(filename)
+        except:
+            return await page_not_found(404)
 
     return send_from_directory("website", filename)
 
