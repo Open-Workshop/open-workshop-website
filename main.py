@@ -18,6 +18,22 @@ SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
 
+MONTHS_NAMES = {
+    1: "января",
+    2: "февраля",
+    3: "марта",
+    4: "апреля",
+    5: "мая",
+    6: "июня",
+    7: "июля",
+    8: "августа",
+    9: "сентября",
+    10: "октября",
+    11: "ноября",
+    12: "декабря",
+}
+
+
 
 @app.route('/')
 @app.route('/index')
@@ -38,6 +54,7 @@ async def fetch(url):
 async def mod(mod_id):
     try:
         global SHORT_WORDS
+        global MONTHS_NAMES
 
         urls = [
             SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
@@ -48,15 +65,17 @@ async def mod(mod_id):
             tasks.append(fetch(url))
         info = await asyncio.gather(*tasks)
 
+        def size_set(bites:int = 0, digit:str = "") -> str:
+            return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
 
         if info[0]['result']['size'] > 1000000000:
-            info[0]['result']['size'] = str(round(info[0]['result']['size']/1073741824, 1))+" GB"
+            info[0]['result']['size'] = size_set(1073741824, "G")
         elif info[0]['result']['size'] > 1000000:
-            info[0]['result']['size'] = str(round(info[0]['result']['size']/1048576, 1))+" MB"
+            info[0]['result']['size'] = size_set(1048576, "M")
         elif info[0]['result']['size'] > 1000:
-            info[0]['result']['size'] = str(round(info[0]['result']['size']/1024, 1))+" KB"
+            info[0]['result']['size'] = size_set(1024, "K")
         else:
-            info[0]['result']['size'] = str(info[0]['result']['size'])+" B"
+            info[0]['result']['size'] = size_set()
 
         is_mod = {
             "date_creation": info[0]['result'].get('date_creation', ""),
@@ -73,10 +92,10 @@ async def mod(mod_id):
         info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-        info[0]['result']['date_creation'] = input_date.strftime("%d.%m.%Y")
+        info[0]['result']['date_creation'] = input_date.strftime(f"%d {MONTHS_NAMES.get(input_date.month, 'ERROR')} %Y").removeprefix("0")
 
         input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-        info[0]['result']['date_update'] = input_date.strftime("%d.%m.%Y")
+        info[0]['result']['date_update'] = input_date.strftime(f"%d {MONTHS_NAMES.get(input_date_update.month, 'ERROR')} %Y").removeprefix("0")
 
         info[0]['result']['id'] = mod_id
 
