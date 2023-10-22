@@ -19,7 +19,8 @@
             </div>
 
             <div class="right-bar-mod">
-              <div class="wrapper" style="width: 100%; {% if data[1]['results']|length ==0 %}display: none;{% endif %}">
+              {% if data[1]['results']|length >0 %}
+              <div class="wrapper" style="width: 100%;">
                 <div class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
                   <ul class="js__slider__images slider__images">
                     {% for item in data[1]['results'] %}
@@ -36,10 +37,12 @@
                   {% endif %}
                 </div>
               </div>
-
               <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
               <script src="/assets/scripts/images-list.js"></script>
-              <div class="mod-dependence-list" {% if data[0]['dependencies_count'] <= 0 %}style="display: none;"{% endif %}>
+              {% endif %}
+
+              {% if data[0]['dependencies_count'] > 0 %}
+              <div class="mod-dependence-list">
                 Зависимости мода
                 {% for item in data[2].values() %}
                   <a class="mod-dependence" href="/mod/{{ item.id }}">
@@ -48,6 +51,7 @@
                   </a>
                 {% endfor %}
               </div>
+              {% endif %}
               <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
             </div>
         </article>

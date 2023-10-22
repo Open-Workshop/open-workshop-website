@@ -53,8 +53,10 @@ async def mod(mod_id):
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1073741824, 1))+" GB"
         elif info[0]['result']['size'] > 1000000:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1048576, 1))+" MB"
-        else:
+        elif info[0]['result']['size'] > 1000:
             info[0]['result']['size'] = str(round(info[0]['result']['size']/1024, 1))+" KB"
+        else:
+            info[0]['result']['size'] = str(info[0]['result']['size'])+" B"
 
         is_mod = {
             "date_creation": info[0]['result'].get('date_creation', ""),
