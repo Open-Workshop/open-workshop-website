@@ -22,6 +22,10 @@ function steamSyntax(text, short = false) {
     text = text.replace(steamUrl, (match, url, randomText) => {
         return `<a class="steam-link" href="${url}">${randomText}</a>`;
     });
+    
+    text = text.replace(/\[list\]/gm, '<list>');
+    text = text.replace(/\[\*\]/gm, '<li>');
+    text = text.replace(/\[\/list\]/gm, '</list>');
 
     // Заменим ссылки
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="steam-link" href="$2">$1</a>');
@@ -49,6 +53,14 @@ function steamSyntax(text, short = false) {
     // Заменим код
     text = text.replace(/`(.+?)`/gs, '<code>$1</code>');
 
+    // Заменим таблицы
+    text = text.replace(/\[table\](.*?)\[\/table\]/gs, '<table>$1</table>');
+    text = text.replace(/\[td\](.*?)\[\/td\]/gs, '<td>$1</td>');
+    text = text.replace(/\[tr\](.*?)\[\/tr\]/gs, '<tr>$1</tr>');
+
+    console.log(text)
+    text = text.replace(/(?<!<\/tr>)<tr>/gs, '<tr class="first">');
+
 
     text = text.replace(/\[(h[1-6])\](.*?)\[\/\1\]/gs, '<$1>$2</$1>');
 
@@ -65,10 +77,6 @@ function steamSyntax(text, short = false) {
     if (short) {
         text = text.replace(/(<br>\s*)+<br>+/g, '<br>');
     }
-
-    text = text.replace(/\[list\]/gm, '<list>');
-    text = text.replace(/\[\*\]/gm, '<li>');
-    text = text.replace(/\[\/list\]/gm, '</list>');
 
     return text;
 }

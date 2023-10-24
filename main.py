@@ -1,4 +1,5 @@
 from flask import Flask, render_template, send_from_directory, request, make_response
+from babel import dates
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import insert, delete
 from sql_client import Page, engine
@@ -55,6 +56,7 @@ async def mod(mod_id):
     try:
         global SHORT_WORDS
         global MONTHS_NAMES
+        launge = "ru"
 
         urls = [
             SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
@@ -92,10 +94,12 @@ async def mod(mod_id):
         info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-        info[0]['result']['date_creation'] = input_date.strftime(f"%d {MONTHS_NAMES.get(input_date.month, 'ERROR')} %Y").removeprefix("0")
+        info[0]['result']['date_creation_js'] = input_date.strftime("%Y-%m-%d")
+        info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
         input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-        info[0]['result']['date_update'] = input_date.strftime(f"%d {MONTHS_NAMES.get(input_date_update.month, 'ERROR')} %Y").removeprefix("0")
+        info[0]['result']['date_update_js'] = input_date_update.strftime("%Y-%m-%d")
+        info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
 
         info[0]['result']['id'] = mod_id
 
