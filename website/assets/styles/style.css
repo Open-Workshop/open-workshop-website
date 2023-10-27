@@ -609,6 +609,9 @@ nav li li a:hover {
   #pc-links-footer {
     display: none;
   }
+  footer {
+    margin-top: 50pt;
+  }
   nav {
     display: none;
     width: 100%;

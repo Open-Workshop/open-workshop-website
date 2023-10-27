@@ -6,18 +6,24 @@ $(document).ready(function() {
     md.innerHTML = OpenWS.syntaxToHTML(md.innerHTML);
 
     const gameLabel = document.getElementById('mod-for-game-label');
-    const dopLink = window.location.href.split("?").pop();
+    let dopLink = ""
+    if (window.location.href.includes("?")) {
+        dopLink = "?"+window.location.href.split("?").pop();
+    }
 
     const depens = Array.from(document.getElementsByClassName("mod-dependence"));
     depens.forEach(depen => {
-        depen.href = depen.href+"?"+dopLink;
+        depen.href = depen.href+dopLink;
     });
     
-    let params = dopLink.split('&');
+    let params = dopLink.replace("?", "").split('&');
     params = params.filter(param => !param.startsWith('game=') && !param.startsWith('game_select='));
     result = params.join('&');
 
-    gameLabel.href += "&"+result;
+    if (result.length > 0) {
+        result = "&"+result;
+    }
+    gameLabel.href += result;
 
     
     const dateCreation = document.getElementById('date_creation_a_tag');
@@ -36,12 +42,25 @@ function dates(selectDate) {
     const timeDifference = currentDate - oldDate; // Разница в миллисекундах между старой и текущей датами
     const daysDifference = Math.floor(timeDifference / millisecondsPerDay); // Разница в днях
 
+    function dif(delta, oneWord, twoWord, threeWord) {
+        const difference = String((daysDifference/delta).toFixed(0))
+        let lastChar = difference[difference.length - 1];
+        console.log(difference !== "11", ["1"].includes(lastChar), lastChar)
+        if (!difference.endsWith("11") && ["1"].includes(lastChar)) {
+            return difference+" "+oneWord
+        } else if (!difference.endsWith("12") && !difference.endsWith("13") && !difference.endsWith("14") && ["2", "3", "4"].includes(lastChar)) {
+            return difference+" "+twoWord
+        } else {
+            return difference+" "+threeWord
+        }
+    }
+
     if (daysDifference < 30) {
-        return daysDifference+" дня"
+        return dif(1, "день", "дня", "дней")
     } else if (daysDifference < 365) {
-        return (daysDifference/30).toFixed(0)+" месяца"
+        return dif(30, "месяц", "месяца", "месяцев")
     } else {
-        return (daysDifference/365).toFixed(0)+" года"
+        return dif(365, "год", "года", "лет")
     }
 }
 
