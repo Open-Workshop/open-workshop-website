@@ -42,8 +42,14 @@ async def index():
     return render_template("index.html", catalog=True)
 
 @app.route('/about')
+@app.route('/about.html')
 async def about():
     return render_template("about.html")
+
+@app.route('/apis')
+@app.route('/apis.html')
+async def apis():
+    return render_template("apis.html")
 
 async def fetch(url):
     async with aiohttp.ClientSession() as session:
