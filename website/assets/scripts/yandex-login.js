@@ -22,8 +22,8 @@ function yandexWindow()
   
 function yandexAuthorization()
 {
-    var x = screen.width/2 - 700/2;
-    var y = screen.height/2 - 450/2;
+    var x = screen.width/2 - 400/2;
+    var y = screen.height/2 - 570/2;
     
     const win = window.open('https://openworkshop.su/api/accounts/authorization/yandex/link',
         '_blank', 
