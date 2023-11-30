@@ -27,7 +27,7 @@ function yandexAuthorization()
     
     const win = window.open('https://openworkshop.su/api/accounts/authorization/yandex/link',
         '_blank', 
-        'location=no,height=570,width=120,scrollbars=no,status=yes,left='+x+',top='+y
+        'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
     );
 
     const interval = setInterval(() => {
