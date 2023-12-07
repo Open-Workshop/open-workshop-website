@@ -34,6 +34,7 @@ MONTHS_NAMES = {
     12: "декабря",
 }
 
+#TODO внедрить всплывашку куков
 
 
 @app.route('/')
@@ -50,6 +51,23 @@ async def about():
 @app.route('/apis.html')
 async def apis():
     return render_template("apis.html")
+
+@app.route('/legal/cookies')
+@app.route('/legal/cookies.html')
+async def legal_cookies():
+    return render_template("cookies.html")
+
+@app.route('/legal/license')
+@app.route('/legal/license.html')
+async def legal_license():
+    return render_template("license.html")
+
+@app.route('/legal/privacy-policy')
+@app.route('/legal/privacy-policy.html')
+async def legal_privacy_policy():
+    #TODO заполнить
+    return render_template("privacy-policy.html")
+
 
 async def fetch(url):
     async with aiohttp.ClientSession() as session:
