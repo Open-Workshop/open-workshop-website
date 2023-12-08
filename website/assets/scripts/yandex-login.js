@@ -2,7 +2,9 @@
 function yandexWindow()
 {
   if (document.cookie.includes('loginJS')) {
-    const response = fetch("https://openworkshop.su/api/accounts/authorization/logout");
+    const response = fetch("https://openworkshop.su/api/accounts/authorization/logout", {
+      method: "POST"
+    });
 
     banner_error_a = {
       title: 'Выход',
