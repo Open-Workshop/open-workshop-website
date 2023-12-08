@@ -73,6 +73,13 @@
           </li>
         </ul>
       </nav>
+
+      
+      <div id="cookie-bar" class="cookie-bar">
+        <span class="message">Ради вашего удобства наш сайт использует cookies! <a href="/legal/cookies">Узнать больше!</a></span>
+        <span class="mobile">Мы используем <a href="/legal/cookies">cookies</a></span>
+        <label class="close-cb" onclick="cookiesOkPress()">x</label>
+      </div>
     </div>
 
     <div class="main" id="main">
@@ -82,6 +89,7 @@
       <script src='//cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/jquery.magnific-popup.min.js'></script>
       <script src="/assets/scripts/vendors/images-zoom.js"></script>
       <script src="/assets/scripts/module.js"></script>
+
       {% block content %}{% endblock %}
     </div>
 

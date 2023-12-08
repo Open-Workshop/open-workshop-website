@@ -2092,3 +2092,74 @@ td {
   border-top: 1px solid #333;
   border-bottom: 1px solid #333;
 }
+
+
+.cookie-bar {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 40px;
+  text-align: center;
+  line-height: 30px;
+  background: linear-gradient(rgb(20, 0, 133), rgba(18, 0, 119, 0.726), rgba(31, 0, 141, 0));
+  color: white;
+  font-size: 20px;
+  font-family: "Lato", sans-serif;
+  font-weight: 100;
+  transform: translateY(-50px);
+  transition: all 0.2s;
+}
+.cookie-bar-show {
+  transform: translateY(0px);
+}
+
+.cookie-bar .message {
+  white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .cookie-bar .message {
+    display: none;
+  }
+}
+.cookie-bar .mobile {
+  display: none;
+}
+@media (max-width: 767px) {
+  .cookie-bar .mobile {
+    display: inline-block;
+  }
+}
+.close-cb {
+  border: none;
+  color: white;
+  background: rgb(12, 0, 124);
+  position: absolute;
+  display: inline-block;
+  right: 10px;
+  top: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 3px 0 rgba(151, 0, 0, 0.26);
+  line-height: 30px;
+  height: 35px;
+  width: 35px;
+  font-size: 20px;
+  font-weight: bold;
+  border-bottom-left-radius: 2pt;
+  border-bottom-right-radius: 2pt;
+  transition: all 0.1s;
+}
+.close-cb:hover {
+  background: rgb(2, 0, 141);
+}
+.checkbox-cb {
+  display: none;
+}
+.checkbox-cb:checked + .cookie-bar {
+  transform: translateY(-50px);
+}
+a {
+  color: #dddddd;
+}
+

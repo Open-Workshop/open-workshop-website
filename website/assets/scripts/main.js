@@ -1,4 +1,13 @@
 
+if (!document.cookie.includes('cooks')) {
+    document.getElementById('cookie-bar').classList.add('cookie-bar-show');
+}
+function cookiesOkPress() {
+    document.getElementById('cookie-bar').classList.remove('cookie-bar-show');
+    document.cookie = "cooks=1; path=/; max-age=31536000";
+}
+
+
 if (!document.getElementsByClassName("toast-container")) {
     const container = document.createElement('div');
     container.classList.add('toast-container');
