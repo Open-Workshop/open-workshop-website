@@ -2159,7 +2159,4 @@ td {
 .checkbox-cb:checked + .cookie-bar {
   transform: translateY(-50px);
 }
-a {
-  color: #dddddd;
-}
 
