@@ -1,0 +1,38 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+  <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
+    <article style="max-width: 500pt; width: 100%;">
+      <div class="user-container">
+        <div class="user-left-bar">
+          <div class="wrapper" style="width: 100%;">
+            <div>
+              <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar"/>
+            </div>
+          </div>
+        </div>
+
+        <div style="width: 100%">
+          <h1 id="mod-name-title" style="padding-bottom: 3pt;" translate="no">{{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %}</h1>
+          <h4 id="mod-tags-title">
+              <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
+              <a title="Авто {{ user_data.general.author_mods }} модов" class="tag-link-orange" translate="no">📤{{ user_data.general.author_mods }}</a>
+              <a title="Оставил {{ user_data.general.comments }} комментариев" class="tag-link-orange" translate="no">✏️{{ user_data.general.comments }}</a>
+          </h4>
+
+          {% if user_data.general.about|length >0 %}
+          <article id="mod-description">{{ user_data.general.about }}</article>
+          {% endif %}
+        </div>
+      </div>
+
+      <article id="mod-description">
+        Тут будут ваши моды, форумы, друзья и т.п.! Осталось только дождаться :)
+      </article>
+    </article>
+  </div>
+{% endblock %}
+
+{% block title %}
+{{ user_data.general.username }} - OW
+{% endblock %}
+

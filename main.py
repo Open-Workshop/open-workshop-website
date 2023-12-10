@@ -15,6 +15,7 @@ import os
 app = Flask(__name__, template_folder='website')
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"#"https://api.openworkshop.su"
+ACCOUNTS_ADDRESS = "http://127.0.0.1:7070"
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
@@ -65,7 +66,6 @@ async def legal_license():
 @app.route('/legal/privacy-policy')
 @app.route('/legal/privacy-policy.html')
 async def legal_privacy_policy():
-    #TODO заполнить
     return render_template("privacy-policy.html")
 
 
@@ -192,6 +192,34 @@ async def mod(mod_id):
             print("DELETE ERROR! PAGE: "+str(mod_id))
 
         return await page_not_found(-1)
+
+
+@app.route('/user/<int:user_id>')
+async def user(user_id):
+    launge = "ru"
+
+    urls = [
+        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}",
+    ]
+    tasks = []
+    for url in urls:
+        print(url)
+        tasks.append(fetch(url))
+    info = await asyncio.gather(*tasks)
+
+    print(info)
+    input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
+    info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
+    info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+
+    if len(info[0]['general']['avatar_url']) <= 0:
+        info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
+    elif info[0]['general']['avatar_url'] == "local":
+        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+
+    return render_template("user.html", user_data = info[0])
+
+
 async def remove_words_short(text, words):
     for word in words:
         text = text.replace("["+word+"]", '')

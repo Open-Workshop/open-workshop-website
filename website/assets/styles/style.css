@@ -2160,3 +2160,47 @@ td {
   transform: translateY(-50px);
 }
 
+
+.user-avatar {
+  border-radius: 5pt;
+}
+
+.user-left-bar {
+  margin-top: 2pt;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.user-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10pt;
+  padding: 5pt;
+  margin: 1;
+}
+
+@media (min-width: 410px) {
+  .user-container {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+  }
+  .user-left-bar {
+    margin-right: 5pt;
+  }
+  .user-avatar {
+    max-width: 250px;
+    min-width: 150px;
+  }
+}
+@media (max-width: 409px) {
+  .user-container {
+    display: block;
+  }
+  .user-avatar {
+    min-width: 100%;
+  }
+}
