@@ -2182,6 +2182,17 @@ td {
   margin: 1;
 }
 
+.user-mute-profile {
+  text-align: center;
+  background-color: #470000;
+  border-radius: 5pt;
+  display: inline-block
+}
+.user-mute-profile > br {
+  height: 0px;
+}
+
+
 @media (min-width: 410px) {
   .user-container {
     display: -webkit-box;
@@ -2202,5 +2213,9 @@ td {
   }
   .user-avatar {
     min-width: 100%;
+  }
+  .user-mute-profile {
+    margin-bottom: 3pt;
+    font-size: 17pt;
   }
 }

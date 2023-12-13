@@ -7,9 +7,17 @@
           <div class="wrapper" style="width: 100%;">
             <div>
               <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar"/>
+
+              {% if user_data.general.mute %}
+              <div id="noVote" style="display: flex; align-items: center; justify-content: center;">
+                <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
+              </div>
+              {% endif %}
             </div>
           </div>
         </div>
+
+        <script src="/assets/scripts/user.js"></script>
 
         <div style="width: 100%">
           <h1 id="mod-name-title" style="padding-bottom: 3pt;" translate="no">{{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %}</h1>
@@ -44,7 +52,7 @@
 {% endblock %}
 
 {% block title %}
-{{ user_data.general.username }} - OW
+{{ user_data.general.username }} - OW user
 {% endblock %}
 
 {% block description %}

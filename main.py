@@ -211,6 +211,11 @@ async def user(user_id):
     if type(info[0]) is str:
         return await page_not_found(-1)
 
+    if info[0]["general"]["mute"]:
+        input_date = datetime.datetime.fromisoformat(info[0]["general"]["mute"])
+        info[0]["general"]["mute_js"] = info[0]["general"]["mute"]
+        info[0]["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
+
     input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
     info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
     info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
@@ -226,7 +231,7 @@ async def user(user_id):
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-    #TODO мут
+
     return render_template("user.html", user_data = info[0], is_user_data = {"id": user_id, "logo": info[0]['general']['avatar_url']})
 
 

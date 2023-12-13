@@ -1,48 +1,39 @@
 
-const millisecondsPerDay = 1000 * 60 * 60 * 24; // Количество миллисекунд в одном дне
+const millisecondsPerDay = Math.floor(1000 * 60 * 60 * 24); // Количество миллисекунд в одном дне
 
 $(document).ready(function() {
-    const md = document.getElementById('mod-description');
-    md.innerHTML = OpenWS.syntaxToHTML(md.innerHTML);
+    const userMute = document.getElementById('user-mute');
 
-    const gameLabel = document.getElementById('mod-for-game-label');
-    let dopLink = ""
-    if (window.location.href.includes("?")) {
-        dopLink = "?"+window.location.href.split("?").pop();
-    }
+    if (userMute != null) {
+        userMute.innerHTML += "<br>"+format(dates(userMute.getAttribute("datejs")), "userMuteJSDate")
 
-    const depens = Array.from(document.getElementsByClassName("mod-dependence"));
-    depens.forEach(depen => {
-        depen.href = depen.href+dopLink;
-    });
-    
-    let params = dopLink.replace("?", "").split('&');
-    params = params.filter(param => !param.startsWith('game=') && !param.startsWith('game_select='));
-    result = params.join('&');
+        const intervalId = setInterval(() => {
+            const resultInner = format(dates(userMute.getAttribute("datejs")), "userMuteJSDate")
 
-    if (result.length > 0) {
-        result = "&"+result;
-    }
-    gameLabel.href += result;
-
-    
-    const dateCreation = document.getElementById('date_creation_a_tag');
-    const dateUpdate = document.getElementById('date_update_a_tag');
-
-    dateCreation.innerHTML += format(dates(dateCreation.getAttribute("datejs")), "dateCreationJSDate")
-    if (dateUpdate != null) {
-        dateUpdate.innerHTML += format(dates(dateUpdate.getAttribute("datejs")), "dateUpdateJSDate")
+            if (resultInner != false) {
+                const element = document.getElementById('userMuteJSDate');
+                if (element) {
+                    element.remove();
+                }
+                userMute.innerHTML += resultInner
+            } else {
+                document.getElementById('noVote').remove();
+                clearInterval(intervalId); // Обрыв интервала
+            }
+          }, 500);
     }
 });
 
 function dates(selectDate) {
-    const oldDate = new Date(selectDate); // Замените на свою старую дату
-    const currentDate = new Date(); // Текущая дата и время
+    const oldDate = new Date(); // Замените на свою старую дату
+    const currentDate = new Date(selectDate); // Текущая дата и время
 
-    console.log(currentDate)
-    console.log(oldDate)
 
     const timeDifference = currentDate - oldDate; // Разница в миллисекундах между старой и текущей датами
+    if (timeDifference <= 0) {
+        return false
+    }
+
     const daysDifference = Math.floor(timeDifference / millisecondsPerDay); // Разница в днях
 
     function dif(delta, oneWord, twoWord, threeWord, datatime) {
@@ -80,5 +71,8 @@ function dates(selectDate) {
 }
 
 function format(text, elementId) {
-    return "<i id='"+elementId+"' style='margin-left: 3pt; background-color: #0000007d; padding-left: 2pt; padding-right: 2pt; border-radius: 4pt;'>("+text+" назад)</i>"
+    if (!text) {
+        return false
+    }
+    return "<i id='"+elementId+"' style='background-color: #0000007d; padding-left: 2pt; padding-right: 2pt; border-radius: 4pt;'>через "+text+"</i>"
 }
