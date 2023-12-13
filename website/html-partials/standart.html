@@ -17,6 +17,12 @@
     <meta property="article:modified_time" content="{% block modified_time %}{% endblock %}" />
     <link rel="canonical" href="https://openworkshop.su/mod/{{ data[0]['result']['id'] }}">
     {% endif %}
+    {% if is_user_data %}
+    <meta property="og:image" content="{{ is_user_data['logo'] }}">
+    <meta property="og:image:alt" content="User avatar" />
+    <meta property="og:type" content="article" />
+    <link rel="canonical" href="https://openworkshop.su/user/{{ is_user_data['id'] }}">
+    {% endif %}
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml"/>
 
     <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico"/>

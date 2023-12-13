@@ -207,17 +207,27 @@ async def user(user_id):
         tasks.append(fetch(url))
     info = await asyncio.gather(*tasks)
 
-    print(info)
+
+    if type(info[0]) is str:
+        return await page_not_found(-1)
+
     input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
     info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
     info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+
+    if len(info[0]['general']['about']) <= 0:
+        info[0]['general']['about_enable'] = False
+        info[0]['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
+    else:
+        info[0]['general']['about_enable'] = True
 
     if len(info[0]['general']['avatar_url']) <= 0:
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-    return render_template("user.html", user_data = info[0])
+    #TODO мут
+    return render_template("user.html", user_data = info[0], is_user_data = {"id": user_id, "logo": info[0]['general']['avatar_url']})
 
 
 async def remove_words_short(text, words):
