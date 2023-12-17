@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import insert, delete
 from sql_client import Page, engine
 from pathlib import Path
+from tool import get_user_req, standart_response, SERVER_ADDRESS, ACCOUNTS_ADDRESS
 import datetime
 import aiohttp
 import asyncio
@@ -12,10 +13,9 @@ import time
 import re
 import os
 
+
 app = Flask(__name__, template_folder='website')
 
-SERVER_ADDRESS = "http://127.0.0.1:8000"#"https://api.openworkshop.su"
-ACCOUNTS_ADDRESS = "http://127.0.0.1:7070"
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
@@ -203,7 +203,6 @@ async def user(user_id):
     ]
     tasks = []
     for url in urls:
-        print(url)
         tasks.append(fetch(url))
     info = await asyncio.gather(*tasks)
 
@@ -211,6 +210,7 @@ async def user(user_id):
     if type(info[0]) is str:
         return await page_not_found(-1)
 
+    # Определяем содержание страницы
     if info[0]["general"]["mute"]:
         input_date = datetime.datetime.fromisoformat(info[0]["general"]["mute"])
         info[0]["general"]["mute_js"] = info[0]["general"]["mute"]
@@ -232,7 +232,31 @@ async def user(user_id):
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
 
-    return render_template("user.html", user_data = info[0], is_user_data = {"id": user_id, "logo": info[0]['general']['avatar_url']})
+    # Определяем права
+    user_req = await get_user_req()
+    info[0]['general']['editable'] = {"avatar": False, "username": False, "about": False, "mute": False}
+
+    if user_req:
+        user_req["result"] = json.loads(user_req["result"])
+        if type(user_req["result"]) is dict:
+            rights = user_req["result"]["rights"]
+            is_admin = rights["admin"]
+            in_mute = user_req["result"]["general"]["mute"]
+
+            if int(user_req["id"]) == user_id: #Пользователь просит свой профиль
+                if not in_mute or is_admin:
+                    info[0]['general']['editable']["avatar"] = rights["change_avatar"] or is_admin
+                    info[0]['general']['editable']["username"] = rights["change_username"] or is_admin
+                    info[0]['general']['editable']["about"] = rights["change_about"] or is_admin
+            else: #Пользователь просит чужой профиль
+                info[0]['general']['editable']["avatar"] = is_admin
+                info[0]['general']['editable']["username"] = is_admin
+                info[0]['general']['editable']["about"] = is_admin
+                info[0]['general']['editable']["mute"] = (rights["mute_users"] and not in_mute) or is_admin
+
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=render_template("user.html", user_data=info[0], is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']}))
 
 
 async def remove_words_short(text, words):

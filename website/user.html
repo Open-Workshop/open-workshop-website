@@ -6,7 +6,11 @@
         <div class="user-left-bar">
           <div class="wrapper" style="width: 100%;">
             <div>
-              <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar"/>
+              <div class="user-avatar-box">
+                <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar{% if user_data.general.editable.avatar %} user-avatar-e{% endif %}" />
+
+                <img class="user-edit-icon{% if user_data.general.editable.avatar %} user-edit-icon-e{% endif %}" src="/assets/images/icon-edit.svg" alt="">
+              </div>
 
               {% if user_data.general.mute %}
               <div id="noVote" style="display: flex; align-items: center; justify-content: center;">
