@@ -41,32 +41,116 @@ MONTHS_NAMES = {
 @app.route('/')
 @app.route('/index')
 async def index():
-    return render_template("index.html", catalog=True)
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("index.html", catalog=True, user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/about')
 @app.route('/about.html')
 async def about():
-    return render_template("about.html")
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("about.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/apis')
 @app.route('/apis.html')
 async def apis():
-    return render_template("apis.html")
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("apis.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/legal/cookies')
 @app.route('/legal/cookies.html')
 async def legal_cookies():
-    return render_template("cookies.html")
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("cookies.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/legal/license')
 @app.route('/legal/license.html')
 async def legal_license():
-    return render_template("license.html")
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("license.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/legal/privacy-policy')
 @app.route('/legal/privacy-policy.html')
 async def legal_privacy_policy():
-    return render_template("privacy-policy.html")
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("privacy-policy.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 
 async def fetch(url):
@@ -173,7 +257,21 @@ async def mod(mod_id):
 
         session.close()
 
-        return render_template("mod.html", data=info, is_mod_data=is_mod)
+        # Определяем права
+        user_req = await get_user_req()
+
+        user_p = False
+        if user_req and type(user_req["result"]) is dict:
+            user_p = user_req["result"]["general"]
+
+        # Пробуем отрендерить страницу
+        try:
+            page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p)
+        except:
+            page_html = ""
+
+        # Возвращаем ответ
+        return await standart_response(user_req=user_req, page=page_html)
     except:
         try:
             # Создание сессии
@@ -236,27 +334,36 @@ async def user(user_id):
     user_req = await get_user_req()
     info[0]['general']['editable'] = {"avatar": False, "username": False, "about": False, "mute": False}
 
-    if user_req:
-        user_req["result"] = json.loads(user_req["result"])
-        if type(user_req["result"]) is dict:
-            rights = user_req["result"]["rights"]
-            is_admin = rights["admin"]
-            in_mute = user_req["result"]["general"]["mute"]
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+        rights = user_req["result"]["rights"]
+        is_admin = rights["admin"]
+        in_mute = user_req["result"]["general"]["mute"]
 
-            if int(user_req["id"]) == user_id: #Пользователь просит свой профиль
-                if not in_mute or is_admin:
-                    info[0]['general']['editable']["avatar"] = rights["change_avatar"] or is_admin
-                    info[0]['general']['editable']["username"] = rights["change_username"] or is_admin
-                    info[0]['general']['editable']["about"] = rights["change_about"] or is_admin
-            else: #Пользователь просит чужой профиль
-                info[0]['general']['editable']["avatar"] = is_admin
-                info[0]['general']['editable']["username"] = is_admin
-                info[0]['general']['editable']["about"] = is_admin
-                info[0]['general']['editable']["mute"] = (rights["mute_users"] and not in_mute) or is_admin
+        if int(user_req["id"]) == user_id: #Пользователь просит свой профиль
+            if not in_mute or is_admin:
+                info[0]['general']['editable']["avatar"] = rights["change_avatar"] or is_admin
+                info[0]['general']['editable']["username"] = rights["change_username"] or is_admin
+                info[0]['general']['editable']["about"] = rights["change_about"] or is_admin
+        else: #Пользователь просит чужой профиль
+            info[0]['general']['editable']["avatar"] = is_admin
+            info[0]['general']['editable']["username"] = is_admin
+            info[0]['general']['editable']["about"] = is_admin
+            info[0]['general']['editable']["mute"] = (rights["mute_users"] and not in_mute) or is_admin
+
+    print(user_p)
+
+    try:
+        page_html = render_template("user.html", user_data=info[0],
+                                   is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
+                                   user_profile=user_p)
+    except:
+        page_html = ""
 
 
     # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=render_template("user.html", user_data=info[0], is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']}))
+    return await standart_response(user_req=user_req, page=page_html)
 
 
 async def remove_words_short(text, words):
@@ -288,7 +395,21 @@ async def serve_static(filename):
 
 @app.errorhandler(404)
 async def page_not_found(_error):
-    return render_template("404.html"), 404
+    try:
+        # Определяем права
+        user_req = await get_user_req()
+
+        user_p = False
+        if user_req and type(user_req["result"]) is dict:
+            user_p = user_req["result"]["general"]
+
+        # Пробуем отрендерить страницу
+        page_html = render_template("404.html", user_profile=user_p)
+
+        # Возвращаем ответ
+        return await standart_response(user_req=user_req, page=page_html)
+    except:
+        return render_template("404.html"), 404
 
 
 @app.route('/sitemap.xml')

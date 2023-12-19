@@ -8,6 +8,15 @@ function cookiesOkPress() {
 }
 
 
+function logon() {
+    const response = fetch("https://openworkshop.su/api/accounts/authorization/logout", {
+      method: "POST"
+    });
+    
+    location.reload();
+}
+
+
 if (!document.getElementsByClassName("toast-container")) {
     const container = document.createElement('div');
     container.classList.add('toast-container');

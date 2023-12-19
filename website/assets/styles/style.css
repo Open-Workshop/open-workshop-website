@@ -493,9 +493,21 @@ nav .dropdown {
   position: relative;
 }
 
+.dropdown a {
+  padding: 5px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.dropdown a:hover {
+  background-color: #000;
+}
+
 nav li a {
   float: left;
   padding: 35px;
+  color: white;
+  text-decoration: none;
 }
 
 nav li a:hover {
@@ -518,11 +530,12 @@ nav li li {
 
 nav .dropdown ul {
   position: absolute;
-  left: 0;
+  right: 2pt;
   top: 100%;
-  background: #fff;
-  padding: 20px 0;
+  background: #282733de;
+  padding-top: 3pt;
   border-bottom: 3px solid #34495e;
+  border-radius: 3pt;
 }
 
 nav .dropdown li {
@@ -1936,8 +1949,9 @@ select {
 
 .menu__header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   padding: 15px 20px;
+  align-items: center;
 }
 .menu__header label div {
   width: 15px;
@@ -2005,11 +2019,12 @@ select {
 }
 .menu__links a {
   flex: 1 1 1px;
-  padding: 10px 8px;
+  padding: 1px 8px;
   color: var(--dark);
   text-decoration: none;
   white-space: nowrap;
   text-align: center;
+  cursor: pointer;
 }
 
 .menu__contact {
@@ -2241,4 +2256,27 @@ td {
     margin-bottom: 3pt;
     font-size: 17pt;
   }
+}
+
+.user-avatar-mini {
+  border-radius: 100%;
+  width: 30px;
+}
+
+.user-avatar-medium {
+  border-radius: 100%;
+  width: 40pt;
+  height: 40pt;
+  display: flex;
+  padding: 5pt;
+}
+
+
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+  display: flex;
+  align-items: center;
+  height: 94px;
 }

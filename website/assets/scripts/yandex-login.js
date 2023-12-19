@@ -1,27 +1,4 @@
 
-function yandexWindow()
-{
-  if (document.cookie.includes('loginJS')) {
-    const response = fetch("https://openworkshop.su/api/accounts/authorization/logout", {
-      method: "POST"
-    });
-
-    banner_error_a = {
-      title: 'Выход',
-      text: 'Вы вышли из аккаунта',
-      theme: 'dark',
-      autohide: true,
-      interval: 6000
-    }
-
-    window.setTimeout(() => {
-      new Toast(banner_error_a)
-    }, 1000);
-  } else {
-    yandexAuthorization()
-  }
-}
-  
 function yandexAuthorization()
 {
     var x = screen.width/2 - 400/2;
@@ -55,18 +32,7 @@ function yandexAuthorization()
 
         win.close()
 
-        banner_error_a = {
-          title: 'Авторизован!',
-          text: 'Вы успешно авторизовались в Open Workshop :)',
-          theme: 'dark',
-          autohide: true,
-          interval: 6000
-        }
-
-        window.setTimeout(() => {
-          new Toast(banner_error_a)
-        }, 1000);
-
+        location.reload();
         clearInterval(interval);
       }
     }, 100);

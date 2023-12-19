@@ -1,5 +1,6 @@
 from flask import request, make_response
 import aiohttp
+import json
 
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"
@@ -8,13 +9,13 @@ ACCOUNTS_ADDRESS = "http://127.0.0.1:7070"
 
 
 
-async def get_user_req():
+async def get_user_req(avatar_url:bool = True):
     # Получаем куку пользователя
     access_cookie = request.cookies.get('accessToken')
     refresh_cookie = request.cookies.get('refreshToken')
     user_id = request.cookies.get('userID')
 
-    if not refresh_cookie and not access_cookie: return False
+    if not user_id or (not refresh_cookie and not access_cookie): return False
 
     url = ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}?general=true&rights=true&private=false"
     headers = {
@@ -42,8 +43,15 @@ async def get_user_req():
             new_user_id = response.cookies.get('userID')
             if new_user_id: new_user_id = [new_user_id.value, dict(new_user_id.items())]
 
-            user_response = await response.text()
+            user_response = json.loads(await response.text())
 
+    # Доп. обработки
+    if type(user_response) is dict:
+        if avatar_url:
+            if len(user_response['general']['avatar_url']) <= 0:
+                user_response['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
+            elif user_response['general']['avatar_url'] == "local":
+                user_response['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
     return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response}
 
