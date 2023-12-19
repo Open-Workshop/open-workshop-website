@@ -482,6 +482,7 @@ nav {
 nav > ul {
   float: left;
   position: relative;
+  margin-right: 5pt;
 }
 
 nav li {
