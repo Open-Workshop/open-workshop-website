@@ -11,7 +11,7 @@ function yandexAuthorization()
 
     const interval = setInterval(() => {
       if (win.closed) {
-        console.log("Окно закрыто :(")
+        console.log("Окно закрыто :(");
 
         banner_error_a = {
           title: 'Авторизация прервана',
@@ -19,7 +19,7 @@ function yandexAuthorization()
           theme: 'dark',
           autohide: true,
           interval: 6000
-        }
+        };
 
         window.setTimeout(() => {
           new Toast(banner_error_a)
@@ -28,9 +28,9 @@ function yandexAuthorization()
         clearInterval(interval);
       }
       if (document.cookie.includes('loginJS')) {
-        console.log("Кука появилась!")
+        console.log("Кука появилась!");
 
-        win.close()
+        win.close();
 
         location.reload();
         clearInterval(interval);
