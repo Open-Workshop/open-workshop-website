@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Согласие с правилами сервиса</title>
+        <link href="/assets/styles/style.css" rel="stylesheet"/>
+    </head>
+    <body style="background: #121230; display: flex; flex-direction: column; height: 100%; align-items: center;">
+        <div style="margin-top: 60pt;" style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('legal-checkbox').click();">
+            <input class="input-checkbox" onchange="toggleLink()" id="legal-checkbox" type="checkbox">
+            <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Я согласен с <a class="tag-link-blue" onclick="toLegal('/legal/site-rules')" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и<br>на <a class="tag-link-blue" onclick="toLegal('/legal/privacy-policy')" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
+        </div>
+        <a style="margin-top: 5pt;" id="continue-link" class="disabled tag-link" href="{{ link }}" disabled>Продолжить</a>
+        
+        <script>
+            function toggleLink() {
+                const checkbox = document.getElementById('legal-checkbox');
+                const link = document.getElementById('continue-link');
+
+                if (checkbox.checked) {
+                    link.classList.remove("disabled")
+                } else {
+                    link.classList.add("disabled")
+                };
+            }
+            function toLegal(legal) {
+                document.getElementById('legal-checkbox').click();
+                document.cookie = "popupLink="+legal+"; path=/";
+            }
+        </script>
+        <style>
+            a.disabled {
+                pointer-events: none;
+                color: #ccc;
+            }
+            .tag-link-blue {
+                cursor: help;
+            }
+        </style>
+    </body>
+</html>

@@ -107,7 +107,7 @@ async def legal_cookies():
 
     # Пробуем отрендерить страницу
     try:
-        page_html = render_template("cookies.html", user_profile=user_p)
+        page_html = render_template("legal/cookies.html", user_profile=user_p)
     except:
         page_html = ""
 
@@ -126,7 +126,45 @@ async def legal_license():
 
     # Пробуем отрендерить страницу
     try:
-        page_html = render_template("license.html", user_profile=user_p)
+        page_html = render_template("legal/license.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
+
+@app.route('/legal/site-rules')
+@app.route('/legal/site-rules.html')
+async def site_rules():
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("legal/site-rules.html", user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
+
+@app.route('/legal/copyright')
+@app.route('/legal/copyright.html')
+async def copyright():
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("legal/copyright.html", user_profile=user_p)
     except:
         page_html = ""
 
@@ -145,7 +183,7 @@ async def legal_privacy_policy():
 
     # Пробуем отрендерить страницу
     try:
-        page_html = render_template("privacy-policy.html", user_profile=user_p)
+        page_html = render_template("legal/privacy-policy.html", user_profile=user_p)
     except:
         page_html = ""
 
@@ -327,7 +365,7 @@ async def user(user_id):
     if len(info[0]['general']['avatar_url']) <= 0:
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
-        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+        info[0]['general']['avatar_url'] = "https://openworkshop.su"+f"/api/accounts/profile/avatar/{user_id}"
 
 
     # Определяем права
@@ -365,6 +403,10 @@ async def user(user_id):
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
 
+
+@app.route('/api/login-popup/')
+async def login_popup():
+    return render_template("login-popup.html", link=request.args.get('f'))
 
 async def remove_words_short(text, words):
     for word in words:

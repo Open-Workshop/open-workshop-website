@@ -81,8 +81,9 @@
           {% if not user_profile %}
           <li id="login-pc" class="dropdown">
             <a class="a-top" translate="no">Вход</a>
-            <ul>
-              <img onclick="yandexAuthorization()" style="width: 100%; cursor: pointer;" src="/assets/images/yandex.svg" alt="">
+            <ul style="width: 40pt; padding-left: 2pt; padding-right: 2pt;">
+              <img onclick="serviceAuthorization('/api/accounts/authorization/yandex/link')" style="width: 100%; cursor: pointer;" src="/assets/images/yandex.svg" alt="Yandex logo">
+              <img onclick="serviceAuthorization('/api/accounts/authorization/google/link')" style="width: 100%; cursor: pointer;" src="/assets/images/google.svg" alt="Google logo">
             </ul>
           </li>
           {% endif %}
@@ -146,7 +147,8 @@
       </div>
       <div class="menu__links">
         {% if not user_profile %}
-        <a onclick="yandexAuthorization()">Войти через Яндекс</a>
+        <a onclick="serviceAuthorization('/api/accounts/authorization/yandex/link')">Войти с Яндекс</a>
+        <a onclick="serviceAuthorization('/api/accounts/authorization/google/link')">Войти с Google</a>
         {% endif %}
         {% if user_profile %}
         <a onclick="logon()">Выйти</a>
@@ -227,7 +229,7 @@
         </div>
     </footer>
 
-    <script src="/assets/scripts/yandex-login.js"></script>
+    <script src="/assets/scripts/login.js"></script>
 
 </body>
 </html>
