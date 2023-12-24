@@ -7,9 +7,7 @@
           <div class="wrapper" style="width: 100%;">
             <div>
               <div class="user-avatar-box">
-                <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar{% if user_data.general.editable.avatar %} user-avatar-e{% endif %}" />
-
-                <img class="user-edit-icon{% if user_data.general.editable.avatar %} user-edit-icon-e{% endif %}" src="/assets/images/icon-edit.svg" alt="">
+                <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
               </div>
 
               {% if user_data.general.mute %}
@@ -24,7 +22,16 @@
         <script src="/assets/scripts/user.js"></script>
 
         <div style="width: 100%">
-          <h1 id="mod-name-title" style="padding-bottom: 3pt;" translate="no">{{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %}</h1>
+          <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
+            <div>
+              {{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %} 
+            </div>
+            {% if user_data.general.editable.any %}
+            <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear">
+              <img src="/assets/images/settings.svg" alt="Перейти в настройки">
+            </a>
+            {% endif %}
+          </h1>
           <h4 id="mod-tags-title">
               <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
               <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">

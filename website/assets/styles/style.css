@@ -2291,3 +2291,18 @@ td {
     width: 100%;
   }
 }
+
+.user-setting-gear {
+  width: 30pt; 
+  height: 30pt; 
+  border-radius: 100%;
+}
+.user-setting-gear > img {
+  width: 30pt;
+  transition: all 0.5s;
+  cursor: pointer;
+  border-radius: 100%;
+}
+.user-setting-gear:hover > img {
+  rotate: 180deg;
+}

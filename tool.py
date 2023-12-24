@@ -44,6 +44,7 @@ async def get_user_req(avatar_url:bool = True):
             if new_user_id: new_user_id = [new_user_id.value, dict(new_user_id.items())]
 
             user_response = json.loads(await response.text())
+            status_code = response.status
 
     # Доп. обработки
     if type(user_response) is dict:
@@ -53,7 +54,32 @@ async def get_user_req(avatar_url:bool = True):
             elif user_response['general']['avatar_url'] == "local":
                 user_response['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-    return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response}
+    return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response, "status_code": status_code}
+
+async def check_access_user(user_req:dict, user_id:int):
+    access = {"avatar": False, "username": False, "about": False, "mute": False, "any": False}
+    user_p = False
+
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+        rights = user_req["result"]["rights"]
+        is_admin = rights["admin"]
+        in_mute = user_req["result"]["general"]["mute"]
+
+        if int(user_req["id"]) == user_id:  # Пользователь просит свой профиль
+            if not in_mute or is_admin:
+                access["avatar"] = rights["change_avatar"] or is_admin
+                access["username"] = rights["change_username"] or is_admin
+                access["about"] = rights["change_about"] or is_admin
+        else:  # Пользователь просит чужой профиль
+            access["avatar"] = is_admin
+            access["username"] = is_admin
+            access["about"] = is_admin
+            access["mute"] = (rights["mute_users"] and not in_mute) or is_admin
+
+        access["any"] = access.avatar or access.username or access.about or access.mute
+
+    return user_p, access
 
 async def standart_response(user_req:dict, page:str):
     # Создаём ответ
@@ -61,6 +87,10 @@ async def standart_response(user_req:dict, page:str):
 
     # Устанавливаем  куки
     if user_req:
+        if user_req["status_code"] == 403:
+            for key_c in ['accessToken', 'refreshToken', 'loginJS', 'accessJS', 'userID']:
+                resp.set_cookie(key_c, '', expires=0, secure=True, samesite="lax")
+
         a = user_req["access"]
         if a: resp.set_cookie(key='accessToken', value=str(a[0]), max_age=int(a[1].get("max-age", 2100)),
                               secure=bool(a[1].get("secure", True)), httponly=bool(a[1].get("httponly", True)),

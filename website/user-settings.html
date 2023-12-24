@@ -1,0 +1,22 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+  <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
+    <article style="max-width: 500pt; width: 100%;">
+        ...
+    </article>
+  </div>
+{% endblock %}
+
+{% block title %}
+{{ user_data.general.username }} - user settings
+{% endblock %}
+
+{% block description %}
+Страница настроек пользователя {{ user_data.general.username }} в Open Workshop
+{% endblock %}
+
+
+{% block metaimage %}
+{{ user_data.general.avatar_url }}
+{% endblock %}
+

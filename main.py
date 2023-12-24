@@ -2,6 +2,7 @@ from flask import Flask, render_template, send_from_directory, request, make_res
 from babel import dates
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import insert, delete
+import tool
 from sql_client import Page, engine
 from pathlib import Path
 from tool import get_user_req, standart_response, SERVER_ADDRESS, ACCOUNTS_ADDRESS
@@ -370,30 +371,62 @@ async def user(user_id):
 
     # Определяем права
     user_req = await get_user_req()
-    info[0]['general']['editable'] = {"avatar": False, "username": False, "about": False, "mute": False}
 
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-        rights = user_req["result"]["rights"]
-        is_admin = rights["admin"]
-        in_mute = user_req["result"]["general"]["mute"]
-
-        if int(user_req["id"]) == user_id: #Пользователь просит свой профиль
-            if not in_mute or is_admin:
-                info[0]['general']['editable']["avatar"] = rights["change_avatar"] or is_admin
-                info[0]['general']['editable']["username"] = rights["change_username"] or is_admin
-                info[0]['general']['editable']["about"] = rights["change_about"] or is_admin
-        else: #Пользователь просит чужой профиль
-            info[0]['general']['editable']["avatar"] = is_admin
-            info[0]['general']['editable']["username"] = is_admin
-            info[0]['general']['editable']["about"] = is_admin
-            info[0]['general']['editable']["mute"] = (rights["mute_users"] and not in_mute) or is_admin
-
-    print(user_p)
+    user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
     try:
         page_html = render_template("user.html", user_data=info[0],
+                                   is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
+                                   user_profile=user_p)
+    except:
+        page_html = ""
+
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
+
+@app.route('/user/<int:user_id>/settings')
+async def user_settings(user_id):
+    launge = "ru"
+
+    urls = [
+        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}",
+    ]
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url))
+    info = await asyncio.gather(*tasks)
+
+
+    if type(info[0]) is str:
+        return await page_not_found(-1)
+
+    # Определяем содержание страницы
+    if info[0]["general"]["mute"]:
+        input_date = datetime.datetime.fromisoformat(info[0]["general"]["mute"])
+        info[0]["general"]["mute_js"] = info[0]["general"]["mute"]
+        info[0]["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
+
+    input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
+    info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
+    info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+
+
+    if len(info[0]['general']['avatar_url']) <= 0:
+        info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
+    elif info[0]['general']['avatar_url'] == "local":
+        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+
+
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
+
+    print(user_p, info[0]['general']['editable'])
+
+    try:
+        page_html = render_template("user-settings.html", user_data=info[0],
                                    is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
                                    user_profile=user_p)
     except:
