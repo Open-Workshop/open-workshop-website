@@ -77,7 +77,7 @@ async def check_access_user(user_req:dict, user_id:int):
             access["about"] = is_admin
             access["mute"] = (rights["mute_users"] and not in_mute) or is_admin
 
-        access["any"] = access.avatar or access.username or access.about or access.mute
+        access["any"] = access["avatar"] or access["username"] or access["about"] or access["mute"]
 
     return user_p, access
 
