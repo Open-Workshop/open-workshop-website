@@ -11,7 +11,39 @@
             <input class="input-checkbox" onchange="toggleLink()" id="legal-checkbox" type="checkbox">
             <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Я согласен с <a class="tag-link-blue" onclick="toLegal('/legal/site-rules')" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и<br>на <a class="tag-link-blue" onclick="toLegal('/legal/privacy-policy')" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
         </div>
-        <a style="margin-top: 5pt;" id="continue-link" class="disabled tag-link" href="{{ link }}" disabled>Продолжить</a>
+        
+        {% if russia %}
+        <div style="background: #2a2a2a; padding: 3pt; border-radius: 5pt; margin-top: 5pt;">
+            <h2>Вы находитесь на территории РФ?</h2>
+            <div style="cursor: pointer;" class="independence-mods-selector" onclick="document.getElementById('yes-russia-checkbox').click();">
+                <input class="input-checkbox" onchange="fromRussia(true)" id="yes-russia-checkbox" type="checkbox">
+                <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Да</label>
+            </div>
+            <div style="cursor: pointer;" class="independence-mods-selector" onclick="document.getElementById('no-russia-checkbox').click();">
+                <input class="input-checkbox" onchange="fromRussia(false)" id="no-russia-checkbox" type="checkbox">
+                <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Нет</label>
+            </div>
+        </div>
+
+        <script>
+            function fromRussia(mode) {
+                document.getElementById('yes-russia-checkbox').checked = mode;
+                document.getElementById('no-russia-checkbox').checked = !mode;
+                
+                document.cookie = "fromRussia="+mode+"; path=/; max-age=2592000; secure; samesite=lax;";
+                
+                document.getElementById('continue-link').classList.remove("ru-disabled");
+            }
+        </script>
+        <style>
+            a.ru-disabled {
+                pointer-events: none;
+                color: #ccc;
+            }
+        </style>
+        {% endif %}
+
+        <a style="margin-top: 5pt;" id="continue-link" class="{% if russia %}ru-disabled {% endif %}disabled tag-link" href="{{ link }}" disabled>Продолжить</a>
         
         <script>
             function toggleLink() {

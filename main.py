@@ -439,7 +439,7 @@ async def user_settings(user_id):
 
 @app.route('/api/login-popup/')
 async def login_popup():
-    return render_template("login-popup.html", link=request.args.get('f'))
+    return render_template("login-popup.html", link=request.args.get('f'), russia=not bool(request.cookies.get('fromRussia')))
 
 async def remove_words_short(text, words):
     for word in words:
