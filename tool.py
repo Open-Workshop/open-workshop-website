@@ -57,7 +57,7 @@ async def get_user_req(avatar_url:bool = True):
     return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response, "status_code": status_code}
 
 async def check_access_user(user_req:dict, user_id:int):
-    access = {"avatar": False, "username": False, "about": False, "mute": False, "any": False}
+    access = {"avatar": False, "username": False, "about": False, "mute": False, "grade": False, "any": False}
     user_p = False
 
     if user_req and type(user_req["result"]) is dict:
@@ -65,6 +65,8 @@ async def check_access_user(user_req:dict, user_id:int):
         rights = user_req["result"]["rights"]
         is_admin = rights["admin"]
         in_mute = user_req["result"]["general"]["mute"]
+
+        access["grade"] = is_admin
 
         if int(user_req["id"]) == user_id:  # Пользователь просит свой профиль
             if not in_mute or is_admin:
@@ -77,7 +79,7 @@ async def check_access_user(user_req:dict, user_id:int):
             access["about"] = is_admin
             access["mute"] = (rights["mute_users"] and not in_mute) or is_admin
 
-        access["any"] = access["avatar"] or access["username"] or access["about"] or access["mute"]
+        access["any"] = access["avatar"] or access["username"] or access["about"] or access["mute"] or access["grade"]
 
     return user_p, access
 

@@ -35,7 +35,8 @@
           <h4 id="mod-tags-title">
               <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
               <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
-                {% if user_data.general.reputation < 0 %}👿{% endif %}{% if user_data.general.reputation > 0 %}😇{% endif %}
+                {% if user_data.general.reputation < 0 %}👿{% endif %}
+                {% if user_data.general.reputation > 0 %}😇{% endif %}
                 <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
                 {% if user_data.general.reputation == 0 %}👀{% endif %}
               </div>

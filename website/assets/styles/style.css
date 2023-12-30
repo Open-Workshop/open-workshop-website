@@ -764,9 +764,15 @@ nav li li a:hover {
   display: flex;
   align-items: center;
   cursor: pointer;
+
+  transition: all 0.2s;
+  box-shadow:0px 0px 1px 1px rgb(161, 161, 161);
+}
+.independence-mods-selector:hover {
+  box-shadow:0px 0px 3px 3px rgb(158, 158, 158);
 }
 .independence-mods-selector > label {
-  font-size: 12pt;
+  font-size: 15pt;
 }
 
 .input-checkbox {
@@ -2107,7 +2113,7 @@ td {
   align-items: center;
 }
 
-.user-container {
+.user-container .user-container-settings {
   margin-left: auto;
   margin-right: auto;
   width: 100%;
@@ -2150,33 +2156,19 @@ td {
   width: 50pt;
 }
 
-
-@media (min-width: 410px) {
-  .user-container {
+@media (min-width: 680px) {
+  .user-container-settings {
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
   }
-  .user-left-bar {
-    margin-right: 5pt;
-  }
-  .user-avatar {
-    max-width: 250px;
-    min-width: 150px;
-  }
 }
-@media (max-width: 409px) {
-  .user-container {
+@media (max-width: 679px) {
+  .user-container-settings {
     display: block;
   }
-  .user-avatar {
-    min-width: 100%;
-  }
-  .user-mute-profile {
-    margin-bottom: 3pt;
-    font-size: 17pt;
-  }
 }
+
 
 .user-avatar-mini {
   border-radius: 100%;
@@ -2200,6 +2192,153 @@ td {
   align-items: center;
   height: 94px;
 }
+
+
+.edit-about-settings {
+  min-width: 100%;
+  resize: none;
+  background-color: rgba(0, 0, 0, 0.3);
+  margin: 4pt;
+  border-radius: 10pt;
+  padding: 10pt;
+  color: white;
+
+  line-height: 1.5;
+  font-family: sans-serif;
+  font-size: 16px;
+  color: #fff;
+
+  transition: box-shadow 0.2s;
+  box-shadow:0px 0px 0px 0px rgb(165, 165, 165);
+}
+.edit-about-settings:hover {
+  box-shadow:0px 0px 2px 2px rgb(165, 165, 165);
+}
+.edit-about-settings:focus {
+  box-shadow:0px 0px 4px 4px rgb(165, 165, 165);
+}
+
+.edit-username {
+  border: 1pt solid;
+  border-radius: 5px;
+  font-size: 20pt;
+  width: 100pt;
+  background: #00000000;
+  color: rgb(203, 203, 203);
+  padding: 3pt;
+  min-width: 40pt;
+  transition: box-shadow 0.2s;
+  box-shadow:0px 0px 0px 0px rgb(165, 165, 165);
+}
+.edit-username:hover {
+  box-shadow:0px 0px 2px 2px rgb(165, 165, 165);
+}
+.edit-username:focus {
+  box-shadow:0px 0px 4px 4px rgb(165, 165, 165);
+}
+
+.grade-edit {
+  padding: 3pt;
+  margin: 2pt;
+  font-size: 20pt;
+  transition: box-shadow 0.2s;
+  box-shadow:0px 0px 0px 0px rgb(211, 0, 0);
+}
+.grade-edit:hover {
+  box-shadow:0px 0px 2px 2px rgb(211, 0, 0);
+}
+.grade-edit:focus {
+  box-shadow:0px 0px 4px 4px rgb(190, 0, 0);
+}
+
+.limit {
+  background: #700000;
+}
+
+.navig-user-setting-menu {
+  background: #191919ed;
+  height: 100%;
+  margin: 3pt;
+  padding: 3pt;
+  border-radius: 4pt;
+  display: flex;
+  flex-direction: column;
+}
+.navig-user-setting-menu > button {
+  border-radius: 5pt;
+  border: none;
+  font-size: 15pt;
+  background: chocolate;
+  color: white;
+  font-family: cursive;
+  padding-bottom: 2pt;
+  font-variant: all-small-caps;
+  margin-top: 2pt;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  box-shadow:0px 0px 0px 0px chocolate;
+} 
+.navig-user-setting-menu > h2 {
+  color: white;
+} 
+.navig-user-setting-menu > button:hover {
+  background: #b65b1a;
+  box-shadow:0px 0px 1px 1px rgb(184, 92, 26);
+} 
+.navig-user-setting-menu > button:active {
+  background: #a15117;
+  box-shadow:0px 0px 2px 2px rgb(167, 83, 23);
+}
+
+
+
+.user-settings-cont {
+  display: flex;
+}
+@media (max-width: 439px) {
+  .user-settings-cont {
+    flex-direction: column;
+    align-items: center;
+  }
+  .user-settings-cont {
+    width: 100%;
+  }
+  .user-container {
+    display: block;
+  }
+  .user-avatar {
+    min-width: 100%;
+  }
+  .user-mute-profile {
+    margin-bottom: 3pt;
+    font-size: 17pt;
+  }
+  .edit-about-settings {
+    font-size: 15pt;
+  }
+  input.date{
+    font-size: 100%;
+  }
+}
+@media (min-width: 440px) {
+  .user-settings-cont {
+    flex-direction: row;
+  }
+  .user-container {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+  }
+  .user-left-bar {
+    margin-right: 5pt;
+  }
+  .user-avatar {
+    max-width: 250px;
+    min-width: 150px;
+  }
+}
+
 
 @media only screen and (min-width: 601px) {
   nav {

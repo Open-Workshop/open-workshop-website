@@ -1,9 +1,271 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
-    <article style="max-width: 500pt; width: 100%;">
-        ...
+    {% if user_profile.any %}
+    <article class="user-settings-cont">
+        <div class="navig-user-setting-menu">
+          <h2>Навигация</h2>
+          <button>Профиль</button>
+          <button style="margin-top: 30pt;" onclick="saveProfile()">Сохранить</button>
+        </div>
+        <div style="width: 100%;">
+          <div class="user-container-settings">
+            <div class="user-left-bar">
+              <div class="wrapper" style="width: 100%;">
+                <div class="user-avatar-box">
+                    <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_profile.avatar %} user-avatar-e{% endif %}"{% if user_profile.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
+      
+                    {% if user_profile.avatar %}
+                    <img class="user-edit-icon user-edit-icon-e" src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
+                    {% endif %}
+                    <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
+                </div>
+                {% if user_profile.avatar %}
+                <div style="cursor: pointer; height: auto;" class="independence-mods-selector" onclick="document.getElementById('reset-avatar-checkbox').click();">
+                  <input class="input-checkbox" style="margin: 4pt;" onchange="" id="reset-avatar-checkbox" type="checkbox">
+                  <label style="margin-left: 2pt; cursor: pointer; margin-top: 1pt;">Сбросить аватар</label>
+                </div>
+                {% endif %}
+                
+                {% if user_profile.avatar %}
+                <div class="medium-6 columns">
+                  <input style="width: 95%;" id="mute-datetime" type="datetime-local" min="2017-06-01T08:30" class='date'>
+                </div>
+                <style>
+                  input.date{
+                    margin: 5pt;
+                    border-radius: 5px;
+                    height: auto;
+                    transition: all ease 200ms;
+                    box-shadow: 0px 0px 3px 3px #4a4a4a;
+                    background: #313131;
+                    color: white;
+                  }
+
+                  input.date:hover{
+                    box-shadow:0px 0px 5px 5px rgb(165, 165, 165);
+                  }
+                </style>
+                {% endif %}
+
+                <script>
+                  {% if user_profile.avatar %}
+                  document.getElementById('mute-datetime').min = new Date().toLocaleString("sv-SE", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit"
+                  }).replace(" ", "T");
+                  {% endif %}
+
+                  const input = document.getElementById('file-select-avatar');
+                  const img = document.getElementById('user-avatar-img');
+
+                  input.addEventListener('change', function() {
+                    const file = input.files[0];
+
+                    //Initiate the JavaScript Image object.
+                    const reader = new FileReader();
+
+                    //Read the contents of Image File.
+                    reader.readAsDataURL(file);
+                    reader.onload = function (e) {
+
+                      var image = new Image();
+
+                      //Set the Base64 string return from FileReader as source.
+                      image.src = e.target.result;
+
+                      //Validate the File Height and Width.
+                      image.onload = function () {
+                        var height = this.height;
+                        var width = this.width;
+                        
+                        if (Math.abs(width / height - 1) > 0.05) {
+                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                          img.src = img.getAttribute("startdata")
+                          banner_error_a = {
+                            title: 'Неправильный аватар!',
+                            text: 'Аватар должен быть квадратным!',
+                            theme: 'warning',
+                            autohide: true,
+                            interval: 6000
+                          };
+
+                          new Toast(banner_error_a)
+                        } else if (width < 60 || height < 60) {     // Проверяем разрешение < 60px
+                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                          img.src = img.getAttribute("startdata")
+                          banner_error_a = {
+                            title: 'Неправильный аватар!',
+                            text: 'Слишком маленькое разрешение аватара!',
+                            theme: 'warning',
+                            autohide: true,
+                            interval: 6000
+                          };
+
+                          new Toast(banner_error_a)
+                        } else if (file.size > 2 * 1024 * 1024) {
+                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                          img.src = img.getAttribute("startdata")
+                          banner_error_a = {
+                            title: 'Неправильный аватар!',
+                            text: 'Аватар не должен быть тяжелее 2МБ!',
+                            theme: 'warning',
+                            autohide: true,
+                            interval: 6000
+                          };
+
+                          new Toast(banner_error_a)
+                        } else {
+                          img.src = e.target.result;
+                        }
+                      };
+                    }
+                  });
+                </script>
+              </div>
+            </div>
+    
+            <div style="width: 100%">
+              <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
+                <div {% if user_profile.grade or user_profile.username %}style="display: flex; align-items: center;"{% endif %}>
+                  {% if not user_profile.username %}
+                  {{ user_data.general.username }}
+                  {% endif %}
+
+                  {% if user_profile.username %}
+                  <input class="edit-username" maxlength="18" startdata="{{ user_data.general.username }}" id="username" value="{{ user_data.general.username }}" name="username" oninput="usernameEditEvent()">
+                  {% endif %}
+
+                  {% if user_profile.grade %}
+                  <input id="grade" placeholder="Звание..." maxlength="18" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" class="tag-link-red grade-edit" value="{{ user_data.general.grade }}" oninput="gradeEditEvent()">
+                  {% endif %}
+                  {% if not user_profile.grade and user_data.general.grade|length >0 %}
+                  <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
+                  {% endif %}
+
+                  <script>
+                    const usernameElement = document.getElementById('username');
+
+                    usernameEditEvent()
+                    function usernameEditEvent() {
+                      if (usernameElement) {
+                        const myText = usernameElement.value;
+
+                        if (myText.length >= 18 || myText.length <= 1) {
+                          usernameElement.classList.add('limit');
+                        } else {
+                          usernameElement.classList.remove('limit')
+                        }
+
+                        usernameElement.style.width = 0;
+                        usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
+                      }
+                    }
+                    
+                    const gradeElement = document.getElementById('grade');
+
+                    gradeEditEvent()
+                    function gradeEditEvent() {
+                      if (gradeElement) {
+                        const myText = gradeElement.value;
+
+                        gradeElement.style.width = 0;
+                        gradeElement.style.width = gradeElement.scrollWidth+5 + "px";
+                      }
+                    }
+                  </script>
+                </div>
+              </h1>
+              <h4 id="mod-tags-title">
+                  <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
+                  <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
+                    {% if user_data.general.reputation < 0 %}👿{% endif %}
+                    {% if user_data.general.reputation > 0 %}😇{% endif %}
+                    <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
+                    {% if user_data.general.reputation == 0 %}👀{% endif %}
+                  </div>
+    
+                  {% if user_data.general.author_mods > 0 %}
+                  <a title="Автор {{ user_data.general.author_mods }} модов" class="tag-link-orange" translate="no">📤{{ user_data.general.author_mods }}</a>
+                  {% endif %}
+    
+                  {% if user_data.general.comments > 0 %}
+                  <a title="Оставил {{ user_data.general.comments }} комментариев" class="tag-link-orange" translate="no">✏️{{ user_data.general.comments }}</a>
+                  {% endif %}
+              </h4>
+    
+              {% if user_profile.about %}
+              <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{{ user_data.general.about }}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{{ user_data.general.about }}</textarea>
+              {% endif %}
+              {% if not user_profile.about and user_data.general.about_enable %}
+              <article id="mod-description">{{ user_data.general.about }}</article>
+              {% endif %}
+
+              <script>
+                const tx = document.getElementsByTagName("textarea");
+                for (let i = 0; i < tx.length; i++) {
+                  tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+                  tx[i].addEventListener("input", OnInput, false);
+                }
+
+                function OnInput() {
+                  this.style.height = 0;
+                  this.style.height = (this.scrollHeight) + "px";
+
+                  console.log(this.value.length)
+                  if (this.value.length > 512) {
+                    this.classList.add('limit');
+                  } else {
+                    this.classList.remove('limit')
+                  }
+                }
+              </script>
+            </div>
+          </div>
+        </div>
+        <script>
+          function saveProfile() {
+            let data = {}
+
+            const username = document.getElementById('username');
+            if (username && username.value != username.getAttribute("startdata")) {
+              data["username"] = username.value
+            }
+            const grade = document.getElementById('grade');
+            if (grade && grade.value != grade.getAttribute("startdata")) {
+              data["grade"] = grade.value
+            }
+            const about = document.getElementById('mod-description');
+            if (about && about.value != about.getAttribute("startdata")) {
+              data["about"] = about.value
+            }
+            const input = document.getElementById('file-select-avatar');
+            if (input && input.files[0]) {
+              data["avatar"] = input.files[0]
+            }
+            const emptyAvatar = document.getElementById('reset-avatar-checkbox');
+            if (emptyAvatar && emptyAvatar.checked) {
+              data["empty_avatar"] = emptyAvatar.checked
+            }
+            const mute = document.getElementById('mute-datetime');
+            if (mute && mute.value) {
+              data["mute"] = mute.value
+            }
+
+            console.log(data)
+          }
+        </script>
     </article>
+    {% endif %}
+    {% if not user_profile.any %}
+    <article class="user-settings-cont">
+      <h1 style="text-align: center;">Вы не имеете права редактировать этот профиль!</h1>
+    </article>
+    {% endif %}
   </div>
 {% endblock %}
 

@@ -366,7 +366,7 @@ async def user(user_id):
     if len(info[0]['general']['avatar_url']) <= 0:
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
-        info[0]['general']['avatar_url'] = "https://openworkshop.su"+f"/api/accounts/profile/avatar/{user_id}"
+        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
 
     # Определяем права
@@ -406,6 +406,12 @@ async def user_settings(user_id):
         input_date = datetime.datetime.fromisoformat(info[0]["general"]["mute"])
         info[0]["general"]["mute_js"] = info[0]["general"]["mute"]
         info[0]["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
+
+    if len(info[0]['general']['about']) <= 0:
+        info[0]['general']['about_enable'] = False
+        info[0]['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
+    else:
+        info[0]['general']['about_enable'] = True
 
     input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
     info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
