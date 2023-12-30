@@ -199,7 +199,7 @@
               </h4>
     
               {% if user_access.about %}
-              <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{{ user_data.general.about }}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{{ user_data.general.about }}</textarea>
+              <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}</textarea>
               {% endif %}
               {% if not user_access.about and user_data.general.about_enable %}
               <article id="mod-description">{{ user_data.general.about }}</article>
