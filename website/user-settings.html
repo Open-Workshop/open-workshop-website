@@ -1,7 +1,7 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
-    {% if user_profile.any %}
+    {% if user_access.any %}
     <article class="user-settings-cont">
         <div class="navig-user-setting-menu">
           <h2>Навигация</h2>
@@ -13,21 +13,21 @@
             <div class="user-left-bar">
               <div class="wrapper" style="width: 100%;">
                 <div class="user-avatar-box">
-                    <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_profile.avatar %} user-avatar-e{% endif %}"{% if user_profile.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
+                    <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_access.avatar %} user-avatar-e{% endif %}"{% if user_access.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
       
-                    {% if user_profile.avatar %}
+                    {% if user_access.avatar %}
                     <img class="user-edit-icon user-edit-icon-e" src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
                     {% endif %}
                     <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
                 </div>
-                {% if user_profile.avatar %}
+                {% if user_access.avatar %}
                 <div style="cursor: pointer; height: auto;" class="independence-mods-selector" onclick="document.getElementById('reset-avatar-checkbox').click();">
                   <input class="input-checkbox" style="margin: 4pt;" onchange="" id="reset-avatar-checkbox" type="checkbox">
                   <label style="margin-left: 2pt; cursor: pointer; margin-top: 1pt;">Сбросить аватар</label>
                 </div>
                 {% endif %}
                 
-                {% if user_profile.avatar %}
+                {% if user_access.avatar %}
                 <div class="medium-6 columns">
                   <input style="width: 95%;" id="mute-datetime" type="datetime-local" min="2017-06-01T08:30" class='date'>
                 </div>
@@ -49,7 +49,7 @@
                 {% endif %}
 
                 <script>
-                  {% if user_profile.avatar %}
+                  {% if user_access.avatar %}
                   document.getElementById('mute-datetime').min = new Date().toLocaleString("sv-SE", {
                       year: "numeric",
                       month: "2-digit",
@@ -131,19 +131,19 @@
     
             <div style="width: 100%">
               <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
-                <div {% if user_profile.grade or user_profile.username %}style="display: flex; align-items: center;"{% endif %}>
-                  {% if not user_profile.username %}
+                <div {% if user_access.grade or user_access.username %}style="display: flex; align-items: center;"{% endif %}>
+                  {% if not user_access.username %}
                   {{ user_data.general.username }}
                   {% endif %}
 
-                  {% if user_profile.username %}
+                  {% if user_access.username %}
                   <input class="edit-username" maxlength="18" startdata="{{ user_data.general.username }}" id="username" value="{{ user_data.general.username }}" name="username" oninput="usernameEditEvent()">
                   {% endif %}
 
-                  {% if user_profile.grade %}
+                  {% if user_access.grade %}
                   <input id="grade" placeholder="Звание..." maxlength="18" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" class="tag-link-red grade-edit" value="{{ user_data.general.grade }}" oninput="gradeEditEvent()">
                   {% endif %}
-                  {% if not user_profile.grade and user_data.general.grade|length >0 %}
+                  {% if not user_access.grade and user_data.general.grade|length >0 %}
                   <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
                   {% endif %}
 
@@ -198,10 +198,10 @@
                   {% endif %}
               </h4>
     
-              {% if user_profile.about %}
+              {% if user_access.about %}
               <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{{ user_data.general.about }}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{{ user_data.general.about }}</textarea>
               {% endif %}
-              {% if not user_profile.about and user_data.general.about_enable %}
+              {% if not user_access.about and user_data.general.about_enable %}
               <article id="mod-description">{{ user_data.general.about }}</article>
               {% endif %}
 
@@ -261,7 +261,7 @@
         </script>
     </article>
     {% endif %}
-    {% if not user_profile.any %}
+    {% if not user_access.any %}
     <article class="user-settings-cont">
       <h1 style="text-align: center;">Вы не имеете права редактировать этот профиль!</h1>
     </article>
