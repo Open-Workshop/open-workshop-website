@@ -244,7 +244,7 @@
             }
             const about = document.getElementById('mod-description');
             if (about && about.value != about.getAttribute("startdata")) {
-              formData.append('about', about.value);
+              url += "about="+about.value+"&"
             }
             const input = document.getElementById('file-select-avatar');
             if (input && input.files[0]) {
