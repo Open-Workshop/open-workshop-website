@@ -228,7 +228,7 @@
           </div>
         </div>
         <script>
-          function saveProfile() {
+          async function saveProfile() {
             let data = {}
 
             url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
@@ -275,7 +275,7 @@
                 console.log('Код ответа не равен 202');
                 banner_error_a = {
                   title: 'Ошибка',
-                  text: response.text(),
+                  text: await response.text(),
                   theme: 'warning',
                   autohide: true,
                   interval: 6000
