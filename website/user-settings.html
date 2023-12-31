@@ -249,7 +249,10 @@
             const input = document.getElementById('file-select-avatar');
             if (input && input.files[0]) {
               formData.append('avatar', input.files[0]);
+            } else {
+              formData.append('avatar', '');
             }
+
             const emptyAvatar = document.getElementById('reset-avatar-checkbox');
             if (emptyAvatar && emptyAvatar.checked) {
               url += "empty_avatar="+emptyAvatar.checked+"&"
@@ -265,6 +268,7 @@
               method: 'POST',
               body: formData
             });
+            location.reload();
           }
         </script>
     </article>
