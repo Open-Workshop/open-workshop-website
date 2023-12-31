@@ -276,7 +276,7 @@
                 response.text().then(text => {
                   banner_error_a = {
                     title: 'Ошибка',
-                    text: text,
+                    text: text.substring(1, text.length - 1),
                     theme: 'warning',
                     autohide: true,
                     interval: 6000
