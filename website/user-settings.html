@@ -231,32 +231,40 @@
           function saveProfile() {
             let data = {}
 
+            url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
+            const formData = new FormData();
+
             const username = document.getElementById('username');
             if (username && username.value != username.getAttribute("startdata")) {
-              data["username"] = username.value
+              url += "username="+username.value+"&"
             }
             const grade = document.getElementById('grade');
             if (grade && grade.value != grade.getAttribute("startdata")) {
-              data["grade"] = grade.value
+              url += "grade="+grade.value+"&"
             }
             const about = document.getElementById('mod-description');
             if (about && about.value != about.getAttribute("startdata")) {
-              data["about"] = about.value
+              url += "about="+about.value+"&"
             }
             const input = document.getElementById('file-select-avatar');
             if (input && input.files[0]) {
-              data["avatar"] = input.files[0]
+              formData.append('avatar', input.files[0]);
             }
             const emptyAvatar = document.getElementById('reset-avatar-checkbox');
             if (emptyAvatar && emptyAvatar.checked) {
-              data["empty_avatar"] = emptyAvatar.checked
+              url += "empty_avatar="+emptyAvatar.checked+"&"
             }
             const mute = document.getElementById('mute-datetime');
             if (mute && mute.value) {
-              data["mute"] = mute.value
+              url += "mute="+mute.value+"&"
             }
 
-            console.log(data)
+            console.log(url)
+
+            fetch(url, {
+              method: 'POST',
+              body: formData
+            });
           }
         </script>
     </article>
