@@ -264,11 +264,37 @@
 
             console.log(url)
 
-            fetch(url, {
+            await fetch(url, {
               method: 'POST',
               body: formData
+            }).then(response => {
+              if (response.status === 202) {
+                console.log('Код ответа равен 202!');
+                location.reload();
+              } else {
+                console.log('Код ответа не равен 202');
+                banner_error_a = {
+                  title: 'Ошибка',
+                  text: await response.json(),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a)
+              }
+            }).catch(error => {
+              console.error('Произошла ошибка при отправке запроса: ' + error);
+              banner_error_a = {
+                title: 'Ошибка',
+                text: 'При запросе на сервер произошла непредвиденная ошибка...',
+                theme: 'danger',
+                autohide: true,
+                interval: 6000
+              };
+
+              new Toast(banner_error_a)
             });
-            location.reload();
           }
         </script>
     </article>

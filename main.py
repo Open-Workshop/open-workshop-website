@@ -36,8 +36,6 @@ MONTHS_NAMES = {
     12: "декабря",
 }
 
-#TODO внедрить всплывашку куков
-
 
 @app.route('/')
 @app.route('/index')
