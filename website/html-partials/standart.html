@@ -91,7 +91,7 @@
           {% if user_profile %}
           <li id="profile-pc" class="dropdown">
             <img class="a-top user-avatar-medium" src="{{ user_profile.avatar_url }}" alt="">
-            <a href="/user/{{ user_profile.id }}" style="width: 100%; height: 100%; position: absolute;"></a>
+            <a href="/user/{{ user_profile.id }}" style="width: 100%; height: 100%; position: absolute; background: none;"></a>
             <ul>
               <a href="/user/{{ user_profile.id }}/settings">Настройки</a>
               <a onclick="logon()">Выйти</a>
