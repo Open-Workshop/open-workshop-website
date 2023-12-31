@@ -228,7 +228,7 @@
           </div>
         </div>
         <script>
-          async function saveProfile() {
+          function saveProfile() {
             let data = {}
 
             url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
@@ -273,15 +273,17 @@
                 location.reload();
               } else {
                 console.log('Код ответа не равен 202');
-                banner_error_a = {
-                  title: 'Ошибка',
-                  text: await response.text(),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
+                response.text().then(text => {
+                  banner_error_a = {
+                    title: 'Ошибка',
+                    text: text,
+                    theme: 'warning',
+                    autohide: true,
+                    interval: 6000
+                  };
 
-                new Toast(banner_error_a)
+                  new Toast(banner_error_a);
+                });
               }
             }).catch(error => {
               console.error('Произошла ошибка при отправке запроса: ' + error);
