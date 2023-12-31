@@ -11,7 +11,7 @@
         <div style="width: 100%;">
           <div class="user-container-settings">
             <div class="user-left-bar">
-              <div class="wrapper" style="width: 100%;">
+              <div class="wrapper" style="width: 100%; max-width: 150pt;">
                 <div class="user-avatar-box">
                     <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_access.avatar %} user-avatar-e{% endif %}"{% if user_access.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
       
@@ -29,11 +29,11 @@
                 
                 {% if user_access.mute %}
                 <div class="medium-6 columns">
-                  <input style="width: 95%;" id="mute-datetime" type="datetime-local" min="2017-06-01T08:30" class='date'>
+                  <input style="width: 100%;" id="mute-datetime" type="datetime-local" min="2017-06-01T08:30" class='date'>
                 </div>
                 <style>
                   input.date{
-                    margin: 5pt;
+                    margin-top: 5pt;
                     border-radius: 5px;
                     height: auto;
                     transition: all ease 200ms;
