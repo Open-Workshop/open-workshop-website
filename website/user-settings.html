@@ -258,7 +258,7 @@
               url += "empty_avatar="+emptyAvatar.checked+"&"
             }
             const mute = document.getElementById('mute-datetime');
-            if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && not mute.hasAttribute("startdata")))) {
+            if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
               url += "mute="+mute.value+"&"
             }
 
