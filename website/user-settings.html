@@ -29,7 +29,7 @@
                 
                 {% if user_access.mute %}
                 <div class="medium-6 columns">
-                  <input style="width: 100%;" id="mute-datetime" type="datetime-local" min="2017-06-01T08:30" class='date'>
+                  <input style="width: 100%;" id="mute-datetime" type="datetime-local"{% if user_data.general.mute %} startdata="{{ user_data.general.mute_js }}" value="{{ user_data.general.mute_js }}"{% endif %} class='date'>
                 </div>
                 <style>
                   input.date{
@@ -258,7 +258,7 @@
               url += "empty_avatar="+emptyAvatar.checked+"&"
             }
             const mute = document.getElementById('mute-datetime');
-            if (mute && mute.value) {
+            if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && not mute.hasAttribute("startdata")))) {
               url += "mute="+mute.value+"&"
             }
 
