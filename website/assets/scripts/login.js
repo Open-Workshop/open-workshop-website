@@ -9,7 +9,7 @@ function serviceAuthorization(serviceUrl)
       'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
   );
 
-  const AT = getCookie("accessToken");
+  const AT = getCookie('accessJS');
   const interval = setInterval(() => {
     if (win.closed) {
       console.log("Окно закрыто :(");
@@ -28,7 +28,7 @@ function serviceAuthorization(serviceUrl)
 
       clearInterval(interval);
     }
-    if (document.cookie.includes('accessToken') && (AT == null || AT == getCookie("accessToken"))) {
+    if (document.cookie.includes('accessJS') && (AT == null || AT == getCookie('accessJS'))) {
       console.log("Кука появилась!");
 
       win.close();
@@ -60,7 +60,7 @@ function serviceConnect(serviceUrl)
       'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
   );
 
-  const AT = getCookie("accessToken");
+  const AT = getCookie('accessJS');
   const interval = setInterval(() => {
     if (win.closed) {
       console.log("Окно закрыто :(");
@@ -80,8 +80,8 @@ function serviceConnect(serviceUrl)
       clearInterval(interval);
     }
     
-    console.log(AT, getCookie("accessToken"))
-    if (document.cookie.includes('accessToken') && (AT == null || AT == getCookie("accessToken"))) {
+    console.log(AT, getCookie("accessJS"))
+    if (document.cookie.includes('accessJS') && (AT == null || AT == getCookie("accessJS"))) {
       console.log("Кука появилась!");
 
       win.close();
