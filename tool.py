@@ -69,6 +69,8 @@ async def get_accounts(url:str, last_req:dict = None):
     if refresh_cookie: headers['Cookie'] += f'refreshToken={refresh_cookie}; '
     headers['Cookie'] = headers['Cookie'].removesuffix("; ")
 
+    print(headers['Cookie'])
+
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
             new_access_cookie = response.cookies.get('accessToken')
@@ -89,6 +91,7 @@ async def get_accounts(url:str, last_req:dict = None):
             user_response = json.loads(await response.text())
             status_code = response.status
 
+    print(user_response)
 
     return {"id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js,
             "access": new_access_cookie, "access_js": new_access_js, "result": user_response,
