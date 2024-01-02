@@ -395,7 +395,7 @@ async def user_settings(user_id):
 
 
     urls = [
-        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}?general=true",
+        f"/api/accounts/profile/info/{user_id}?general=true",
     ]
 
     urls[0] += "&rights=true" if editable["admin"] or editable["my"] else ""
