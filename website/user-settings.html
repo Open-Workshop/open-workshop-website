@@ -1,6 +1,14 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
+    {% if not user_access.any %}
+    <article class="user-settings-cont">
+      <h1 style="text-align: center;">
+        {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать свой профиль :({% endif %}
+        {% if not user_access.my %}Вы не имеете права редактировать этот профиль!{% endif %}
+      </h1>
+    </article>
+    {% endif %}
     {% if user_access.any or user_access.my %}
     <article class="user-settings-cont">
         <div class="navig-user-setting-menu">
@@ -389,14 +397,6 @@
             });
           }
         </script>
-    </article>
-    {% endif %}
-    {% if not user_access.any %}
-    <article class="user-settings-cont">
-      <h1 style="text-align: center;">
-        {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать свой профиль :({% endif %}
-        {% if not user_access.my %}Вы не имеете права редактировать этот профиль!{% endif %}
-      </h1>
     </article>
     {% endif %}
   </div>
