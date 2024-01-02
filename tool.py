@@ -72,7 +72,8 @@ async def check_access_user(user_req:dict, user_id:int):
     if user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
         rights = user_req["result"]["rights"]
-        access["admin"], is_admin = rights["admin"]
+        is_admin = rights["admin"]
+        access["admin"] = is_admin
         in_mute = user_req["result"]["general"]["mute"]
 
         access["grade"] = is_admin
