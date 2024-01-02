@@ -80,6 +80,7 @@ function serviceConnect(serviceUrl)
       clearInterval(interval);
     }
     
+    console.log(AT, getCookie("accessToken"))
     if (document.cookie.includes('accessToken') && (AT == null || AT == getCookie("accessToken"))) {
       console.log("Кука появилась!");
 
