@@ -28,7 +28,7 @@ function serviceAuthorization(serviceUrl)
 
       clearInterval(interval);
     }
-    if (document.cookie.includes('accessJS') && (AT == null || AT == getCookie('accessJS'))) {
+    if (document.cookie.includes('accessJS') && (AT == null || AT != getCookie('accessJS'))) {
       console.log("Кука появилась!");
 
       win.close();
@@ -81,7 +81,7 @@ function serviceConnect(serviceUrl)
     }
     
     console.log(AT, getCookie("accessJS"))
-    if (document.cookie.includes('accessJS') && (AT == null || AT == getCookie("accessJS"))) {
+    if (document.cookie.includes('accessJS') && (AT == null || AT != getCookie("accessJS"))) {
       console.log("Кука появилась!");
 
       win.close();
