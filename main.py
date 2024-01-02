@@ -415,7 +415,7 @@ async def user_settings(user_id):
 
     if len(info['general']['about']) <= 0:
         info['general']['about_enable'] = False
-        info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
+        info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info['general']['username']} в друзья! 🤪"
     else:
         info['general']['about_enable'] = True
 

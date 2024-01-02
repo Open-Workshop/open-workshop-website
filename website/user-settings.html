@@ -236,8 +236,8 @@
               
               <p>
                 {% if user_access.my %}
-                  {% if not user_data.private.yandex %}Отключить{% endif %}
-                  {% if user_data.private.yandex %}Подключить{% endif %}
+                  {% if user_data.private.yandex %}Отключить{% endif %}
+                  {% if not user_data.private.yandex %}Подключить{% endif %}
                 {% endif %}
                 {% if not user_access.my %}
                   {% if not user_data.private.yandex %}Отключен{% endif %}
@@ -250,8 +250,8 @@
               
               <p>
                 {% if user_access.my %}
-                  {% if not user_data.private.google %}Отключить{% endif %}
-                  {% if user_data.private.google %}Подключить{% endif %}
+                  {% if user_data.private.google %}Отключить{% endif %}
+                  {% if not user_data.private.google %}Подключить{% endif %}
                 {% endif %}
                 {% if not user_access.my %}
                   {% if not user_data.private.google %}Отключен{% endif %}
