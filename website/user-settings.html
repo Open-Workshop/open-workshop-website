@@ -4,7 +4,7 @@
     {% if not user_access.any %}
     <article class="user-settings-cont">
       <h1 style="text-align: center;">
-        {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать свой профиль :({% endif %}
+        {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
         {% if not user_access.my %}Вы не имеете права редактировать этот профиль!{% endif %}
       </h1>
     </article>
