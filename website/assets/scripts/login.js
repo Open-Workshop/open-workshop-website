@@ -9,6 +9,7 @@ function serviceAuthorization(serviceUrl)
       'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
   );
 
+  const AT = getCookie("accessToken");
   const interval = setInterval(() => {
     if (win.closed) {
       console.log("Окно закрыто :(");
@@ -27,7 +28,7 @@ function serviceAuthorization(serviceUrl)
 
       clearInterval(interval);
     }
-    if (document.cookie.includes('loginJS')) {
+    if (document.cookie.includes('accessToken') && (AT == null || AT == getCookie("accessToken"))) {
       console.log("Кука появилась!");
 
       win.close();
@@ -59,6 +60,7 @@ function serviceConnect(serviceUrl)
       'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
   );
 
+  const AT = getCookie("accessToken");
   const interval = setInterval(() => {
     if (win.closed) {
       console.log("Окно закрыто :(");
@@ -77,7 +79,8 @@ function serviceConnect(serviceUrl)
 
       clearInterval(interval);
     }
-    if (document.cookie.includes('loginJS')) {
+    
+    if (document.cookie.includes('accessToken') && (AT == null || AT == getCookie("accessToken"))) {
       console.log("Кука появилась!");
 
       win.close();
@@ -114,7 +117,33 @@ function serviceDisconnect(service) {
   fetch("/api/accounts/authorization/disconnect?service_name="+service, {
     method: 'GET'
   }).then(response => {
+    if (response.status === 200) {
+      console.log('Код ответа равен 200!');
       location.reload();
+    } else {
+      console.log('Код ответа не равен 200');
+      response.text().then(text => {
+        banner_error_a = {
+          title: 'Ошибка',
+          text: text.substring(1, text.length - 1),
+          theme: 'warning',
+          autohide: true,
+          interval: 6000
+        };
+
+        new Toast(banner_error_a);
+      });
     }
-  )
+  }).catch(error => {
+    console.error('Произошла ошибка при отправке запроса: ' + error);
+    banner_error_a = {
+      title: 'Ошибка',
+      text: 'При запросе на сервер произошла непредвиденная ошибка...',
+      theme: 'danger',
+      autohide: true,
+      interval: 6000
+    };
+
+    new Toast(banner_error_a)
+  });
 }
