@@ -2272,6 +2272,8 @@ td {
   color: white;
   font-family: cursive;
   padding-bottom: 2pt;
+  padding-left: 3pt;
+  padding-right: 3pt;
   font-variant: all-small-caps;
   margin-top: 2pt;
   cursor: pointer;
@@ -2281,6 +2283,12 @@ td {
 } 
 .navig-user-setting-menu > h2 {
   color: white;
+} 
+.navig-user-setting-menu > button:disabled {
+  background: #4d260b;
+  box-shadow:0px 0px 0px 0px rgb(184, 92, 26);
+  pointer-events: none;
+  cursor: none;
 } 
 .navig-user-setting-menu > button:hover {
   background: #b65b1a;
@@ -2295,6 +2303,7 @@ td {
 
 .user-settings-cont {
   display: flex;
+  max-width: 500pt;
 }
 @media (max-width: 439px) {
   .user-settings-cont {

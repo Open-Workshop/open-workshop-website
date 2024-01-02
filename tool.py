@@ -57,18 +57,28 @@ async def get_user_req(avatar_url:bool = True):
     return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response, "status_code": status_code}
 
 async def check_access_user(user_req:dict, user_id:int):
-    access = {"avatar": False, "username": False, "about": False, "mute": False, "grade": False, "any": False}
+    access = {
+        "avatar": False,
+        "username": False,
+        "about": False,
+        "mute": False,
+        "grade": False,
+        "my": False, # Мой ли это профиль
+        "admin": False, # Является ли спрашивающий админом
+        "any": False # Включает в себя лиш поля доступа к редактированию (т.е. не включает my и admin)
+    }
     user_p = False
 
     if user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
         rights = user_req["result"]["rights"]
-        is_admin = rights["admin"]
+        access["admin"], is_admin = rights["admin"]
         in_mute = user_req["result"]["general"]["mute"]
 
         access["grade"] = is_admin
 
         if int(user_req["id"]) == user_id:  # Пользователь просит свой профиль
+            access["my"] = True
             if not in_mute or is_admin:
                 access["avatar"] = rights["change_avatar"] or is_admin
                 access["username"] = rights["change_username"] or is_admin

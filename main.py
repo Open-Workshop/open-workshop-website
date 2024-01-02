@@ -387,9 +387,20 @@ async def user(user_id):
 async def user_settings(user_id):
     launge = "ru"
 
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p, editable = await tool.check_access_user(user_req=user_req, user_id=user_id)
+
+
+
     urls = [
-        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}",
+        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}?general=true",
     ]
+
+    urls[0] += "&rights=true" if editable["admin"] or editable["my"] else ""
+    urls[0] += "&private=true" if editable["admin"] or editable["my"] else ""
+
     tasks = []
     for url in urls:
         tasks.append(fetch(url))
@@ -421,16 +432,10 @@ async def user_settings(user_id):
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
-
-    print(user_p, info[0]['general']['editable'])
+    print(user_p, editable)
 
     try:
-        page_html = render_template("user-settings.html", user_data=info[0], user_access=info[0]['general']['editable'],
+        page_html = render_template("user-settings.html", user_data=info[0], user_access=editable,
                                    is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
                                    user_profile=user_p)
     except:
