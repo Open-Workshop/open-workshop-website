@@ -401,7 +401,7 @@ async def user_settings(user_id):
     urls[0] += "&rights=true" if editable["admin"] or editable["my"] else ""
     urls[0] += "&private=true" if editable["admin"] or editable["my"] else ""
 
-    info = (await tool.get_accounts(urls[0], user_p))["result"]
+    info = (await tool.get_accounts(urls[0], user_req))["result"]
 
 
     if type(info) is str:
