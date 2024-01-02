@@ -403,6 +403,7 @@ async def user_settings(user_id):
 
     tasks = []
     for url in urls:
+        print(url)
         tasks.append(fetch(url))
     info = await asyncio.gather(*tasks)
 
