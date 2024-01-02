@@ -1,7 +1,7 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
-    {% if user_access.any %}
+    {% if user_access.any or user_access.my %}
     <article class="user-settings-cont">
         <div class="navig-user-setting-menu">
           <h2>Навигация</h2>
