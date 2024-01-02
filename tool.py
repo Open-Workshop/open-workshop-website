@@ -56,6 +56,45 @@ async def get_user_req(avatar_url:bool = True):
 
     return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response, "status_code": status_code}
 
+async def get_accounts(url:str):
+    # Получаем куку пользователя
+    access_cookie = request.cookies.get('accessToken')
+    refresh_cookie = request.cookies.get('refreshToken')
+
+    url = ACCOUNTS_ADDRESS+url
+    headers = {
+        'Cookie': ''
+    }
+    if access_cookie: headers['Cookie'] += f'accessToken={access_cookie}; '
+    if refresh_cookie: headers['Cookie'] += f'refreshToken={refresh_cookie}; '
+    headers['Cookie'] = headers['Cookie'].removesuffix("; ")
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            new_access_cookie = response.cookies.get('accessToken')
+            if new_access_cookie: new_access_cookie = [new_access_cookie.value, dict(new_access_cookie.items())]
+
+            new_access_js = response.cookies.get('accessJS')
+            if new_access_js: new_access_js = [new_access_js.value, dict(new_access_js.items())]
+
+            new_refresh_cookie = response.cookies.get('refreshToken')
+            if new_refresh_cookie: new_refresh_cookie = [new_refresh_cookie.value, dict(new_refresh_cookie.items())]
+
+            new_login_js = response.cookies.get('loginJS')
+            if new_login_js: new_login_js = [new_login_js.value, dict(new_login_js.items())]
+
+            new_user_id = response.cookies.get('userID')
+            if new_user_id: new_user_id = [new_user_id.value, dict(new_user_id.items())]
+
+            user_response = json.loads(await response.text())
+            status_code = response.status
+
+
+    return {"id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js,
+            "access": new_access_cookie, "access_js": new_access_js, "result": user_response,
+            "status_code": status_code}
+
+
 async def check_access_user(user_req:dict, user_id:int):
     access = {
         "avatar": False,
