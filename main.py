@@ -401,43 +401,39 @@ async def user_settings(user_id):
     urls[0] += "&rights=true" if editable["admin"] or editable["my"] else ""
     urls[0] += "&private=true" if editable["admin"] or editable["my"] else ""
 
-    tasks = []
-    for url in urls:
-        print(url)
-        tasks.append(fetch(url))
-    info = await asyncio.gather(*tasks)
+    info = await tool.get_accounts(urls[0])["result"]
 
 
-    if type(info[0]) is str:
+    if type(info) is str:
         return await page_not_found(-1)
 
     # Определяем содержание страницы
-    if info[0]["general"]["mute"]:
-        input_date = datetime.datetime.fromisoformat(info[0]["general"]["mute"])
-        info[0]["general"]["mute_js"] = info[0]["general"]["mute"]
-        info[0]["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
+    if info["general"]["mute"]:
+        input_date = datetime.datetime.fromisoformat(info["general"]["mute"])
+        info["general"]["mute_js"] = info["general"]["mute"]
+        info["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
-    if len(info[0]['general']['about']) <= 0:
-        info[0]['general']['about_enable'] = False
-        info[0]['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
+    if len(info['general']['about']) <= 0:
+        info['general']['about_enable'] = False
+        info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
     else:
-        info[0]['general']['about_enable'] = True
+        info['general']['about_enable'] = True
 
-    input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
-    info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
-    info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+    input_date = datetime.datetime.fromisoformat(info['general']['registration_date'])
+    info['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
+    info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
 
-    if len(info[0]['general']['avatar_url']) <= 0:
-        info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
-    elif info[0]['general']['avatar_url'] == "local":
-        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+    if len(info['general']['avatar_url']) <= 0:
+        info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
+    elif info['general']['avatar_url'] == "local":
+        info['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
     print(user_p, editable)
 
     #try:
-    page_html = render_template("user-settings.html", user_data=info[0], user_access=editable,
-                               is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
+    page_html = render_template("user-settings.html", user_data=info, user_access=editable,
+                               is_user_data={"id": user_id, "logo": info['general']['avatar_url']},
                                user_profile=user_p)
     #except:
     #    page_html = ""
