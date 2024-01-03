@@ -552,24 +552,29 @@
           function saveProfile() {
             let data = {}
 
-            url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
+            let tofetch = false
+            let url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
             const formData = new FormData();
 
             const username = document.getElementById('username');
             if (username && username.value != username.getAttribute("startdata")) {
               url += "username="+username.value+"&"
+              tofetch = true
             }
             const grade = document.getElementById('grade');
             if (grade && grade.value != grade.getAttribute("startdata")) {
               url += "grade="+grade.value+"&"
+              tofetch = true
             }
             const about = document.getElementById('mod-description');
             if (about && about.value != about.getAttribute("startdata")) {
               url += "about="+about.value+"&"
+              tofetch = true
             }
             const input = document.getElementById('file-select-avatar');
             if (input && input.files[0]) {
               formData.append('avatar', input.files[0]);
+              tofetch = true
             } else {
               formData.append('avatar', '');
             }
@@ -577,47 +582,122 @@
             const emptyAvatar = document.getElementById('reset-avatar-checkbox');
             if (emptyAvatar && emptyAvatar.checked) {
               url += "empty_avatar="+emptyAvatar.checked+"&"
+              tofetch = true
             }
             const mute = document.getElementById('mute-datetime');
             if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
               url += "mute="+mute.value+"&"
+              tofetch = true
             }
 
             console.log(url)
 
-            fetch(url, {
-              method: 'POST',
-              body: formData
-            }).then(response => {
-              if (response.status === 202) {
-                console.log('Код ответа равен 202!');
-                location.reload();
-              } else {
-                console.log('Код ответа не равен 202');
-                response.text().then(text => {
-                  banner_error_a = {
-                    title: 'Ошибка',
-                    text: text.substring(1, text.length - 1),
-                    theme: 'warning',
-                    autohide: true,
-                    interval: 6000
-                  };
+            if (tofetch) {
+              fetch(url, {
+                method: 'POST',
+                body: formData
+              }).then(response => {
+                if (response.status === 202) {
+                  console.log('Код ответа равен 202!');
+                } else {
+                  console.log('Код ответа не равен 202');
+                  response.text().then(text => {
+                    banner_error_a = {
+                      title: 'Профиль',
+                      text: text.substring(1, text.length - 1),
+                      theme: 'warning',
+                      autohide: true,
+                      interval: 6000
+                    };
 
-                  new Toast(banner_error_a);
-                });
+                    new Toast(banner_error_a);
+                  });
+                }
+              }).catch(error => {
+                console.error('Произошла ошибка при отправке запроса: ' + error);
+                banner_error_a = {
+                  title: 'Профиль',
+                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
+                  theme: 'danger',
+                  autohide: true,
+                  interval: 6000
+                };
+
+              new Toast(banner_error_a)
+              });
+            }
+
+
+
+            let tofetchTWO = false
+
+            // Запрос на редактирование прав
+            url = '/api/accounts/edit/profile/rights?user_id={{ user_data.general.id }}&'
+            function addRight(nameCheckbox) {
+              const checkbox = document.getElementById('checkbox-rights-edit-'+nameCheckbox);
+
+              console.log(checkbox)
+              if (checkbox && checkbox.hasAttribute('startdata') != checkbox.checked) {
+                tofetchTWO = true
+                return nameCheckbox+"="+checkbox.checked+"&"
+              } else {
+                return ''
               }
-            }).catch(error => {
-              console.error('Произошла ошибка при отправке запроса: ' + error);
+            }
+            
+            const rightsList = []
+            for (i in rightsList) {
+              url += addRight(rightsList[i])
+            }
+
+            if (tofetchTWO) {
+              fetch(url, {
+                method: 'POST',
+                body: formData
+              }).then(response => {
+                if (response.status === 202) {
+                  console.log('Код ответа равен 202!');
+                } else {
+                  console.log('Код ответа не равен 202');
+                  response.text().then(text => {
+                    banner_error_a = {
+                      title: 'Права',
+                      text: text.substring(1, text.length - 1),
+                      theme: 'warning',
+                      autohide: true,
+                      interval: 6000
+                    };
+
+                    new Toast(banner_error_a);
+                  });
+                }
+              }).catch(error => {
+                console.error('Произошла ошибка при отправке запроса: ' + error);
+                banner_error_a = {
+                  title: 'Права',
+                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
+                  theme: 'danger',
+                  autohide: true,
+                  interval: 6000
+                };
+
+              new Toast(banner_error_a)
+              });
+            }
+            
+            if (tofetch || tofetchTWO) {
+              clocation.reload();
+            } else {
               banner_error_a = {
-                title: 'Ошибка',
-                text: 'При запросе на сервер произошла непредвиденная ошибка...',
-                theme: 'danger',
+                title: 'Сохранение',
+                text: 'Вы не внесли изменений которые можно сохранить',
+                theme: 'warning',
                 autohide: true,
                 interval: 6000
               };
 
-              new Toast(banner_error_a)
-            });
+              new Toast(banner_error_a);
+            }
           }
         </script>
     </article>
