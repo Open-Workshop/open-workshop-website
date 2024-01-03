@@ -16,6 +16,7 @@
           <button id="page-profile-button" onclick="switchSettingsPage('profile')">Профиль</button>
           {% if user_access.my or user_access.admin %}
           <button id="page-integrate-button" onclick="switchSettingsPage('integrate')">Интеграция</button>
+          <button id="page-rights-button" onclick="switchSettingsPage('rights')">Права</button>
           {% endif %}
           <button id="page-save-button" style="margin-top: 30pt;" onclick="saveProfile()">Сохранить</button>
         </div>
@@ -269,12 +270,234 @@
             </button>
           </div>
           {% endif %}
+          <div id="page-rights-div" style="flex-direction: column;" class="user-container-settings rights-cont">
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.admin %}checked{% endif %} disabled class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Администратор</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.write_comments %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Писать комментарии</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.set_reactions %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Оставлять реакции</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.create_reactions %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Создавать реакции</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.publish_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Публиковать моды</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_authorship_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять авторство модов</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_self_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять свои моды</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять чужие моды</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.delete_self_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Удалять свои моды</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.delete_mods %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Удалять чужие моды</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.mute_users %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Мутить пользователей</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.create_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Создавать форумы</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_authorship_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять авторство форумов</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_self_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять свои форумы</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять чужие форумы</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.delete_self_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Удалять свои форумы</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.delete_forums %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Удалять чужие форумы</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_username %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять никнейм</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_about %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Изменять "обо мне"</p>
+            </div>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.change_avatar %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Менять аватар</p>
+            </div>
+            <hr>
+            <div>
+              <div class="button b2">
+                <input type="checkbox" {% if user_data.rights.vote_for_reputation %}checked{% endif %} class="checkbox" />
+                <div class="knobs">
+                  <span></span>
+                </div>
+                <div class="layer"></div>
+              </div>
+              <p>Голосовать за репутацию</p>
+            </div>
+
+            <link href="/assets/styles/vendors/checkbox.css" rel="stylesheet"/>
+          </div>
+
 
           <script>
             switchSettingsPage(OpenWS.getFromDict(OpenWS.urlParams(window.location.href), "page", 'profile'));
 
             function switchSettingsPage(newPage) {
-              object = ['profile', 'integrate']
+              object = ['profile', 'rights', 'integrate']
               for (const property_number in object) {
                 const property = object[property_number];
                 const div = document.getElementById('page-'+property+'-div');
