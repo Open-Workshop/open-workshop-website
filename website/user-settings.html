@@ -645,7 +645,29 @@
               }
             }
             
-            const rightsList = []
+            const rightsList = [
+              'admin',
+              'write_comments',
+              'set_reactions',
+              'create_reactions',
+              'mute_users',
+              'publish_mods',
+              'change_authorship_mods',
+              'change_self_mods',
+              'change_mods',
+              'delete_self_mods',
+              'delete_mods',
+              'create_forums',
+              'change_authorship_forums',
+              'change_self_forums',
+              'change_forums',
+              'delete_self_forums',
+              'delete_forums',
+              'change_username',
+              'change_about',
+              'change_avatar',
+              'vote_for_reputation'
+            ]
             for (i in rightsList) {
               url += addRight(rightsList[i])
               console.log(tofetchTWO)
