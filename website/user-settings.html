@@ -629,7 +629,7 @@
 
 
 
-            let tofetchTWO = false
+            var tofetchTWO = false
 
             // Запрос на редактирование прав
             url = '/api/accounts/edit/profile/rights?user_id={{ user_data.general.id }}&'
@@ -648,6 +648,7 @@
             const rightsList = []
             for (i in rightsList) {
               url += addRight(rightsList[i])
+              console.log(tofetchTWO)
             }
 
             if (tofetchTWO) {
@@ -686,7 +687,7 @@
             }
             
             if (tofetch || tofetchTWO) {
-              clocation.reload();
+              location.reload();
             } else {
               banner_error_a = {
                 title: 'Сохранение',
