@@ -212,7 +212,7 @@ async def mod(mod_id):
             tasks.append(fetch(url))
         info = await asyncio.gather(*tasks)
 
-        def size_set(bites:int = 0, digit:str = "") -> str:
+        def size_set(bites:int = 1, digit:str = "") -> str:
             return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
 
         if info[0]['result']['size'] > 1000000000:
