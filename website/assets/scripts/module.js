@@ -72,10 +72,10 @@ function steamSyntax(text, short = false) {
     text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr></hr>');
 
     // Перенос строки
-    text = text.replace(/\n/g, '<br>');
-    text = text.replace(/^<br>/, '');
+    text = text.replace(/\\n/gm, '<br>');
+    text = text.replace(/<br>/gm, '');
     if (short) {
-        text = text.replace(/(<br>\s*)+<br>+/g, '<br>');
+        text = text.replace(/(<br>\s*)+<br>+/gm, '<br>');
     }
 
     return text;
