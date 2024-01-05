@@ -230,12 +230,15 @@ async def mod(mod_id):
             "logo": ""
         }
 
+        todelpop = None
         for img_id in range(len(info[1]["results"])):
             img = info[1]["results"][img_id]
             if img is not None and img["type"] == "logo":
                 is_mod["logo"] = img["url"]
                 if len(info[1]["results"]) > 1:
-                    info[1]["results"].pop(img_id)
+                    todelpop = img_id
+        if todelpop: info[1]["results"].pop(todelpop)
+
         info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
