@@ -22,10 +22,6 @@ function steamSyntax(text, short = false) {
     text = text.replace(steamUrl, (match, url, randomText) => {
         return `<a class="steam-link" href="${url}">${randomText}</a>`;
     });
-    
-    text = text.replace(/\[list\]/gm, '<list>');
-    text = text.replace(/\[\*\]/gm, '<li>');
-    text = text.replace(/\[\/list\]/gm, '</list>');
 
     // Заменим ссылки
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="steam-link" href="$2">$1</a>');
@@ -70,6 +66,10 @@ function steamSyntax(text, short = false) {
     text = text.replace(/\[strike\](.*?)\[\/strike\]/gs, '<strike>$1</strike>');
     text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gs, '<span class="spoiler">$1</span>');
     text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr></hr>');
+
+
+    text = text.replace(/\[list\]((?:.|\n)*?)\[\/list\]/gmi, '<list>$1</list>');
+    text = text.replace(/\[\*\](.*?)(\r\n|\r|\n)/gm, '<li>$1</li>$2');
 
     // Перенос строки
     text = text.replace(/(\r\n|\r|\n)/gm, '<br>');
