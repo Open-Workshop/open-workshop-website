@@ -57,7 +57,12 @@
               </div>
               {% endif %}
               
-              <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
+              {% if not user_profile %}
+              <div style="margin-top: 2pt; background: #0000004d; padding: 3pt; border-radius: 5pt;">
+                <h3 style="text-align: center;">Авторизированным пользователям не отображается реклама</h3>
+                <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
+              </div>
+              {% endif %}
 
               <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
             </div>
