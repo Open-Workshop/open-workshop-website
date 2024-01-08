@@ -72,6 +72,7 @@
     </div>
 
     <div id="cards-container" class="cards">
+      {% if not user_profile %}
       <script src="//s.contemo.ru/c.js"></script><div id="bresults"><script async defer>cbanner.load(22981, "contemo.ru");</script></div>
       <script>
         fd()
@@ -90,6 +91,7 @@
           }
         };
       </script>
+      {% endif %}
 
       <div class="pager-selector">
         <a id="pager-start" onclick="movePager('pager-start')" class="pager-page">1</a>
