@@ -74,10 +74,7 @@
     <div id="cards-container" class="cards">
       <script src="//s.contemo.ru/c.js"></script><div id="bresults"><script async defer>cbanner.load(22981, "contemo.ru");</script></div>
       <script>
-        fd()
-        window.addEventListener('resize', fd()) 
-        
-        function fd() {
+        window.addEventListener('resize', function(event) {
           console.log(window.innerWidth)
           if (window.innerWidth < 730) {
             // скрыть элемент
@@ -86,7 +83,7 @@
             // показать элемент
             document.getElementById('bresults').style.display = 'block';
           }
-        };
+        });
       </script>
 
       <div class="pager-selector">
