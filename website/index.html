@@ -78,6 +78,7 @@
         window.addEventListener('resize', fd()) 
         
         function fd() {
+          console.log(window.innerWidth)
           if (window.innerWidth < 730) {
             // скрыть элемент
             document.getElementById('bresults').style.display = 'none';
