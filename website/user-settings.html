@@ -554,21 +554,21 @@
 
             let tofetch = false
             let url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
-            const formData = new FormData();
+            let formData = new FormData();
 
             const username = document.getElementById('username');
             if (username && username.value != username.getAttribute("startdata")) {
-              url += "username="+username.value+"&"
+              formData.append('username', username.value);
               tofetch = true
             }
             const grade = document.getElementById('grade');
             if (grade && grade.value != grade.getAttribute("startdata")) {
-              url += "grade="+grade.value+"&"
+              formData.append('grade', grade.value);
               tofetch = true
             }
             const about = document.getElementById('mod-description');
             if (about && about.value != about.getAttribute("startdata")) {
-              url += "about="+about.value+"&"
+              formData.append('about', about.value);
               tofetch = true
             }
             const input = document.getElementById('file-select-avatar');
@@ -581,12 +581,12 @@
 
             const emptyAvatar = document.getElementById('reset-avatar-checkbox');
             if (emptyAvatar && emptyAvatar.checked) {
-              url += "empty_avatar="+emptyAvatar.checked+"&"
+              formData.append('empty_avatar', emptyAvatar.checked);
               tofetch = true
             }
             const mute = document.getElementById('mute-datetime');
             if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
-              url += "mute="+mute.value+"&"
+              formData.append('mute', mute.value);
               tofetch = true
             }
 
@@ -630,6 +630,7 @@
 
 
             var tofetchTWO = false
+            formData = new FormData();
 
             // Запрос на редактирование прав
             url = '/api/accounts/edit/profile/rights?user_id={{ user_data.general.id }}&'
@@ -639,9 +640,7 @@
               console.log(checkbox)
               if (checkbox && checkbox.hasAttribute('startdata') != checkbox.checked) {
                 tofetchTWO = true
-                return nameCheckbox+"="+checkbox.checked+"&"
-              } else {
-                return ''
+                formData.append(nameCheckbox, checkbox.checked);
               }
             }
             
@@ -669,8 +668,7 @@
               'vote_for_reputation'
             ]
             for (i in rightsList) {
-              url += addRight(rightsList[i])
-              console.log(tofetchTWO)
+              addRight(rightsList[i])
             }
 
             if (tofetchTWO) {
