@@ -616,8 +616,7 @@ nav li li a:hover {
 }
 
 .img-desc {
-  max-width: 190pt;
-  max-height: 200pt;
+  max-width: 100%;
   width: auto;
   height: auto;
   position: relative;
