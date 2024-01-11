@@ -2164,7 +2164,9 @@ td {
 }
 @media (max-width: 679px) {
   .user-container-settings {
-    display: block;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
   }
 }
 

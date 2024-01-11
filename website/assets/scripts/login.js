@@ -116,7 +116,7 @@ function getCookie(name) {
 
 function serviceDisconnect(service) {
   fetch("/api/accounts/authorization/disconnect?service_name="+service, {
-    method: 'GET'
+    method: 'POST'
   }).then(response => {
     if (response.status === 200) {
       console.log('Код ответа равен 200!');
