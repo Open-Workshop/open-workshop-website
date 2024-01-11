@@ -358,17 +358,18 @@ async def user(user_id):
     info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
     info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
-    if len(info[0]['general']['about']) <= 0:
+    if info[0]['general']['about'] is None or len(info[0]['general']['about']) <= 0:
         info[0]['general']['about_enable'] = False
         info[0]['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info[0]['general']['username']} в друзья! 🤪"
     else:
         info[0]['general']['about_enable'] = True
 
-    if len(info[0]['general']['avatar_url']) <= 0:
+    if info[0]['general']['avatar_url'] is None or len(info[0]['general']['avatar_url']) <= 0:
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
+    info[0]['delete_user'] = info[0]['general']['username'] is None
 
     # Определяем права
     user_req = await get_user_req()

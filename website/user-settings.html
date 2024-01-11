@@ -5,17 +5,22 @@
     <article class="user-settings-cont">
       <h1 style="text-align: center;">
         {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
-        {% if not user_access.my %}Вы не имеете права редактировать этот профиль!{% endif %}
+        {% if not user_access.my %}
+          {% if not user_data.delete_user %}Вы не имеете права редактировать этот профиль!{% endif %}
+          {% if user_data.delete_user %}Этот профиль удален!{% endif %}
+        {% endif %}
       </h1>
     </article>
     {% endif %}
-    {% if user_access.any or user_access.my %}
+    {% if (not user_data.delete_user and (user_access.any or user_access.my)) or (user_data.delete_user and user_access.admin) %}
     <article class="user-settings-cont">
         <div class="navig-user-setting-menu">
           <h2>Навигация</h2>
           <button id="page-profile-button" onclick="switchSettingsPage('profile')">Профиль</button>
           {% if user_access.my or user_access.admin %}
+          {% if not user_data.delete_user %}
           <button id="page-integrate-button" onclick="switchSettingsPage('integrate')">Интеграция</button>
+          {% endif %}
           <button id="page-rights-button" onclick="switchSettingsPage('rights')">Права</button>
           {% endif %}
 
@@ -244,36 +249,38 @@
             </div>
           </div>
           {% if user_access.my or user_access.admin %}
-          <div id="page-integrate-div" style="flex-direction: column;" class="user-container-settings">
-            <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
-              <img style="width: 30pt;" src="/assets/images/yandex.svg" alt="Yandex logo">
-              
-              <p>
-                {% if user_access.my %}
-                  {% if user_data.private.yandex %}Отключить{% endif %}
-                  {% if not user_data.private.yandex %}Подключить{% endif %}
-                {% endif %}
-                {% if not user_access.my %}
-                  {% if not user_data.private.yandex %}Отключен{% endif %}
-                  {% if user_data.private.yandex %}Подключен{% endif %}
-                {% endif %}
-              </p>
-            </button>
-            <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.google %}onclick="serviceConnect('/api/accounts/authorization/google/link')"{% endif %}{% if user_access.my and user_data.private.google %}onclick="serviceDisconnect('google')"{% endif %}>
-              <img style="width: 30pt;" src="/assets/images/google.svg" alt="Google logo">
-              
-              <p>
-                {% if user_access.my %}
-                  {% if user_data.private.google %}Отключить{% endif %}
-                  {% if not user_data.private.google %}Подключить{% endif %}
-                {% endif %}
-                {% if not user_access.my %}
-                  {% if not user_data.private.google %}Отключен{% endif %}
-                  {% if user_data.private.google %}Подключен{% endif %}
-                {% endif %}
-              </p>
-            </button>
-          </div>
+            {% if not user_data.delete_user %}
+            <div id="page-integrate-div" style="flex-direction: column;" class="user-container-settings">
+              <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
+                <img style="width: 30pt;" src="/assets/images/yandex.svg" alt="Yandex logo">
+                
+                <p>
+                  {% if user_access.my %}
+                    {% if user_data.private.yandex %}Отключить{% endif %}
+                    {% if not user_data.private.yandex %}Подключить{% endif %}
+                  {% endif %}
+                  {% if not user_access.my %}
+                    {% if not user_data.private.yandex %}Отключен{% endif %}
+                    {% if user_data.private.yandex %}Подключен{% endif %}
+                  {% endif %}
+                </p>
+              </button>
+              <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.google %}onclick="serviceConnect('/api/accounts/authorization/google/link')"{% endif %}{% if user_access.my and user_data.private.google %}onclick="serviceDisconnect('google')"{% endif %}>
+                <img style="width: 30pt;" src="/assets/images/google.svg" alt="Google logo">
+                
+                <p>
+                  {% if user_access.my %}
+                    {% if user_data.private.google %}Отключить{% endif %}
+                    {% if not user_data.private.google %}Подключить{% endif %}
+                  {% endif %}
+                  {% if not user_access.my %}
+                    {% if not user_data.private.google %}Отключен{% endif %}
+                    {% if user_data.private.google %}Подключен{% endif %}
+                  {% endif %}
+                </p>
+              </button>
+            </div>
+            {% endif %}
           <div id="page-rights-div" style="flex-direction: column;" class="user-container-settings rights-cont">
             <div>
               <div class="button b2">
@@ -526,6 +533,7 @@
               function commitToDelete() {
                 if (usernameDeleteElement) {
                   const myText = usernameDeleteElement.value;
+
                   if (usernameDeleteElement.getAttribute("startdata") != myText) {
                     banner_error_a = {
                       title: 'Ошибка',
@@ -537,8 +545,9 @@
 
                     new Toast(banner_error_a);
                   } else {
-                    fetch('/api/accounts/authorization/delete', {method: 'POST'})
-                    location.reload();
+                    fetch('/api/accounts/authorization/delete', {method: 'POST'}).then(response => {
+                      location.reload();
+                    })
                   }
                 }
               }
@@ -547,10 +556,10 @@
           {% endif %}
 
           <script>
-            switchSettingsPage(OpenWS.getFromDict(OpenWS.urlParams(window.location.href), "page", 'profile'));
+            switchSettingsPage(OpenWS.getFromDict(OpenWS.urlParams(window.location.href), "page", {% if not user_data.delete_user %}'profile'{% endif %}{% if user_data.delete_user %}'rights'{% endif %}));
 
             function switchSettingsPage(newPage) {
-              object = ['profile','delete-account', 'rights',  'integrate']
+              object = ['profile', 'delete-account', 'rights',  'integrate']
               for (const property_number in object) {
                 const property = object[property_number];
                 const div = document.getElementById('page-'+property+'-div');
@@ -567,7 +576,7 @@
                   };
                 }
               }
-              document.getElementById('page-save-button').disabled = (newPage == 'integrate');
+              document.getElementById('page-save-button').disabled = (newPage == 'integrate' || newPage == 'delete-account');
 
               const res = OpenWS.reselectParam("page", newPage)
               if (res != false) {
@@ -582,7 +591,7 @@
             button.service {
               cursor: pointer;
               border: none;
-              width: 150pt;
+              width: 160pt;
               max-width: 100%;
               background: bisque;
               border-radius: 5pt;
