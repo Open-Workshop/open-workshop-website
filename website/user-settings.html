@@ -2,7 +2,7 @@
 {% block content %}
   <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
     {% if not user_access.any %}
-    <article class="user-settings-cont">
+    <article class="user-settings-cont" style="display: flex; justify-content: center;">
       <h1 style="text-align: center;">
         {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
         {% if not user_access.my %}
