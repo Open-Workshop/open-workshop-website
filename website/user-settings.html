@@ -16,7 +16,9 @@
     <article class="user-settings-cont">
         <div class="navig-user-setting-menu">
           <h2>Навигация</h2>
+          {% if not user_data.delete_user %}
           <button id="page-profile-button" onclick="switchSettingsPage('profile')">Профиль</button>
+          {% endif %}
           {% if user_access.my or user_access.admin %}
           {% if not user_data.delete_user %}
           <button id="page-integrate-button" onclick="switchSettingsPage('integrate')">Интеграция</button>
@@ -31,6 +33,7 @@
           <button id="page-save-button" style="margin-top: 30pt;" onclick="saveProfile()">Сохранить</button>
         </div>
         <div style="width: 100%;">
+          {% if not user_data.delete_user %}
           <div id="page-profile-div" class="user-container-settings">
             <div class="user-left-bar">
               <div class="wrapper" style="width: 100%; max-width: 150pt;">
@@ -248,6 +251,7 @@
               </script>
             </div>
           </div>
+          {% endif %}
           {% if user_access.my or user_access.admin %}
             {% if not user_data.delete_user %}
             <div id="page-integrate-div" style="flex-direction: column;" class="user-container-settings">
