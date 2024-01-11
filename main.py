@@ -417,7 +417,7 @@ async def user_settings(user_id):
         info["general"]["mute_js"] = info["general"]["mute"]
         info["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
-    if len(info['general']['about']) <= 0:
+    if info['general']['about'] is None or len(info['general']['about']) <= 0:
         info['general']['about_enable'] = False
         info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {info['general']['username']} в друзья! 🤪"
     else:
@@ -428,10 +428,13 @@ async def user_settings(user_id):
     info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
 
-    if len(info['general']['avatar_url']) <= 0:
+    if info['general']['avatar_url'] is None or len(info['general']['avatar_url']) <= 0:
         info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info['general']['avatar_url'] == "local":
         info['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+
+
+    info[0]['delete_user'] = info[0]['general']['username'] is None
 
     print(user_p, editable)
 
