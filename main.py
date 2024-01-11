@@ -434,7 +434,7 @@ async def user_settings(user_id):
         info['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
 
-    info[0]['delete_user'] = info[0]['general']['username'] is None
+    info['delete_user'] = info['general']['username'] is None
 
     print(user_p, editable)
 
