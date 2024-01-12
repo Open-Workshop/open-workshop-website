@@ -5,7 +5,7 @@ const steamUrl = /(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig;
 const steamImage = /\[img\](.*?)\[\/img\]/ig;
 
 function urlTextProcess(text) {
-    const regex = /(?<!\[url=|\[img\])(https?:\/\/\S+)/ig;
+    const regex = /(?<!\[url=|\[img=|\[img\])(https?:\/\/\S+)/gim;
     return text.replace(regex, url => {
         const domain = new URL(url).hostname;
         return `<a class="steam-link" href="${url}">${domain}</a>`;
@@ -13,7 +13,10 @@ function urlTextProcess(text) {
 }
 
 function urlImageProcess(text) {
-    return text.replace(steamImage, (match, url) => {
+    text = text.replace(steamImage, (match, url) => {
+        return `<img class="img-desc" src="${url}"></img>`;
+    });
+    return text.replace(/(?:\[img=)(.*?)](.*?)(?:\[\/img\])/ig, (match, url, randomText) => {
         return `<img class="img-desc" src="${url}"></img>`;
     });
 }
