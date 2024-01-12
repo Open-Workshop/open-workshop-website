@@ -34,7 +34,7 @@ function steamSyntax(text, short = false) {
     });
 
     // Заменим выделение жирным текстом
-    text = text.replace(/\*\*(.*?)\*\*/gs, '<b>$1</b>');
+    text = text.replace(/\*\*(.*?)\*\*/gms, '<b>$1</b>');
 
     // Заменим выделение курсивом
     text = text.replace(/\*(.*?)\*/gm, '<i>$1</i>');
@@ -50,7 +50,7 @@ function steamSyntax(text, short = false) {
     text = text.replace(/\[.*?quote\.*?=(.*?)](.*?)\[.*?\/.*?quote.*?\]/gs, '<blockquote><div class="light"></div><div class="content"><h2 style="text-align: center;">$1</h2><br>$2</div></blockquote>');
 
     // Заменим код
-    text = text.replace(/`(.+?)`/gs, '<code>$1</code>');
+    text = text.replace(/`(.+?)`/gms, '<code>$1</code>');
 
     // Заменим таблицы
     text = text.replace(/\[table\](.*?)\[\/table\]/gs, '<table>$1</table>');
@@ -63,9 +63,9 @@ function steamSyntax(text, short = false) {
 
     text = text.replace(/\[(h[1-6])\](.*?)\[\/\1\]/gs, '<$1>$2</$1>');
 
-    text = text.replace(/\[b\](.*?)\[\/b\]/gs, '<b>$1</b>');
-    text = text.replace(/\[u\](.*?)\[\/u\]/gs, '<u>$1</u>');
-    text = text.replace(/\[i\](.*?)\[\/i\]/gs, '<i>$1</i>');
+    text = text.replace(/\[b\](.*?)\[\/b\]/gms, '<b>$1</b>');
+    text = text.replace(/\[u\](.*?)\[\/u\]/gms, '<u>$1</u>');
+    text = text.replace(/\[i\](.*?)\[\/i\]/gms, '<i>$1</i>');
     text = text.replace(/\[strike\](.*?)\[\/strike\]/gs, '<strike>$1</strike>');
     text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gs, '<span class="spoiler">$1</span>');
     text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr></hr>');
