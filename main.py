@@ -36,6 +36,8 @@ MONTHS_NAMES = {
     12: "декабря",
 }
 
+js_datetime = "%Y-%m-%d %H:%M:%S"
+
 
 @app.route('/')
 @app.route('/index')
@@ -242,11 +244,11 @@ async def mod(mod_id):
         info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
 
         input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-        info[0]['result']['date_creation_js'] = input_date.strftime("%Y-%m-%d")
+        info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
         info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
         input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-        info[0]['result']['date_update_js'] = input_date_update.strftime("%Y-%m-%d")
+        info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
         info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
 
         info[0]['result']['id'] = mod_id
@@ -355,7 +357,7 @@ async def user(user_id):
         info[0]["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
     input_date = datetime.datetime.fromisoformat(info[0]['general']['registration_date'])
-    info[0]['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
+    info[0]['general']['registration_date_js'] = input_date.strftime(js_datetime)
     info[0]['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
     if info[0]['general']['about'] is None or len(info[0]['general']['about']) <= 0:
@@ -424,7 +426,7 @@ async def user_settings(user_id):
         info['general']['about_enable'] = True
 
     input_date = datetime.datetime.fromisoformat(info['general']['registration_date'])
-    info['general']['registration_date_js'] = input_date.strftime("%Y-%m-%d")
+    info['general']['registration_date_js'] = input_date.strftime(js_datetime)
     info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
 
