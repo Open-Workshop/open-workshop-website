@@ -2,7 +2,7 @@
 {% block content %}
     <div style="margin: 2pt;">
         <article class="mod-container">
-            <div style="width: 100%">
+            <div class="mod-big-cont">
               <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }}</h1>
               <h4 id="mod-tags-title">
                   <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ data[0]['result']['game']['name'] }}</a>
@@ -20,6 +20,7 @@
                 {{ data[0]['result']['description'] }}
               </article>
               <script src="/assets/scripts/mod.js"></script>
+              <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script><script  src="./script.js"></script>
             </div>
 
             <div class="right-bar-mod">
@@ -29,7 +30,7 @@
                   <ul class="js__slider__images slider__images">
                     {% for item in data[1]['results'] %}
                       <a href="{{ item['url'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
-                        <img src="{{ item['url'] }}" alt="Скриншот мода" style="min-width: 100%;" class="slider__images-image" />  
+                        <img src="{{ item['url'] }}" alt="Скриншот мода" style="min-width: 100%;" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />  
                       </a>
                     {% endfor %}
                   </ul>

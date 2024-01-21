@@ -1,0 +1,621 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+    <div style="margin: 2pt;">
+      <article class="mod-container" style="width: 210pt; justify-content: center;">
+        <style>
+          button.pager {
+            height: 30pt;
+            width: 75pt;
+            border-radius: 5pt;
+          }
+        </style>
+        <button onclick="$('.pone').hide(); $('.ptwo').show();" class="pager">Оформление</button>
+        <button onclick="$('.pone').show(); $('.ptwo').hide();" class="pager">Основное</button>
+        <button style="background-color: yellow;" class="pager">Сохранить</button>
+      </article>
+
+      <article class="mod-container pone" style="display: none;">
+        <style>
+          div.mini-cont {
+            background: #0000006b; 
+            padding: 5pt; 
+            border-radius: 5pt;
+            margin: 2pt;
+          }
+        </style>
+
+        <div class="mini-cont">
+          <h2 style="text-align: center;">Загрузить новую версию</h2>
+          <input style="background: blueviolet; border-radius: 10pt; color: azure;" type="file" accept=".zip" id="input-mod-file-update">
+          <button style="height: 41px; width: 90px; border-radius: 10pt; margin-top: 2pt;" onclick="uploadUpdateMod()">Отправить</button>
+          <section progressuploadmod style="display: none;">
+            <div class="progressbarWrapper">
+              <span id="greenBar"></span>
+            </div>
+          </section>
+          <style>
+            .progressbarWrapper {
+              height: 30px;
+              display: block;
+              margin-top: 3pt;
+              position: relative;
+              background: #555;
+              padding: 3px;
+              box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.3);
+              border-radius: 5pt;
+            }
+
+            #greenBar {
+              display: block;
+              height: 100%;
+              width: 0px;
+              background-color: rgb(43, 194, 83);
+              background-image: linear-gradient(
+                center bottom,
+                rgb(43, 194, 83) 37%,
+                rgb(84, 240, 84) 69%
+              );
+              position: relative;
+              overflow: hidden;
+              font-size: 15px;
+              text-align: center;
+              color: white;
+              transition: all 700ms ease;
+              border-radius: 5pt;
+            }
+          </style>
+          <script>
+            function uploadUpdateMod() {
+              let elem = document.getElementById("greenBar");
+              var fileInput = document.getElementById('input-mod-file-update');
+
+              $('section[progressuploadmod]').show()
+
+              var file = fileInput.files[0];
+              var formData = new FormData();
+              formData.append('mod_file', file);
+
+              var xhr = new XMLHttpRequest();
+
+              xhr.upload.addEventListener('progress', function(event) {
+                if (event.lengthComputable) {
+                  var percentComplete = (event.loaded / event.total) * 100;
+                  
+                  elem.style.width = percentComplete + "%";
+                  elem.innerHTML = percentComplete + "%";
+                }
+              });
+
+              xhr.open('POST', "https://openworkshop.su/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
+              xhr.send(formData).then(response => {
+                if (response.status != 200) {
+                  console.log('Код ответа не равен 200');
+                  response.text().then(text => {
+                    banner_error_a = {
+                      title: 'Ошибка обновления',
+                      text: text.substring(1, text.length - 1),
+                      theme: 'warning',
+                      autohide: true,
+                      interval: 6000
+                    };
+
+                    new Toast(banner_error_a);
+                  });
+                };
+              })
+            }
+          </script>
+        </div>
+
+        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
+          <h2 style="text-align: center;">Удалить мод</h2>
+          <input type="text" style="border-radius: 10pt; background: brown;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
+          <button class="pager" style="background-color: red; margin-top: 3pt; color: white;">Удалить</button>
+        </div>
+      </article>
+
+      <article class="mod-container ptwo">
+          <div class="mod-big-cont">
+            <input class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title" oninput="titleEditEvent()">
+            
+            <h4 id="mod-tags-title">
+              <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">📝{{ data[0]['result']['game']['name'] }}</a>
+            </h4>
+            
+            <div>
+              <div style="margin-left: 6pt; margin-top: 4pt;">
+                <button class="descbutton" onclick="toHideShow('mod-description-preview', 'main-desc-edit')">Редактирование</button>
+                <button class="descbutton" onclick="toHideShow('main-desc-edit', 'mod-description-preview')">Предпросмотр</button>
+                <style>
+                  button.descbutton {
+                    padding: 4pt;
+                    font-size: 13pt;
+                    border-radius: 5pt;
+                    background: beige;
+                  }
+                </style>
+              </div>
+              <div>
+                <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
+                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">
+                    {{ data[0]['result']['description'] }}
+                  </textarea>
+                  <pre id="highlighting" aria-hidden="true">
+                    <code class="language-ow" id="highlighting-content">
+                    </code>
+                  </pre>
+                </div>
+
+                <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+                
+                <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+                <script>
+                  const textareaDesc = document.getElementById("editing")
+                  $(document).ready(function() {
+                    update(textareaDesc.value)
+                    sync_scroll(textareaDesc)
+                    on_height(textareaDesc)
+                  })
+
+                  function on_height(element) {
+                    element.style.height = 0;
+                    heightCurr = (element.scrollHeight+20) + "px";
+                    
+                    element.style.height = heightCurr;
+                    document.getElementById("highlighting").style.height = heightCurr;
+                    document.getElementById("main-desc-edit").style.height = heightCurr;
+                  }
+
+
+                  b={
+                    pattern: /\[b\](.*?)\[\/b\]/gms,
+                    inside: {
+                      'punctuation': /\[\/?b\]/ig,
+                      'italic': /\[i\](.*?)\[\/i\]/gms,
+                      'content': /.*/ig,
+                    }
+                  }
+                  i={
+                    pattern: /\[i\](.*?)\[\/i\]/gms,
+                    inside: {
+                      'punctuation': /\[\/?i\]/ig,
+                      'bold': /\[b\](.*?)\[\/b\]/gms,
+                      'content': /.*/ig,
+                    }
+                  }
+                  img={
+                    pattern: /\[img\](.*?)\[\/img\]/ig,
+                    inside: {
+                      'punctuation': /\[\/?img|\]/ig,
+                      'content': /.*/ig,
+                    }
+                  }
+                  url={
+                    pattern: /(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig,
+                    inside: {
+                      'img': img,
+                      'punctuation': /\[\/?url=?|\]/ig,
+                      'link': /https?:\/\/\S+/ig,
+                      'bold': b,
+                      'italic': i,
+                      'content': /.*/ig,
+                    }
+                  }
+                  htitle={
+                    pattern: /\[(h[1-6])\](.*?)\[\/\1\]/gs,
+                    inside: {
+                      'url': url,
+                      'img': img,
+                      'punctuation': /\[\/?(h[1-6])\]/ig,
+                      'bold': b,
+                      'italic': i,
+                      'content': /.*/ig,
+                    }
+                  }
+
+                  // https://www.json.org/json-en.html
+                  Prism.languages.ow = {
+                    'list': {
+                      pattern: /\[list\]((?:.|\n)*?)\[\/list\]/gmi,
+                      inside: {
+                        "list": /\[\/?list\]/ig,
+                        "point": /\[\*\]/ig,
+                        'title': htitle,
+                        'img': img,
+                        'url': url,
+                        'link': /https?:\/\/\S+/ig,
+                        'bold': b,
+                        'italic': i,
+                        'content': /.*/ig,
+                      }
+                    },
+                    'url': url,
+                    'img': img,
+                    'title': htitle,
+                    'link': /https?:\/\/\S+/ig,
+                    'italic': i,
+                    'bold': b,
+                  };
+
+                  Prism.languages.webmanifest = Prism.languages.ow;
+
+                  function update(text) {
+                    let result_element = document.querySelector("#highlighting-content");
+                    // Handle final newlines (see article)
+                    if(text[text.length-1] == "\n") {
+                      text += " ";
+                    }
+                    // Update code
+                    result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
+                    // Syntax Highlight
+                    Prism.highlightElement(result_element);
+                  }
+
+                  function sync_scroll(element) {
+                    /* Scroll result to scroll coords of event - sync with textarea */
+                    let result_element = document.querySelector("#highlighting");
+                    // Get and set x and y
+                    result_element.scrollTop = element.scrollTop;
+                    result_element.scrollLeft = element.scrollLeft;
+                  }
+
+                  function check_tab(element, event) {
+                    let code = element.value;
+                    if(event.key == "Tab") {
+                      /* Tab key pressed */
+                      event.preventDefault(); // stop normal
+                      let before_tab = code.slice(0, element.selectionStart); // text before tab
+                      let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
+                      let cursor_pos = element.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
+                      element.value = before_tab + "\t" + after_tab; // add tab char
+                      // move cursor
+                      element.selectionStart = cursor_pos;
+                      element.selectionEnd = cursor_pos;
+                      update(element.value); // Update text to include indent
+                    }
+                  }
+                </script>
+                
+                <article id="mod-description-preview" style="display: none;">{{ data[0]['result']['description'] }}</article>
+
+                <script>
+                  function toHideShow(one, two) {
+                    document.getElementById(one).style.display = "none"
+                    document.getElementById(two).style.display = null;
+
+                    document.getElementById('mod-description-preview').innerHTML = OpenWS.syntaxToHTML(document.getElementById('editing').value);
+                  }
+                </script>
+              </div>
+            </div>
+
+            <script>
+              $(document).ready(function() {
+                var container = document.getElementById('mod-description-preview');
+                container.innerHTML = OpenWS.syntaxToHTML(container.innerHTML);
+              })
+            </script>
+
+            <script>
+              const usernameElement = document.getElementById('mod-name-title');
+
+              titleEditEvent()
+              function titleEditEvent() {
+                if (usernameElement) {
+                  const myText = usernameElement.value;
+
+                  if (myText.length > 60 || myText.length <= 0) {
+                    usernameElement.classList.add('limit');
+                  } else {
+                    usernameElement.classList.remove('limit')
+                  }
+
+                  usernameElement.style.width = 0;
+                  usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
+                }
+              }
+            </script>
+          </div>
+
+          <div class="right-bar-mod">
+            <div class="wrapper" style="width: 100%;">
+              <div class="slider">
+                <style>
+                  div.bottom-editor-screenshot {
+                    background: #030021;
+                    border-bottom-right-radius: 5pt;
+                    border-bottom-left-radius: 5pt;
+                    display: flex;
+                    justify-content: space-between;
+                  }
+                  div.bottom-editor-screenshot > button {
+                    border-radius: 5pt;
+                    padding: 3pt;
+                  }
+                  div.bottom-editor-screenshot > select {
+                    margin: 0;
+                    margin-bottom: 2pt;
+                    border-radius: 0;
+                    border: none;
+                    border-bottom-left-radius: 3pt;
+                    border-bottom-right-radius: 3pt;
+                  }
+                </style>
+                <ul class="js__slider__images slider__images">
+                  {% for item in data[1]['results'] %}
+                    <div resid="{{ item['id'] }}">
+                      <a startdata="{{ item['url'] }}" href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
+                        <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />
+                      </a>
+                      <div class="bottom-editor-screenshot">
+                        <select selectortypeshot onchange="resetLogo(this)" startdata="{{ item['type'] }}" title="Выберете тип">
+                          <option value="screenshot" {% if item['type'] == "screenshot" %}selected{% endif %}>Скриншот</option>
+                          <option value="logo" title="Может быть только один" {% if item['type'] == "logo" %}selected{% endif %}>Логотип</option>
+                        </select>
+                        <button onclick="deleteLogo(this)">Удалить</button>
+                      </div>
+                      <input onchange="inputLogoChange(this)" id="input-logo-url" style="width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;" type="url" value="{{ item['url'] }}"  placeholder="Ссылка на изображение">
+                    </div>
+                  {% endfor %}
+                </ul>
+
+                <h1 noscreensshots style="width: 100%; text-align: center; margin-bottom: -30pt;">Скриншотов нет</h1>
+            
+                <div class="slider__controls">
+                  <ol class="js__slider__pagers slider__pagers"></ol>
+                </div>
+                
+                <script>
+                  function inputLogoChange(inp) {
+                    console.log(inp.value)
+
+                    var $parentDiv = $(inp).closest('div'); // Находим ближайший родительский элемент div
+                    var $aElement = $parentDiv.find('a'); // Находим a элемент внутри div
+                    var $imgElement = $parentDiv.find('img'); // Находим img элемент внутри div
+                    console.log($aElement, $imgElement); // Логируем найденные элементы
+
+                    $aElement.attr('href', inp.value); // устанавливаем значение ссылки в a элемент
+                    $imgElement.attr('src', inp.value); // устанавливаем значение src в img элемент
+                  }
+
+                  // create pager list items
+                  var sliderImage = document.querySelectorAll('.slider__images-image');
+                  var sliderPagers = document.querySelectorAll('.js__slider__pagers');
+
+
+                  // set up vars
+                  var sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
+                  var sliderImages = document.querySelector('.js__slider__images');
+                  var sliderImagesItems = document.querySelectorAll('.slider__images-item');
+                  var lastElem = sliderPagersList.length - 1;
+                  var sliderTarget;
+
+                  
+                  function deleteLogo(butt) {
+                    $(butt).closest('div[resid]').remove();
+                    
+                    screenshotsUpdate();
+                  }
+                  function addLogo() {
+                    const inputUrl = document.querySelector('input[newshoturl]')
+                    const selectType = document.querySelector('select[newshottype]')
+
+                    console.log(inputUrl.value, selectType.value)
+
+
+                    // Создаем элемент div
+                    var $div = $('<div>').attr('resid', 'new');
+
+                    // Создаем элемент a
+                    var $a = $('<a>').attr('startdata', inputUrl.value).attr('href', inputUrl.value).addClass('slider__images-item without-caption image-link');
+
+                    // Создаем элемент img
+                    var $img = $('<img>').attr('src', inputUrl.value).attr('alt', 'Скриншот мода').addClass('slider__images-image loaded').attr('onerror', 'this.src=\'/assets/images/image-not-found.webp\'');
+
+                    // Добавляем img в a
+                    $a.append($img);
+
+                    // Добавляем a в div
+                    $div.append($a);
+
+                    // Создаем элемент select
+                    var $select = $('<select>').attr('startdata', selectType.value).attr('title', 'Выберете тип').attr('onchange', 'resetLogo(this)').attr('selectortypeshot', '');
+
+                    // Создаем option для select
+                    var $option1 = $('<option>').attr('value', 'screenshot').text('Скриншот');
+                    if (selectType.value === 'screenshot') {
+                      $option1.attr('selected', 'selected');
+                    }
+                    var $option2 = $('<option>').attr('value', 'logo').attr('title', 'Может быть только один').text('Логотип');
+                    if (selectType.value === 'logo') {
+                      $option2.attr('selected', 'selected');
+                      resetLogo(selectType)
+                    }
+
+                    // Добавляем option в select
+                    $select.append($option1, $option2);
+
+                    // Создаем кнопку
+                    var $button = $('<button>').attr('onclick', 'deleteLogo(this)').text('Удалить');
+
+                    // Добавляем select и кнопку в div
+                    var $divT = $('<div>').addClass('bottom-editor-screenshot');
+                    $divT.append($select, $button);
+                    $div.append($divT)
+
+                    // Создаем input
+                    var $input = $('<input>').attr('onchange', 'inputLogoChange(this)').attr('id', 'input-logo-url').attr('style', 'width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;').attr('type', 'url').attr('value', inputUrl.value).attr('placeholder', 'Ссылка на изображение');
+
+                    // Добавляем input в div
+                    $div.append($input);
+
+                    // Добавляем div в DOM
+                    $('.slider__images').append($div);
+
+                    $('.without-caption').magnificPopup({
+                      type: 'image',
+                      closeOnContentClick: true,
+                      closeBtnInside: false,
+                      mainClass: 'mfp-no-margins mfp-with-zoom', // class to remove default margin from left and right side
+                      image: {
+                        verticalFit: true
+                      },
+                      zoom: {
+                        enabled: true,
+                        duration: 300 // don't foget to change the duration also in CSS
+                      }
+                    });
+
+                    screenshotsUpdate()
+                  }
+
+                  function resetLogo(noReset) {
+                    if (noReset.value == "logo") {
+                      $('select[selectortypeshot]').not(noReset).val('screenshot');
+
+                      banner_error_a = {
+                        title: 'Логотип переопределён',
+                        text: 'Логотип может быть только один. Прошлый логотип стал скриншотом.',
+                        theme: 'info',
+                        autohide: true,
+                        interval: 6000
+                      };
+
+                      new Toast(banner_error_a);
+                    }
+                  }
+
+                  screenshotsUpdate()
+                  function screenshotsUpdate() {
+                    $('.js__slider__pagers.slider__pagers').empty();
+
+                    sliderImage = document.querySelectorAll('.slider__images-image');
+                    sliderPagers = document.querySelectorAll('.js__slider__pagers');
+
+                    sliderImage.forEach(function (image, index) {
+                      listItem = document.createElement('li');
+                      listItem.textContent = index + 1;
+                      sliderPagers[0].appendChild(listItem);
+                    });
+
+                    // set up vars
+                    sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
+                    sliderImages = document.querySelector('.js__slider__images');
+                    sliderImagesItems = document.querySelectorAll('.slider__images-item');
+                    lastElem = sliderPagersList.length - 1;
+
+                    // pager controls
+                    sliderPagersList.forEach(function (pager) {
+                      pager.addEventListener('click', function () {
+                        if (!pager.classList.contains('active')) {
+                          sliderTarget = Array.from(sliderPagersList).indexOf(pager);
+                          sliderResponse(sliderTarget);
+                        }
+                      });
+                    });
+
+                    if (sliderPagersList.length <= 0) {
+                      $('h1[noscreensshots]').show();
+                    } else {
+                      $('h1[noscreensshots]').hide();
+                    }
+
+                    sliderResponse(0)
+                  }
+
+                  // set up first slide
+                  sliderPagersList[0].classList.add('active');
+                  sliderImagesItems.forEach(function (item, index) {
+                    if (index !== 0) {
+                      item.parentNode.style.display = 'none';
+                    }
+                  });
+
+                  // transition function
+                  function sliderResponse(sliderTarget) {
+                    sliderImagesItems.forEach(function (item, index) {
+                      if (index === sliderTarget) {
+                        item.parentNode.style.display = 'block';
+                      } else {
+                        item.parentNode.style.display = 'none';
+                      }
+                    });
+                    sliderPagersList.forEach(function (pager, index) {
+                      if (index === sliderTarget) {
+                        pager.classList.add('active');
+                      } else {
+                        pager.classList.remove('active');
+                      }
+                    });
+                  }
+
+                  function checkImageHeight() {
+                    var sliderImages = document.getElementsByClassName('slider__images-image');
+                    var visibleSliderImage = Array.from(sliderImages).find(function(image) {
+                        return window.getComputedStyle(image).display !== 'none';
+                    });
+                    if (visibleSliderImage) {
+                        var sliderWidth = visibleSliderImage.offsetWidth;
+                        Array.from(sliderImages).forEach(function(image) {
+                          image.style.width = sliderWidth + 'px';
+                        });
+                    }
+                  }
+
+                  checkImageHeight()
+                  var sliderImages = document.getElementsByClassName('slider__images-image');
+                  Array.from(sliderImages).forEach(function(sliderImage) {
+                    sliderImage.addEventListener('load', function() {
+                        checkImageHeight();
+                        Array.from(sliderImages).forEach(function(image) {
+                            image.classList.add('loaded');
+                        });
+                    });
+                  });
+
+                  window.addEventListener('resize', function() {
+                    checkImageHeight();
+                  });
+                </script>
+              </div>
+            </div>
+
+            <div class="mod-dependence-list">
+              <input newshoturl id="input-logo-url" style="width: 100%; border-radius: 0; border-top-left-radius: 5pt; border-top-right-radius: 5pt; background: #636363; color: white;" type="url" placeholder="Ссылка на изображение...">
+              <style>
+                ::placeholder { /* Most modern browsers support this now. */
+                  color: white;
+                }
+              </style>
+              <div style="display: flex;">
+                <select newshottype title="Выберете тип" style="width: 100%; margin: 0; border-radius: 0; border-bottom-left-radius: 5pt;">
+                  <option value="screenshot">Скриншот</option>
+                  <option value="logo" title="Может быть только один">Логотип</option>
+                </select>
+                <button onclick="addLogo()" style="border: none; border-bottom-right-radius: 5pt; padding: 3pt; background: #545454; color: aliceblue; cursor: pointer;">Добавить</button>
+              </div>
+            </div>
+
+            <div class="mod-dependence-list">
+              Зависимости мода
+              {% for item in data[2].values() %}
+                <a class="mod-dependence" href="/mod/{{ item.id }}">
+                  <img src="{{ item.img }}" alt="Логотип мода">
+                  <h3 translate="no">{{ item.name }}</h3>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+      </article>
+
+    </div>
+
+{% endblock %}
+
+{% block title %}
+{{ data[0]['result']['name'] }} - edit Open Work
+{% endblock %}
+
+{% block description %}
+{{ data[0]['result']['short_description'] }}
+{% endblock %}

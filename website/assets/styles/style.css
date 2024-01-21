@@ -1229,6 +1229,7 @@ footer div.social-media-links a:hover svg circle {
 }
 .one_slider > .slider__images > a > .slider__images-image {
   border-radius: 10pt;
+  min-width: 100%;
 }
 
 
@@ -1248,6 +1249,7 @@ footer div.social-media-links a:hover svg circle {
   height: auto;
 }
 .slider__images-item {
+  min-width: 100%;
   border-radius: 10pt;
   position: relative;
   -webkit-box-align: center;
@@ -1280,6 +1282,7 @@ footer div.social-media-links a:hover svg circle {
   border-top-left-radius: 10pt;
   max-height: 350pt;
   max-width: 100%;
+  min-width: 100%;
   z-index: 100;
   opacity: 1;
 }
@@ -1517,6 +1520,10 @@ blockquote > .light {
   margin: 1;
 }
 
+.mod-container > .mod-big-cont {
+  width: 100%;
+}
+
 .download-button {
   display: flex;
   border-radius: 10pt;
@@ -1548,6 +1555,9 @@ blockquote > .light {
     display: -ms-flexbox;
     display: flex;
   }
+  .mod-container > .mod-big-cont {
+    max-width: 70%;
+  }
   .right-bar-mod {
     min-width: 30%;
     max-width: 30%;
@@ -1556,6 +1566,9 @@ blockquote > .light {
 @media (max-width: 699px) {
   .mod-container {
     display: block;
+  }
+  .mod-container > .mod-big-cont {
+    max-width: 100%;
   }
   .right-bar-mod {
     min-width: 100%;

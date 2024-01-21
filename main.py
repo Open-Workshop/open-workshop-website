@@ -199,6 +199,7 @@ async def fetch(url):
         return json.loads(text)
 
 @app.route('/mod/<int:mod_id>')
+@app.route('/mod/<int:mod_id>.html')
 async def mod(mod_id):
     try:
         global SHORT_WORDS
@@ -334,7 +335,96 @@ async def mod(mod_id):
         return await page_not_found(-1)
 
 
+@app.route('/mod/<int:mod_id>/edit')
+@app.route('/mod/<int:mod_id>/edit.html')
+async def edit_mod(mod_id):
+    global SHORT_WORDS
+    global MONTHS_NAMES
+    launge = "ru"
+
+    urls = [
+        SERVER_ADDRESS + "/info/mod/" + str(
+            mod_id) + "?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
+        SERVER_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
+    ]
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url))
+    info = await asyncio.gather(*tasks)
+
+    def size_set(bites: int = 1, digit: str = "") -> str:
+        return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
+
+    if info[0]['result']['size'] > 1000000000:
+        info[0]['result']['size'] = size_set(1073741824, "G")
+    elif info[0]['result']['size'] > 1000000:
+        info[0]['result']['size'] = size_set(1048576, "M")
+    elif info[0]['result']['size'] > 1000:
+        info[0]['result']['size'] = size_set(1024, "K")
+    else:
+        info[0]['result']['size'] = size_set()
+
+    is_mod = {
+        "date_creation": info[0]['result'].get('date_creation', ""),
+        "date_update": info[0]['result'].get("date_update", ""),
+        "logo": ""
+    }
+
+    input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
+    info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
+    info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
+
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
+    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+
+    info[0]['result']['id'] = mod_id
+
+    info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'],
+                                                                      words=SHORT_WORDS)
+    info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
+
+    info.append({})
+    if info[0]['dependencies_count'] > 0:
+        urls = [
+            SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(
+                info[0]['dependencies']) + "&general=true",
+            SERVER_ADDRESS + '/list/resources_mods/' + str(
+                info[0]['dependencies']) + '?page_size=30&page=0&types_resources=["logo"]'
+        ]
+        tasks = []
+        for url in urls:
+            tasks.append(fetch(url))
+        info[2] = await asyncio.gather(*tasks)
+
+        depen = {}
+        for i in info[0]['dependencies']:
+            depen[i] = {"img": "", "name": str(i), "id": i}
+        for mod in info[2][0]["results"]:
+            depen[mod["id"]]["name"] = mod["name"]
+        for img in info[2][1]["results"]:
+            depen[img["owner_id"]]["img"] = img["url"]
+        info[2] = depen
+
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
+
+
 @app.route('/user/<int:user_id>')
+@app.route('/user/<int:user_id>.html')
 async def user(user_id):
     launge = "ru"
 
@@ -390,6 +480,7 @@ async def user(user_id):
     return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/user/<int:user_id>/settings')
+@app.route('/user/<int:user_id>/settings.html')
 async def user_settings(user_id):
     launge = "ru"
 
@@ -440,12 +531,12 @@ async def user_settings(user_id):
 
     print(user_p, editable)
 
-    #try:
-    page_html = render_template("user-settings.html", user_data=info, user_access=editable,
-                               is_user_data={"id": user_id, "logo": info['general']['avatar_url']},
-                               user_profile=user_p)
-    #except:
-    #    page_html = ""
+    try:
+        page_html = render_template("user-settings.html", user_data=info, user_access=editable,
+                                   is_user_data={"id": user_id, "logo": info['general']['avatar_url']},
+                                   user_profile=user_p)
+    except:
+        page_html = ""
 
 
     # Возвращаем ответ
