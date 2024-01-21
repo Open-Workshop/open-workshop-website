@@ -86,23 +86,47 @@
                 }
               });
 
-              xhr.open('POST', "https://openworkshop.su/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
-              xhr.send(formData).then(response => {
-                if (response.status != 200) {
-                  console.log('Код ответа не равен 200');
-                  response.text().then(text => {
-                    banner_error_a = {
-                      title: 'Ошибка обновления',
-                      text: text.substring(1, text.length - 1),
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
+              xhr.onload = function() {
+                if (xhr.status != 200) { // обработка ошибки
+                  // обработка ошибки
+                  banner_error_a = {
+                    title: 'Ошибка обновления ('+xhr.status+')',
+                    text: xhr.responseText,//.substring(1, text.length - 1),
+                    theme: 'warning',
+                    autohide: true,
+                    interval: 6000
+                  };
 
-                    new Toast(banner_error_a);
-                  });
+                  new Toast(banner_error_a);
+                } else {
+                  // обработка успешного ответа
+                  banner_error_a = {
+                    title: 'Успешно!',
+                    text: 'Новая версия мода загружена на сервер!',//.substring(1, text.length - 1),
+                    theme: 'success',
+                    autohide: true,
+                    interval: 6000
+                  };
+
+                  new Toast(banner_error_a);
+                }
+              };
+
+              xhr.onerror = function() {
+                // обработка ошибки
+                banner_error_a = {
+                  title: 'Сетевая ошибка',
+                  text: xhr.responseText,//.substring(1, text.length - 1),
+                  theme: 'danger',
+                  autohide: true,
+                  interval: 6000
                 };
-              })
+
+                new Toast(banner_error_a);
+              };
+
+              xhr.open('POST', "https://openworkshop.su/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
+              xhr.send(formData)
             }
           </script>
         </div>
