@@ -227,9 +227,7 @@
               </div>
               <div>
                 <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="limitRenderUpdate(); update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">
-                    {{ data[0]['result']['description'] }}
-                  </textarea>
+                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="limitRenderUpdate(); update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['description'] }}</textarea>
                   <pre id="highlighting" aria-hidden="true">
                     <code class="language-ow" id="highlighting-content">
                     </code>
