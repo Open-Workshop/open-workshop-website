@@ -69,7 +69,8 @@
               let elem = document.getElementById("greenBar");
               var fileInput = document.getElementById('input-mod-file-update');
 
-              $('section[progressuploadmod]').show()
+              const bar = $('section[progressuploadmod]')
+              bar.show()
 
               var file = fileInput.files[0];
               var formData = new FormData();
@@ -82,7 +83,12 @@
                   var percentComplete = (event.loaded / event.total) * 100;
                   
                   elem.style.width = percentComplete + "%";
-                  elem.innerHTML = percentComplete + "%";
+                  const roundetPercent = Math.round(percentComplete);
+                  if (roundetPercent == 100) {
+                    elem.innerHTML = "Ещё мгновение...";
+                  } else {
+                    elem.innerHTML = roundetPercent + "%";
+                  }
                 }
               });
 
@@ -102,7 +108,7 @@
                   // обработка успешного ответа
                   banner_error_a = {
                     title: 'Успешно!',
-                    text: 'Новая версия мода загружена на сервер!',//.substring(1, text.length - 1),
+                    text: 'Новая версия мода загружена на сервер!',
                     theme: 'success',
                     autohide: true,
                     interval: 6000
@@ -110,19 +116,21 @@
 
                   new Toast(banner_error_a);
                 }
+                bar.hide()
               };
 
               xhr.onerror = function() {
                 // обработка ошибки
                 banner_error_a = {
                   title: 'Сетевая ошибка',
-                  text: xhr.responseText,//.substring(1, text.length - 1),
+                  text: xhr.responseText,
                   theme: 'danger',
                   autohide: true,
                   interval: 6000
                 };
 
                 new Toast(banner_error_a);
+                bar.hide()
               };
 
               xhr.open('POST', "/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
@@ -133,7 +141,7 @@
 
         <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
           <h2 style="text-align: center;">Удалить мод</h2>
-          <input oninput="checkInputToUpdate(this.value)" type="text" style="border-radius: 10pt; background: brown; color: white;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
+          <input oninput="checkInputToDelete(this.value)" type="text" style="border-radius: 10pt; background: brown; color: white;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
           
           <style>
             button.delete_mod {
@@ -152,7 +160,8 @@
           <button class="delete_mod pager" onclick="deleteModPressed()">Удалить</button>
 
           <script>
-            function checkInputToUpdate(enterName) {
+            checkInputToDelete("")
+            function checkInputToDelete(enterName) {
               const $buttonDel = $('button.delete_mod')
               console.log($buttonDel)
               if (enterName != "{{ data[0]['result']['name'] }}") {
@@ -165,11 +174,11 @@
               fetch("/api/accounts/delete/mod?mod_id={{ data[0]['result']['id'] }}", {
                 method: 'POST'
               }).then(response => {
-                if (response.status === 202) {
-                  console.log('Код ответа равен 202!');
+                if (response.status === 200) {
+                  console.log('Код ответа равен 200!');
                   location.reload();
                 } else {
-                  console.log('Код ответа не равен 202');
+                  console.log('Код ответа не равен 200');
                   response.text().then(text => {
                     banner_error_a = {
                       title: 'Ошибка удаления',
