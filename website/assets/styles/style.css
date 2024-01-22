@@ -2350,6 +2350,7 @@ td {
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
+    width: 100%;
   }
   .user-left-bar {
     margin-right: 5pt;

@@ -125,7 +125,7 @@
                 new Toast(banner_error_a);
               };
 
-              xhr.open('POST', "https://openworkshop.su/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
+              xhr.open('POST', "/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
               xhr.send(formData)
             }
           </script>
@@ -133,18 +133,75 @@
 
         <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
           <h2 style="text-align: center;">Удалить мод</h2>
-          <input type="text" style="border-radius: 10pt; background: brown;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
-          <button class="pager" style="background-color: red; margin-top: 3pt; color: white;">Удалить</button>
+          <input oninput="checkInputToUpdate(this.value)" type="text" style="border-radius: 10pt; background: brown; color: white;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
+          
+          <style>
+            button.delete_mod {
+              background-color: red; 
+              margin-top: 3pt; 
+              color: white;
+              cursor: pointer;
+              transition: all 0.1s;
+            }
+            
+            button.delete_mod:disabled {
+              background-color: brown;
+              cursor: auto;
+            }
+          </style>
+          <button class="delete_mod pager" onclick="deleteModPressed()">Удалить</button>
+
+          <script>
+            function checkInputToUpdate(enterName) {
+              const $buttonDel = $('button.delete_mod')
+              console.log($buttonDel)
+              if (enterName != "{{ data[0]['result']['name'] }}") {
+                $buttonDel.attr('disabled', 'true');
+              } else {
+                $buttonDel.removeAttr('disabled');
+              }
+            }
+            function deleteModPressed() {
+              fetch("/api/accounts/delete/mod?mod_id={{ data[0]['result']['id'] }}", {
+                method: 'POST'
+              }).then(response => {
+                if (response.status === 202) {
+                  console.log('Код ответа равен 202!');
+                  location.reload();
+                } else {
+                  console.log('Код ответа не равен 202');
+                  response.text().then(text => {
+                    banner_error_a = {
+                      title: 'Ошибка удаления',
+                      text: text.substring(1, text.length - 1),
+                      theme: 'warning',
+                      autohide: true,
+                      interval: 6000
+                    };
+
+                    new Toast(banner_error_a);
+                  });
+                }
+              }).catch(error => {
+                console.error('Произошла ошибка при отправке запроса: ' + error);
+                banner_error_a = {
+                  title: 'Ошибка',
+                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
+                  theme: 'danger',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a)
+              });
+            }
+          </script>
         </div>
       </article>
 
-      <article class="mod-container ptwo">
+      <article class="mod-container ptwo" style="padding-bottom: 15pt;">
           <div class="mod-big-cont">
             <input class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title" oninput="titleEditEvent()">
-            
-            <h4 id="mod-tags-title">
-              <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">📝{{ data[0]['result']['game']['name'] }}</a>
-            </h4>
             
             <div>
               <div style="margin-left: 6pt; margin-top: 4pt;">
@@ -161,12 +218,26 @@
               </div>
               <div>
                 <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">
+                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="limitRenderUpdate(); update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">
                     {{ data[0]['result']['description'] }}
                   </textarea>
                   <pre id="highlighting" aria-hidden="true">
                     <code class="language-ow" id="highlighting-content">
                     </code>
+                    
+                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text" style="position: absolute; right: 5pt; bottom: 0pt; backdrop-filter: blur(5px); padding-left: 5pt; padding-right: 5pt; border-radius: 10pt; background: #90909030;">245</h3>
+                    <script>
+                      limitRenderUpdate()
+                      function limitRenderUpdate() {
+                        const remainingChars = 10000 - $('#editing').val().length;
+                        $('#limit-desc-text').text(remainingChars);
+                        if (remainingChars < 0) {
+                          $('#limit-desc-text').css('color', 'red');
+                        } else {
+                          $('#limit-desc-text').css('color', 'white');
+                        }
+                      }
+                    </script>
                   </pre>
                 </div>
 
@@ -618,16 +689,6 @@
                 </select>
                 <button onclick="addLogo()" style="border: none; border-bottom-right-radius: 5pt; padding: 3pt; background: #545454; color: aliceblue; cursor: pointer;">Добавить</button>
               </div>
-            </div>
-
-            <div class="mod-dependence-list">
-              Зависимости мода
-              {% for item in data[2].values() %}
-                <a class="mod-dependence" href="/mod/{{ item.id }}">
-                  <img src="{{ item.img }}" alt="Логотип мода">
-                  <h3 translate="no">{{ item.name }}</h3>
-                </a>
-              {% endfor %}
             </div>
           </div>
       </article>
