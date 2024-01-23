@@ -1,7 +1,7 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
     <div style="margin: 2pt;">
-      <article class="mod-container" style="width: 210pt; justify-content: center;">
+      <article class="mod-container" style="width: 250pt; max-width: 95%; justify-content: center;">
         <style>
           button.pager {
             height: 30pt;
@@ -9,8 +9,9 @@
             border-radius: 5pt;
           }
         </style>
-        <button onclick="$('.pone').hide(); $('.ptwo').show();" class="pager">Оформление</button>
-        <button onclick="$('.pone').show(); $('.ptwo').hide();" class="pager">Основное</button>
+        <button onclick="$('.pone').hide(); $('.ptwo').show(); $('.pthree').hide();" class="pager">Оформление</button>
+        <button onclick="$('.pone').hide(); $('.ptwo').hide(); $('.pthree').show();" class="pager">Каталог</button>
+        <button onclick="$('.pone').show(); $('.ptwo').hide(); $('.pthree').hide();" class="pager">Основное</button>
         <button style="background-color: yellow;" class="pager">Сохранить</button>
       </article>
 
@@ -93,7 +94,7 @@
               });
 
               xhr.onload = function() {
-                if (xhr.status != 200) { // обработка ошибки
+                if (xhr.status != 200 || xhr.responseText != "Complite") { // обработка ошибки
                   // обработка ошибки
                   banner_error_a = {
                     title: 'Ошибка обновления ('+xhr.status+')',
@@ -232,7 +233,7 @@
                     <code class="language-ow" id="highlighting-content">
                     </code>
                     
-                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text" style="position: absolute; right: 5pt; bottom: 0pt; backdrop-filter: blur(5px); padding-left: 5pt; padding-right: 5pt; border-radius: 10pt; background: #90909030;">245</h3>
+                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text" style="position: absolute; right: 5pt; bottom: 5pt; backdrop-filter: blur(5px); padding-left: 5pt; padding-right: 5pt; border-radius: 10pt; background: #90909030;">245</h3>
                     <script>
                       limitRenderUpdate()
                       function limitRenderUpdate() {
@@ -698,6 +699,10 @@
               </div>
             </div>
           </div>
+      </article>
+
+      <article class="mod-container pthree" style="display: none;">
+        ...
       </article>
 
     </div>
