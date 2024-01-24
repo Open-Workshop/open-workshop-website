@@ -1,6 +1,6 @@
 /* Please see the article */
 
-#editing, #highlighting {
+#editing, #highlighting, #editing-short, #highlighting-short {
     /* Both elements need the same text and space styling so they are directly on top of each other */
     margin: 10px;
     padding: 10px;
@@ -8,7 +8,7 @@
     width: calc(100% - 15px);
     height: 150px;
 }
-#editing, #highlighting, #highlighting * {
+#editing, #highlighting, #highlighting *, #editing-short, #highlighting-short, #highlighting-short * {
     /* Also add text styles to highlighing tokens */
     tab-size: 2;
     font-size: 15pt;
@@ -18,7 +18,19 @@
 }
 
 
-#editing, #highlighting {
+#limit-desc-text-short, #limit-desc-text {
+    position: absolute; 
+    right: 5pt; 
+    bottom: 5pt; 
+    backdrop-filter: blur(5px); 
+    padding-left: 5pt; 
+    padding-right: 5pt; 
+    border-radius: 10pt; 
+    background: #90909030;
+}
+
+
+#editing, #highlighting, #editing-short, #highlighting-short {
     /* In the same place */
     position: absolute;
     top: 0;
@@ -28,10 +40,10 @@
 
 /* Move the textarea in front of the result */
 
-#editing {
+#editing, #editing-short {
     z-index: 1;
 }
-#highlighting {
+#highlighting, #highlighting-short {
     z-index: 0;
     border-radius: 10pt;
 }
@@ -39,20 +51,20 @@
 
 /* Make textarea almost completely transparent */
 
-#editing {
+#editing, #editing-short {
     background: #ffffff00;
     color: rgba(0, 204, 255, 0);
     caret-color: red;
 }
 
 /* Can be scrolled */
-#editing, #highlighting {
+#editing, #editing-short, #highlighting, #highlighting-short {
     overflow: auto;
     white-space: nowrap; /* Allows textarea to scroll horizontally */
 }
 
 /* No resize on textarea */
-#editing {
+#editing, #editing-short {
     resize: none;
 }
 

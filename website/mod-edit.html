@@ -10,7 +10,7 @@
           }
         </style>
         <button onclick="$('.pone').hide(); $('.ptwo').show(); $('.pthree').hide();" class="pager">Оформление</button>
-        <button onclick="$('.pone').hide(); $('.ptwo').hide(); $('.pthree').show();" class="pager">Каталог</button>
+        <button onclick="$('.pone').hide(); $('.ptwo').hide(); $('.pthree').show(); full_short_update(); updateCardData();" class="pager">Каталог</button>
         <button onclick="$('.pone').show(); $('.ptwo').hide(); $('.pthree').hide();" class="pager">Основное</button>
         <button style="background-color: yellow;" class="pager">Сохранить</button>
       </article>
@@ -228,12 +228,12 @@
               </div>
               <div>
                 <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="limitRenderUpdate(); update(this.value); sync_scroll(this); on_height(this)" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['description'] }}</textarea>
+                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['description'] }}</textarea>
                   <pre id="highlighting" aria-hidden="true">
                     <code class="language-ow" id="highlighting-content">
                     </code>
                     
-                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text" style="position: absolute; right: 5pt; bottom: 5pt; backdrop-filter: blur(5px); padding-left: 5pt; padding-right: 5pt; border-radius: 10pt; background: #90909030;">245</h3>
+                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text">245</h3>
                     <script>
                       limitRenderUpdate()
                       function limitRenderUpdate() {
@@ -255,10 +255,14 @@
                 <script>
                   const textareaDesc = document.getElementById("editing")
                   $(document).ready(function() {
+                    full_update()
+                  })
+                  function full_update() {
                     update(textareaDesc.value)
                     sync_scroll(textareaDesc)
                     on_height(textareaDesc)
-                  })
+                    limitRenderUpdate()
+                  }
 
                   function on_height(element) {
                     element.style.height = 0;
@@ -360,6 +364,7 @@
                     // Get and set x and y
                     result_element.scrollTop = element.scrollTop;
                     result_element.scrollLeft = element.scrollLeft;
+                    $("h3#limit-desc-text").css("right", (-element.scrollLeft+5)+"px"); console.log(element.scrollLeft)
                   }
 
                   function check_tab(element, event) {
@@ -574,17 +579,21 @@
 
                   function resetLogo(noReset) {
                     if (noReset.value == "logo") {
-                      $('select[selectortypeshot]').not(noReset).val('screenshot');
+                      const oldLogos = $('select[selectortypeshot]').not(noReset).filter((index, element) => $(element).val() === 'logo');
+                      oldLogos.val('screenshot');
+                      console.log(oldLogos.length)
 
-                      banner_error_a = {
-                        title: 'Логотип переопределён',
-                        text: 'Логотип может быть только один. Прошлый логотип стал скриншотом.',
-                        theme: 'info',
-                        autohide: true,
-                        interval: 6000
-                      };
+                      if (oldLogos.length > 0) {
+                        banner_error_a = {
+                          title: 'Логотип переопределён',
+                          text: 'Логотип может быть только один. Прошлый логотип стал скриншотом.',
+                          theme: 'info',
+                          autohide: true,
+                          interval: 6000
+                        };
 
-                      new Toast(banner_error_a);
+                        new Toast(banner_error_a);
+                      }
                     }
                   }
 
@@ -701,8 +710,170 @@
           </div>
       </article>
 
-      <article class="mod-container pthree" style="display: none;">
-        ...
+      <article class="mod-container pthree" style="display: none; flex-direction: column; padding-bottom: 15pt;">
+        <div style="margin-left: 6pt; margin-top: 4pt;">
+          <script>$(document).ready(function() {toHideShow('mod-short-description-preview', 'short-desc-edit'); addCard(4)})</script>
+          <button class="descbutton" onclick="toHideShow('mod-short-description-preview', 'short-desc-edit')">Редактирование</button>
+          <button class="descbutton" onclick="toHideShow('short-desc-edit', 'mod-short-description-preview'); updateCardData();">Предпросмотр</button>
+        </div>
+
+        <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="short-desc-edit">
+          <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['short_description'] }}</textarea>
+          <pre id="highlighting-short" aria-hidden="true">
+            <code class="language-ow" id="highlighting-content-short">
+            </code>
+            
+            <h3 title="Ограничение в 256 символов описания!" id="limit-desc-text-short"></h3>
+            <script>
+              const textareaShortDesc = document.getElementById("editing-short")
+              function full_short_update() {
+                short_update(textareaShortDesc.value)
+                short_sync_scroll(textareaShortDesc)
+                short_on_height(textareaShortDesc)
+                limitShortRenderUpdate()
+              }
+              
+              function limitShortRenderUpdate() {
+                const remainingChars = 256 - $('#editing-short').val().length;
+                $('#limit-desc-text-short').text(remainingChars);
+                if (remainingChars < 0) {
+                  $('#limit-desc-text-short').css('color', 'red');
+                } else {
+                  $('#limit-desc-text-short').css('color', 'white');
+                }
+              }
+
+              function short_on_height(element) {
+                element.style.height = 0;
+                heightCurr = (element.scrollHeight+20) + "px";
+                
+                element.style.height = heightCurr;
+                document.getElementById("highlighting-short").style.height = heightCurr;
+                document.getElementById("short-desc-edit").style.height = heightCurr;
+              }
+
+              function short_update(text) {
+                let result_element = document.querySelector("#highlighting-content-short");
+                // Handle final newlines (see article)
+                if(text[text.length-1] == "\n") {
+                  text += " ";
+                }
+                // Update code
+                result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
+                // Syntax Highlight
+                Prism.highlightElement(result_element);
+              }
+
+              function short_sync_scroll(element) {
+                /* Scroll result to scroll coords of event - sync with textarea */
+                let result_element = document.querySelector("#highlighting-short");
+                // Get and set x and y
+                result_element.scrollTop = element.scrollTop;
+                result_element.scrollLeft = element.scrollLeft;
+                $("h3#limit-desc-text-short").css("right", (-element.scrollLeft+5)+"px"); console.log(element.scrollLeft)
+              }
+            </script>
+          </pre>
+        </div>
+
+        <div id="mod-short-description-preview" class="card">
+          <div class="card-click">
+            <div class="card__image-holder">
+              <img class="card__image title-card-img show" src="https://steamuserimages-a.akamaihd.net/ugc/1621814584860459902/F781727401895CFD3C8FBE123A5499D8E82F8679/" alt="Здесь должен быть логотип мода" id="preview-logo-card-1" onerror="this.src='/assets/images/image-not-found.webp'">
+            </div>
+            <div class="card-params-list">
+              <a class="tag-link card-params-list-tag" title="Размер мода">📦{{ data[0]['result']['size'] }}</a>
+            </div>
+            <div class="card-title">
+              <h2 id="titlename1" style="text-align: center;" title="German Signal Pack"></h2>
+            </div>
+          </div>
+
+          <div class="card-flap flap1" id="card-flap1">
+            <div class="card-description"></div>
+            <div class="flap-buttons">
+              <a id="tomodlink1" class="button-card button-flap" style="display: flex; justify-content: center;">
+                <img src="/assets/images/arrow.webp" class="img-to-mod">
+              </a>
+              <button id="togamelink1" onclick="cardCancel()" class="button-cancel button-flap" title="Завернуть карточку">
+                <img src="/assets/images/cancel.webp" class="img-to-mod">
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          function addCard(zindex) {
+            // Код для добавления новой карточки
+          
+            $("div.card-click").click(function(e){
+              e.preventDefault();
+
+              var isShowing = false;
+          
+              if ($(this).parent().hasClass("show")) {
+                isShowing = true
+              }
+          
+              if ($("div.cards").hasClass("showing")) {
+                // a card is already in view
+                $("div.card.show")
+                  .removeClass("show");
+          
+                if (isShowing) {
+                  // this card was showing - reset the grid
+                  $("div.cards")
+                    .removeClass("showing");
+                } else {
+                  // this card isn't showing - get in with it
+                  $(this).parent()
+                    .css({zIndex: zindex})
+                    .addClass("show");
+                }
+          
+                zindex=zindex+2;
+          
+              } else {
+                // no cards in view
+
+                $("div.cards")
+                  .addClass("showing");
+                $(this).parent()
+                  .css({zIndex:zindex})
+                  .addClass("show");
+          
+                zindex=zindex+2;
+              }
+
+              const id = $(this).parent()[0].id;
+              $('#card-flap'+id).css("z-index", zindex+1);
+              $("div.panel").css({zIndex: zindex+1})
+            });
+          }
+
+          function cardCancel() {
+            document.getElementById('mod-short-description-preview').classList.remove("show");
+          }
+        
+          function updateCardData() {
+            // Загружаем логотип
+            let $imgLink = $('select').filter((index, element) => $(element).val() === 'logo').closest('div[resid]').find('img.slider__images-image').attr('src');
+            if ($imgLink == undefined) {
+              $imgLink = "ж"
+            }
+            $('img.card__image').attr('src', $imgLink)
+            console.log($imgLink)
+
+            // Загружаем название
+            const $titleCard = $('h2#titlename1')
+            const titleName = $('input#mod-name-title').val()
+            $titleCard.text(titleName)
+            $titleCard.prop('title', titleName);
+
+            // Загружаем короткое описание
+            $('div.card-description').html(OpenWS.syntaxToHTML($('textarea#editing-short').val(), true))
+          }
+        </script>
       </article>
 
     </div>

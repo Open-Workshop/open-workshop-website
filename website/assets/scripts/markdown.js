@@ -270,8 +270,6 @@ async function renderGames() {
   return -1
 }
 
-renderCards(); // Вызываем функцию renderCards для рендеринга карточек
-
 
 function addCard(zindex) {
     // Код для добавления новой карточки
