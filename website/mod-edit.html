@@ -12,7 +12,7 @@
         <button onclick="$('.pone').hide(); $('.ptwo').show(); $('.pthree').hide();" class="pager">Оформление</button>
         <button onclick="$('.pone').hide(); $('.ptwo').hide(); $('.pthree').show(); full_short_update(); updateCardData();" class="pager">Каталог</button>
         <button onclick="$('.pone').show(); $('.ptwo').hide(); $('.pthree').hide();" class="pager">Основное</button>
-        <button style="background-color: yellow;" class="pager">Сохранить</button>
+        <button onclick="saveChangesMod()" style="background-color: yellow;" class="pager">Сохранить</button>
       </article>
 
       <article class="mod-container pone" style="display: none;">
@@ -207,6 +207,57 @@
             }
           </script>
         </div>
+
+        <div class="mini-cont" style="display: flex; flex-direction: column; align-items: flex-end;">
+          <h2 style="width: 100%; text-align: center;">Игра-владелец</h2>
+          <div style="display: flex;">
+            <img id="logo-game-select" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" style="width: 80pt; border-radius: 5pt;" alt="Логотип игры">
+            <div style="margin-left: 4pt;">
+              <p id="name-game-select">{{ data[0]['result']['game']['name'] }}</p>
+              <input type="number" startdata="{{ data[0]['result']['game']['id'] }}" onchange="renderNewSelectedGame()" value="{{ data[0]['result']['game']['id'] }}" class="edit-mod-game-input" style="border-radius: 4pt; padding: 6pt;" disabled>
+            </div>
+          </div>
+          <style>
+            button.enable-edit-game-mod {
+              width: 90pt; 
+              cursor: pointer; 
+              color: white; 
+              background: darkcyan; 
+              margin-top: 3pt;
+              height: 30pt;
+              border-radius: 5pt;
+            }
+            input.edit-mod-game-input:disabled {
+              color: white;
+            }
+          </style>
+          <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
+
+          <script>
+            const $inputGameID = $('input.edit-mod-game-input')
+            const $pGameName = $('p#name-game-select')
+            const $imgGameLogo = $('img#logo-game-select')
+
+            $(document).ready(function() {
+              renderNewSelectedGame()
+            })
+
+            function renderNewSelectedGame() {
+              fetch("https://api.openworkshop.su/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
+                response.json().then(json => {
+                  console.log(json.result)
+                  if (json.result) {
+                    $pGameName.text(json.result.name).css('color', 'white');
+                    $imgGameLogo.attr('src', json.result.logo+" ")
+                  } else {
+                    $pGameName.text('404').css('color', 'red');
+                    $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
+                  }
+                });
+              })
+            }
+          </script>
+        </div>
       </article>
 
       <article class="mod-container ptwo" style="padding-bottom: 15pt;">
@@ -228,7 +279,7 @@
               </div>
               <div>
                 <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['description'] }}</textarea>
+                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['description'] }}">{{ data[0]['result']['description'] }}</textarea>
                   <pre id="highlighting" aria-hidden="true">
                     <code class="language-ow" id="highlighting-content">
                     </code>
@@ -718,7 +769,7 @@
         </div>
 
         <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="short-desc-edit">
-          <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);">{{ data[0]['result']['short_description'] }}</textarea>
+          <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['short_description'] }}">{{ data[0]['result']['short_description'] }}</textarea>
           <pre id="highlighting-short" aria-hidden="true">
             <code class="language-ow" id="highlighting-content-short">
             </code>
@@ -877,6 +928,79 @@
       </article>
 
     </div>
+
+    <script>
+      function saveChangesMod() {
+        // Имя, короткое описание, описание, игра-владелец
+        let formData = new FormData();
+
+        const checkAndAppend = ($element, key) => {
+          if ($element.attr('startdata') !== $element.val()) {
+            formData.append(key, $element.val());
+          }
+        };
+
+        checkAndAppend($('input.edit-username'), 'mod_name');
+        checkAndAppend($('textarea#editing-short'), 'mod_short_description');
+        checkAndAppend($('textarea#editing'), 'mod_description');
+        checkAndAppend($('input.edit-mod-game-input'), 'mod_game');
+
+        fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
+          method: 'POST',
+          body: formData 
+        }).then(response => {
+          if (response.status != 200) {
+            response.text().then(text => {
+              banner_error_a = {
+                title: 'Ошибка редактирования',
+                text: text.substring(1, text.length - 1),
+                theme: 'warning',
+                autohide: true,
+                interval: 6000
+              };
+
+              new Toast(banner_error_a);
+            });
+          }
+        })
+
+        // Скриншоты, лого
+        
+        // Новые
+        const newLogos = $('div[resid=new]')
+        newLogos.each(function(index, element) {
+          // Здесь можно обработать каждый найденный элемент
+          console.log(`Обработка элемента номер ${index}:`, element);
+
+          let logoBody = new FormData();
+          formData.append('resource_type_name', $(element).find('select').val());
+          formData.append('resource_url', $(element).find('a').attr('href'));
+          formData.append('resource_owner_id', "{{ data[0]['result']['id'] }}");
+
+          fetch("/api/accounts/add/resource", {
+            method: 'POST',
+            body: logoBody
+          }).then(response => {
+            if (response.status != 202) {
+              response.text().then(text => {
+                banner_error_a = {
+                  title: 'Ошибка доб. лого',
+                  text: text.substring(1, text.length - 1),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a);
+              });
+            }
+          })
+        });
+
+        // Старые
+        const startdataLogos = JSON.parse("{{ data[1]['results'] }}".replace(/&#39;/g, '"').replace(/&(amp;)+/g, '&'));
+      }
+    </script>
 
 {% endblock %}
 
