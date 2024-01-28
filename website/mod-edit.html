@@ -934,9 +934,11 @@
         // Имя, короткое описание, описание, игра-владелец
         let formData = new FormData();
 
+        let toSendChangeGen = false
         const checkAndAppend = ($element, key) => {
           if ($element.attr('startdata') !== $element.val()) {
             formData.append(key, $element.val());
+            toSendChangeGen = true
           }
         };
 
@@ -945,30 +947,36 @@
         checkAndAppend($('textarea#editing'), 'mod_description');
         checkAndAppend($('input.edit-mod-game-input'), 'mod_game');
 
-        fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
-          method: 'POST',
-          body: formData 
-        }).then(response => {
-          if (response.status != 200) {
-            response.text().then(text => {
-              banner_error_a = {
-                title: 'Ошибка редактирования',
-                text: text.substring(1, text.length - 1),
-                theme: 'warning',
-                autohide: true,
-                interval: 6000
-              };
+        if (toSendChangeGen) {
+          fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
+            method: 'POST',
+            body: formData 
+          }).then(response => {
+            if (response.status != 200) {
+              response.text().then(text => {
+                banner_error_a = {
+                  title: 'Ошибка редактирования',
+                  text: text.substring(1, text.length - 1),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
 
-              new Toast(banner_error_a);
-            });
-          }
-        })
+                new Toast(banner_error_a);
+              });
+            }
+          })
+        }
 
         // Скриншоты, лого
         
+        let toSendChangesLogo = false
+
         // Новые
         const newLogos = $('div[resid=new]')
         newLogos.each(function(index, element) {
+          toSendChangesLogo = true
+
           // Здесь можно обработать каждый найденный элемент
           console.log(`Обработка элемента номер ${index}:`, element);
 
@@ -1003,6 +1011,7 @@
           const dictionary = startdataLogos[i];
 
           const $selectLogo = $('div[resid='+dictionary.id+']')
+          console.log($selectLogo, $selectLogo.lenght, $selectLogo.lenght >= 1)
           if ($selectLogo.lenght >= 1) {
             const $editLogoSelect = $($selectLogo).find('select')//.val()
             const $editLogoA = $($selectLogo).find('a')//.attr('href')
@@ -1020,6 +1029,8 @@
             }
 
             if (editLogoToSend) {
+              toSendChangesLogo = true
+
               fetch("/api/accounts/edit/resource?resource_id="+dictionary.id, {
                 method: 'POST',
                 body: editLogoBody
@@ -1040,6 +1051,7 @@
               })
             }
           } else {
+            toSendChangesLogo = true
             fetch("/api/accounts/delete/resource?resource_id="+dictionary.id, {
               method: 'POST'
             }).then(response => {
@@ -1058,6 +1070,30 @@
               }
             })
           }
+        }
+      
+      
+        // Подытоживаем...
+        if (toSendChangeGen || toSendChangesLogo) {
+          banner = {
+            title: 'Сохранено!',
+            text: 'Все изменения успешно сохранены)',
+            theme: 'info',
+            autohide: true,
+            interval: 6000
+          };
+
+          new Toast(banner);
+        } else {
+          banner = {
+            title: 'Нечего сохранять!',
+            text: 'Вы должны внести изменения чтобы их сохранить >:(',
+            theme: 'info',
+            autohide: true,
+            interval: 6000
+          };
+
+          new Toast(banner);
         }
       }
     </script>
