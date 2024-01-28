@@ -513,7 +513,7 @@
                         </select>
                         <button onclick="deleteLogo(this)">Удалить</button>
                       </div>
-                      <input onchange="inputLogoChange(this)" id="input-logo-url" style="width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;" type="url" value="{{ item['url'] }}"  placeholder="Ссылка на изображение">
+                      <input onchange="inputLogoChange(this)" id="input-logo-url" style="width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;" type="url" startdata="{{ item['url'] }}" value="{{ item['url'] }}" placeholder="Ссылка на изображение">
                     </div>
                   {% endfor %}
                 </ul>
@@ -997,8 +997,68 @@
           })
         });
 
-        // Старые
+        // Старые (редактирование и удаление)
         const startdataLogos = JSON.parse("{{ data[1]['results'] }}".replace(/&#39;/g, '"').replace(/&(amp;)+/g, '&'));
+        for (let i = 0; i < startdataLogos.length; i++) {
+          const dictionary = startdataLogos[i];
+
+          const $selectLogo = $('div[resid='+dictionary.id+']')
+          if ($selectLogo.lenght >= 1) {
+            const $editLogoSelect = $($selectLogo).find('select')//.val()
+            const $editLogoA = $($selectLogo).find('a')//.attr('href')
+            
+            let editLogoToSend = false
+            let editLogoBody = new FormData();
+
+            if ($editLogoSelect.attr('startdata') != $editLogoSelect.val()) {
+              editLogoToSend = true
+              editLogoBody.append('resource_type', $editLogoSelect.val());
+            }
+            if ($editLogoA.attr('startdata') != $editLogoA.attr('href')) {
+              editLogoToSend = true
+              editLogoBody.append('resource_url', $editLogoA.attr('href'));
+            }
+
+            if (editLogoToSend) {
+              fetch("/api/accounts/edit/resource?resource_id="+dictionary.id, {
+                method: 'POST',
+                body: editLogoBody
+              }).then(response => {
+                if (response.status != 202) {
+                  response.text().then(text => {
+                    banner_error_a = {
+                      title: 'Ошибка ред. лого',
+                      text: text.substring(1, text.length - 1),
+                      theme: 'warning',
+                      autohide: true,
+                      interval: 6000
+                    };
+
+                    new Toast(banner_error_a);
+                  });
+                }
+              })
+            }
+          } else {
+            fetch("/api/accounts/delete/resource?resource_id="+dictionary.id, {
+              method: 'POST'
+            }).then(response => {
+              if (response.status != 202) {
+                response.text().then(text => {
+                  banner_error_a = {
+                    title: 'Ошибка удал. лого',
+                    text: text.substring(1, text.length - 1),
+                    theme: 'warning',
+                    autohide: true,
+                    interval: 6000
+                  };
+
+                  new Toast(banner_error_a);
+                });
+              }
+            })
+          }
+        }
       }
     </script>
 
