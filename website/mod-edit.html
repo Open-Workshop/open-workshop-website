@@ -1011,8 +1011,8 @@
           const dictionary = startdataLogos[i];
 
           const $selectLogo = $('div[resid='+dictionary.id+']')
-          console.log($selectLogo, $selectLogo.lenght(), $selectLogo.lenght() >= 1)
-          if ($selectLogo.lenght() >= 1) {
+          console.log($selectLogo, $selectLogo.find('div').length, $selectLogo.find('div').length >= 1)
+          if ($selectLogo.find('div').length >= 1) {
             const $editLogoSelect = $($selectLogo).find('select')//.val()
             const $editLogoA = $($selectLogo).find('a')//.attr('href')
             
