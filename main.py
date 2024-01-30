@@ -296,7 +296,7 @@ async def mod(mod_id):
                 depen[img["owner_id"]]["img"] = img["url"]
             info[2] = depen
 
-        for holder in info[0]["authors"].value():
+        for holder in info[0]["authors"]:
             if user_req['id'] == holder['user']:
                 info[0]["author"] = 0 if holder['owner'] else 1
                 break
@@ -436,7 +436,7 @@ async def edit_mod(mod_id):
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
-    for holder in info[0]["authors"].value():
+    for holder in info[0]["authors"]:
         if user_req['id'] == holder['user']:
             info[0]["author"] = 0 if holder['owner'] else 1
             break
