@@ -157,9 +157,7 @@ async def check_access_mod(user_req:dict, authors:list):
         access["in_mute"] = user_req["result"]["general"]["mute"]
         access["admin"] = user_req["result"]["rights"]["admin"]
 
-        print(user_req['id'], authors)
         for holder in authors:
-            print(user_req['id'], holder['user'], int(user_req['id']) == int(holder['user']))
             if int(user_req['id']) == int(holder['user']):
                 access["is_my_mod"] = 0 if holder['owner'] else 1
                 break
