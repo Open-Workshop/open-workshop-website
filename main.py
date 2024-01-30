@@ -1,8 +1,8 @@
-from tool import get_user_req, standart_response, get_tokens_cookies, SERVER_ADDRESS, ACCOUNTS_ADDRESS
+from tool import get_user_req, standart_response, get_tokens_cookies, check_access_mod, SERVER_ADDRESS, ACCOUNTS_ADDRESS
 from flask import Flask, render_template, send_from_directory, request, make_response
 from sqlalchemy.orm import sessionmaker
 from sql_client import Page, engine
-from sqlalchemy import insert
+from sqlalchemy import insert, delete
 from pathlib import Path
 from babel import dates
 import datetime
@@ -296,12 +296,7 @@ async def mod(mod_id):
                 depen[img["owner_id"]]["img"] = img["url"]
             info[2] = depen
 
-        for holder in info[0]["authors"]:
-            if user_req['id'] == holder['user']:
-                info[0]["author"] = 0 if holder['owner'] else 1
-                break
-        else:
-            info[0]["author"] = 2
+        right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
         # Создание сессии
         Session = sessionmaker(bind=engine)
@@ -328,7 +323,7 @@ async def mod(mod_id):
 
         # Пробуем отрендерить страницу
         try:
-            page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p)
+            page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
         except:
             page_html = ""
 
@@ -436,16 +431,11 @@ async def edit_mod(mod_id):
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
-    for holder in info[0]["authors"]:
-        if user_req['id'] == holder['user']:
-            info[0]["author"] = 0 if holder['owner'] else 1
-            break
-    else:
-        info[0]["author"] = 2
+    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
     # Пробуем отрендерить страницу
     try:
-        page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p)
+        page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
     except:
         page_html = ""
 
