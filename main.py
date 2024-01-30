@@ -193,8 +193,20 @@ async def legal_privacy_policy():
 
 
 async def fetch(url):
+    # Получаем куку пользователя
+    access_cookie = request.cookies.get('accessToken')
+    refresh_cookie = request.cookies.get('refreshToken')
+    user_id = request.cookies.get('userID')
+
+    headers = {
+        'Cookie': ''
+    }
+    if access_cookie: headers['Cookie'] += f'accessToken={access_cookie}; '
+    if refresh_cookie: headers['Cookie'] += f'refreshToken={refresh_cookie}; '
+    headers['Cookie'] = headers['Cookie'].removesuffix("; ")
+
     async with aiohttp.ClientSession() as session:
-        response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5))
+        response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
         text = await response.text()
         return json.loads(text)
 
@@ -207,13 +219,24 @@ async def mod(mod_id):
         launge = "ru"
 
         urls = [
-            SERVER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
-            SERVER_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
+            ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
+            ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
         tasks = []
         for url in urls:
             tasks.append(fetch(url))
         info = await asyncio.gather(*tasks)
+
+
+        # Определяем права
+        user_req = await get_user_req()
+
+        user_p = False
+        if user_req and type(user_req["result"]) is dict:
+            user_p = user_req["result"]["general"]
+
+        if type(info[0]) is str:
+            return standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
 
         def size_set(bites:int = 1, digit:str = "") -> str:
             return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
@@ -300,13 +323,6 @@ async def mod(mod_id):
 
         session.close()
 
-        # Определяем права
-        user_req = await get_user_req()
-
-        user_p = False
-        if user_req and type(user_req["result"]) is dict:
-            user_p = user_req["result"]["general"]
-
         # Пробуем отрендерить страницу
         try:
             page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p)
@@ -343,14 +359,24 @@ async def edit_mod(mod_id):
     launge = "ru"
 
     urls = [
-        SERVER_ADDRESS + "/info/mod/" + str(
+        ACCOUNTS_ADDRESS + "/info/mod/" + str(
             mod_id) + "?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
-        SERVER_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
+        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
     ]
     tasks = []
     for url in urls:
         tasks.append(fetch(url))
     info = await asyncio.gather(*tasks)
+
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    if type(info[0]) is str:
+        return standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
 
     def size_set(bites: int = 1, digit: str = "") -> str:
         return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
@@ -389,7 +415,7 @@ async def edit_mod(mod_id):
         urls = [
             SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(
                 info[0]['dependencies']) + "&general=true",
-            SERVER_ADDRESS + '/list/resources_mods/' + str(
+            ACCOUNTS_ADDRESS + '/list/resources_mods/' + str(
                 info[0]['dependencies']) + '?page_size=30&page=0&types_resources=["logo"]'
         ]
         tasks = []
@@ -405,13 +431,6 @@ async def edit_mod(mod_id):
         for img in info[2][1]["results"]:
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
-
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
     try:
@@ -585,12 +604,12 @@ async def page_not_found(_error):
             user_p = user_req["result"]["general"]
 
         # Пробуем отрендерить страницу
-        page_html = render_template("404.html", user_profile=user_p)
+        page_html = render_template("error.html", user_profile=user_p, error='404 страница не найдена', error_title='404')
 
         # Возвращаем ответ
         return await standart_response(user_req=user_req, page=page_html)
     except:
-        return render_template("404.html"), 404
+        return render_template("error.html", error='404 страница не найдена', error_title='404'), 404
 
 
 @app.route('/sitemap.xml')
