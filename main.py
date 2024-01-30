@@ -216,7 +216,7 @@ async def mod(mod_id):
         # Определяем права
         user_req = await get_user_req()
 
-        access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+        access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
         urls = [
             ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
@@ -361,7 +361,7 @@ async def edit_mod(mod_id):
     if user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
 
-    access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+    access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
         ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
@@ -447,7 +447,7 @@ async def user(user_id):
     # Определяем права
     user_req = await get_user_req()
 
-    access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+    access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
         ACCOUNTS_ADDRESS + f"/profile/info/{user_id}",
