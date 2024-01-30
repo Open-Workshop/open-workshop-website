@@ -437,7 +437,7 @@ async def edit_mod(mod_id):
         info[2] = depen
 
     for holder in info[0]["authors"].value():
-        if user_req['id'] == holder['user'] or :
+        if user_req['id'] == holder['user']:
             info[0]["author"] = 0 if holder['owner'] else 1
             break
     else:
