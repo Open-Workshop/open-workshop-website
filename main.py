@@ -233,7 +233,7 @@ async def mod(mod_id):
 
         user_p = False
         if user_req and type(user_req["result"]) is dict:
-            user_p = user_req["result"]
+            user_p = user_req["result"]["general"]
 
         if type(info[0]) is str:
             return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
@@ -373,7 +373,7 @@ async def edit_mod(mod_id):
 
     user_p = False
     if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]
+        user_p = user_req["result"]["general"]
 
     if type(info[0]) is str:
         return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
