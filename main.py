@@ -448,7 +448,7 @@ async def user(user_id):
     launge = "ru"
 
     urls = [
-        ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}",
+        ACCOUNTS_ADDRESS + f"/profile/info/{user_id}",
     ]
     tasks = []
     for url in urls:

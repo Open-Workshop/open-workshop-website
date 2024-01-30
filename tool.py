@@ -4,7 +4,7 @@ import json
 
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"
-ACCOUNTS_ADDRESS = "http://127.0.0.1:7070"
+ACCOUNTS_ADDRESS = "http://127.0.0.1:7070/api/accounts"
 
 
 
