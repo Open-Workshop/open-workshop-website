@@ -1,11 +1,11 @@
 from flask import Flask, render_template, send_from_directory, request, make_response
 from babel import dates
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import insert, delete
+from sqlalchemy import insert
 import tool
 from sql_client import Page, engine
 from pathlib import Path
-from tool import get_user_req, standart_response, SERVER_ADDRESS, ACCOUNTS_ADDRESS
+from tool import get_user_req, standart_response, get_tokens_cookies, SERVER_ADDRESS, ACCOUNTS_ADDRESS
 import datetime
 import aiohttp
 import asyncio
@@ -192,12 +192,7 @@ async def legal_privacy_policy():
     return await standart_response(user_req=user_req, page=page_html)
 
 
-async def fetch(url):
-    # Получаем куку пользователя
-    access_cookie = request.cookies.get('accessToken')
-    refresh_cookie = request.cookies.get('refreshToken')
-    user_id = request.cookies.get('userID')
-
+async def fetch(url, access_cookie, refresh_cookie):
     headers = {
         'Cookie': ''
     }
@@ -218,18 +213,19 @@ async def mod(mod_id):
         global MONTHS_NAMES
         launge = "ru"
 
+        # Определяем права
+        user_req = await get_user_req()
+
+        access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+
         urls = [
             ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
             ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
         tasks = []
         for url in urls:
-            tasks.append(fetch(url))
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
         info = await asyncio.gather(*tasks)
-
-
-        # Определяем права
-        user_req = await get_user_req()
 
         user_p = False
         if user_req and type(user_req["result"]) is dict:
@@ -358,22 +354,23 @@ async def edit_mod(mod_id):
     global MONTHS_NAMES
     launge = "ru"
 
-    urls = [
-        ACCOUNTS_ADDRESS + "/info/mod/" + str(
-            mod_id) + "?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
-        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
-    ]
-    tasks = []
-    for url in urls:
-        tasks.append(fetch(url))
-    info = await asyncio.gather(*tasks)
-
     # Определяем права
     user_req = await get_user_req()
 
     user_p = False
     if user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
+
+    access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+
+    urls = [
+        ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
+    ]
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url, access_cookie, refresh_cookie))
+    info = await asyncio.gather(*tasks)
 
     if type(info[0]) is str:
         return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
@@ -447,17 +444,22 @@ async def edit_mod(mod_id):
 async def user(user_id):
     launge = "ru"
 
+    # Определяем права
+    user_req = await get_user_req()
+
+    access_cookie, refresh_cookie = get_tokens_cookies(last_req=user_req)
+
     urls = [
         ACCOUNTS_ADDRESS + f"/profile/info/{user_id}",
     ]
     tasks = []
     for url in urls:
-        tasks.append(fetch(url))
+        tasks.append(fetch(url, access_cookie, refresh_cookie))
     info = await asyncio.gather(*tasks)
 
 
     if type(info[0]) is str:
-        return await page_not_found(-1)
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_req["result"]["general"], error=info[0], error_title='Ошибка'))
 
     # Определяем содержание страницы
     if info[0]["general"]["mute"]:
@@ -481,9 +483,6 @@ async def user(user_id):
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
     info[0]['delete_user'] = info[0]['general']['username'] is None
-
-    # Определяем права
-    user_req = await get_user_req()
 
     user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
@@ -521,7 +520,7 @@ async def user_settings(user_id):
 
 
     if type(info) is str:
-        return await page_not_found(-1)
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_req["result"]["general"], error=info[0], error_title='Ошибка'))
 
     # Определяем содержание страницы
     if info["general"]["mute"]:

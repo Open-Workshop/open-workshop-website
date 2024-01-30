@@ -56,6 +56,14 @@ async def get_user_req(avatar_url:bool = True):
 
     return {"id": user_id, "id_cookie": new_user_id, "refresh": new_refresh_cookie, "login_js": new_login_js, "access": new_access_cookie, "access_js": new_access_js, "result": user_response, "status_code": status_code}
 
+async def get_tokens_cookies(last_req:dict = None):
+    # Получаем куку пользователя
+    access_cookie = last_req["access"][0] if last_req and last_req["access"] else request.cookies.get('accessToken', None)
+    refresh_cookie = last_req["refresh"][0] if last_req and last_req["refresh"] else request.cookies.get('refreshToken', None)
+
+    # Возвращаем
+    return access_cookie, refresh_cookie
+
 async def get_accounts(url:str, last_req:dict = None):
     # Получаем куку пользователя
     access_cookie = last_req["access"][0] if last_req and last_req["access"] else request.cookies.get('accessToken')
