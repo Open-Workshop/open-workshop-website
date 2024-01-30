@@ -144,6 +144,40 @@ async def check_access_user(user_req:dict, user_id:int):
 
     return user_p, access
 
+async def check_access_mod(user_req:dict, authors:list):
+    access = {
+        "edit": False,
+        "delete": False,
+        "admin": False, # Является ли спрашивающий админом
+        "is_my_mod": 2,
+        "in_mute": False
+    }
+
+    if user_req and type(user_req["result"]) is dict:
+        access["in_mute"] = user_req["result"]["general"]["mute"]
+        access["admin"] = user_req["result"]["rights"]["admin"]
+
+        for holder in authors:
+            if user_req['id'] == holder['user']:
+                access["is_my_mod"] = 0 if holder['owner'] else 1
+                break
+        else:
+            access["is_my_mod"] = 2
+
+        if access["admin"]:
+            access["edit"] = True
+            access["delete"] = True
+        elif not access["in_mute"]:
+            if access["is_my_mod"] < 2: # Мой мод
+                access["edit"] = user_req["result"]["rights"]["change_self_mods"]
+                access["delete"] = user_req["result"]["rights"]["delete_self_mods"] and access["is_my_mod"] == 0
+            else: # Чужой мод
+                access["edit"] = user_req["result"]["rights"]["change_mods"]
+                access["delete"] = user_req["result"]["rights"]["delete_mods"]
+
+    return access
+
+
 async def standart_response(user_req:dict, page:str):
     # Создаём ответ
     resp = make_response(page)
