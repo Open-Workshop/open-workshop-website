@@ -165,6 +165,8 @@ async def check_access_mod(user_req:dict, authors:list):
         else:
             access["is_my_mod"] = 2
 
+        print(access["is_my_mod"])
+
         if access["admin"]:
             access["edit"] = True
             access["delete"] = True
