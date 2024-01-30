@@ -3,7 +3,7 @@
     <div style="margin: 2pt;">
         <article class="mod-container">
             <div class="mod-big-cont">
-              <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }}</h1>
+              <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }} {% if data[0]['result']['public'] != 0 %}<a title="Тип публичности" class="tag-link-red" translate="no">{% if data[0]['result']['public'] == 2 %}НЕПУБЛИЧНЫЙ{% endif %}{% if data[0]['result']['public'] == 1 %}ТОЛЬКО ПО ССЫЛКЕ{% endif %}</a>{% endif %}</h1> 
               <h4 id="mod-tags-title">
                   <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ data[0]['result']['game']['name'] }}</a>
                   <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
@@ -65,7 +65,9 @@
               </div>
               {% endif %}
 
+              {% if data[0]['result']['public'] != 2 %}
               <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
+              {% endif %}
             </div>
         </article>
 
