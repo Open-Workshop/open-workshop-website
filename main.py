@@ -236,7 +236,7 @@ async def mod(mod_id):
             user_p = user_req["result"]["general"]
 
         if type(info[0]) is str:
-            return standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
+            return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
 
         def size_set(bites:int = 1, digit:str = "") -> str:
             return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
@@ -376,7 +376,7 @@ async def edit_mod(mod_id):
         user_p = user_req["result"]["general"]
 
     if type(info[0]) is str:
-        return standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
 
     def size_set(bites: int = 1, digit: str = "") -> str:
         return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
