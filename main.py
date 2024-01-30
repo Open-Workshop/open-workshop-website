@@ -1,14 +1,14 @@
-from flask import Flask, render_template, send_from_directory, request, make_response
-from babel import dates
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import insert
-import tool
-from sql_client import Page, engine
-from pathlib import Path
 from tool import get_user_req, standart_response, get_tokens_cookies, SERVER_ADDRESS, ACCOUNTS_ADDRESS
+from flask import Flask, render_template, send_from_directory, request, make_response
+from sqlalchemy.orm import sessionmaker
+from sql_client import Page, engine
+from sqlalchemy import insert
+from pathlib import Path
+from babel import dates
 import datetime
 import aiohttp
 import asyncio
+import tool
 import json
 import time
 import re
@@ -219,7 +219,7 @@ async def mod(mod_id):
         access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
         urls = [
-            ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true",
+            ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
             ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
         ]
         tasks = []
@@ -295,6 +295,13 @@ async def mod(mod_id):
             for img in info[2][1]["results"]:
                 depen[img["owner_id"]]["img"] = img["url"]
             info[2] = depen
+
+        for holder in info[0]["authors"].value():
+            if user_req['id'] == holder['user']:
+                info[0]["author"] = 0 if holder['owner'] else 1
+                break
+        else:
+            info[0]["author"] = 2
 
         # Создание сессии
         Session = sessionmaker(bind=engine)
@@ -428,6 +435,13 @@ async def edit_mod(mod_id):
         for img in info[2][1]["results"]:
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
+
+    for holder in info[0]["authors"].value():
+        if user_req['id'] == holder['user'] or :
+            info[0]["author"] = 0 if holder['owner'] else 1
+            break
+    else:
+        info[0]["author"] = 2
 
     # Пробуем отрендерить страницу
     try:
