@@ -1,5 +1,6 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
+    {% if right_edit['edit'] %}
     <div style="margin: 2pt;">
       <article class="mod-container" style="width: 250pt; max-width: 95%; justify-content: center;">
         <style>
@@ -140,6 +141,7 @@
           </script>
         </div>
 
+        {% if right_edit['delete'] %}
         <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
           <h2 style="text-align: center;">Удалить мод</h2>
           <input oninput="checkInputToDelete(this.value)" type="text" style="border-radius: 10pt; background: brown; color: white;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
@@ -207,6 +209,7 @@
             }
           </script>
         </div>
+        {% endif %}
 
         <div class="mini-cont" style="display: flex; flex-direction: column; align-items: flex-end;">
           <h2 style="width: 100%; text-align: center;">Игра-владелец</h2>
@@ -1098,7 +1101,18 @@
         }
       }
     </script>
-
+    {% endif %}
+    {% if not right_edit['edit'] %}
+    <div style="margin: 2pt;">
+      <article>
+        <h1 style="text-align: center;">
+          {% if right_edit['in_mute'] %}Вы во временном муте{% endif %}
+          {% if not right_edit['in_mute'] and right_edit['is_my_mod'] == 2 %}Вы не имеете права редактировать чужие моды{% endif %}
+          {% if not right_edit['in_mute'] and right_edit['is_my_mod'] != 2 %}Вы не имеете права редактировать свои моды{% endif %}
+        </h1>
+      </article>
+    </div>
+    {% endif %}
 {% endblock %}
 
 {% block title %}
