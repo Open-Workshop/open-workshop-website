@@ -17,7 +17,7 @@ async def get_user_req(avatar_url:bool = True):
 
     if not user_id or (not refresh_cookie and not access_cookie): return False
 
-    url = ACCOUNTS_ADDRESS + f"/api/accounts/profile/info/{user_id}?general=true&rights=true&private=false"
+    url = ACCOUNTS_ADDRESS + f"/profile/info/{user_id}?general=true&rights=true&private=false"
     headers = {
         'Cookie': ''
     }
