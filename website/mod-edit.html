@@ -940,7 +940,7 @@
         let toSendChangeGen = false
         const checkAndAppend = ($element, key) => {
           if ($element.attr('startdata') !== $element.val()) {
-            formData.append(key, $element.val());
+            if ($element.val().length > 0) {formData.append(key, $element.val());} else {formData.append(key, ' ');}
             toSendChangeGen = true
           }
         };
