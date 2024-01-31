@@ -282,7 +282,7 @@
               </div>
               <div>
                 <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['description'] }}">{{ data[0]['result']['description'] }}</textarea>
+                  <textarea placeholder="Описание не может быть пустым!(" id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['description'] }}">{{ data[0]['result']['description'] }}</textarea>
                   <pre id="highlighting" aria-hidden="true">
                     <code class="language-ow" id="highlighting-content">
                     </code>
@@ -772,7 +772,7 @@
         </div>
 
         <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="short-desc-edit">
-          <textarea placeholder="Этот мод сотворяет невероятные вещи..." id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['short_description'] }}">{{ data[0]['result']['short_description'] }}</textarea>
+          <textarea placeholder="Короткое описание не может быть пустым!(" id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['short_description'] }}">{{ data[0]['result']['short_description'] }}</textarea>
           <pre id="highlighting-short" aria-hidden="true">
             <code class="language-ow" id="highlighting-content-short">
             </code>
@@ -940,7 +940,7 @@
         let toSendChangeGen = false
         const checkAndAppend = ($element, key) => {
           if ($element.attr('startdata') !== $element.val()) {
-            if ($element.val().length > 0) {formData.append(key, $element.val());} else {formData.append(key, ' ');}
+            formData.append(key, $element.val());
             toSendChangeGen = true
           }
         };
