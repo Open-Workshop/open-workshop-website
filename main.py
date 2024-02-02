@@ -307,9 +307,9 @@ async def mod(mod_id):
         depen = {}
         for i in info[0]['dependencies']:
             depen[i] = {"img": "", "name": str(i), "id": i}
-        for mod in info[2][0]["results"]:
+        for mod in info[2]["results"]:
             depen[mod["id"]]["name"] = mod["name"]
-        for img in info[2][1]["results"]:
+        for img in info[2]["results"]:
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
@@ -457,9 +457,9 @@ async def edit_mod(mod_id):
         depen = {}
         for i in info[0]['dependencies']:
             depen[i] = {"img": "", "name": str(i), "id": i}
-        for mod in info[2][0]["results"]:
+        for mod in info[2]["results"]:
             depen[mod["id"]]["name"] = mod["name"]
-        for img in info[2][1]["results"]:
+        for img in info[2]["results"]:
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
