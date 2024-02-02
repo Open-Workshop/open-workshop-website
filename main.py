@@ -308,9 +308,9 @@ async def mod(mod_id):
         for i in info[0]['dependencies']:
             depen[i] = {"img": "", "name": str(i), "id": i}
         print(info[2])
-        for mod in info[2]["results"]:
+        for mod in info[2][0]["results"]:
             depen[mod["id"]]["name"] = mod["name"]
-        for img in info[2]["results"]:
+        for img in info[2][1]["results"]:
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
