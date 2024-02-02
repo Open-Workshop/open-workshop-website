@@ -643,9 +643,7 @@ nav li li a:hover {
 
 .main {
   padding-top: 80pt;
-  min-height: -webkit-calc(100vh - 50pt);
-  min-height: calc(100vh - 50pt);
-  /* 80px header + 40px footer = 120px  */
+  min-height: 93vh;
 }
 
 #container {
@@ -1324,7 +1322,7 @@ footer div.social-media-links a:hover svg circle {
   z-index: 10;
   width: 100%;
   height: 70vh;
-  display: grid;
+  display: flex;
   -webkit-box-align: center;
       -ms-flex-align: center;
           align-items: center;
@@ -1344,11 +1342,12 @@ footer div.social-media-links a:hover svg circle {
   margin-top: -35px;
   line-height: 30px;
   font-size: 2rem;
+  max-width: 600pt;
 }
 
 .not__found__page__link {
   color: rgb(228, 228, 228);
-  margin-top: 5px;
+  margin-top: 10px;
   line-height: 20px;
   font-size: 1.4rem;
   text-decoration: none;
@@ -2380,7 +2379,7 @@ td {
     display: none;
   }
   footer {
-    margin-top: 50pt;
+    margin-top: 35pt;
   }
   nav {
     display: none;

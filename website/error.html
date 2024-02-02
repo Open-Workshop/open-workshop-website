@@ -1,7 +1,7 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
     <div class="centered">
-        <div>
+        <div style="max-width: 90%; display: flex; flex-direction: column;">
             <h1 id="title_not_found" title="{{ error }}" class="not__found__page__error"></h1>
             <br>
             <a href="/" id="link_not_found" title="нажми здесь чтобы вернуться на главную" class="not__found__page__link"></a>
@@ -11,5 +11,5 @@
     <script src="/assets/scripts/404.js"></script>
 {% endblock %}
 {% block title %}
-Open Workshop: {{ error_title }}
+OW: {{ error_title }}
 {% endblock %}

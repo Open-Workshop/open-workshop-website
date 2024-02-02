@@ -192,7 +192,7 @@ async def legal_privacy_policy():
     return await standart_response(user_req=user_req, page=page_html)
 
 
-async def fetch(url, access_cookie, refresh_cookie):
+async def fetch(url, access_cookie, refresh_cookie, return_code:bool = False):
     headers = {
         'Cookie': ''
     }
@@ -203,134 +203,36 @@ async def fetch(url, access_cookie, refresh_cookie):
     async with aiohttp.ClientSession() as session:
         response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
         text = await response.text()
-        return json.loads(text)
+        if return_code: return [json.loads(text), response.status]
+        else: json.loads(text)
 
 @app.route('/mod/<int:mod_id>')
 @app.route('/mod/<int:mod_id>.html')
 async def mod(mod_id):
-    try:
-        global SHORT_WORDS
-        global MONTHS_NAMES
-        launge = "ru"
+    global SHORT_WORDS
+    global MONTHS_NAMES
+    launge = "ru"
 
-        # Определяем права
-        user_req = await get_user_req()
+    # Определяем права
+    user_req = await get_user_req()
 
-        access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
+    access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
-        urls = [
-            ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-            ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
-        ]
-        tasks = []
-        for url in urls:
-            tasks.append(fetch(url, access_cookie, refresh_cookie))
-        info = await asyncio.gather(*tasks)
+    urls = [
+        ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
+    ]
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url, access_cookie, refresh_cookie, True))
+    info = await asyncio.gather(*tasks)
 
-        user_p = False
-        if user_req and type(user_req["result"]) is dict:
-            user_p = user_req["result"]["general"]
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
 
-        if type(info[0]) is str:
-            return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
-
-        def size_set(bites:int = 1, digit:str = "") -> str:
-            return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
-
-        if info[0]['result']['size'] > 1000000000:
-            info[0]['result']['size'] = size_set(1073741824, "G")
-        elif info[0]['result']['size'] > 1000000:
-            info[0]['result']['size'] = size_set(1048576, "M")
-        elif info[0]['result']['size'] > 1000:
-            info[0]['result']['size'] = size_set(1024, "K")
-        else:
-            info[0]['result']['size'] = size_set()
-
-        is_mod = {
-            "date_creation": info[0]['result'].get('date_creation', ""),
-            "date_update": info[0]['result'].get("date_update", ""),
-            "logo": ""
-        }
-
-        todelpop = None
-        for img_id in range(len(info[1]["results"])):
-            img = info[1]["results"][img_id]
-            if img is not None and img["type"] == "logo":
-                is_mod["logo"] = img["url"]
-                if len(info[1]["results"]) > 1:
-                    todelpop = img_id
-        if todelpop: info[1]["results"].pop(todelpop)
-
-        info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
-
-        input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-        info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
-        info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
-
-        input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-        info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-        info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
-
-        info[0]['result']['id'] = mod_id
-
-        info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
-        info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
-
-        info.append({})
-        if info[0]['dependencies_count'] > 0:
-            urls = [
-                SERVER_ADDRESS+"/list/mods/?page_size=30&page=0&allowed_ids="+str(info[0]['dependencies'])+"&general=true",
-                SERVER_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
-            ]
-            tasks = []
-            for url in urls:
-                tasks.append(fetch(url))
-            info[2] = await asyncio.gather(*tasks)
-
-            depen = {}
-            for i in info[0]['dependencies']:
-                depen[i] = {"img": "", "name": str(i), "id": i}
-            for mod in info[2][0]["results"]:
-                depen[mod["id"]]["name"] = mod["name"]
-            for img in info[2][1]["results"]:
-                depen[img["owner_id"]]["img"] = img["url"]
-            info[2] = depen
-
-        right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
-
-        # Создание сессии
-        Session = sessionmaker(bind=engine)
-        session = Session()
-
-        # Выполнение запроса
-        query = session.query(Page)
-        query = query.filter_by(mod_id=mod_id)
-        query = query.first()
-
-        if query is None:
-            insert_statement = insert(Page).values(
-                mod_id=info[0]['result']['id'],
-                game_id=info[0]['result']["game"]['id'],
-                date_update=input_date_update
-            )
-
-            session.execute(insert_statement)
-        else:
-            session.query(Page).filter_by(mod_id=mod_id).update({'date_update': input_date_update, "game_id": info[0]['result']["game"]['id']})
-        session.commit()
-
-        session.close()
-
-        # Пробуем отрендерить страницу
-        try:
-            page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
-        except:
-            page_html = ""
-
-        # Возвращаем ответ
-        return await standart_response(user_req=user_req, page=page_html)
-    except:
-        try:
+    if type(info[0][0]) is str:
+        if info[0][1] == 404:
             # Создание сессии
             Session = sessionmaker(bind=engine)
             session = Session()
@@ -342,108 +244,137 @@ async def mod(mod_id):
             # Завершение операции
             session.commit()
             session.close()
-            print("PAGE DELETE: "+str(mod_id))
-        except:
-            print("DELETE ERROR! PAGE: "+str(mod_id))
+            print("PAGE DELETE: " + str(mod_id))
 
-        return await page_not_found(-1)
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка'))
+    else:
+        info[0] = info[0][0]
+        info[1] = info[1][0]
+
+    def size_set(bites:int = 1, digit:str = "") -> str:
+        return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
+
+    if info[0]['result']['size'] > 1000000000:
+        info[0]['result']['size'] = size_set(1073741824, "G")
+    elif info[0]['result']['size'] > 1000000:
+        info[0]['result']['size'] = size_set(1048576, "M")
+    elif info[0]['result']['size'] > 1000:
+        info[0]['result']['size'] = size_set(1024, "K")
+    else:
+        info[0]['result']['size'] = size_set()
+
+    is_mod = {
+        "date_creation": info[0]['result'].get('date_creation', ""),
+        "date_update": info[0]['result'].get("date_update", ""),
+        "logo": ""
+    }
+
+    todelpop = None
+    for img_id in range(len(info[1]["results"])):
+        img = info[1]["results"][img_id]
+        if img is not None and img["type"] == "logo":
+            is_mod["logo"] = img["url"]
+            if len(info[1]["results"]) > 1:
+                todelpop = img_id
+    if todelpop: info[1]["results"].pop(todelpop)
+
+    info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
+
+    input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
+    info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
+    info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
+
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
+    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+
+    info[0]['result']['id'] = mod_id
+
+    info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
+    info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
+
+    info.append({})
+    if info[0]['dependencies_count'] > 0:
+        urls = [
+            SERVER_ADDRESS+"/list/mods/?page_size=30&page=0&allowed_ids="+str(info[0]['dependencies'])+"&general=true",
+            SERVER_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
+        ]
+        tasks = []
+        for url in urls:
+            tasks.append(fetch(url))
+        info[2] = await asyncio.gather(*tasks)
+
+        depen = {}
+        for i in info[0]['dependencies']:
+            depen[i] = {"img": "", "name": str(i), "id": i}
+        for mod in info[2][0]["results"]:
+            depen[mod["id"]]["name"] = mod["name"]
+        for img in info[2][1]["results"]:
+            depen[img["owner_id"]]["img"] = img["url"]
+        info[2] = depen
+
+    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
+
+    # Создание сессии
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Выполнение запроса
+    query = session.query(Page)
+    query = query.filter_by(mod_id=mod_id)
+    query = query.first()
+
+    if query is None:
+        insert_statement = insert(Page).values(
+            mod_id=info[0]['result']['id'],
+            game_id=info[0]['result']["game"]['id'],
+            date_update=input_date_update
+        )
+
+        session.execute(insert_statement)
+    else:
+        session.query(Page).filter_by(mod_id=mod_id).update({'date_update': input_date_update, "game_id": info[0]['result']["game"]['id']})
+    session.commit()
+
+    session.close()
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 
 @app.route('/mod/<int:mod_id>/edit')
 @app.route('/mod/<int:mod_id>/edit.html')
 async def edit_mod(mod_id):
-    try:
-        global SHORT_WORDS
-        global MONTHS_NAMES
-        launge = "ru"
+    global SHORT_WORDS
+    global MONTHS_NAMES
+    launge = "ru"
 
-        # Определяем права
-        user_req = await get_user_req()
+    # Определяем права
+    user_req = await get_user_req()
 
-        user_p = False
-        if user_req and type(user_req["result"]) is dict:
-            user_p = user_req["result"]["general"]
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
 
-        access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
+    access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
-        urls = [
-            ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-            ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
-        ]
-        tasks = []
-        for url in urls:
-            tasks.append(fetch(url, access_cookie, refresh_cookie))
-        info = await asyncio.gather(*tasks)
+    urls = [
+        ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
+    ]
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url, access_cookie, refresh_cookie, True))
+    info = await asyncio.gather(*tasks)
 
-        if type(info[0]) is str:
-            return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0], error_title='Ошибка'))
-
-        def size_set(bites: int = 1, digit: str = "") -> str:
-            return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
-
-        if info[0]['result']['size'] > 1000000000:
-            info[0]['result']['size'] = size_set(1073741824, "G")
-        elif info[0]['result']['size'] > 1000000:
-            info[0]['result']['size'] = size_set(1048576, "M")
-        elif info[0]['result']['size'] > 1000:
-            info[0]['result']['size'] = size_set(1024, "K")
-        else:
-            info[0]['result']['size'] = size_set()
-
-        is_mod = {
-            "date_creation": info[0]['result'].get('date_creation', ""),
-            "date_update": info[0]['result'].get("date_update", ""),
-            "logo": ""
-        }
-
-        input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-        info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
-        info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
-
-        input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-        info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-        info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
-
-        info[0]['result']['id'] = mod_id
-
-        info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'],
-                                                                          words=SHORT_WORDS)
-        info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
-
-        info.append({})
-        if info[0]['dependencies_count'] > 0:
-            urls = [
-                SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(
-                    info[0]['dependencies']) + "&general=true",
-                ACCOUNTS_ADDRESS + '/list/resources_mods/' + str(
-                    info[0]['dependencies']) + '?page_size=30&page=0&types_resources=["logo"]'
-            ]
-            tasks = []
-            for url in urls:
-                tasks.append(fetch(url))
-            info[2] = await asyncio.gather(*tasks)
-
-            depen = {}
-            for i in info[0]['dependencies']:
-                depen[i] = {"img": "", "name": str(i), "id": i}
-            for mod in info[2][0]["results"]:
-                depen[mod["id"]]["name"] = mod["name"]
-            for img in info[2][1]["results"]:
-                depen[img["owner_id"]]["img"] = img["url"]
-            info[2] = depen
-
-        right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
-
-        # Пробуем отрендерить страницу
-        try:
-            page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
-        except:
-            page_html = ""
-
-        # Возвращаем ответ
-        return await standart_response(user_req=user_req, page=page_html)
-    except:
-        try:
+    if type(info[0][0]) is str:
+        if info[0][1] == 404:
             # Создание сессии
             Session = sessionmaker(bind=engine)
             session = Session()
@@ -455,11 +386,89 @@ async def edit_mod(mod_id):
             # Завершение операции
             session.commit()
             session.close()
-            print("PAGE DELETE: "+str(mod_id))
-        except:
-            print("DELETE ERROR! PAGE: "+str(mod_id))
+            print("PAGE DELETE: " + str(mod_id))
 
-        return await page_not_found(-1)
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка'))
+    else:
+        info[0] = info[0][0]
+        info[1] = info[1][0]
+
+    def size_set(bites: int = 1, digit: str = "") -> str:
+        return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
+
+    if info[0]['result']['size'] > 1000000000:
+        info[0]['result']['size'] = size_set(1073741824, "G")
+    elif info[0]['result']['size'] > 1000000:
+        info[0]['result']['size'] = size_set(1048576, "M")
+    elif info[0]['result']['size'] > 1000:
+        info[0]['result']['size'] = size_set(1024, "K")
+    else:
+        info[0]['result']['size'] = size_set()
+
+    is_mod = {
+        "date_creation": info[0]['result'].get('date_creation', ""),
+        "date_update": info[0]['result'].get("date_update", ""),
+        "logo": ""
+    }
+
+    input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
+    info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
+    info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
+
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
+    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+
+    info[0]['result']['id'] = mod_id
+
+    info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'],
+                                                                      words=SHORT_WORDS)
+    info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
+
+    info.append({})
+    if info[0]['dependencies_count'] > 0:
+        urls = [
+            SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(
+                info[0]['dependencies']) + "&general=true",
+            ACCOUNTS_ADDRESS + '/list/resources_mods/' + str(
+                info[0]['dependencies']) + '?page_size=30&page=0&types_resources=["logo"]'
+        ]
+        tasks = []
+        for url in urls:
+            tasks.append(fetch(url))
+        info[2] = await asyncio.gather(*tasks)
+
+        depen = {}
+        for i in info[0]['dependencies']:
+            depen[i] = {"img": "", "name": str(i), "id": i}
+        for mod in info[2][0]["results"]:
+            depen[mod["id"]]["name"] = mod["name"]
+        for img in info[2][1]["results"]:
+            depen[img["owner_id"]]["img"] = img["url"]
+        info[2] = depen
+
+    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
+
+    print(right_edit_mod)
+
+    # Пробуем отрендерить страницу
+    try:
+        page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
+    except:
+        page_html = ""
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
+
+
+@app.route('/mod/add')
+@app.route('/mod/add.html')
+async def add_mod():
+    return await error_page(
+        error_title='Будет попозже...',
+        error_body='Эта страница будет готова в будущем! :)',
+        error_code=200
+    )
 
 
 @app.route('/user/<int:user_id>')
@@ -477,12 +486,18 @@ async def user(user_id):
     ]
     tasks = []
     for url in urls:
-        tasks.append(fetch(url, access_cookie, refresh_cookie))
+        tasks.append(fetch(url, access_cookie, refresh_cookie, True))
     info = await asyncio.gather(*tasks)
 
+    if info[0][1] != 200:
+        return await standart_response(user_req=user_req, page=await error_page(
+            error_title=f'Ошибка ({info[0][1]})',
+            error_body=info[0][0],
+            error_code=info[0][1]
+        ))
+    else:
+        info[0] = info[0][0]
 
-    if type(info[0]) is str:
-        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_req["result"]["general"], error=info[0], error_title='Ошибка'))
 
     # Определяем содержание страницы
     if info[0]["general"]["mute"]:
@@ -539,13 +554,18 @@ async def user_settings(user_id):
     urls[0] += "&rights=true" if editable["admin"] or editable["my"] else ""
     urls[0] += "&private=true" if editable["admin"] or editable["my"] else ""
 
-    info = (await tool.get_accounts(urls[0], user_req))["result"]
+    info = await tool.get_accounts(urls[0], user_req)
 
+    if info['status_code'] != 200:
+        return await standart_response(user_req=user_req, page=await error_page(
+            error_title=f'Ошибка ({info["status_code"]})',
+            error_body=info["result"],
+            error_code=info["status_code"]
+        ))
+    else:
+        info = info["result"]
 
-    if type(info) is str:
-        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_req["result"]["general"], error=info[0], error_title='Ошибка'))
-
-    # Определяем содержание страницы
+        # Определяем содержание страницы
     if info["general"]["mute"]:
         input_date = datetime.datetime.fromisoformat(info["general"]["mute"])
         info["general"]["mute_js"] = info["general"]["mute"]
@@ -617,6 +637,22 @@ async def serve_static(filename):
 
 @app.errorhandler(404)
 async def page_not_found(_error):
+    return await error_page(
+        error_title='Not Found (404)',
+        error_body='404 страница не найдена',
+        error_code=404
+    )
+
+@app.errorhandler(500)
+async def internal_server_error(_error):
+    return await error_page(
+        error_title='Internal Server Error (500)',
+        error_body='На сервере произошла внутренняя ошибка, и он не смог выполнить ваш запрос. Либо сервер перегружен, либо в приложении ошибка.',
+        error_code=500
+    )
+
+
+async def error_page(error_title:str, error_body:str, error_code:int = 200):
     try:
         # Определяем права
         user_req = await get_user_req()
@@ -626,12 +662,12 @@ async def page_not_found(_error):
             user_p = user_req["result"]["general"]
 
         # Пробуем отрендерить страницу
-        page_html = render_template("error.html", user_profile=user_p, error='404 страница не найдена', error_title='404')
+        page_html = render_template("error.html", user_profile=user_p, error=error_body, error_title=error_title)
 
         # Возвращаем ответ
-        return await standart_response(user_req=user_req, page=page_html)
+        return await standart_response(user_req=user_req, page=page_html), error_code
     except:
-        return render_template("error.html", error='404 страница не найдена', error_title='404'), 404
+        return render_template("error.html", error=error_body, error_title=error_title), error_code
 
 
 @app.route('/sitemap.xml')

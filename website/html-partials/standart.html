@@ -96,6 +96,7 @@
             <img class="a-top user-avatar-medium" src="{{ user_profile.avatar_url }}" alt="">
             <a href="/user/{{ user_profile.id }}" style="width: 100%; height: 100%; position: absolute; background: none;"></a>
             <ul>
+              <a href="/mod/add">Загрузить мод</a>
               <a href="/user/{{ user_profile.id }}/settings">Настройки</a>
               <a onclick="logon()">Выйти</a>
             </ul>
@@ -154,6 +155,7 @@
         <a onclick="serviceAuthorization('/api/accounts/authorization/google/link')">Войти с Google</a>
         {% endif %}
         {% if user_profile %}
+        <a href="/mod/add">Загрузить мод</a>
         <a onclick="logon()">Выйти</a>
         {% endif %}
       </div>
