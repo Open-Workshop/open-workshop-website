@@ -204,7 +204,7 @@ async def fetch(url, access_cookie, refresh_cookie, return_code:bool = False):
         response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
         text = await response.text()
         if return_code: return [json.loads(text), response.status]
-        else: json.loads(text)
+        else: return json.loads(text)
 
 @app.route('/mod/<int:mod_id>')
 @app.route('/mod/<int:mod_id>.html')
