@@ -393,6 +393,22 @@ async def edit_mod(mod_id):
         info[0] = info[0][0]
         info[1] = info[1][0]
 
+    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
+
+    if not right_edit_mod['edit']:
+        if right_edit_mod['in_mute']:
+            return await standart_response(user_req=user_req, page=await error_page(
+                error_title='В муте',
+                error_body='Вы во временном муте',
+                error_code=403
+            ))
+        else:
+            return await standart_response(user_req=user_req, page=await error_page(
+                error_title='Отказано в доступе',
+                error_body='Вы не имеете права редактировать чужие моды' if right_edit_mod['is_my_mod'] == 2 else 'Вы не имеете права редактировать свои моды',
+                error_code=403
+            ))
+
     def size_set(bites: int = 1, digit: str = "") -> str:
         return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
 
@@ -447,9 +463,6 @@ async def edit_mod(mod_id):
             depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
-    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
-
-    print(right_edit_mod)
 
     # Пробуем отрендерить страницу
     try:
@@ -498,6 +511,14 @@ async def user(user_id):
     else:
         info[0] = info[0][0]
 
+    info[0]['delete_user'] = info[0]['general']['username'] is None
+
+    if info[0]['delete_user']:
+        return await standart_response(user_req=user_req, page=await error_page(
+            error_title="Этот профиль удален!",
+            error_body="Профиль удален",
+            error_code=404
+        ))
 
     # Определяем содержание страницы
     if info[0]["general"]["mute"]:
@@ -519,8 +540,6 @@ async def user(user_id):
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
-
-    info[0]['delete_user'] = info[0]['general']['username'] is None
 
     user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
@@ -545,7 +564,12 @@ async def user_settings(user_id):
 
     user_p, editable = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
-
+    if not editable['any'] and not editable['my']:
+        return await error_page(
+            error_title=f'Отказано в доступе!',
+            error_body='Вы не имеете права редактировать этот профиль!',
+            error_code=403
+        )
 
     urls = [
         f"/profile/info/{user_id}?general=true",
@@ -565,7 +589,7 @@ async def user_settings(user_id):
     else:
         info = info["result"]
 
-        # Определяем содержание страницы
+    # Определяем содержание страницы
     if info["general"]["mute"]:
         input_date = datetime.datetime.fromisoformat(info["general"]["mute"])
         info["general"]["mute_js"] = info["general"]["mute"]

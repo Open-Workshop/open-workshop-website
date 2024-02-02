@@ -5,10 +5,7 @@
     <article class="user-settings-cont" style="display: flex; justify-content: center;">
       <h1 style="text-align: center;">
         {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
-        {% if not user_access.my %}
-          {% if not user_data.delete_user %}Вы не имеете права редактировать этот профиль!{% endif %}
-          {% if user_data.delete_user %}Этот профиль удален!{% endif %}
-        {% endif %}
+        {% if not user_access.my %}Этот профиль удален!{% endif %}
       </h1>
     </article>
     {% endif %}
