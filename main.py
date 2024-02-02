@@ -297,7 +297,7 @@ async def mod(mod_id):
     if info[0]['dependencies_count'] > 0:
         urls = [
             SERVER_ADDRESS+"/list/mods/?page_size=30&page=0&allowed_ids="+str(info[0]['dependencies'])+"&general=true",
-            SERVER_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
+            ACCOUNTS_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
         ]
         tasks = []
         for url in urls:
@@ -307,6 +307,7 @@ async def mod(mod_id):
         depen = {}
         for i in info[0]['dependencies']:
             depen[i] = {"img": "", "name": str(i), "id": i}
+        print(info[2])
         for mod in info[2]["results"]:
             depen[mod["id"]]["name"] = mod["name"]
         for img in info[2]["results"]:
