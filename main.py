@@ -301,7 +301,7 @@ async def mod(mod_id):
         ]
         tasks = []
         for url in urls:
-            tasks.append(fetch(url))
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
         info[2] = await asyncio.gather(*tasks)
 
         depen = {}
@@ -451,7 +451,7 @@ async def edit_mod(mod_id):
         ]
         tasks = []
         for url in urls:
-            tasks.append(fetch(url))
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
         info[2] = await asyncio.gather(*tasks)
 
         depen = {}
