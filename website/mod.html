@@ -59,7 +59,7 @@
                 Зависимости мода
                 {% for item in data[2].values() %}
                   <a class="mod-dependence" href="/mod/{{ item.id }}">
-                    <img src="{{ item.img }}" alt="Логотип мода">
+                    <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
                     <h3 translate="no">{{ item.name }}</h3>
                   </a>
                 {% endfor %}
