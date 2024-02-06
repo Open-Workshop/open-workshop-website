@@ -8,13 +8,14 @@ function cookiesOkPress() {
 }
 
 
-function logon() {
-    const response = fetch("https://openworkshop.su/api/accounts/authorization/logout", {
+async function logon() {
+    const response = await fetch("https://openworkshop.su/api/accounts/authorization/logout", {
       method: "POST"
     });
-    
+  
     location.reload();
 }
+  
 
 
 if (!document.getElementsByClassName("toast-container")) {
