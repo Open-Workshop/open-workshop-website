@@ -34,40 +34,12 @@
               <span id="greenBar"></span>
             </div>
           </section>
-          <style>
-            .progressbarWrapper {
-              height: 30px;
-              display: block;
-              margin-top: 3pt;
-              position: relative;
-              background: #555;
-              padding: 3px;
-              box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.3);
-              border-radius: 5pt;
-            }
-
-            #greenBar {
-              display: block;
-              height: 100%;
-              width: 0px;
-              background-color: rgb(43, 194, 83);
-              background-image: linear-gradient(
-                center bottom,
-                rgb(43, 194, 83) 37%,
-                rgb(84, 240, 84) 69%
-              );
-              position: relative;
-              overflow: hidden;
-              font-size: 15px;
-              text-align: center;
-              color: white;
-              transition: all 700ms ease;
-              border-radius: 5pt;
-            }
-          </style>
           <script>
             function uploadUpdateMod() {
               let elem = document.getElementById("greenBar");
+              elem.innerHTML = "Начинаем...";
+              elem.style.width = "0%";
+
               var fileInput = document.getElementById('input-mod-file-update');
 
               const bar = $('section[progressuploadmod]')
@@ -210,61 +182,14 @@
         </div>
         {% endif %}
 
-        <div class="mini-cont" style="display: flex; flex-direction: column; align-items: flex-end;">
-          <h2 style="width: 100%; text-align: center;">Игра-владелец</h2>
-          <div style="display: flex;">
-            <img id="logo-game-select" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" style="width: 80pt; border-radius: 5pt;" alt="Логотип игры">
-            <div style="margin-left: 4pt;">
-              <p id="name-game-select">{{ data[0]['result']['game']['name'] }}</p>
-              <input type="number" startdata="{{ data[0]['result']['game']['id'] }}" onchange="renderNewSelectedGame()" value="{{ data[0]['result']['game']['id'] }}" class="edit-mod-game-input" style="border-radius: 4pt; padding: 6pt;" disabled>
-            </div>
-          </div>
-          <style>
-            button.enable-edit-game-mod {
-              width: 90pt; 
-              cursor: pointer; 
-              color: white; 
-              background: darkcyan; 
-              margin-top: 3pt;
-              height: 30pt;
-              border-radius: 5pt;
-            }
-            input.edit-mod-game-input:disabled {
-              color: white;
-            }
-          </style>
-          <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
-
-          <script>
-            const $inputGameID = $('input.edit-mod-game-input')
-            const $pGameName = $('p#name-game-select')
-            const $imgGameLogo = $('img#logo-game-select')
-
-            $(document).ready(function() {
-              renderNewSelectedGame()
-            })
-
-            function renderNewSelectedGame() {
-              fetch("https://api.openworkshop.su/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
-                response.json().then(json => {
-                  console.log(json.result)
-                  if (json.result) {
-                    $pGameName.text(json.result.name).css('color', 'white');
-                    $imgGameLogo.attr('src', json.result.logo+" ")
-                  } else {
-                    $pGameName.text('404').css('color', 'red');
-                    $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
-                  }
-                });
-              })
-            }
-          </script>
-        </div>
+        {% with init_id=data[0]['result']['game']['id'] %}
+          {% include "html-partials/game-selector.html" %}
+        {% endwith %}
       </article>
 
       <article class="mod-container ptwo" style="padding-bottom: 15pt;">
           <div class="mod-big-cont">
-            <input class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title" oninput="titleEditEvent()">
+            <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title" oninput="titleEditEvent()">
             
             <div>
               <div style="margin-left: 6pt; margin-top: 4pt;">
@@ -305,6 +230,7 @@
                 <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
                 
                 <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+                <script src="/assets/scripts/ow-prism.js"></script>
                 <script>
                   const textareaDesc = document.getElementById("editing")
                   $(document).ready(function() {
@@ -325,79 +251,6 @@
                     document.getElementById("highlighting").style.height = heightCurr;
                     document.getElementById("main-desc-edit").style.height = heightCurr;
                   }
-
-
-                  b={
-                    pattern: /\[b\](.*?)\[\/b\]/gms,
-                    inside: {
-                      'punctuation': /\[\/?b\]/ig,
-                      'italic': /\[i\](.*?)\[\/i\]/gms,
-                      'content': /.*/ig,
-                    }
-                  }
-                  i={
-                    pattern: /\[i\](.*?)\[\/i\]/gms,
-                    inside: {
-                      'punctuation': /\[\/?i\]/ig,
-                      'bold': /\[b\](.*?)\[\/b\]/gms,
-                      'content': /.*/ig,
-                    }
-                  }
-                  img={
-                    pattern: /\[img\](.*?)\[\/img\]/ig,
-                    inside: {
-                      'punctuation': /\[\/?img|\]/ig,
-                      'content': /.*/ig,
-                    }
-                  }
-                  url={
-                    pattern: /(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig,
-                    inside: {
-                      'img': img,
-                      'punctuation': /\[\/?url=?|\]/ig,
-                      'link': /https?:\/\/\S+/ig,
-                      'bold': b,
-                      'italic': i,
-                      'content': /.*/ig,
-                    }
-                  }
-                  htitle={
-                    pattern: /\[(h[1-6])\](.*?)\[\/\1\]/gs,
-                    inside: {
-                      'url': url,
-                      'img': img,
-                      'punctuation': /\[\/?(h[1-6])\]/ig,
-                      'bold': b,
-                      'italic': i,
-                      'content': /.*/ig,
-                    }
-                  }
-
-                  // https://www.json.org/json-en.html
-                  Prism.languages.ow = {
-                    'list': {
-                      pattern: /\[list\]((?:.|\n)*?)\[\/list\]/gmi,
-                      inside: {
-                        "list": /\[\/?list\]/ig,
-                        "point": /\[\*\]/ig,
-                        'title': htitle,
-                        'img': img,
-                        'url': url,
-                        'link': /https?:\/\/\S+/ig,
-                        'bold': b,
-                        'italic': i,
-                        'content': /.*/ig,
-                      }
-                    },
-                    'url': url,
-                    'img': img,
-                    'title': htitle,
-                    'link': /https?:\/\/\S+/ig,
-                    'italic': i,
-                    'bold': b,
-                  };
-
-                  Prism.languages.webmanifest = Prism.languages.ow;
 
                   function update(text) {
                     let result_element = document.querySelector("#highlighting-content");
@@ -455,26 +308,6 @@
                 var container = document.getElementById('mod-description-preview');
                 container.innerHTML = OpenWS.syntaxToHTML(container.innerHTML);
               })
-            </script>
-
-            <script>
-              const usernameElement = document.getElementById('mod-name-title');
-
-              titleEditEvent()
-              function titleEditEvent() {
-                if (usernameElement) {
-                  const myText = usernameElement.value;
-
-                  if (myText.length > 60 || myText.length <= 0) {
-                    usernameElement.classList.add('limit');
-                  } else {
-                    usernameElement.classList.remove('limit')
-                  }
-
-                  usernameElement.style.width = 0;
-                  usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
-                }
-              }
             </script>
           </div>
 
@@ -770,64 +603,9 @@
           <button class="descbutton" onclick="toHideShow('short-desc-edit', 'mod-short-description-preview'); updateCardData();">Предпросмотр</button>
         </div>
 
-        <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="short-desc-edit">
-          <textarea placeholder="Короткое описание не может быть пустым!(" id="editing-short" spellcheck="false" oninput="full_short_update()" onscroll="short_sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['short_description'] }}">{{ data[0]['result']['short_description'] }}</textarea>
-          <pre id="highlighting-short" aria-hidden="true">
-            <code class="language-ow" id="highlighting-content-short">
-            </code>
-            
-            <h3 title="Ограничение в 256 символов описания!" id="limit-desc-text-short"></h3>
-            <script>
-              const textareaShortDesc = document.getElementById("editing-short")
-              function full_short_update() {
-                short_update(textareaShortDesc.value)
-                short_sync_scroll(textareaShortDesc)
-                short_on_height(textareaShortDesc)
-                limitShortRenderUpdate()
-              }
-              
-              function limitShortRenderUpdate() {
-                const remainingChars = 256 - $('#editing-short').val().length;
-                $('#limit-desc-text-short').text(remainingChars);
-                if (remainingChars < 0) {
-                  $('#limit-desc-text-short').css('color', 'red');
-                } else {
-                  $('#limit-desc-text-short').css('color', 'white');
-                }
-              }
-
-              function short_on_height(element) {
-                element.style.height = 0;
-                heightCurr = (element.scrollHeight+20) + "px";
-                
-                element.style.height = heightCurr;
-                document.getElementById("highlighting-short").style.height = heightCurr;
-                document.getElementById("short-desc-edit").style.height = heightCurr;
-              }
-
-              function short_update(text) {
-                let result_element = document.querySelector("#highlighting-content-short");
-                // Handle final newlines (see article)
-                if(text[text.length-1] == "\n") {
-                  text += " ";
-                }
-                // Update code
-                result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
-                // Syntax Highlight
-                Prism.highlightElement(result_element);
-              }
-
-              function short_sync_scroll(element) {
-                /* Scroll result to scroll coords of event - sync with textarea */
-                let result_element = document.querySelector("#highlighting-short");
-                // Get and set x and y
-                result_element.scrollTop = element.scrollTop;
-                result_element.scrollLeft = element.scrollLeft;
-                $("h3#limit-desc-text-short").css("right", (-element.scrollLeft+5)+"px"); console.log(element.scrollLeft)
-              }
-            </script>
-          </pre>
-        </div>
+        {% with init_text=data[0]['result']['short_description'] %}
+          {% include "html-partials/short-desc-edit.html" %}
+        {% endwith %}
 
         <div id="mod-short-description-preview" class="card">
           <div class="card-click">
@@ -928,7 +706,7 @@
           }
         </script>
       </article>
-
+      <script src="/assets/scripts/ow-logic.js"></script>
     </div>
 
     <script>

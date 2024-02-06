@@ -478,11 +478,22 @@ async def edit_mod(mod_id):
 @app.route('/mod/add')
 @app.route('/mod/add.html')
 async def add_mod():
-    return await error_page(
-        error_title='Будет попозже...',
-        error_body='Эта страница будет готова в будущем! :)',
-        error_code=200
-    )
+    # Определяем права
+    user_req = await get_user_req()
+
+    user_p = False
+    if user_req and type(user_req["result"]) is dict:
+        user_p = user_req["result"]["general"]
+
+    # Пробуем отрендерить страницу
+    #try:
+    page_html = render_template("mod-add.html", user_profile=user_p)
+    #except:
+    #    page_html = ""
+
+
+    # Возвращаем ответ
+    return await standart_response(user_req=user_req, page=page_html)
 
 
 @app.route('/user/<int:user_id>')

@@ -1,12 +1,165 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
+  <div style="display: flex; flex-direction: column; align-items: center;">
+    <article style="max-width: 440pt; width: 100%; display: flex; flex-direction: column; align-items: center;">
+      <h2 style="margin-bottom: 10pt; color: aliceblue;">Тут ты можешь загрузить свой замечательный мод!)</h2>
+      
+      <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" id="mod-name-title" name="mod-name-title">
+      
+      {% include 'html-partials/short-desc-edit.html' %}
+      
+      <select style="font-size: large;" id="public-mode" title="Режим отображения в каталоге и доступа">
+        <option value="0">Публичный (по умолчанию)</option>
+        <option value="1">Доступен по прямой ссылке</option>
+        <option value="2">Непубличный</option>
+      </select>
+
+      {% include "html-partials/game-selector.html" %}
+
+      <div style="background: rgba(0, 0, 0, 0.5); border-radius: 5pt; padding: 5pt; margin-top: 5pt;">
+        <h2 style="text-align: center;">Загрузите первую версию</h2>
+        <input style="background: blueviolet; border-radius: 10pt; color: azure;" type="file" accept=".zip" id="input-mod-file-upload">
+        <section progressuploadmod style="display: none;">
+          <div class="progressbarWrapper">
+            <span id="greenBar"></span>
+          </div>
+        </section>
+      </div>
+
+      <button style="height: 41px; width: 160px; border-radius: 10pt; margin-top: 5pt; font-size: large;" onclick="uploadNewMod()">Опубликовать!)</button>
+    </article>
+  </div>
+
+  <script>
+    const titleMod = $('input#mod-name-title')
+    const descMod = $('textarea#editing-short')
+    const publicMod = $('select#public-mode')
+    const fileMod = $('input#input-mod-file-upload')
+    const gameOwnerMod = $('input.edit-mod-game-input')
+
+    function uploadNewMod() {
+      function printError(targetText) {
+        banner_error_a = {
+          title: 'Ошибка форматирования',
+          text: targetText,
+          theme: 'warning',
+          autohide: true,
+          interval: 6000
+        };
+
+        new Toast(banner_error_a);
+      }
+
+      // Проверяем корректность заголовка
+      if (titleMod.val().length <= 0) {
+        printError("Не указали название мода!")
+        return
+      }
+
+      // Проверяем корректность описания
+      const textDesc = descMod.val()
+      if (textDesc.length <= 0) {
+        printError("Описание мода не указано!")
+        return
+      } else if (textDesc.length > 256) {
+        printError("Описание мода слииишком длинное!")
+        return
+      }
+
+      // Проверяем корректность игры-создателя
+      if (!$inputGameID.attr('found')) {
+        printError("Игра-владелец выбранна не корректно!")
+        return
+      }
+
+      // Проверяем корректность файла
+      if (fileMod.get(0).files.length <= 0) {
+        printError("Нужно выбрать файл первой версии!")
+        return
+      }
+
+      // TODO тут будет ещё код
+      let elem = document.getElementById("greenBar");
+      elem.innerHTML = "Начинаем...";
+      elem.style.width = "0%";
+
+      const bar = $('section[progressuploadmod]')
+      bar.show()
+
+      var formData = new FormData();
+      formData.append('mod_source', 'local');
+      formData.append('mod_game', gameOwnerMod.val());
+      formData.append('mod_name', titleMod.val());
+      formData.append('mod_short_description', descMod.val());
+      formData.append('mod_description', descMod.val());
+      formData.append('mod_public', publicMod.val());
+      formData.append('mod_file', fileMod.prop('files')[0]);
+
+      var xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', function(event) {
+        if (event.lengthComputable) {
+          var percentComplete = (event.loaded / event.total) * 100;
+          
+          elem.style.width = percentComplete + "%";
+          const roundetPercent = Math.round(percentComplete);
+          if (roundetPercent == 100) {
+            elem.innerHTML = "Ещё мгновение...";
+          } else {
+            elem.innerHTML = roundetPercent + "%";
+          }
+        }
+      });
+
+      xhr.onload = function() {
+        if (xhr.status != 200) { // обработка ошибки
+          // обработка ошибки
+          banner_error_a = {
+            title: 'Ошибка загрузки ('+xhr.status+')',
+            text: xhr.responseText,//.substring(1, text.length - 1),
+            theme: 'warning',
+            autohide: true,
+            interval: 6000
+          };
+
+          new Toast(banner_error_a);
+        } else {
+          // обработка успешного ответа
+          window.location.href = `/mod/${xhr.responseText}/edit`; // Перенаправление на новую страницу
+        }
+        bar.hide()
+      };
+
+      xhr.onerror = function() {
+        // обработка ошибки
+        banner_error_a = {
+          title: 'Сетевая ошибка',
+          text: xhr.responseText,
+          theme: 'danger',
+          autohide: true,
+          interval: 6000
+        };
+
+        new Toast(banner_error_a);
+        bar.hide()
+      };
+
+      xhr.open('POST', "/api/accounts/add/mod", true);
+      xhr.send(formData)
+    }
+  </script>
+
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+  <script src="/assets/scripts/ow-logic.js"></script>
+  <script src="/assets/scripts/ow-prism.js"></script>
+  <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
 {% endblock %}
 
 
 {% block title %}
-Add mod
+OW: Add mod
 {% endblock %}
 
 {% block description %}
-
+Добавьте мод в свободный каталог Open Workshop!
 {% endblock %}

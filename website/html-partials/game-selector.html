@@ -1,0 +1,59 @@
+<div class="mini-cont" style="display: flex; flex-direction: column; align-items: flex-end; background: rgba(0, 0, 0, 0.5); padding: 3pt; border-radius: 5pt;">
+    <h2 style="width: 100%; text-align: center;">Игра-владелец</h2>
+    <div style="display: flex;">
+        <img id="logo-game-select" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" style="width: 80pt; border-radius: 5pt;" alt="Логотип игры">
+        <div style="margin-left: 4pt;">
+            <p id="name-game-select">Загрузка...</p>
+            <input type="number" placeholder="ID игры-владельца" startdata="{{ init_id | default('') }}" onchange="renderNewSelectedGame()" value="{{ init_id | default('') }}" class="edit-mod-game-input" {% if init_id %}disabled{% endif %}>
+        </div>
+    </div>
+    <style>
+        button.enable-edit-game-mod {
+            width: 90pt; 
+            cursor: pointer; 
+            color: white; 
+            background: darkcyan; 
+            margin-top: 3pt;
+            height: 30pt;
+            border-radius: 5pt;
+        }
+        
+        input.edit-mod-game-input {
+            border-radius: 4pt;
+            padding: 6pt;
+        }
+        input.edit-mod-game-input:disabled {
+            color: white;
+        }
+    </style>
+    {% if init_id %}
+    <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
+    {% endif %}
+
+    <script>
+        const $inputGameID = $('input.edit-mod-game-input')
+        const $pGameName = $('p#name-game-select')
+        const $imgGameLogo = $('img#logo-game-select')
+
+        $(document).ready(function() {
+            renderNewSelectedGame()
+        })
+
+        function renderNewSelectedGame() {
+            fetch("https://api.openworkshop.su/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
+                response.json().then(json => {
+                console.log(json.result)
+                if (json.result) {
+                    $pGameName.text(json.result.name).css('color', 'white');
+                    $imgGameLogo.attr('src', json.result.logo+" ")
+                    $inputGameID.attr('found', 'true');
+                } else {
+                    $pGameName.text('404').css('color', 'red');
+                    $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
+                    $inputGameID.removeAttr('found');
+                }
+                });
+            })
+        }
+    </script>
+</div>
