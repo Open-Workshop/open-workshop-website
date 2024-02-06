@@ -144,8 +144,9 @@ async def check_access_user(user_req:dict, user_id:int):
 
     return user_p, access
 
-async def check_access_mod(user_req:dict, authors:list):
+async def check_access_mod(user_req:dict, authors:list = []):
     access = {
+        "add": False,
         "edit": False,
         "delete": False,
         "admin": False, # Является ли спрашивающий админом
@@ -167,9 +168,11 @@ async def check_access_mod(user_req:dict, authors:list):
         print(access["is_my_mod"])
 
         if access["admin"]:
+            access["add"] = True
             access["edit"] = True
             access["delete"] = True
         elif not access["in_mute"]:
+            access["add"] = user_req["result"]["rights"]["publish_mods"]
             if access["is_my_mod"] < 2: # Мой мод
                 access["edit"] = user_req["result"]["rights"]["change_self_mods"]
                 access["delete"] = user_req["result"]["rights"]["delete_self_mods"] and access["is_my_mod"] == 0

@@ -485,6 +485,22 @@ async def add_mod():
     if user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
 
+    right_edit_mod = await check_access_mod(user_req=user_req)
+
+    if not right_edit_mod['add']:
+        if right_edit_mod['in_mute']:
+            return await standart_response(user_req=user_req, page=await error_page(
+                error_title='В муте',
+                error_body='Вы во временном муте',
+                error_code=403
+            ))
+        else:
+            return await standart_response(user_req=user_req, page=await error_page(
+                error_title='Отказано в доступе',
+                error_body='Вы не можете публиковать моды',
+                error_code=403
+            ))
+
     # Пробуем отрендерить страницу
     #try:
     page_html = render_template("mod-add.html", user_profile=user_p)
