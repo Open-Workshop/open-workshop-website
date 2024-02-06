@@ -297,7 +297,7 @@ async def mod(mod_id):
     if info[0]['dependencies_count'] > 0:
         urls = [
             SERVER_ADDRESS+"/list/mods/?page_size=30&page=0&allowed_ids="+str(info[0]['dependencies'])+"&general=true",
-            ACCOUNTS_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
+            SERVER_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
         ]
         tasks = []
         for url in urls:
