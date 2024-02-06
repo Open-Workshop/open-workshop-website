@@ -310,8 +310,9 @@ async def mod(mod_id):
         print(info[2])
         for mod in info[2][0]["results"]:
             depen[mod["id"]]["name"] = mod["name"]
-        for img in info[2][1]["results"]:
-            depen[img["owner_id"]]["img"] = img["url"]
+        if type(info[2][1]) is dict:
+            for img in info[2][1]["results"]:
+                depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
