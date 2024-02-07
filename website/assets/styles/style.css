@@ -1611,6 +1611,10 @@ blockquote > .light {
   padding: 5pt;
   width: 100%;
 }
+.mod-dependence-list > h2 {
+  width: 100%;
+  text-align: center;
+}
 
 .mod-dependence {
   background-color: rgba(26, 26, 26, 0.452);
@@ -1621,6 +1625,8 @@ blockquote > .light {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+  align-items: center;
+  text-decoration: none;
   vertical-align: middle;
   padding-top: auto;
   padding-bottom: auto;
@@ -1633,7 +1639,7 @@ blockquote > .light {
 .mod-dependence img {
   border-radius: 5pt;
   margin-right: 5pt;
-  width: 35pt;
+  width: 50pt;
   height: 30pt;
 }
 .mod-dependence h3 {

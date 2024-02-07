@@ -54,9 +54,35 @@
               <script src="/assets/scripts/images-list.js"></script>
               {% endif %}
 
+              {% if authors | length > 0 %}
+              <div class="mod-dependence-list">
+                <style>
+                  .user-author > p {
+                    font-size: 20pt;
+                    color: white;
+                  }
+                  .user-author > p > grade {
+                    font-size: 15pt;
+                    height: 22pt;
+                  }
+                  .user-author > img {
+                    width: 30pt;
+                  }
+                </style>
+
+                <h2>Авторы</h2>
+                {% for item in authors %}
+                  <a class="mod-dependence user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+                    <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                    <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
+                  </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+
               {% if data[0]['dependencies_count'] > 0 %}
               <div class="mod-dependence-list">
-                Зависимости мода
+                <h2>Зависимости мода</h2>
                 {% for item in data[2].values() %}
                   <a class="mod-dependence" href="/mod/{{ item.id }}">
                     <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">

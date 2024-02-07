@@ -39,19 +39,21 @@
             renderNewSelectedGame()
         })
 
+        // Function to render the newly selected game.
+        // It makes a GET request to the specified API endpoint and updates the game name, logo, and ID input based on the response JSON data.
         function renderNewSelectedGame() {
             fetch("https://api.openworkshop.su/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
                 response.json().then(json => {
-                console.log(json.result)
-                if (json.result) {
-                    $pGameName.text(json.result.name).css('color', 'white');
-                    $imgGameLogo.attr('src', json.result.logo+" ")
-                    $inputGameID.attr('found', 'true');
-                } else {
-                    $pGameName.text('404').css('color', 'red');
-                    $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
-                    $inputGameID.removeAttr('found');
-                }
+                    console.log(json.result)
+                    if (json.result) {
+                        $pGameName.text(json.result.name).css('color', 'white');
+                        $imgGameLogo.attr('src', json.result.logo+" ")
+                        $inputGameID.attr('found', 'true');
+                    } else {
+                        $pGameName.text('404').css('color', 'red');
+                        $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
+                        $inputGameID.removeAttr('found');
+                    }
                 });
             })
         }

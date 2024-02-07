@@ -315,6 +315,22 @@ async def mod(mod_id):
                 depen[img["owner_id"]]["img"] = img["url"]
         info[2] = depen
 
+    authors_info = []
+    if len(info[0]['authors']) > 0:
+        authors_tasks = []
+        for author in info[0]['authors']:
+            print(f'{ACCOUNTS_ADDRESS}/profile/info/{author["user"]}')
+            authors_tasks.append(fetch(f'{ACCOUNTS_ADDRESS}/profile/info/{author["user"]}', access_cookie, refresh_cookie))
+        authors_info = await asyncio.gather(*authors_tasks)
+
+        for i in range(len(info[0]['authors'])):
+            authors_info[i] = authors_info[i]['general']
+            if authors_info[i]['avatar_url'] == 'local':
+                authors_info[i]['avatar_url'] = 'https://openworkshop.su'+f'/api/accounts/profile/avatar/{authors_info[i]["id"]}'
+            authors_info[i]['owner_mod'] = info[0]['authors'][i]['owner']
+        print(authors_info)
+
+
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
     # Создание сессии
@@ -341,10 +357,10 @@ async def mod(mod_id):
     session.close()
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
-    except:
-        page_html = ""
+    #try:
+    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_info)
+    #except:
+    #    page_html = ""
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
