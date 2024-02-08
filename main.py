@@ -522,7 +522,7 @@ async def user(user_id):
 
     if len(info[1]) > 0:
         user_mods = {
-            'not_show_all': len(info[1]) < 3, #поменять на >
+            'not_show_all': len(info[1]) > 3,
             'mods_data': await tool.get_many_mods(info[1].keys())
         }
     else:
