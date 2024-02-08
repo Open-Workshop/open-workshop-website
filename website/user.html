@@ -63,6 +63,8 @@
             color: white;
             font-size: x-large;
           }
+
+          {% if user_mods['not_show_all'] %}
           .user-mod:last-child {
             mask-image: linear-gradient(rgb(0 0 0 / 100%), transparent 85%);
             margin-bottom: -10pt;
@@ -82,13 +84,16 @@
           .view-button:active {
             scale: 0.9;
           }
+          {% endif %}
         </style>
 
         <h3 style="text-align: center; display: flex; flex-direction: row; justify-content: center;">
           Моды пользователя
+          {% if user_mods['not_show_all'] %}
           <a href="/user/{{ user_data.general.id }}/mods" class="view-button">
             <img src="/assets/images/view.svg" alt="Смотреть больше" style="width: 25pt;">
           </a>
+          {% endif %}
         </h3>
         {% for item in user_mods['mods_data'].values() %}
           <a class="mod-dependence user-mod" href="/mod/{{ item.id }}">
