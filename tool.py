@@ -1,6 +1,7 @@
 from flask import request, make_response
 import aiohttp
 import json
+import asyncio
 
 
 SERVER_ADDRESS = "http://127.0.0.1:8000"
@@ -218,3 +219,58 @@ async def standart_response(user_req:dict, page:str):
                               secure=bool(a[1].get("secure", True)), samesite=str(a[1].get("samesite", "lax")))
 
     return resp
+
+
+async def size_format(size:int) -> str:
+    def size_set(bites:int = 1, digit:str = "") -> str:
+        return f"{str(round(size/bites, 1)).removesuffix('.0')} {digit}B"
+
+    if size > 1000000000:
+        text_size = size_set(1073741824, "G")
+    elif size > 1000000:
+        text_size = size_set(1048576, "M")
+    elif size > 1000:
+        text_size = size_set(1024, "K")
+    else:
+        text_size = size_set()
+
+    return text_size
+
+async def get_many_mods(mods:list[int]) -> dict:
+    mods = list(map(int, mods))
+
+    urls = [
+        SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(mods) + "&general=true",
+        SERVER_ADDRESS + '/list/resources_mods/' + str(mods) + '?page_size=30&page=0&types_resources=["logo"]'
+    ]
+    print(urls)
+    tasks = []
+    for url in urls:
+        tasks.append(fetch(url))
+    result = await asyncio.gather(*tasks)
+
+    depen = {}
+    for i in mods:
+        depen[int(i)] = {"img": "", "name": str(i), "id": i}
+    print(result)
+    for mod in result[0]["results"]:
+        depen[mod["id"]]["name"] = mod["name"]
+    if type(result[1]) is dict:
+        for img in result[1]["results"]:
+            depen[img["owner_id"]]["img"] = img["url"]
+
+    return depen
+
+async def fetch(url, access_cookie = None, refresh_cookie = None, return_code:bool = False):
+    headers = {
+        'Cookie': ''
+    }
+    if access_cookie: headers['Cookie'] += f'accessToken={access_cookie}; '
+    if refresh_cookie: headers['Cookie'] += f'refreshToken={refresh_cookie}; '
+    headers['Cookie'] = headers['Cookie'].removesuffix("; ")
+
+    async with aiohttp.ClientSession() as session:
+        response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
+        text = await response.text()
+        if return_code: return [json.loads(text), response.status]
+        else: return json.loads(text)

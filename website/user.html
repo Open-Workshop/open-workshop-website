@@ -56,8 +56,51 @@
         </div>
       </div>
 
+      {% if user_mods %}
+      <div class="mod-dependence-list">
+        <style>
+          .user-mod > p {
+            color: white;
+            font-size: x-large;
+          }
+          .user-mod:last-child {
+            mask-image: linear-gradient(rgb(0 0 0 / 100%), transparent 85%);
+            margin-bottom: -10pt;
+            padding-bottom: 0;
+            pointer-events: none;
+          }
+
+          .view-button {
+            height: 25pt;
+            width: 25pt;
+            margin-left: 5pt;
+            transition: all 0.1s;
+          }
+          .view-button:hover {
+            scale: 1.2;
+          }
+          .view-button:active {
+            scale: 0.9;
+          }
+        </style>
+
+        <h3 style="text-align: center; display: flex; flex-direction: row; justify-content: center;">
+          Моды пользователя
+          <a href="/user/{{ user_data.general.id }}/mods" class="view-button">
+            <img src="/assets/images/view.svg" alt="Смотреть больше" style="width: 25pt;">
+          </a>
+        </h3>
+        {% for item in user_mods['mods_data'].values() %}
+          <a class="mod-dependence user-mod" href="/mod/{{ item.id }}">
+            <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+            <p translate="no">{{ item.name }}</p>
+          </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+      
       <article id="mod-description">
-        <h5>Тут будут ваши моды, форумы, друзья и т.п.! Осталось только дождаться :)</h5>
+        <h5>Тут будут ваши форумы, друзья и т.п.! Осталось только дождаться :)</h5>
       </article>
     </article>
   </div>

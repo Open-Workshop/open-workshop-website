@@ -6,10 +6,9 @@ from sqlalchemy import insert, delete
 from pathlib import Path
 from babel import dates
 import datetime
-import aiohttp
 import asyncio
+from tool import fetch
 import tool
-import json
 import time
 import re
 import os
@@ -191,21 +190,6 @@ async def legal_privacy_policy():
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
 
-
-async def fetch(url, access_cookie, refresh_cookie, return_code:bool = False):
-    headers = {
-        'Cookie': ''
-    }
-    if access_cookie: headers['Cookie'] += f'accessToken={access_cookie}; '
-    if refresh_cookie: headers['Cookie'] += f'refreshToken={refresh_cookie}; '
-    headers['Cookie'] = headers['Cookie'].removesuffix("; ")
-
-    async with aiohttp.ClientSession() as session:
-        response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
-        text = await response.text()
-        if return_code: return [json.loads(text), response.status]
-        else: return json.loads(text)
-
 @app.route('/mod/<int:mod_id>')
 @app.route('/mod/<int:mod_id>.html')
 async def mod(mod_id):
@@ -220,7 +204,8 @@ async def mod(mod_id):
 
     urls = [
         ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0"
+        ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0",
+        ACCOUNTS_ADDRESS+f"/list/tags/mods/%5B{mod_id}%5D"
     ]
     tasks = []
     for url in urls:
@@ -250,18 +235,11 @@ async def mod(mod_id):
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
+        info[2] = info[2][0][str(mod_id)]
 
-    def size_set(bites:int = 1, digit:str = "") -> str:
-        return f"{str(round(info[0]['result']['size']/bites, 1)).removesuffix('.0')} {digit}B"
+    print(urls[2], info[2])
 
-    if info[0]['result']['size'] > 1000000000:
-        info[0]['result']['size'] = size_set(1073741824, "G")
-    elif info[0]['result']['size'] > 1000000:
-        info[0]['result']['size'] = size_set(1048576, "M")
-    elif info[0]['result']['size'] > 1000:
-        info[0]['result']['size'] = size_set(1024, "K")
-    else:
-        info[0]['result']['size'] = size_set()
+    info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
@@ -295,25 +273,7 @@ async def mod(mod_id):
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        urls = [
-            SERVER_ADDRESS+"/list/mods/?page_size=30&page=0&allowed_ids="+str(info[0]['dependencies'])+"&general=true",
-            SERVER_ADDRESS+'/list/resources_mods/'+str(info[0]['dependencies'])+'?page_size=30&page=0&types_resources=["logo"]'
-        ]
-        tasks = []
-        for url in urls:
-            tasks.append(fetch(url, access_cookie, refresh_cookie))
-        info[2] = await asyncio.gather(*tasks)
-
-        depen = {}
-        for i in info[0]['dependencies']:
-            depen[i] = {"img": "", "name": str(i), "id": i}
-        print(info[2])
-        for mod in info[2][0]["results"]:
-            depen[mod["id"]]["name"] = mod["name"]
-        if type(info[2][1]) is dict:
-            for img in info[2][1]["results"]:
-                depen[img["owner_id"]]["img"] = img["url"]
-        info[2] = depen
+        info[3] = await tool.get_many_mods(info[0]['dependencies'])
 
     authors_info = []
     if len(info[0]['authors']) > 0:
@@ -326,7 +286,7 @@ async def mod(mod_id):
         for i in range(len(info[0]['authors'])):
             authors_info[i] = authors_info[i]['general']
             if authors_info[i]['avatar_url'] == 'local':
-                authors_info[i]['avatar_url'] = 'https://openworkshop.su'+f'/api/accounts/profile/avatar/{authors_info[i]["id"]}'
+                authors_info[i]['avatar_url'] = f'/api/accounts/profile/avatar/{authors_info[i]["id"]}'
             authors_info[i]['owner_mod'] = info[0]['authors'][i]['owner']
         print(authors_info)
 
@@ -427,17 +387,7 @@ async def edit_mod(mod_id):
                 error_code=403
             ))
 
-    def size_set(bites: int = 1, digit: str = "") -> str:
-        return f"{str(round(info[0]['result']['size'] / bites, 1)).removesuffix('.0')} {digit}B"
-
-    if info[0]['result']['size'] > 1000000000:
-        info[0]['result']['size'] = size_set(1073741824, "G")
-    elif info[0]['result']['size'] > 1000000:
-        info[0]['result']['size'] = size_set(1048576, "M")
-    elif info[0]['result']['size'] > 1000:
-        info[0]['result']['size'] = size_set(1024, "K")
-    else:
-        info[0]['result']['size'] = size_set()
+    info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
@@ -461,25 +411,7 @@ async def edit_mod(mod_id):
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        urls = [
-            SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(
-                info[0]['dependencies']) + "&general=true",
-            ACCOUNTS_ADDRESS + '/list/resources_mods/' + str(
-                info[0]['dependencies']) + '?page_size=30&page=0&types_resources=["logo"]'
-        ]
-        tasks = []
-        for url in urls:
-            tasks.append(fetch(url, access_cookie, refresh_cookie))
-        info[2] = await asyncio.gather(*tasks)
-
-        depen = {}
-        for i in info[0]['dependencies']:
-            depen[i] = {"img": "", "name": str(i), "id": i}
-        for mod in info[2][0]["results"]:
-            depen[mod["id"]]["name"] = mod["name"]
-        for img in info[2][1]["results"]:
-            depen[img["owner_id"]]["img"] = img["url"]
-        info[2] = depen
+        info[2] = await tool.get_many_mods(info[0]['dependencies'])
 
 
     # Пробуем отрендерить страницу
@@ -541,6 +473,7 @@ async def user(user_id):
 
     urls = [
         ACCOUNTS_ADDRESS + f"/profile/info/{user_id}",
+        ACCOUNTS_ADDRESS + f"/list/mods/{user_id}?page_size=4"
     ]
     tasks = []
     for url in urls:
@@ -555,6 +488,7 @@ async def user(user_id):
         ))
     else:
         info[0] = info[0][0]
+        info[1] = info[1][0]
 
     info[0]['delete_user'] = info[0]['general']['username'] is None
 
@@ -586,12 +520,19 @@ async def user(user_id):
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
+    if len(info[1]) > 0:
+        user_mods = {
+            'not_show_all': len(info[1]) < 3, #поменять на >
+            'mods_data': await tool.get_many_mods(info[1].keys())
+        }
+    else:
+        user_mods = False
+
     user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
     try:
-        page_html = render_template("user.html", user_data=info[0],
-                                   is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']},
-                                   user_profile=user_p)
+        page_html = render_template("user.html", user_data=info[0], user_profile=user_p, user_mods=user_mods,
+                                    is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']})
     except:
         page_html = ""
 
@@ -671,6 +612,14 @@ async def user_settings(user_id):
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
+
+@app.route('/user/<int:user_id>/mods')
+@app.route('/user/<int:user_id>/mods.html')
+async def user_mods(user_id):
+    return await error_page(
+        error_title='Зайдите попозже...',
+        error_body=f'Эта страница вскоре будет доступна! ({user_id})'
+    )
 
 
 @app.route('/api/login-popup/')

@@ -54,6 +54,26 @@
               <script src="/assets/scripts/images-list.js"></script>
               {% endif %}
 
+
+              {% if data[2] | length > 0 %}
+              <div class="mod-dependence-list" style="display: flex; flex-wrap: wrap; align-content: center;">
+                <style>
+                  .dop-tag-link {
+                    cursor: auto;
+                    margin: 1pt;
+                    height: 20pt;
+                  }
+                  .dop-tag-link > h3 {
+                    font-size: 12pt;
+                  }
+                </style>
+                {% for item in data[2] %}
+                  <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}" href="/mod/{{ item.id }}"><h3 translate="no">{{ item.name }}</h3></a>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+
               {% if authors | length > 0 %}
               <div class="mod-dependence-list">
                 <style>
@@ -83,7 +103,7 @@
               {% if data[0]['dependencies_count'] > 0 %}
               <div class="mod-dependence-list">
                 <h2>Зависимости мода</h2>
-                {% for item in data[2].values() %}
+                {% for item in data[3].values() %}
                   <a class="mod-dependence" href="/mod/{{ item.id }}">
                     <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
                     <h3 translate="no">{{ item.name }}</h3>
