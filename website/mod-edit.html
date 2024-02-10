@@ -186,7 +186,7 @@
           {% include "html-partials/game-selector.html" %}
         {% endwith %}
 
-        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;"></div>
+        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
           <select style="font-size: large;" id="public-mode" title="Режим отображения в каталоге и доступа">
             <option value="0" {% if data[0]['result']['public'] == 0 %}selected{% endif %}>Публичный (по умолчанию)</option>
             <option value="1" {% if data[0]['result']['public'] == 1 %}selected{% endif %}>Доступен по прямой ссылке</option>
