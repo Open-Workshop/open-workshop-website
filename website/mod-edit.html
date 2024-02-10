@@ -185,6 +185,14 @@
         {% with init_id=data[0]['result']['game']['id'] %}
           {% include "html-partials/game-selector.html" %}
         {% endwith %}
+
+        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;"></div>
+          <select style="font-size: large;" id="public-mode" title="Режим отображения в каталоге и доступа">
+            <option value="0" {% if data[0]['result']['public'] == 0 %}selected{% endif %}>Публичный (по умолчанию)</option>
+            <option value="1" {% if data[0]['result']['public'] == 1 %}selected{% endif %}>Доступен по прямой ссылке</option>
+            <option value="2" {% if data[0]['result']['public'] == 2 %}selected{% endif %}>Непубличный</option>
+          </select>
+        </div>
       </article>
 
       <article class="mod-container ptwo" style="padding-bottom: 15pt;">
@@ -726,6 +734,7 @@
         checkAndAppend($('textarea#editing-short'), 'mod_short_description');
         checkAndAppend($('textarea#editing'), 'mod_description');
         checkAndAppend($('input.edit-mod-game-input'), 'mod_game');
+        checkAndAppend($('select#public-mode'), 'mod_public');
 
         if (toSendChangeGen) {
           fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {

@@ -3,11 +3,63 @@
     <div style="display: flex;">
         <img id="logo-game-select" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" style="width: 80pt; border-radius: 5pt;" alt="Логотип игры">
         <div style="margin-left: 4pt;">
-            <p id="name-game-select">Загрузка...</p>
+            <div style="display: flex;">
+                <button class="edit-mod-game-name-set" onclick="gameNameSelect()"><img src="/assets/images/check-mini.svg" alt="Изображение кнопки"></button>
+                <div>
+                    <p id="name-game-select">Загрузка...</p>
+                    <input dynamlen type="text" oninput="SelectGameInputEvent()" onfocus="SelectGameInputFocus()" onblur="SelectGameInputFocusAboard()" placeholder="Найти по имени..." class="edit-mod-game-input-name">
+                </div>
+            </div>
+
             <input type="number" placeholder="ID игры-владельца" startdata="{{ init_id | default('') }}" onchange="renderNewSelectedGame()" value="{{ init_id | default('') }}" class="edit-mod-game-input" {% if init_id %}disabled{% endif %}>
         </div>
     </div>
     <style>
+        button.edit-mod-game-name-set {
+            width: 25px;
+            height: 25px;
+            margin: 1pt;
+            border-radius: 5pt;
+            border: none;
+        }
+        button.edit-mod-game-name-set img {
+            width: 100%;
+            height: 100%;
+        }
+
+        input.edit-mod-game-input-name {
+            font-size: 14pt;
+            padding: 0;
+            background: none;
+            color: white;
+            position: absolute;
+            margin-top: -18.5pt;
+            border-radius: 1pt;
+            min-width: 155px;
+            max-width: 175px;
+            text-transform: uppercase;
+            outline: none;
+        }
+
+        ::-webkit-input-placeholder { /* WebKit browsers */
+            text-transform: none;
+        }
+        ::-moz-placeholder { /* Mozilla Firefox 19+ */
+            text-transform: none;
+        }
+        ::placeholder { /* Recent browsers */
+            text-transform: none;
+        }
+
+        #name-game-select {
+            font-size: 14pt;
+            color: darkgray;
+            height: 28px;
+            text-transform: uppercase;
+            pointer-events: none;
+            cursor: auto;
+        }
+
         button.enable-edit-game-mod {
             width: 90pt; 
             cursor: pointer; 
@@ -26,6 +78,7 @@
             color: white;
         }
     </style>
+
     {% if init_id %}
     <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
     {% endif %}
@@ -33,29 +86,116 @@
     <script>
         const $inputGameID = $('input.edit-mod-game-input')
         const $pGameName = $('p#name-game-select')
+        const $inputGameName = $('input.edit-mod-game-input-name')
+        const $buttonGameName = $('button.edit-mod-game-name-set')
         const $imgGameLogo = $('img#logo-game-select')
+
+        console.log($inputGameName)
 
         $(document).ready(function() {
             renderNewSelectedGame()
         })
 
-        // Function to render the newly selected game.
-        // It makes a GET request to the specified API endpoint and updates the game name, logo, and ID input based on the response JSON data.
+        function setColor(color) {
+            $pGameName.css('color', 'dark'+color);
+            $inputGameName.css('color', color);
+        }
+        
+        /**
+         * Function to render the newly selected game.
+         * It makes a GET request to the specified API endpoint and updates the game name, logo, and ID input based on the response JSON data.
+        */
         function renderNewSelectedGame() {
+            $buttonGameName.attr('disabled', '');
+            // Make a GET request to the API endpoint
             fetch("https://api.openworkshop.su/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
+                // Parse the JSON response
                 response.json().then(json => {
-                    console.log(json.result)
+                    // Update the UI based on the JSON data
                     if (json.result) {
-                        $pGameName.text(json.result.name).css('color', 'white');
+                        $pGameName.text(json.result.name).css('color', 'darkgray');
+                        $inputGameName.val(json.result.name).attr('lastval', json.result.name).css('color', 'gray');
                         $imgGameLogo.attr('src', json.result.logo+" ")
                         $inputGameID.attr('found', 'true');
                     } else {
-                        $pGameName.text('404').css('color', 'red');
+                        $pGameName.text('').css('color', 'darkred');
+                        $inputGameName.val('').attr('lastval', '').css('color', 'red');
                         $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
                         $inputGameID.removeAttr('found');
                     }
+                    // Trigger the input event for the game name input
+                    $inputGameName.trigger('input')
                 });
             })
         }
+
+        function SelectGameInputEvent() {
+            if ($inputGameName.val().length > 0) {
+                // Удалить стиль 
+                $inputGameName.css('min-width', '15px');
+            } else {
+                $inputGameName.css('min-width', '155px');
+            }
+        }
+        function SelectGameInputFocus() {
+            setColor('grey')
+
+            $inputGameName.attr('dynamlen', 'true')
+            $inputGameName.trigger('input')
+        }
+        function SelectGameInputFocusAboard() {
+            // удалить атрибут
+            $inputGameName.trigger('input')
+        }
+
+        function gameNameSelect() {
+            $inputGameID.val($buttonGameName.attr('gameid'))
+            renderNewSelectedGame()
+        }
+
+        setInterval(async function () {
+            if ($inputGameName.attr('lastval') != $inputGameName.val()) {
+                $inputGameName.attr('lastval', $inputGameName.val())
+
+                if ($inputGameName.val().length > 0) {
+                    if (!($pGameName.text().toUpperCase()).startsWith($inputGameName.val().toUpperCase())) {
+                        $pGameName.text(' ')
+                    }
+
+                    // делаем запрос к серверу
+                    response = await fetch('https://api.openworkshop.su/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {method: 'GET'})
+                    const data = await response.json()
+
+                    console.log(data.results)
+                    
+                    if (data.results.length) {
+                        setColor('grey')
+
+                        const nameGameServer = data.results[0].name.toUpperCase()
+                        const nameGameUser = $inputGameName.val().toUpperCase()
+
+                        console.log(nameGameServer, nameGameUser, nameGameServer.startsWith(nameGameUser))
+
+                        if (nameGameServer.startsWith(nameGameUser)) {
+                            $buttonGameName.removeAttr('disabled');
+                            $buttonGameName.attr('gameid', data.results[0].id)
+                            console.log('Игра найдена ', $pGameName)
+                            $pGameName.text(nameGameServer)
+                        } else {
+                            $buttonGameName.attr('disabled', '');
+                            $pGameName.text(' ')
+                        }
+                    } else {
+                        $buttonGameName.attr('disabled', '');
+                        $pGameName.text(' ')
+                        setColor('red')
+                    }
+                } else if ($inputGameName.val().length <= 0) {
+                    $buttonGameName.attr('disabled', '');
+                    $pGameName.text(' ')
+                    setColor('grey')
+                }
+            }
+        }, 500);
     </script>
 </div>
