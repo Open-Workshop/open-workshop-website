@@ -197,7 +197,7 @@
 
       <article class="mod-container ptwo" style="padding-bottom: 15pt;">
           <div class="mod-big-cont">
-            <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title" oninput="titleEditEvent()">
+            <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title">
             
             <div>
               <div style="margin-left: 6pt; margin-top: 4pt;">
@@ -776,6 +776,7 @@
             method: 'POST',
             body: logoBody
           });
+          console.log(response.status)
           if (response.status != 202) {
             const text = await response.text();
             banner_error_a = {
@@ -820,6 +821,7 @@
                 method: 'POST',
                 body: editLogoBody
               });
+              console.log(responseEDIT.status)
               if (responseEDIT.status != 202) {
                 const text = await responseEDIT.text();
                 banner_error_a = {
@@ -841,6 +843,7 @@
               method: 'POST'
             });
 
+            console.log(responseDELETE.status)
             if (responseDELETE.status !== 202) {
               const text = await responseDELETE.text();
               const banner_error_a = {
