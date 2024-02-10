@@ -718,7 +718,7 @@
     </div>
 
     <script>
-      function saveChangesMod() {
+      async function saveChangesMod() {
         // Имя, короткое описание, описание, игра-владелец
         let formData = new FormData();
 
@@ -737,24 +737,22 @@
         checkAndAppend($('select#public-mode'), 'mod_public');
 
         if (toSendChangeGen) {
-          fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
+          const response = await fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
             method: 'POST',
             body: formData 
-          }).then(response => {
-            if (response.status != 200) {
-              response.text().then(text => {
-                banner_error_a = {
-                  title: 'Ошибка редактирования',
-                  text: text.substring(1, text.length - 1),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a);
-              });
-            }
-          })
+          });
+          if (response.status !== 200) {
+            const text = await response.text();
+            const banner_error_a = {
+              title: 'Ошибка редактирования',
+              text: text.substring(1, text.length - 1),
+              theme: 'warning',
+              autohide: true,
+              interval: 6000
+            };
+            new Toast(banner_error_a);
+            return
+          }
         }
 
         // Скриншоты, лого
@@ -763,7 +761,7 @@
 
         // Новые
         const newLogos = $('div[resid=new]')
-        newLogos.each(function(index, element) {
+        newLogos.each(async function(index, element) {
           toSendChangesLogo = true
 
           // Здесь можно обработать каждый найденный элемент
@@ -774,24 +772,22 @@
           logoBody.append('resource_url', $(element).find('a').attr('href'));
           logoBody.append('resource_owner_id', "{{ data[0]['result']['id'] }}");
 
-          fetch("/api/accounts/add/resource", {
+          const response = await fetch("/api/accounts/add/resource", {
             method: 'POST',
             body: logoBody
-          }).then(response => {
-            if (response.status != 202) {
-              response.text().then(text => {
-                banner_error_a = {
-                  title: 'Ошибка доб. лого',
-                  text: text.substring(1, text.length - 1),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a);
-              });
-            }
-          })
+          });
+          if (response.status != 202) {
+            const text = await response.text();
+            banner_error_a = {
+              title: 'Ошибка доб. лого',
+              text: text.substring(1, text.length - 1),
+              theme: 'warning',
+              autohide: true,
+              interval: 6000
+            };
+            new Toast(banner_error_a);
+            return
+          }
         });
 
         // Старые (редактирование и удаление)
@@ -820,44 +816,44 @@
             if (editLogoToSend) {
               toSendChangesLogo = true
 
-              fetch("/api/accounts/edit/resource?resource_id="+dictionary.id, {
+              const responseEDIT = await fetch("/api/accounts/edit/resource?resource_id=" + dictionary.id, {
                 method: 'POST',
                 body: editLogoBody
-              }).then(response => {
-                if (response.status != 202) {
-                  response.text().then(text => {
-                    banner_error_a = {
-                      title: 'Ошибка ред. лого',
-                      text: text.substring(1, text.length - 1),
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
+              });
+              if (responseEDIT.status != 202) {
+                const text = await responseEDIT.text();
+                banner_error_a = {
+                  title: 'Ошибка ред. лого',
+                  text: text.substring(1, text.length - 1),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
 
-                    new Toast(banner_error_a);
-                  });
-                }
-              })
+                new Toast(banner_error_a);
+                return
+              }
             }
           } else {
             toSendChangesLogo = true
-            fetch("/api/accounts/delete/resource?resource_id="+dictionary.id, {
+            
+            const responseDELETE = await fetch("/api/accounts/delete/resource?resource_id=" + dictionary.id, {
               method: 'POST'
-            }).then(response => {
-              if (response.status != 202) {
-                response.text().then(text => {
-                  banner_error_a = {
-                    title: 'Ошибка удал. лого',
-                    text: text.substring(1, text.length - 1),
-                    theme: 'warning',
-                    autohide: true,
-                    interval: 6000
-                  };
+            });
 
-                  new Toast(banner_error_a);
-                });
-              }
-            })
+            if (responseDELETE.status !== 202) {
+              const text = await responseDELETE.text();
+              const banner_error_a = {
+                title: 'Ошибка удал. лого',
+                text: text.substring(1, text.length - 1),
+                theme: 'warning',
+                autohide: true,
+                interval: 6000
+              };
+
+              new Toast(banner_error_a);
+              return
+            }
           }
         }
       
