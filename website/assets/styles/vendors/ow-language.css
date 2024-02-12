@@ -50,6 +50,9 @@
 code.invisible-highlighting {
     opacity: 0;
 }
+textarea.invisible-highlighting {
+    color: white;
+}
 
 
 /* Make textarea almost completely transparent */

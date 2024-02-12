@@ -51,8 +51,10 @@ function descUpdate(root, text) {
     if (result_element.html().length <= 0) {
         result_element.html(root.find('textarea.editing').attr('placeholder'));
         result_element.addClass("invisible-highlighting")
+        root.find('textarea.editing').addClass("invisible-highlighting")
     } else {
         result_element.removeClass("invisible-highlighting")
+        root.find('textarea.editing').removeClass("invisible-highlighting")
         Prism.highlightElement(result_element[0]);
     }
 }
