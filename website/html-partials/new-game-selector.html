@@ -1,0 +1,265 @@
+<div class="main-body-game-selector">
+    <img errorcap src="/assets/images/choose-man.webp" alt="Иконка игры" class="game-select-logo">
+    
+    <div style="height: 60%; width: 73%;">
+        <div class="select-game-menu" onclick="stateMachineGameSelect()">
+            <p>Игра не выбрана</p>
+            <img src="/assets/images/drop-down-list.svg" alt="Иконка выпадающего меню">
+        </div>
+
+        <div class="popup-game-select">
+            <input id="search-update-input" type="text" placeholder="Поиск..." oninput="searchUpdateInput()">
+            
+            <div id="all-games-search-results">
+                <div onclick="gameSelected(this)" class="in-popup-game-card test-two">
+                    <img src="https://media.discordapp.net/attachments/662655960741052447/1205835797878538270/screenshot-2024-02-10_14-18-15.png?ex=65d9d119&is=65c75c19&hm=cef2ad6b8cac46359f923f11dfe1d35a15e00692926492256f13ba6b8ad5390e&=&format=webp&quality=lossless&width=1201&height=675" alt="">
+                    <p>VoxelEngine</p>
+                </div>
+            </div>
+            
+            <p id="show-more-count">И ещё 10 шт...</p>
+
+            <script>
+                searchUpdateInput();
+                
+                async function searchUpdateInput() {
+                    $('div.popup-game-select').addClass('reset');
+
+                    const ref = await fetch('https://api.openworkshop.su/list/games/?page_size=5&name=' + $('input#search-update-input').val());
+                    const data = await ref.json()
+
+                    clearSearchResults();
+                    noInList(data.database_size-data.results.length)
+                    
+                    data.results.forEach(t => {
+                        addNewGameResult(t.name, t.id, t.logo);
+                    })
+
+                    console.log(data)
+
+                    $('div.popup-game-select').removeClass('reset');
+                }
+
+                function clearSearchResults() {
+                    $('div#all-games-search-results').empty();
+                }
+
+                function noInList(number) {
+                    const pNoInList = $('p#show-more-count');
+                    pNoInList.text("И ещё " + number + " шт...");
+
+                    if (number <= 0) {
+                        pNoInList.attr('hidden', '')
+                    } else {
+                        pNoInList.removeAttr('hidden');
+                    }
+                }
+
+                function addNewGameResult(gameName, gameID, gameLogo) {
+                    // Создание элемента div с классом "in-popup-game-card" и "test-two"
+                    var newDiv = $('<div/>', {
+                        class: 'in-popup-game-card',
+                        gameid: gameID,
+                        style: '--logo-game: url("'+gameLogo+'");',
+                        onclick: "gameSelected($(this))",
+                        title: gameName
+                    });
+
+                    // Создание элемента img с атрибутами src и alt
+                    var newImg = $('<img/>', {
+                        src: gameLogo,
+                        alt: 'Лого игры'
+                    });
+
+                    // Создание элемента p с текстом "VoxelEngine"
+                    var newP = $('<p/>', {
+                        text: gameName
+                    });
+
+                    // Добавление img и p внутрь div
+                    newDiv.append(newImg, newP);
+
+                    // Добавление div на страницу
+                    $('div#all-games-search-results').append(newDiv);
+                }
+            
+                function gameSelected(element) {
+                    const gameSelectCard = $('div.select-game-menu');
+
+                    gameSelectCard.children('p').text(element.children('p').text());
+                    $('img.game-select-logo').attr('src', element.children('img').attr('src'));
+                    gameSelectCard.attr('gameid', element.attr('gameid'));
+
+                    ['div.select-game-menu', 'div.popup-game-select'].forEach(elementSearchToken => {
+                        document.querySelector(elementSearchToken).classList.remove('active');
+                    });
+                }
+            </script>
+        </div>
+    </div>
+
+    <style>
+        div.main-body-game-selector {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            height: 45pt;
+        }
+
+        img.game-select-logo {
+            width: 25%;
+            padding: 5pt;
+            border-radius: 10pt;
+        }
+
+        div.select-game-menu {
+            background: black;
+            height: 100%;
+            width: 100%;
+            border-radius: 5pt;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        div.select-game-menu p {
+            width: 80%;
+            text-align: center;
+        }
+
+        div.select-game-menu img {
+            width: 12%;
+            margin-right: 3pt;
+            transition: all 0.2s;
+        }
+        div.select-game-menu:hover img {
+            scale: 1.1;
+        }
+        div.select-game-menu:hover:not(.active) img {
+            rotate: -10deg;
+        }
+        div.select-game-menu.active img {
+            rotate: 180deg;
+        }
+        div.select-game-menu.active:hover img {
+            rotate: 190deg;
+        }
+
+        div.popup-game-select {
+            background: rgba(0, 0, 0, 0.9);
+            position: sticky;
+            margin-top: 1pt;
+            border-radius: 5pt;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+        }
+        div.popup-game-select.active {
+            max-height: 300pt;
+        }
+        div.popup-game-select > p {
+            text-align: end;
+            width: 100%;
+            color: rgba(255, 255, 255, 0.5);
+            margin-right: 7pt;
+        }
+
+        div.popup-game-select > input {
+            border-radius: 0; 
+            background: #2D2D2D; 
+            width: 100%; 
+            border-radius: 4pt;
+            caret-color: white;
+            color: white;
+        }
+        div.popup-game-select > input:focus {
+            outline: none;
+        }
+
+        div.popup-game-select > div#all-games-search-results {
+            opacity: 100%;
+            transition: all 0.15s;
+        }
+        div.popup-game-select.reset > div#all-games-search-results {
+            opacity: 0%;
+        }
+
+        div.in-popup-game-card {
+            margin: 2pt;
+            width: 98%;
+            height: 30pt;
+            position: relative;
+            border-radius: 5pt;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            filter: brightness(1);
+        }
+        div.in-popup-game-card:hover {
+            filter: brightness(0.9);
+        }
+        div.in-popup-game-card:active {
+            filter: brightness(0.8);
+        }
+        div.in-popup-game-card img {
+            width: 30%;
+        }
+        div.in-popup-game-card p {
+            width: 100%;
+            font-size: 15pt;
+            text-align: center;
+            max-height: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 1pt;
+        }
+        div.in-popup-game-card::before {
+            content: '';
+            background-size: 100% 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            border-radius: 5pt;
+            background-image: var(--logo-game);
+        }
+        div.in-popup-game-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(5px);
+            background-color: rgb(33 33 33 / 63%); /* замените на ваш цвет и прозрачность */
+            z-index: -1;
+            border-radius: 5pt;
+        }
+    </style>
+
+    <script>
+        function stateMachineGameSelect() {
+            const select = document.querySelector('div.select-game-menu');
+            const popup = document.querySelector('div.popup-game-select');
+
+            if (select.classList.contains('active')) {
+                select.classList.remove('active');
+                popup.classList.remove('active');
+            } else {
+                select.classList.add('active');
+                popup.classList.add('active');
+            }
+        }
+    </script>
+</div>

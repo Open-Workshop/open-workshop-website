@@ -6,6 +6,12 @@ $(document).ready(function() {
 });
 
 
+// Обработчик ошибок картинок
+$('img[errorcap]').on('onerror', function() {
+    $(this).attr("src", "/assets/images/image-not-found.webp")
+});
+
+
 // Функция динамической подсветки input элементов
 
 $('input[displaylimit]').on('input', function() {

@@ -1,0 +1,9 @@
+<div limit="{{ limit | default('256') }}" style="height: 200px; width: 100%; position: relative; margin-top: -3pt; margin-left: -3pt; padding: 8pt;" id="desc-edit">
+    <textarea placeholder="{{ placeholder | default('Короткое описание не может быть пустым!(') }}" class="editing" spellcheck="false" oninput="fullDescUpdate($(this))" startdata="{{ init_text | default('') }}">{{ init_text | default('') }}</textarea>
+    <pre id="highlighting" aria-hidden="true">
+        <code class="language-ow" id="highlighting-content">
+        </code>
+      
+        <h3 title="Ограничение в {{ limit | default('256') }} символов описания!" id="limit-desc-text"></h3>
+    </pre>
+</div>

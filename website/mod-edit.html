@@ -347,7 +347,7 @@
                   {% for item in data[1]['results'] %}
                     <div resid="{{ item['id'] }}">
                       <a startdata="{{ item['url'] }}" href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
-                        <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />
+                        <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" errorcap />
                       </a>
                       <div class="bottom-editor-screenshot">
                         <select selectortypeshot onchange="resetLogo(this)" startdata="{{ item['type'] }}" title="Выберете тип">
@@ -412,7 +412,7 @@
                     var $a = $('<a>').attr('startdata', inputUrl.value).attr('href', inputUrl.value).addClass('slider__images-item without-caption image-link');
 
                     // Создаем элемент img
-                    var $img = $('<img>').attr('src', inputUrl.value).attr('alt', 'Скриншот мода').addClass('slider__images-image loaded').attr('onerror', 'this.src=\'/assets/images/image-not-found.webp\'');
+                    var $img = $('<img>').attr('src', inputUrl.value).attr('alt', 'Скриншот мода').attr('errorcap', 'y').addClass('slider__images-image loaded');
 
                     // Добавляем img в a
                     $a.append($img);
@@ -618,7 +618,7 @@
         <div id="mod-short-description-preview" class="card">
           <div class="card-click">
             <div class="card__image-holder">
-              <img class="card__image title-card-img show" src="https://steamuserimages-a.akamaihd.net/ugc/1621814584860459902/F781727401895CFD3C8FBE123A5499D8E82F8679/" alt="Здесь должен быть логотип мода" id="preview-logo-card-1" onerror="this.src='/assets/images/image-not-found.webp'">
+              <img class="card__image title-card-img show" src="https://steamuserimages-a.akamaihd.net/ugc/1621814584860459902/F781727401895CFD3C8FBE123A5499D8E82F8679/" alt="Здесь должен быть логотип мода" id="preview-logo-card-1" errorcap>
             </div>
             <div class="card-params-list">
               <a class="tag-link card-params-list-tag" title="Размер мода">📦{{ data[0]['result']['size'] }}</a>

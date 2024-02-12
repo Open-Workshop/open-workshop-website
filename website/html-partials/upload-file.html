@@ -1,0 +1,83 @@
+<div class="upload-file center" onclick="$('#input-mod-file-upload').click()">
+    <img src="/assets/images/add-file.svg" alt="Иконка добавления изображения">
+    <p id="input-mod-file-upload-text" style="color: rgb(255 255 255 / 70%); text-align: center;">выберите файл</p>
+
+    <style>
+        div.center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        div.upload-file {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 5pt;
+            padding: 5pt;
+            margin-top: 5pt;
+            border: 2px dashed white;
+            width: 97%;
+            height: 140px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        div.upload-file img {
+            transition: all 0.2s;
+        }
+        div.upload-file:hover img {
+            rotate: 5deg;
+        }
+
+        div.dragover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        div.dragover img {
+            scale: 1.1;
+        }
+    </style>
+
+    <script>
+        let $fileInput;
+
+        function fileSelectToUpload() {
+            $('p#input-mod-file-upload-text').text($fileInput.prop('files')[0].name)
+        }
+        
+        $(document).ready(function() {
+            $fileInput = $('input#input-mod-file-upload')
+            const dropArea = $('div.upload-file');
+            
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.on(eventName, preventDefaults);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Add visual effects when file is dragged over
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.on(eventName, function() {
+                dropArea.addClass('dragover');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.on(eventName, function() {
+                dropArea.removeClass('dragover');
+                });
+            });
+            
+            dropArea.on('drop', function(e) {
+                // Handle the dropped files
+                const files = e.originalEvent.dataTransfer.files;
+                console.log(files);
+                $fileInput.prop('files', files);
+                fileSelectToUpload()
+            });
+        });
+    </script>
+</div>
+<input type="file" accept=".zip" id="input-mod-file-upload" onchange="fileSelectToUpload()" hidden />

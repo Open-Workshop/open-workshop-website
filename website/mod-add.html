@@ -1,41 +1,67 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <div style="display: flex; flex-direction: column; align-items: center;">
-    <article style="max-width: 440pt; width: 100%; display: flex; flex-direction: column; align-items: center;">
-      <h2 style="margin-bottom: 10pt; color: aliceblue;">Тут ты можешь загрузить свой замечательный мод!)</h2>
+    <article id="main-container">
+      <h1 style="color: white; font-size: 25pt;">Загрузить мод 😉</h1>
       
-      <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" id="mod-name-title" name="mod-name-title">
-      
-      {% include 'html-partials/short-desc-edit.html' %}
-      
-      <select style="font-size: large;" id="public-mode" title="Режим отображения в каталоге и доступа">
-        <option value="0">Публичный (по умолчанию)</option>
-        <option value="1">Доступен по прямой ссылке</option>
-        <option value="2">Непубличный</option>
-      </select>
-
-      {% include "html-partials/game-selector.html" %}
-
-      <div style="background: rgba(0, 0, 0, 0.5); border-radius: 5pt; padding: 5pt; margin-top: 5pt;">
-        <h2 style="text-align: center;">Загрузите первую версию</h2>
-        <input style="background: blueviolet; border-radius: 10pt; color: azure;" type="file" accept=".zip" id="input-mod-file-upload">
-        <section progressuploadmod style="display: none;">
-          <div class="progressbarWrapper">
-            <span id="greenBar"></span>
-          </div>
-        </section>
+      <div style="width: 100%; margin-top: 5pt; background: rgba(0, 0, 0, 0.5);">
+        <input displaylimit class="edit-username" style="padding-left: 7pt; width: 100%; border: none; border-radius: 0;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" id="mod-name-title" name="mod-name-title">
       </div>
 
-      <button style="height: 41px; width: 160px; border-radius: 10pt; margin-top: 5pt; font-size: large;" onclick="uploadNewMod()">Опубликовать!)</button>
+      {% include 'html-partials/desc-edit.html' %}
+
+      {% include "html-partials/new-game-selector.html" %}
+
+      {% include "html-partials/upload-file.html" %}
+
+      <style>
+        button.add-mod {
+          height: 45px;
+          width: 180px;
+          border-radius: 10pt;
+          margin-top: 5pt;
+          font-size: 20pt;
+          border: none;
+          background: #555555;
+          color: white;
+          margin-bottom: 3pt;
+          transition: all 0.2s;
+        }
+        button.add-mod:hover {
+          background: #4d4d4d;
+          font-size: 20.5pt;
+        }
+        button.add-mod:active {
+          background: #444444;
+          font-size: 19.5pt;
+        }
+
+        article#main-container {
+          max-width: 300pt;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 0;
+        }
+        @media screen and (min-width: 459px) {
+          article#main-container {
+            scale: 1.1;
+            margin-top: 20pt;
+          }
+        }
+      </style>
+      <button class="add-mod" onclick="uploadNewMod()">Подтвердить</button>
+
+      {% include "html-partials/green-bar.html" %}
     </article>
   </div>
 
   <script>
     const titleMod = $('input#mod-name-title')
     const descMod = $('textarea#editing-short')
-    const publicMod = $('select#public-mode')
     const fileMod = $('input#input-mod-file-upload')
-    const gameOwnerMod = $('input.edit-mod-game-input')
+    const gameOwnerMod = $('div.select-game-menu')
 
     function uploadNewMod() {
       function printError(targetText) {
@@ -67,8 +93,8 @@
       }
 
       // Проверяем корректность игры-создателя
-      if (!$inputGameID.attr('found')) {
-        printError("Игра-владелец выбранна не корректно!")
+      if (!gameOwnerMod.attr('gameid')) {
+        printError("Игра-владелец не выбрана!")
         return
       }
 
@@ -78,13 +104,8 @@
         return
       }
 
-      // TODO тут будет ещё код
-      let elem = document.getElementById("greenBar");
-      elem.innerHTML = "Начинаем...";
-      elem.style.width = "0%";
-
-      const bar = $('section[progressuploadmod]')
-      bar.show()
+      // Исполняем загрузку
+      uploadStart();
 
       var formData = new FormData();
       formData.append('mod_source', 'local');
@@ -92,22 +113,14 @@
       formData.append('mod_name', titleMod.val());
       formData.append('mod_short_description', descMod.val());
       formData.append('mod_description', descMod.val());
-      formData.append('mod_public', publicMod.val());
+      formData.append('mod_public', '2');
       formData.append('mod_file', fileMod.prop('files')[0]);
 
       var xhr = new XMLHttpRequest();
 
       xhr.upload.addEventListener('progress', function(event) {
         if (event.lengthComputable) {
-          var percentComplete = (event.loaded / event.total) * 100;
-          
-          elem.style.width = percentComplete + "%";
-          const roundetPercent = Math.round(percentComplete);
-          if (roundetPercent == 100) {
-            elem.innerHTML = "Ещё мгновение...";
-          } else {
-            elem.innerHTML = roundetPercent + "%";
-          }
+          progressUpdate((event.loaded / event.total) * 100)
         }
       });
 
@@ -127,7 +140,7 @@
           // обработка успешного ответа
           window.location.href = `/mod/${xhr.responseText}/edit`; // Перенаправление на новую страницу
         }
-        bar.hide()
+        uploadComplete()
       };
 
       xhr.onerror = function() {
@@ -151,6 +164,7 @@
 
   <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
   <script src="/assets/scripts/ow-logic.js"></script>
+  <script src="/assets/scripts/vendors/desc-edit.js"></script>
   <script src="/assets/scripts/ow-prism.js"></script>
   <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
 {% endblock %}

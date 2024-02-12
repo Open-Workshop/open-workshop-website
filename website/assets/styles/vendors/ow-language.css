@@ -1,24 +1,33 @@
 /* Please see the article */
 
-#editing, #highlighting, #editing-short, #highlighting-short {
+.editing, #highlighting {
     /* Both elements need the same text and space styling so they are directly on top of each other */
     margin: 10px;
     padding: 10px;
     border: 0;
     width: calc(100% - 15px);
     height: 150px;
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
-#editing, #highlighting, #highlighting *, #editing-short, #highlighting-short, #highlighting-short * {
+.editing, #highlighting, #highlighting * {
     /* Also add text styles to highlighing tokens */
     tab-size: 2;
     font-size: 15pt;
     tab-size: 1pt;
     line-height: 30pt;
     font-family: unset;
+
+    word-wrap: break-word;
+    outline: none;
+    text-wrap: wrap;
+    white-space: pre-wrap;
 }
 
 
-#limit-desc-text-short, #limit-desc-text {
+#limit-desc-text {
     position: absolute; 
     right: 5pt; 
     bottom: 5pt; 
@@ -27,45 +36,30 @@
     padding-right: 5pt; 
     border-radius: 10pt; 
     background: #90909030;
-}
-
-
-#editing, #highlighting, #editing-short, #highlighting-short {
-    /* In the same place */
-    position: absolute;
-    top: 0;
-    left: 0;
+    text-indent: 0;
 }
 
 
 /* Move the textarea in front of the result */
 
-#editing, #editing-short {
-    z-index: 1;
-}
-#highlighting, #highlighting-short {
+#highlighting {
     z-index: 0;
     border-radius: 10pt;
+    text-indent: -33.5pt;
+}
+code.invisible-highlighting {
+    opacity: 0;
 }
 
 
 /* Make textarea almost completely transparent */
 
-#editing, #editing-short {
+.editing {
     background: #ffffff00;
     color: rgba(0, 204, 255, 0);
     caret-color: red;
-}
-
-/* Can be scrolled */
-#editing, #editing-short, #highlighting, #highlighting-short {
-    overflow: auto;
-    white-space: nowrap; /* Allows textarea to scroll horizontally */
-}
-
-/* No resize on textarea */
-#editing, #editing-short {
     resize: none;
+    z-index: 1;
 }
 
 /* Paragraphs; First Image */
@@ -90,7 +84,6 @@ code[class*="language-"],
 pre[class*="language-"] {
     font-size: 1em;
     text-align: left;
-    white-space: pre;
     word-spacing: normal;
     word-break: normal;
     word-wrap: normal;
@@ -125,7 +118,6 @@ code[class*="language-"] {
     padding: .2em;
     border-radius: .3em;
     box-shadow: none;
-    white-space: normal;
 }
 
 .token {

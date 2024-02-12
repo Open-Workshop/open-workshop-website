@@ -1,0 +1,31 @@
+<section progressuploadmod style="display: none; margin: 4pt; width: 95%;">
+    <div class="progressbarWrapper">
+        <span id="greenBar"></span>
+        <p id="greenBarText"></p>
+    </div>
+</section>
+<script>
+    let elem = $("span#greenBar");
+    let text = $("p#greenBarText");
+    let bar = $('section[progressuploadmod]');
+
+    function uploadStart() {
+        console.log(elem, bar)
+
+        text.text("Начинаем...");
+        elem.css("width", "0%");
+        bar.show();
+    }
+    function progressUpdate(percent) {
+        elem.css("width", percent + "%");
+        const roundedPercent = Math.round(percent);
+        if (roundedPercent >= 100) {
+            text.text("Ещё мгновение...");
+        } else {
+            text.text(roundedPercent + "%");
+        }
+    }
+    function uploadComplete() {
+        bar.hide()
+    }
+</script>

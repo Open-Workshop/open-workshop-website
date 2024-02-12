@@ -1551,7 +1551,6 @@ blockquote > .light {
 .progressbarWrapper {
   height: 30px;
   display: block;
-  margin-top: 3pt;
   position: relative;
   background: #555;
   padding: 3px;
@@ -1561,21 +1560,27 @@ blockquote > .light {
 
 #greenBar {
   display: block;
-  height: 100%;
+  height: calc(100% - 6pt);
+  max-width: calc(100% - 6pt);
   width: 0px;
   background-color: rgb(43, 194, 83);
+  height: calc(100% - 6pt);
   background-image: linear-gradient(
     center bottom,
     rgb(43, 194, 83) 37%,
     rgb(84, 240, 84) 69%
   );
-  position: relative;
+  position: absolute;
   overflow: hidden;
-  font-size: 15px;
   text-align: center;
   color: white;
-  transition: all 700ms ease;
+  transition: all 500ms ease;
   border-radius: 5pt;
+}
+#greenBarText {
+  position: absolute;
+  width: calc(100% - 6pt);
+  text-align: center;
 }
 
 @media (min-width: 700px) {
