@@ -1,5 +1,6 @@
 $(document).ready(function() {
     $("textarea.editing").each(function() {
+        $(this).attr('startdata', $(this).val());
         fullDescUpdate($(this));
     });
 });

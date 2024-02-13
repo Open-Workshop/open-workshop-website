@@ -213,90 +213,9 @@
                 </style>
               </div>
               <div>
-                <div style="height: 200px; position: relative; margin-top: -3pt; margin-left: -3pt;" id="main-desc-edit">
-                  <textarea placeholder="Описание не может быть пустым!(" id="editing" spellcheck="false" oninput="full_update()" onscroll="sync_scroll(this);" onkeydown="check_tab(this, event);" startdata="{{ data[0]['result']['description'] }}">{{ data[0]['result']['description'] }}</textarea>
-                  <pre id="highlighting" aria-hidden="true">
-                    <code class="language-ow" id="highlighting-content">
-                    </code>
-                    
-                    <h3 title="Ограничение в 10000 символов описания!" id="limit-desc-text">245</h3>
-                    <script>
-                      limitRenderUpdate()
-                      function limitRenderUpdate() {
-                        const remainingChars = 10000 - $('#editing').val().length;
-                        $('#limit-desc-text').text(remainingChars);
-                        if (remainingChars < 0) {
-                          $('#limit-desc-text').css('color', 'red');
-                        } else {
-                          $('#limit-desc-text').css('color', 'white');
-                        }
-                      }
-                    </script>
-                  </pre>
-                </div>
-
-                <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
-                
-                <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
-                <script src="/assets/scripts/ow-prism.js"></script>
-                <script>
-                  const textareaDesc = document.getElementById("editing")
-                  $(document).ready(function() {
-                    full_update()
-                  })
-                  function full_update() {
-                    update(textareaDesc.value)
-                    sync_scroll(textareaDesc)
-                    on_height(textareaDesc)
-                    limitRenderUpdate()
-                  }
-
-                  function on_height(element) {
-                    element.style.height = 0;
-                    heightCurr = (element.scrollHeight+20) + "px";
-                    
-                    element.style.height = heightCurr;
-                    document.getElementById("highlighting").style.height = heightCurr;
-                    document.getElementById("main-desc-edit").style.height = heightCurr;
-                  }
-
-                  function update(text) {
-                    let result_element = document.querySelector("#highlighting-content");
-                    // Handle final newlines (see article)
-                    if(text[text.length-1] == "\n") {
-                      text += " ";
-                    }
-                    // Update code
-                    result_element.innerHTML = text.replace(new RegExp("&", "g"), "&amp;").replace(new RegExp("<", "g"), "&lt;"); /* Global RegExp */
-                    // Syntax Highlight
-                    Prism.highlightElement(result_element);
-                  }
-
-                  function sync_scroll(element) {
-                    /* Scroll result to scroll coords of event - sync with textarea */
-                    let result_element = document.querySelector("#highlighting");
-                    // Get and set x and y
-                    result_element.scrollTop = element.scrollTop;
-                    result_element.scrollLeft = element.scrollLeft;
-                    $("h3#limit-desc-text").css("right", (-element.scrollLeft+5)+"px"); console.log(element.scrollLeft)
-                  }
-
-                  function check_tab(element, event) {
-                    let code = element.value;
-                    if(event.key == "Tab") {
-                      /* Tab key pressed */
-                      event.preventDefault(); // stop normal
-                      let before_tab = code.slice(0, element.selectionStart); // text before tab
-                      let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
-                      let cursor_pos = element.selectionStart + 1; // where cursor moves after tab - moving forward by 1 char to after tab
-                      element.value = before_tab + "\t" + after_tab; // add tab char
-                      // move cursor
-                      element.selectionStart = cursor_pos;
-                      element.selectionEnd = cursor_pos;
-                      update(element.value); // Update text to include indent
-                    }
-                  }
-                </script>
+                {% with init_text=data[0]['result']['description'], limit=10000, placeholder="Описание не может быть пустым!(" %}
+                  {% include "html-partials/desc-edit.html" %}
+                {% endwith %}
                 
                 <article id="mod-description-preview" style="display: none;">{{ data[0]['result']['description'] }}</article>
 
@@ -612,7 +531,7 @@
         </div>
 
         {% with init_text=data[0]['result']['short_description'] %}
-          {% include "html-partials/short-desc-edit.html" %}
+          {% include "html-partials/desc-edit.html" %}
         {% endwith %}
 
         <div id="mod-short-description-preview" class="card">
@@ -714,7 +633,11 @@
           }
         </script>
       </article>
+      <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+      <script src="/assets/scripts/vendors/desc-edit.js"></script>
       <script src="/assets/scripts/ow-logic.js"></script>
+      <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+      <script src="/assets/scripts/ow-prism.js"></script>
     </div>
 
     <script>
