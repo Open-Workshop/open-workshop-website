@@ -1,812 +1,169 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-    <div style="margin: 2pt;">
-      <article class="mod-container" style="width: 250pt; max-width: 95%; justify-content: center;">
-        <style>
-          button.pager {
-            height: 30pt;
-            width: 75pt;
-            border-radius: 5pt;
-          }
-        </style>
-        <button onclick="$('.pone').hide(); $('.ptwo').show(); $('.pthree').hide();" class="pager">Оформление</button>
-        <button onclick="$('.pone').hide(); $('.ptwo').hide(); $('.pthree').show(); full_short_update(); updateCardData();" class="pager">Каталог</button>
-        <button onclick="$('.pone').show(); $('.ptwo').hide(); $('.pthree').hide();" class="pager">Основное</button>
-        <button onclick="saveChangesMod()" style="background-color: yellow;" class="pager">Сохранить</button>
-      </article>
-
-      <article class="mod-container pone" style="display: none;">
-        <style>
-          div.mini-cont {
-            background: #0000006b; 
-            padding: 5pt; 
-            border-radius: 5pt;
-            margin: 2pt;
-          }
-        </style>
-
-        <div class="mini-cont">
-          <h2 style="text-align: center;">Загрузить новую версию</h2>
-          <input style="background: blueviolet; border-radius: 10pt; color: azure;" type="file" accept=".zip" id="input-mod-file-update">
-          <button style="height: 41px; width: 90px; border-radius: 10pt; margin-top: 2pt;" onclick="uploadUpdateMod()">Отправить</button>
-          <section progressuploadmod style="display: none;">
-            <div class="progressbarWrapper">
-              <span id="greenBar"></span>
-            </div>
-          </section>
-          <script>
-            function uploadUpdateMod() {
-              let elem = document.getElementById("greenBar");
-              elem.innerHTML = "Начинаем...";
-              elem.style.width = "0%";
-
-              var fileInput = document.getElementById('input-mod-file-update');
-
-              const bar = $('section[progressuploadmod]')
-              bar.show()
-
-              var file = fileInput.files[0];
-              var formData = new FormData();
-              formData.append('mod_file', file);
-
-              var xhr = new XMLHttpRequest();
-
-              xhr.upload.addEventListener('progress', function(event) {
-                if (event.lengthComputable) {
-                  var percentComplete = (event.loaded / event.total) * 100;
-                  
-                  elem.style.width = percentComplete + "%";
-                  const roundetPercent = Math.round(percentComplete);
-                  if (roundetPercent == 100) {
-                    elem.innerHTML = "Ещё мгновение...";
-                  } else {
-                    elem.innerHTML = roundetPercent + "%";
-                  }
-                }
-              });
-
-              xhr.onload = function() {
-                if (xhr.status != 200 || xhr.responseText != "\"Complite\"") { // обработка ошибки
-                  // обработка ошибки
-                  banner_error_a = {
-                    title: 'Ошибка обновления ('+xhr.status+')',
-                    text: xhr.responseText,//.substring(1, text.length - 1),
-                    theme: 'warning',
-                    autohide: true,
-                    interval: 6000
-                  };
-
-                  new Toast(banner_error_a);
-                } else {
-                  // обработка успешного ответа
-                  banner_error_a = {
-                    title: 'Успешно!',
-                    text: 'Новая версия мода загружена на сервер!',
-                    theme: 'success',
-                    autohide: true,
-                    interval: 6000
-                  };
-
-                  new Toast(banner_error_a);
-                }
-                bar.hide()
-              };
-
-              xhr.onerror = function() {
-                // обработка ошибки
-                banner_error_a = {
-                  title: 'Сетевая ошибка',
-                  text: xhr.responseText,
-                  theme: 'danger',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a);
-                bar.hide()
-              };
-
-              xhr.open('POST', "/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", true);
-              xhr.send(formData)
-            }
-          </script>
-        </div>
-
-        {% if right_edit['delete'] %}
-        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
-          <h2 style="text-align: center;">Удалить мод</h2>
-          <input oninput="checkInputToDelete(this.value)" type="text" style="border-radius: 10pt; background: brown; color: white;" placeholder="Последнее сохранённое название мода..." title="Последнее сохранённое название мода">
-          
-          <style>
-            button.delete_mod {
-              background-color: red; 
-              margin-top: 3pt; 
-              color: white;
-              cursor: pointer;
-              transition: all 0.1s;
-            }
-            
-            button.delete_mod:disabled {
-              background-color: brown;
-              cursor: auto;
-            }
-          </style>
-          <button class="delete_mod pager" onclick="deleteModPressed()">Удалить</button>
-
-          <script>
-            checkInputToDelete("")
-            function checkInputToDelete(enterName) {
-              const $buttonDel = $('button.delete_mod')
-              console.log($buttonDel)
-              if (enterName != "{{ data[0]['result']['name'] }}") {
-                $buttonDel.attr('disabled', 'true');
-              } else {
-                $buttonDel.removeAttr('disabled');
-              }
-            }
-            function deleteModPressed() {
-              fetch("/api/accounts/delete/mod?mod_id={{ data[0]['result']['id'] }}", {
-                method: 'POST'
-              }).then(response => {
-                if (response.status === 200) {
-                  console.log('Код ответа равен 200!');
-                  location.reload();
-                } else {
-                  console.log('Код ответа не равен 200');
-                  response.text().then(text => {
-                    banner_error_a = {
-                      title: 'Ошибка удаления',
-                      text: text.substring(1, text.length - 1),
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
-
-                    new Toast(banner_error_a);
-                  });
-                }
-              }).catch(error => {
-                console.error('Произошла ошибка при отправке запроса: ' + error);
-                banner_error_a = {
-                  title: 'Ошибка',
-                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
-                  theme: 'danger',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a)
-              });
-            }
-          </script>
-        </div>
-        {% endif %}
-
-        {% with init_id=data[0]['result']['game']['id'] %}
-          {% include "html-partials/game-selector.html" %}
-        {% endwith %}
-
-        <div class="mini-cont" style="display: flex; flex-direction: column; width: 220pt;">
-          <select style="font-size: large;" id="public-mode" startdata="{{ data[0]['result']['public'] }}" title="Режим отображения в каталоге и доступа">
-            <option value="0" {% if data[0]['result']['public'] == 0 %}selected{% endif %}>Публичный (по умолчанию)</option>
-            <option value="1" {% if data[0]['result']['public'] == 1 %}selected{% endif %}>Доступен по прямой ссылке</option>
-            <option value="2" {% if data[0]['result']['public'] == 2 %}selected{% endif %}>Непубличный</option>
-          </select>
-        </div>
-      </article>
-
-      <article class="mod-container ptwo" style="padding-bottom: 15pt;">
-          <div class="mod-big-cont">
-            <input dynamlen displaylimit class="edit-username" style="max-width: 99%; min-width: 270px;" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" startdata="{{ data[0]['result']['name'] }}" id="mod-name-title" value="{{ data[0]['result']['name'] }}" name="mod-name-title">
-            
-            <div>
-              <div style="margin-left: 6pt; margin-top: 4pt;">
-                <button class="descbutton" onclick="toHideShow('mod-description-preview', 'main-desc-edit')">Редактирование</button>
-                <button class="descbutton" onclick="toHideShow('main-desc-edit', 'mod-description-preview')">Предпросмотр</button>
-                <style>
-                  button.descbutton {
-                    padding: 4pt;
-                    font-size: 13pt;
-                    border-radius: 5pt;
-                    background: beige;
-                  }
-                </style>
-              </div>
-              <div>
-                {% with init_text=data[0]['result']['description'], limit=10000, placeholder="Описание не может быть пустым!(" %}
-                  {% include "html-partials/desc-edit.html" %}
-                {% endwith %}
-                
-                <article id="mod-description-preview" style="display: none;">{{ data[0]['result']['description'] }}</article>
-
-                <script>
-                  function toHideShow(one, two) {
-                    document.getElementById(one).style.display = "none"
-                    document.getElementById(two).style.display = null;
-
-                    document.getElementById('mod-description-preview').innerHTML = OpenWS.syntaxToHTML(document.getElementById('editing').value);
-                  }
-                </script>
-              </div>
-            </div>
-
-            <script>
-              $(document).ready(function() {
-                var container = document.getElementById('mod-description-preview');
-                container.innerHTML = OpenWS.syntaxToHTML(container.innerHTML);
-              })
-            </script>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <article style="display: flex; width: 900pt; max-width: 100%; justify-content: center; padding: 0;">
+        <div class="standart-panel" style="position: absolute; display: flex;">
+          <div class="standart-panel navigation">
+            <button>
+              <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
+            </button>
+            <button>
+              <img src="/assets/images/image-ico.svg" alt="Иконка 'каталог'">
+            </button>
+            <button>
+              <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
+            </button>
           </div>
+          <div class="standart-panel navigation">
+            <button style="background-color: #FFF8D3;">
+              <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
+            </button>
+          </div>
+        </div>
 
-          <div class="right-bar-mod">
-            <div class="wrapper" style="width: 100%;">
-              <div class="slider">
-                <style>
-                  div.bottom-editor-screenshot {
-                    background: #030021;
-                    border-bottom-right-radius: 5pt;
-                    border-bottom-left-radius: 5pt;
-                    display: flex;
-                    justify-content: space-between;
-                  }
-                  div.bottom-editor-screenshot > button {
-                    border-radius: 5pt;
-                    padding: 3pt;
-                  }
-                  div.bottom-editor-screenshot > select {
-                    margin: 0;
-                    margin-bottom: 2pt;
-                    border-radius: 0;
-                    border: none;
-                    border-bottom-left-radius: 3pt;
-                    border-bottom-right-radius: 3pt;
-                  }
-                </style>
-                <ul class="js__slider__images slider__images">
-                  {% for item in data[1]['results'] %}
-                    <div resid="{{ item['id'] }}">
-                      <a startdata="{{ item['url'] }}" href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
-                        <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" errorcap />
-                      </a>
-                      <div class="bottom-editor-screenshot">
-                        <select selectortypeshot onchange="resetLogo(this)" startdata="{{ item['type'] }}" title="Выберете тип">
-                          <option value="screenshot" {% if item['type'] == "screenshot" %}selected{% endif %}>Скриншот</option>
-                          <option value="logo" title="Может быть только один" {% if item['type'] == "logo" %}selected{% endif %}>Логотип</option>
-                        </select>
-                        <button onclick="deleteLogo(this)">Удалить</button>
-                      </div>
-                      <input onchange="inputLogoChange(this)" id="input-logo-url" style="width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;" type="url" startdata="{{ item['url'] }}" value="{{ item['url'] }}" placeholder="Ссылка на изображение">
-                    </div>
-                  {% endfor %}
-                </ul>
-
-                <h1 noscreensshots style="width: 100%; text-align: center; margin-bottom: -30pt;">Скриншотов нет</h1>
+        <div style="width: 100%; display: flex; margin: 3.5pt;">
+          <div style="width: 70%;">
+            <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
             
-                <div class="slider__controls">
-                  <ol class="js__slider__pagers slider__pagers"></ol>
+            <div style="margin: 5pt; padding: 5pt; background-color: rgba(0, 0, 0, 0.2); border-radius: 20pt;">
+              <div style="display: flex; justify-content: space-between;">
+                <div class="navigation">
+                  <button onclick="fullEditView(false)">
+                    <img src="/assets/images/edit-ico.svg" alt="Иконка 'редактирование'">
+                  </button>
+                  
+                  <button onclick="fullEditView(true)">
+                    <img src="/assets/images/eye-ico.svg" alt="Иконка 'предпросмотр'">
+                  </button>
                 </div>
-                
-                <script>
-                  function inputLogoChange(inp) {
-                    console.log(inp.value)
 
-                    var $parentDiv = $(inp).closest('div'); // Находим ближайший родительский элемент div
-                    var $aElement = $parentDiv.find('a'); // Находим a элемент внутри div
-                    var $imgElement = $parentDiv.find('img'); // Находим img элемент внутри div
-                    console.log($aElement, $imgElement); // Логируем найденные элементы
-
-                    $aElement.attr('href', inp.value); // устанавливаем значение ссылки в a элемент
-                    $imgElement.attr('src', inp.value); // устанавливаем значение src в img элемент
-                  }
-
-                  // create pager list items
-                  var sliderImage = document.querySelectorAll('.slider__images-image');
-                  var sliderPagers = document.querySelectorAll('.js__slider__pagers');
-
-
-                  // set up vars
-                  var sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
-                  var sliderImages = document.querySelector('.js__slider__images');
-                  var sliderImagesItems = document.querySelectorAll('.slider__images-item');
-                  var lastElem = sliderPagersList.length - 1;
-                  var sliderTarget;
-
-                  
-                  function deleteLogo(butt) {
-                    $(butt).closest('div[resid]').remove();
-                    
-                    screenshotsUpdate();
-                  }
-                  function addLogo() {
-                    const inputUrl = document.querySelector('input[newshoturl]')
-                    const selectType = document.querySelector('select[newshottype]')
-
-                    console.log(inputUrl.value, selectType.value)
-
-
-                    // Создаем элемент div
-                    var $div = $('<div>').attr('resid', 'new');
-
-                    // Создаем элемент a
-                    var $a = $('<a>').attr('startdata', inputUrl.value).attr('href', inputUrl.value).addClass('slider__images-item without-caption image-link');
-
-                    // Создаем элемент img
-                    var $img = $('<img>').attr('src', inputUrl.value).attr('alt', 'Скриншот мода').attr('errorcap', 'y').addClass('slider__images-image loaded');
-
-                    // Добавляем img в a
-                    $a.append($img);
-
-                    // Добавляем a в div
-                    $div.append($a);
-
-                    // Создаем элемент select
-                    var $select = $('<select>').attr('startdata', selectType.value).attr('title', 'Выберете тип').attr('onchange', 'resetLogo(this)').attr('selectortypeshot', '');
-
-                    // Создаем option для select
-                    var $option1 = $('<option>').attr('value', 'screenshot').text('Скриншот');
-                    if (selectType.value === 'screenshot') {
-                      $option1.attr('selected', 'selected');
-                    }
-                    var $option2 = $('<option>').attr('value', 'logo').attr('title', 'Может быть только один').text('Логотип');
-                    if (selectType.value === 'logo') {
-                      $option2.attr('selected', 'selected');
-                      resetLogo(selectType)
-                    }
-
-                    // Добавляем option в select
-                    $select.append($option1, $option2);
-
-                    // Создаем кнопку
-                    var $button = $('<button>').attr('onclick', 'deleteLogo(this)').text('Удалить');
-
-                    // Добавляем select и кнопку в div
-                    var $divT = $('<div>').addClass('bottom-editor-screenshot');
-                    $divT.append($select, $button);
-                    $div.append($divT)
-
-                    // Создаем input
-                    var $input = $('<input>').attr('onchange', 'inputLogoChange(this)').attr('id', 'input-logo-url').attr('style', 'width: 100%; margin-bottom: -20pt; border-radius: 3pt; background: darkgrey;').attr('type', 'url').attr('value', inputUrl.value).attr('placeholder', 'Ссылка на изображение');
-
-                    // Добавляем input в div
-                    $div.append($input);
-
-                    // Добавляем div в DOM
-                    $('.slider__images').append($div);
-
-                    $('.without-caption').magnificPopup({
-                      type: 'image',
-                      closeOnContentClick: true,
-                      closeBtnInside: false,
-                      mainClass: 'mfp-no-margins mfp-with-zoom', // class to remove default margin from left and right side
-                      image: {
-                        verticalFit: true
-                      },
-                      zoom: {
-                        enabled: true,
-                        duration: 300 // don't foget to change the duration also in CSS
-                      }
-                    });
-
-                    screenshotsUpdate()
-                  }
-
-                  function resetLogo(noReset) {
-                    if (noReset.value == "logo") {
-                      const oldLogos = $('select[selectortypeshot]').not(noReset).filter((index, element) => $(element).val() === 'logo');
-                      oldLogos.val('screenshot');
-                      console.log(oldLogos.length)
-
-                      if (oldLogos.length > 0) {
-                        banner_error_a = {
-                          title: 'Логотип переопределён',
-                          text: 'Логотип может быть только один. Прошлый логотип стал скриншотом.',
-                          theme: 'info',
-                          autohide: true,
-                          interval: 6000
-                        };
-
-                        new Toast(banner_error_a);
-                      }
-                    }
-                  }
-
-                  screenshotsUpdate()
-                  function screenshotsUpdate() {
-                    $('.js__slider__pagers.slider__pagers').empty();
-
-                    sliderImage = document.querySelectorAll('.slider__images-image');
-                    sliderPagers = document.querySelectorAll('.js__slider__pagers');
-
-                    sliderImage.forEach(function (image, index) {
-                      listItem = document.createElement('li');
-                      listItem.textContent = index + 1;
-                      sliderPagers[0].appendChild(listItem);
-                    });
-
-                    // set up vars
-                    sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
-                    sliderImages = document.querySelector('.js__slider__images');
-                    sliderImagesItems = document.querySelectorAll('.slider__images-item');
-                    lastElem = sliderPagersList.length - 1;
-
-                    // pager controls
-                    sliderPagersList.forEach(function (pager) {
-                      pager.addEventListener('click', function () {
-                        if (!pager.classList.contains('active')) {
-                          sliderTarget = Array.from(sliderPagersList).indexOf(pager);
-                          sliderResponse(sliderTarget);
-                        }
-                      });
-                    });
-
-                    if (sliderPagersList.length <= 0) {
-                      $('h1[noscreensshots]').show();
-                    } else {
-                      $('h1[noscreensshots]').hide();
-                    }
-
-                    sliderResponse(0)
-                  }
-
-                  // set up first slide
-                  sliderPagersList[0].classList.add('active');
-                  sliderImagesItems.forEach(function (item, index) {
-                    if (index !== 0) {
-                      item.parentNode.style.display = 'none';
-                    }
-                  });
-
-                  // transition function
-                  function sliderResponse(sliderTarget) {
-                    sliderImagesItems.forEach(function (item, index) {
-                      if (index === sliderTarget) {
-                        item.parentNode.style.display = 'block';
-                      } else {
-                        item.parentNode.style.display = 'none';
-                      }
-                    });
-                    sliderPagersList.forEach(function (pager, index) {
-                      if (index === sliderTarget) {
-                        pager.classList.add('active');
-                      } else {
-                        pager.classList.remove('active');
-                      }
-                    });
-                  }
-
-                  function checkImageHeight() {
-                    var sliderImages = document.getElementsByClassName('slider__images-image');
-                    var visibleSliderImage = Array.from(sliderImages).find(function(image) {
-                        return window.getComputedStyle(image).display !== 'none';
-                    });
-                    if (visibleSliderImage) {
-                        var sliderWidth = visibleSliderImage.offsetWidth;
-                        Array.from(sliderImages).forEach(function(image) {
-                          image.style.width = sliderWidth + 'px';
-                        });
-                    }
-                  }
-
-                  checkImageHeight()
-                  var sliderImages = document.getElementsByClassName('slider__images-image');
-                  Array.from(sliderImages).forEach(function(sliderImage) {
-                    sliderImage.addEventListener('load', function() {
-                        checkImageHeight();
-                        Array.from(sliderImages).forEach(function(image) {
-                            image.classList.add('loaded');
-                        });
-                    });
-                  });
-
-                  window.addEventListener('resize', function() {
-                    checkImageHeight();
-                  });
-                </script>
+                <div class="navigation">
+                  <button onclick="toggleHelpMode($(this))">
+                    <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div class="mod-dependence-list">
-              <input newshoturl id="input-logo-url" style="width: 100%; border-radius: 0; border-top-left-radius: 5pt; border-top-right-radius: 5pt; background: #636363; color: white;" type="url" placeholder="Ссылка на изображение...">
-              <style>
-                ::placeholder { /* Most modern browsers support this now. */
-                  color: white;
-                }
-              </style>
-              <div style="display: flex;">
-                <select newshottype title="Выберете тип" style="width: 100%; margin: 0; border-radius: 0; border-bottom-left-radius: 5pt;">
-                  <option value="screenshot">Скриншот</option>
-                  <option value="logo" title="Может быть только один">Логотип</option>
-                </select>
-                <button onclick="addLogo()" style="border: none; border-bottom-right-radius: 5pt; padding: 3pt; background: #545454; color: aliceblue; cursor: pointer;">Добавить</button>
-              </div>
-            </div>
-          </div>
-      </article>
+              {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=data[0]['result']['description'] %}
+                {% include 'html-partials/desc-edit.html' %}
+              {% endwith %} 
 
-      <article class="mod-container pthree" style="display: none; flex-direction: column; padding-bottom: 15pt;">
-        <div style="margin-left: 6pt; margin-top: 4pt;">
-          <script>$(document).ready(function() {toHideShow('mod-short-description-preview', 'short-desc-edit'); addCard(4)})</script>
-          <button class="descbutton" onclick="toHideShow('mod-short-description-preview', 'short-desc-edit')">Редактирование</button>
-          <button class="descbutton" onclick="toHideShow('short-desc-edit', 'mod-short-description-preview'); updateCardData();">Предпросмотр</button>
-        </div>
-
-        {% with init_text=data[0]['result']['short_description'] %}
-          {% include "html-partials/desc-edit.html" %}
-        {% endwith %}
-
-        <div id="mod-short-description-preview" class="card">
-          <div class="card-click">
-            <div class="card__image-holder">
-              <img class="card__image title-card-img show" src="https://steamuserimages-a.akamaihd.net/ugc/1621814584860459902/F781727401895CFD3C8FBE123A5499D8E82F8679/" alt="Здесь должен быть логотип мода" id="preview-logo-card-1" errorcap>
-            </div>
-            <div class="card-params-list">
-              <a class="tag-link card-params-list-tag" title="Размер мода">📦{{ data[0]['result']['size'] }}</a>
-            </div>
-            <div class="card-title">
-              <h2 id="titlename1" style="text-align: center;" title="German Signal Pack"></h2>
+              <article id="mod-description" style="display: none;"></article>
             </div>
           </div>
 
-          <div class="card-flap flap1" id="card-flap1">
-            <div class="card-description"></div>
-            <div class="flap-buttons">
-              <a id="tomodlink1" class="button-card button-flap" style="display: flex; justify-content: center;">
-                <img src="/assets/images/arrow.webp" class="img-to-mod">
-              </a>
-              <button id="togamelink1" onclick="cardCancel()" class="button-cancel button-flap" title="Завернуть карточку">
-                <img src="/assets/images/cancel.webp" class="img-to-mod">
-              </button>
-            </div>
+          <div style="width: 30%;">
+            ...
           </div>
         </div>
-
-        <script>
-          function addCard(zindex) {
-            // Код для добавления новой карточки
-          
-            $("div.card-click").click(function(e){
-              e.preventDefault();
-
-              var isShowing = false;
-          
-              if ($(this).parent().hasClass("show")) {
-                isShowing = true
-              }
-          
-              if ($("div.cards").hasClass("showing")) {
-                // a card is already in view
-                $("div.card.show")
-                  .removeClass("show");
-          
-                if (isShowing) {
-                  // this card was showing - reset the grid
-                  $("div.cards")
-                    .removeClass("showing");
-                } else {
-                  // this card isn't showing - get in with it
-                  $(this).parent()
-                    .css({zIndex: zindex})
-                    .addClass("show");
-                }
-          
-                zindex=zindex+2;
-          
-              } else {
-                // no cards in view
-
-                $("div.cards")
-                  .addClass("showing");
-                $(this).parent()
-                  .css({zIndex:zindex})
-                  .addClass("show");
-          
-                zindex=zindex+2;
-              }
-
-              const id = $(this).parent()[0].id;
-              $('#card-flap'+id).css("z-index", zindex+1);
-              $("div.panel").css({zIndex: zindex+1})
-            });
-          }
-
-          function cardCancel() {
-            document.getElementById('mod-short-description-preview').classList.remove("show");
-          }
-        
-          function updateCardData() {
-            // Загружаем логотип
-            let $imgLink = $('select').filter((index, element) => $(element).val() === 'logo').closest('div[resid]').find('img.slider__images-image').attr('src');
-            if ($imgLink == undefined) {
-              $imgLink = "ж"
-            }
-            $('img.card__image').attr('src', $imgLink)
-            console.log($imgLink)
-
-            // Загружаем название
-            const $titleCard = $('h2#titlename1')
-            const titleName = $('input#mod-name-title').val()
-            $titleCard.text(titleName)
-            $titleCard.prop('title', titleName);
-
-            // Загружаем короткое описание
-            $('div.card-description').html(OpenWS.syntaxToHTML($('textarea#editing-short').val(), true))
-          }
-        </script>
       </article>
-      <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
-      <script src="/assets/scripts/vendors/desc-edit.js"></script>
-      <script src="/assets/scripts/ow-logic.js"></script>
-      <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
-      <script src="/assets/scripts/ow-prism.js"></script>
     </div>
 
+    <style>
+      div.navigation {
+        display: flex;
+      }
+
+      div.navigation > button {
+        border-radius: 7pt;
+        background-color: #D9D9D9;
+        border: none;
+        width: 35pt;
+        height: 35pt;
+        margin: 1pt;
+        transition: all 0.1s;
+      }
+      div.navigation > button:hover {
+        background-color: #c5c5c5;
+      }
+      div.navigation > button:active {
+        background-color: #b3b3b3;
+      }
+
+      div.navigation > button.toggle {
+        background-color: #9899ac;
+      }
+      div.navigation > button.toggle:hover {
+        background-color: #7e7f8f;
+      }
+      div.navigation > button.toggle:active {
+        background-color: #6c6d7a;
+      }
+      
+      div.standart-panel {
+        background-color: rgba(15, 15, 15, 0.4);
+        border-radius: 5pt;
+        padding: 3pt;
+      }
+
+      input.title-mod {
+        border-radius: 1pt;
+        border-top-left-radius: 10pt;
+        border-bottom-right-radius: 10pt;
+
+        margin-left: -4pt;
+        margin-top: -4pt;
+
+        background: #302E3F;
+        border: solid #939393;
+        color: white;
+
+        max-width: calc(75% - 105pt);
+        font-size: 20pt;
+        outline: none;
+        transition: border background 0.1s;
+      }
+      input.title-mod:hover {
+        border: solid #7e7e7e;
+        background: #2b2938;
+      }
+      input.title-mod:focus {
+        border: solid #6b6b6b;
+        background: #252330;
+      }
+    </style>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+    <script src="/assets/scripts/ow-prism.js"></script>
+    <script src="/assets/scripts/ow-logic.js"></script>
+    <script src="/assets/scripts/vendors/desc-edit.js"></script>
+    <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+
     <script>
-      async function saveChangesMod() {
-        // Имя, короткое описание, описание, игра-владелец
-        let formData = new FormData();
+      const $fullModDescView = $('article#mod-description')
+      const $fullModDescEdit = $('div[limit=10000]#desc-edit')
+      const $fullModDescEditArea = $fullModDescEdit.find('textarea.editing')
 
-        let toSendChangeGen = false
-        const checkAndAppend = ($element, key) => {
-          if ($element.attr('startdata') !== $element.val()) {
-            formData.append(key, $element.val());
-            toSendChangeGen = true
-          }
-        };
 
-        checkAndAppend($('input.edit-username'), 'mod_name');
-        checkAndAppend($('textarea#editing-short'), 'mod_short_description');
-        checkAndAppend($('textarea#editing'), 'mod_description');
-        checkAndAppend($('input.edit-mod-game-input'), 'mod_game');
-        checkAndAppend($('select#public-mode'), 'mod_public');
+      function fullEditView(mode) {
+        if (mode) {
+          $fullModDescEdit.hide()
+          $fullModDescView.show()
 
-        if (toSendChangeGen) {
-          const response = await fetch("/api/accounts/edit/mod?mod_id={{ data[0]['result']['id'] }}", {
-            method: 'POST',
-            body: formData 
-          });
-          if (response.status !== 200) {
-            const text = await response.text();
-            const banner_error_a = {
-              title: 'Ошибка редактирования',
-              text: text.substring(1, text.length - 1),
-              theme: 'warning',
-              autohide: true,
-              interval: 6000
-            };
-            new Toast(banner_error_a);
-            return
-          }
-        }
+          console.log($fullModDescEditArea.val())
 
-        // Скриншоты, лого
-        
-        let toSendChangesLogo = false
-
-        // Новые
-        const newLogos = $('div[resid=new]')
-        newLogos.each(async function(index, element) {
-          toSendChangesLogo = true
-
-          // Здесь можно обработать каждый найденный элемент
-          console.log(`Обработка элемента номер ${index}:`, element);
-
-          let logoBody = new FormData();
-          logoBody.append('resource_type_name', $(element).find('select').val());
-          logoBody.append('resource_url', $(element).find('a').attr('href'));
-          logoBody.append('resource_owner_id', "{{ data[0]['result']['id'] }}");
-
-          const response = await fetch("/api/accounts/add/resource", {
-            method: 'POST',
-            body: logoBody
-          });
-          console.log(response.status)
-          if (response.status != 202) {
-            const text = await response.text();
-            banner_error_a = {
-              title: 'Ошибка доб. лого',
-              text: text.substring(1, text.length - 1),
-              theme: 'warning',
-              autohide: true,
-              interval: 6000
-            };
-            new Toast(banner_error_a);
-            return
-          }
-        });
-
-        // Старые (редактирование и удаление)
-        const startdataLogos = JSON.parse("{{ data[1]['results'] }}".replace(/&#39;/g, '"').replace(/&(amp;)+/g, '&'));
-        for (let i = 0; i < startdataLogos.length; i++) {
-          const dictionary = startdataLogos[i];
-
-          const $selectLogo = $('div[resid='+dictionary.id+']')
-          
-          if ($selectLogo.find('div').length >= 1) {
-            const $editLogoSelect = $($selectLogo).find('select')
-            const $editLogoA = $($selectLogo).find('a')
-            
-            let editLogoToSend = false
-            let editLogoBody = new FormData();
-
-            if ($editLogoSelect.attr('startdata') != $editLogoSelect.val()) {
-              editLogoToSend = true
-              editLogoBody.append('resource_type', $editLogoSelect.val());
-            }
-            if ($editLogoA.attr('startdata') != $editLogoA.attr('href')) {
-              editLogoToSend = true
-              editLogoBody.append('resource_url', $editLogoA.attr('href'));
-            }
-
-            if (editLogoToSend) {
-              toSendChangesLogo = true
-
-              const responseEDIT = await fetch("/api/accounts/edit/resource?resource_id=" + dictionary.id, {
-                method: 'POST',
-                body: editLogoBody
-              });
-              console.log(responseEDIT.status)
-              if (responseEDIT.status != 202) {
-                const text = await responseEDIT.text();
-                banner_error_a = {
-                  title: 'Ошибка ред. лого',
-                  text: text.substring(1, text.length - 1),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a);
-                return
-              }
-            }
-          } else {
-            toSendChangesLogo = true
-            
-            const responseDELETE = await fetch("/api/accounts/delete/resource?resource_id=" + dictionary.id, {
-              method: 'POST'
-            });
-
-            console.log(responseDELETE.status)
-            if (responseDELETE.status !== 202) {
-              const text = await responseDELETE.text();
-              const banner_error_a = {
-                title: 'Ошибка удал. лого',
-                text: text.substring(1, text.length - 1),
-                theme: 'warning',
-                autohide: true,
-                interval: 6000
-              };
-
-              new Toast(banner_error_a);
-              return
-            }
-          }
-        }
-      
-      
-        // Подытоживаем...
-        if (toSendChangeGen || toSendChangesLogo) {
-          banner = {
-            title: 'Сохранено!',
-            text: 'Все изменения успешно сохранены)',
-            theme: 'info',
-            autohide: true,
-            interval: 6000
-          };
-
-          new Toast(banner);
-          location.reload();
+          $fullModDescView.html(OpenWS.syntaxToHTML($fullModDescEditArea.val()))
         } else {
-          banner = {
-            title: 'Нечего сохранять!',
-            text: 'Вы должны внести изменения чтобы их сохранить >:(',
-            theme: 'info',
-            autohide: true,
-            interval: 6000
-          };
-
-          new Toast(banner);
+          $fullModDescEdit.show()
+          $fullModDescView.hide()
         }
+      }
+
+      function toggleHelpMode(button) {
+        if ($fullModDescEditArea.hasAttr('tutorial')) {
+          button.removeClass('toggle')
+
+          $fullModDescEditArea.val($fullModDescEditArea.attr('tutorial'))
+          $fullModDescEditArea.removeAttr('tutorial')
+        } else {
+          button.addClass('toggle')
+
+          $fullModDescEditArea.attr('tutorial', $fullModDescEditArea.val())
+          $fullModDescEditArea.val('[h1]Гайд По Форматированию![/h1]\n\nФорматирование работает как в [b]полном[/b] описании мода, так и в [i]коротком[/i].\n\nФорматирование поддерживает заголовки от 1 до 6 (от большего к меньшему).\nФорматирование в виде добавления ссылок как вида https://openworkshop.su , так и [url=https://openworkshop.su]текста с гиперссылкой[/url]\n\nТак же можно вставлять ссылки на изображения:\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\nА ещё можно создать список:\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]\n\n[h5]Удачи в разработке![/h5]')
+        }
+
+        fullDescUpdate($fullModDescEditArea)
+        $fullModDescView.html(OpenWS.syntaxToHTML($fullModDescEdit.find('textarea.editing').val()))
       }
     </script>
 {% endblock %}

@@ -29,8 +29,6 @@ function limitRenderUpdate(root, editing) {
 function descOnHeight(root, element) {
     element.css('height', 0);
     var heightCurr = (element[0].scrollHeight + 10);
-    
-    console.log(heightCurr)
 
     root.css('height', heightCurr + 15 + "px");
     element.css('height', heightCurr + "px");
