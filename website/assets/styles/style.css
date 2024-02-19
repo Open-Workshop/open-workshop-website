@@ -1227,7 +1227,7 @@ footer div.social-media-links a:hover svg circle {
 }
 .one_slider > .slider__images > a > .slider__images-image {
   border-radius: 10pt;
-  min-width: 100%;
+  min-height: 100%;
 }
 
 
@@ -1246,9 +1246,17 @@ footer div.social-media-links a:hover svg circle {
   max-height: 450px;
   height: auto;
 }
-.slider__images-item {
-  min-width: 100%;
+.slider__images:only-child > .slider__images-item {
   border-radius: 10pt;
+  aspect-ratio: auto;
+}
+
+.slider__images-item {
+  aspect-ratio: 10 / 7;
+  border-top-right-radius: 10pt;
+  border-top-left-radius: 10pt;
+  overflow: hidden;
+  min-width: 100%;
   position: relative;
   -webkit-box-align: center;
       -ms-flex-align: center;
@@ -1276,11 +1284,8 @@ footer div.social-media-links a:hover svg circle {
   position: relative;
   -ms-flex-item-align: center;
       align-self: center;
-  border-top-right-radius: 10pt;
-  border-top-left-radius: 10pt;
-  max-height: 350pt;
   max-width: 100%;
-  min-width: 100%;
+  max-height: 100%;
   z-index: 100;
   opacity: 1;
 }
@@ -1780,7 +1785,6 @@ select {
   cursor: zoom-in;
   display: flex;
   justify-content: center;
-  background-color: #4b008200;
 }
 
 /* This block of CSS adds opacity transition to background */

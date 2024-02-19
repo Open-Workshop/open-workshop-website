@@ -28,7 +28,7 @@ sliderImagesItems.forEach(function (item, index) {
 function sliderResponse(sliderTarget) {
   sliderImagesItems.forEach(function (item, index) {
     if (index === sliderTarget) {
-      item.style.display = 'block';
+      item.style.display = 'flex';
     } else {
       item.style.display = 'none';
     }
@@ -72,30 +72,11 @@ function resetTiming() {
     }, sliderSpeed);
 }
 
-function checkImageHeight() {
-  var sliderImages = document.getElementsByClassName('slider__images-image');
-  var visibleSliderImage = Array.from(sliderImages).find(function(image) {
-      return window.getComputedStyle(image).display !== 'none';
-  });
-  if (visibleSliderImage) {
-      var sliderWidth = visibleSliderImage.offsetWidth;
-      Array.from(sliderImages).forEach(function(image) {
-        image.style.width = sliderWidth + 'px';
-      });
-  }
-}
-
-checkImageHeight()
 var sliderImages = document.getElementsByClassName('slider__images-image');
 Array.from(sliderImages).forEach(function(sliderImage) {
   sliderImage.addEventListener('load', function() {
-      checkImageHeight();
       Array.from(sliderImages).forEach(function(image) {
           image.classList.add('loaded');
       });
   });
-});
-
-window.addEventListener('resize', function() {
-  checkImageHeight();
 });
