@@ -1250,6 +1250,10 @@ footer div.social-media-links a:hover svg circle {
   border-radius: 10pt;
   aspect-ratio: auto;
 }
+.slider__images:only-child > .slider__images-item > .slider__images-image {
+  min-width: 100%;
+  min-height: 100%;
+}
 
 .slider__images-item {
   aspect-ratio: 10 / 7;
