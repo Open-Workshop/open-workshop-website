@@ -109,7 +109,7 @@
 
       var formData = new FormData();
       formData.append('mod_source', 'local');
-      formData.append('mod_game', gameOwnerMod.val());
+      formData.append('mod_game', gameOwnerMod.attr('gameid'));
       formData.append('mod_name', titleMod.val());
       formData.append('mod_short_description', descMod.val());
       formData.append('mod_description', descMod.val());
