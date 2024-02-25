@@ -2515,3 +2515,18 @@ td {
 .user-setting-gear:hover > img {
   rotate: 180deg;
 }
+
+/* Анимация ребенка при наведении на элемент */
+.anime-scale * {
+  transition: all 0.1s;
+}
+.anime-scale:hover * {
+  scale: 1.05;
+}
+.anime-scale:active * {
+  scale: 0.95;
+}
+
+button {
+  cursor: pointer;
+}

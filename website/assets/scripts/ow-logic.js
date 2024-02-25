@@ -1,8 +1,9 @@
 
-// Триггерим сигнал при инициализации
+// Триггерим логику при инициализации
 
 $(document).ready(function() {
     $('input').trigger('input');
+    checkElementsImportHeight();
 });
 
 
@@ -43,4 +44,28 @@ $('input[dynamlen]').on('input', function() {
 // Дополняем jquery логику
 $.fn.hasAttr = function(name) {  
     return this.attr(name) !== undefined;
- };
+};
+
+
+// Автоматическая подгонка высоты одного элемента к другому
+
+function checkElementsImportHeight() {
+    $('[import-height]').each(function() {
+        var filter = $(this).attr('import-height');
+        var foundElement = $(filter);
+        if (foundElement.length) {
+            var height = foundElement.outerHeight();
+            $(this).css('height', height + 'px');
+        } else {
+            console.warn('Элемент, соответствующий фильтру \"' + filter + '\", не найден.');
+        }
+    });
+}
+
+$(window).on('resize', function() {
+    checkElementsImportHeight();
+});
+
+$(window).on('load', function(){
+    checkElementsImportHeight();
+});

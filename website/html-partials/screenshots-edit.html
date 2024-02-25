@@ -1,0 +1,106 @@
+<div class="standart-panel">
+    <div class="wrapper" style="width: 100%;">
+        <div style="padding-bottom: 3pt;" class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
+            <ul class="js__slider__images slider__images">
+                {% for item in data[1]['results'] %}
+                <a starthref="{{ item['url'] }}" idimg="{{ item['id'] }}" href="{{ item['url'] }}" starttypecontent="{{ item['type'] }}" typecontent="{{ item['type'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
+                    <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />
+                </a>
+                {% endfor %}
+            </ul>
+
+            <img id="no-screenshots-error" src="/assets/images/image-not-found.webp" alt="Скриншот мода" style="display: flex; width: 100%; border-top-left-radius: 10pt; border-top-right-radius: 10pt; aspect-ratio: 10 / 7;" />
+
+            <style>
+                div.edit-logos {
+                    display: flex;
+                }
+
+                div.edit-logos select {
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 0;
+                    border: none;
+                    max-width: 100px;
+                    margin: 0;
+                    background: rgb(29, 28, 37);
+                    text-align: center;
+                    outline: none;
+                    transition: all 0.1s;
+                }
+                div.edit-logos select:hover {
+                    background: rgb(26, 25, 34);
+                }
+                div.edit-logos select:active {
+                    background: rgb(23, 22, 31);
+                }
+
+                div.edit-logos input {
+                    border: none;
+                    border-radius: 0;
+                    width: 100%;
+                    outline: 1pt solid #656565;
+                    outline-offset: -1pt;
+                    background: rgb(48, 46, 63);
+                    font-size: small;
+                    caret-color: gainsboro;
+                    color: white;
+                    transition: all 0.1s;
+                }
+                div.edit-logos input:hover {
+                    background: rgb(46, 44, 61);
+                }
+
+                div.edit-logos button {
+                    aspect-ratio: 1 / 1;
+                    border: none;
+                }
+
+                div.edit-logos .slider__controls {
+                    width: 100%;
+                    margin: 0;
+                    display: flex;
+                    flex-direction: column;
+                }
+                div.edit-logos div {
+                    display: flex;
+                }
+                div.edit-logos .images-buttons {
+                    width: 15%; 
+                    flex-direction: column;
+                }
+                div.edit-logos ol {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    max-width: 100%;
+                    flex-wrap: wrap;
+                }
+            </style>
+
+            <div class="edit-logos">
+                <div class="slider__controls">
+                    <div id="screenshot-edit-menu-{{ uid | default('1') }}" style="height: 100%;">
+                        <select id="type-select-screenshot" onchange="setTypeScreenshotSelect()" name="Выбор типа" id="" style="width: 100%;">
+                            <option value="logo">Логотип</option>
+                            <option value="screenshot">Скриншот</option>
+                        </select>
+                        <input id="url-select-screenshot" onchange="setUrlScreenshotSelect()" type="url" placeholder="Ссылка на изображение">
+                    </div>
+                    <div style="height: 100%; justify-content: center; margin-top: 2pt;">
+                        <ol class="js__slider__pagers slider__pagers"></ol>
+                        <p id="no-screenshots-edit" style="display: none; align-items: center;">Скриншотов нет</p>
+                    </div>
+                </div>
+                <div class="images-buttons">
+                    <button class="anime-scale" onclick="deleteScreenshotSelect()" import-height="div#screenshot-edit-menu-{{ uid | default('1') }}" style="background: #1D1C25;">
+                        <img src="/assets/images/delete-image.svg" alt="Иконка удаления изображения">
+                    </button>
+                    <button class="anime-scale" onclick="addScreenshotSelect()" style="background: rgba(255, 255, 255, 0);">
+                        <img src="/assets/images/add-element.svg" alt="Иконка добавления нового изображения">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -53,7 +53,7 @@
           </div>
 
           <div style="width: 30%;">
-            ...
+            {% include 'html-partials/screenshots-edit.html' %}
           </div>
         </div>
       </article>
@@ -123,11 +123,18 @@
       }
     </style>
 
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+    <script src="/assets/scripts/vendors/desc-edit.js"></script>
+    
+    <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+    
+    <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+
+    <script src="/assets/scripts/images-list.js"></script>
     <script src="/assets/scripts/ow-prism.js"></script>
     <script src="/assets/scripts/ow-logic.js"></script>
-    <script src="/assets/scripts/vendors/desc-edit.js"></script>
-    <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+    
+    <script src="/assets/scripts/vendors/edit-images-list-addon.js"></script>
 
     <script>
       const $fullModDescView = $('article#mod-description')
