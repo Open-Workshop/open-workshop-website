@@ -47,7 +47,15 @@ function setTypeScreenshotSelect() {
 }
 
 function deleteScreenshotSelect() {
-    $('a[idimg='+$editParent.attr('idimg')+']').remove();
+    const $element = $('a[idimg='+$editParent.attr('idimg')+']');
+    
+    if ($editParent.attr('idimg').startsWith('new-screenshot-')) {
+        $element.remove();
+    } else {
+        $element.removeClass();
+        $element.html('')
+        $element.addClass('deleted-user-screenshot');
+    }
 
     allResetVars()
     renderPagesSelect()

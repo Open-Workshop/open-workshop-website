@@ -15,7 +15,7 @@
             </button>
           </div>
           <div class="standart-panel navigation">
-            <button style="background-color: #FFF8D3;">
+            <button style="background-color: #FFF8D3;" onclick="saveChanges()">
               <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
             </button>
           </div>
@@ -171,6 +171,256 @@
 
         fullDescUpdate($fullModDescEditArea)
         $fullModDescView.html(OpenWS.syntaxToHTML($fullModDescEdit.find('textarea.editing').val()))
+      }
+    </script>
+
+    <script>
+      const modID = {{ data[0]['result']['id'] }}
+      // TODO логика сохранения
+      // TODO после написании логики сохранения тех элементов, что уже есть, опубликовать на хост
+      async function saveChanges() {
+        // Подготовка данных
+        function getChangesModName() {
+          const $title = $('input.title-mod')
+
+          return {val: $title.val(), changes: $title.val() != $title.attr('startdata')}
+        }
+
+        function getChangesFullDesc() {
+          const $descElement = $('div[limit=10000]#desc-edit').find('textarea.editing')
+
+          let result = {startdata: $descElement.attr('startdata')}
+          if ($descElement.hasAttr('tutorial')) {
+            result.val = $descElement.attr('tutorial')
+          } else {
+            result.val = $descElement.val()
+          }
+          result.changes = result.val != result.startdata
+          return result
+        }
+
+        // Retrieves the logos of changes made in the screenshot container and organizes them into new, changed, and deleted categories.
+        function getChangesLogos() {
+          const $screenshotContainer = $('ul.js__slider__images.slider__images')
+
+          let result = {new: [], changed: [], deleted: []};
+
+          $screenshotContainer.find('a').each(function() {
+            const $this = $(this)
+
+            if ($this.attr('idimg').startsWith('new-screenshot-')) {
+              result.new.push({
+                type: $this.attr('typecontent'),
+                url: $this.attr('href')
+              })
+            } else if ($this.hasClass('deleted-user-screenshot')) {
+              result.deleted.push($this.attr('idimg'))
+            } else if ($this.attr('starthref') != $this.attr('href') || $this.attr('starttypecontent') != $this.attr('typecontent')) {
+              let changedScreenshot = {id: $this.attr('idimg')}
+
+              if ($this.attr('starthref') != $this.attr('href')) {
+                changedScreenshot.url = $this.attr('href')
+              }
+              if ($this.attr('starttypecontent') != $this.attr('typecontent')) {
+                changedScreenshot.type = $this.attr('typecontent')
+              }
+
+              const attributesToCheck = [['url', 'href'], ['type', 'typecontent']];
+
+              attributesToCheck.forEach(attribute => {
+                if ($this.attr('start' + attribute[1]) !== $this.attr(attribute[1])) {
+                  changedScreenshot[attribute[0]] = $this.attr(attribute[1]);
+                }
+              });
+
+              result.changed.push(changedScreenshot)
+            }
+          })
+          
+          return result
+        }
+        
+
+        // Проверка есть ли разница
+        function haveDifference(title, fullDesc, logos) {
+          return {
+            all: title.changes || fullDesc.changes || logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
+            modBase: title.changes || fullDesc.changes,
+            modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0
+          }
+        }
+
+
+        // Исполнитель базового изменения
+        async function modUpdate(titleMod, fullDesc) {
+          const url = '/api/accounts/edit/mod?mod_id='+modID
+
+          // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
+          var formData = new FormData();
+
+          if (titleMod.changes) {formData.append('mod_name', titleMod.val)}
+          if (fullDesc.changes) {formData.append('mod_description', fullDesc.val)}
+
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              body: formData
+            });
+            const data = await response.json();
+            console.log('Success:', data);
+
+            // 202 - ожидание
+            if (response.status != 202) {
+              new Toast({
+                title: 'Ошибка',
+                text: data,
+                theme: 'warning',
+              })
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            new Toast({
+              title: 'Сетевая ошибка',
+              text: error,
+              theme: 'danger',
+            })
+          }
+        }
+
+        // Исполнитель изменения логотипов
+        async function modUpdateLogos(logos) {
+          // Все изменения POST и происходят внутри body
+          if (logos.new.length > 0) {
+            const urlAdd = '/api/accounts/add/resource' 
+
+            logos.new.forEach(async (logo) => {
+              console.log(logo)
+              try {
+                var formData = new FormData();
+
+                formData.append('resource_type_name', logo.type)
+                formData.append('resource_url', logo.url)
+                formData.append('resource_owner_id', modID)
+
+                const response = await fetch(urlAdd, {method: 'POST', body: formData});
+                const data = await response.json();
+
+                // 202 - ожидание
+                if (response.status != 202) {
+                  console.log('Success add logo:', data);
+                  new Toast({
+                    title: 'Добавление лого',
+                    text: data,
+                    theme: 'warning',
+                  })
+                }
+              } catch (error) {
+                console.error('Error edit logo:', error);
+                new Toast({
+                  title: 'Сетевая ошибка',
+                  text: error,
+                  theme: 'danger',
+                })
+              }
+            })
+          }
+
+          if (logos.changed.length > 0) {
+            const urlEdit = '/api/accounts/edit/resource?resource_id='
+
+            logos.changed.forEach(async (logo) => {
+              console.log(logo)
+              try {
+                var formData = new FormData();
+
+                if (logo.hasOwnProperty('type')) {formData.append('resource_type', logo.type)}
+                if (logo.hasOwnProperty('url')) {formData.append('resource_url', logo.url)}
+
+                const response = await fetch(urlEdit+logo, {method: 'POST', body: formData});
+                const data = await response.json();
+
+                // 202 - ожидание
+                if (response.status != 202) {
+                  console.log('Success edit logo:', data);
+                  new Toast({
+                    title: 'Редактирование лого',
+                    text: data,
+                    theme: 'warning',
+                  })
+                }
+              } catch (error) {
+                console.error('Error edit logo:', error);
+                new Toast({
+                  title: 'Сетевая ошибка',
+                  text: error,
+                  theme: 'danger',
+                })
+              }
+            })
+          }
+          
+          if (logos.deleted.length > 0) {
+            const urlDelete = '/api/accounts/delete/resource?resource_id='
+
+            logos.deleted.forEach(async (logo) => {
+              console.log(logo)
+              try {
+                const response = await fetch(urlDelete+logo, {method: 'POST'});
+                const data = await response.json();
+
+                // 202 - ожидание
+                if (response.status != 202) {
+                  console.log('Success delete logo:', data);
+                  new Toast({
+                    title: 'Удаление лого',
+                    text: data,
+                    theme: 'warning',
+                  })
+                }
+              } catch (error) {
+                console.error('Error delete logo:', error);
+                new Toast({
+                  title: 'Сетевая ошибка',
+                  text: error,
+                  theme: 'danger',
+                })
+              }
+            })
+          }
+        }
+
+
+        // Проверяем, подтверждаем изменения
+        const titleVal = getChangesModName()
+        const fullDescVal = getChangesFullDesc()
+        const changesLogosVal = getChangesLogos()
+
+        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal)
+
+        // Если нет изменений, предупреждаем пользователя
+        if (!haveChanges.all) {
+          new Toast({
+            title: 'Нечего сохранять',
+            text: 'Вы должны сделать изменения чтобы их можно было сохранить',
+            theme: 'info',
+          });
+
+          return
+        }
+
+
+        // Исполняем сохранение
+        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal)}
+        if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
+
+
+        // Сообщаем пользователю об успешном сохранении
+        new Toast({
+          title: 'Изменения сохранены',
+          text: 'Изменения были успешно сохранены',
+          theme: 'success',
+        })
+        location.reload()
       }
     </script>
 {% endblock %}
