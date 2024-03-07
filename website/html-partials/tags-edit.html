@@ -1,0 +1,132 @@
+<div class="standart-panel" style="padding-top: 0pt;" import-height="div#selected-tags">
+    <div id="selected-tags">
+        <div class="all-mod-tags" id="tags-edit-selected-tags">
+            {% for item in data[2] %}
+                <div tagid="{{ item.id }}" saved onclick="editTag(this)">{{ item.name }}</div>
+            {% endfor %}
+            <p>Тегов не выбрано</p>
+        </div>
+        
+        <button onclick="statePopupTagVisible()" class="toggle-tag-popup">Добавить тег</button>
+    </div>
+
+    <style>
+        button.toggle-tag-popup {
+            background: rgb(43, 44, 51);
+            border: none;
+            color: white;
+            height: 21pt;
+            width: 86pt;
+            border-top-right-radius: 5pt;
+            border-bottom-left-radius: 5pt;
+            font-size: medium;
+            margin-left: -3pt;
+        }
+        button.toggle-tag-popup:hover {
+            background: rgb(41, 42, 49);
+        }
+        button.toggle-tag-popup:active {
+            background: rgb(39, 40, 47);
+        }
+
+
+        .popup-nonvisible {
+            max-height: 0;
+        }
+
+        .popup-tags-select {
+            background: rgba(0, 0, 0, 0.9);
+            position: sticky;
+            margin-top: 3pt;
+            border-radius: 5pt;
+            overflow: hidden;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+        }
+        .popup-tags-select:not(.popup-nonvisible) {
+            max-height: 500pt;
+        }
+
+        div.popup-tags-select > input {
+            border-radius: 0; 
+            background: #2D2D2D; 
+            width: 100%; 
+            border-radius: 4pt;
+            caret-color: white;
+            color: white;
+        }
+        div.popup-tags-select > input:focus {
+            outline: none;
+        }
+
+        div.all-mod-tags {
+            transition: all 0.15s;
+            width: 100%;
+            padding: 2pt;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            min-height: 85px;
+        }
+
+        div.all-mod-tags > div {
+            border-radius: 5pt;
+            margin: 0.9pt;
+            height: 16pt;
+            padding-left: 2pt;
+            padding-right: 2pt;
+            font-size: medium;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        div.all-mod-tags > div:not(.selected-tag) {
+            background: rgb(43, 43, 43);
+        }
+        div.all-mod-tags > div:not(.selected-tag):hover {
+            background: rgb(53, 53, 53);
+        }
+        div.all-mod-tags > div:not(.selected-tag):active {
+            background: rgb(63, 63, 63);
+        }
+
+        div.all-mod-tags p {
+            display: none;
+            justify-content: center;
+            width: 100%;
+        }
+        div.all-mod-tags:not(:has(div:not(.none-display))) p {
+            display: flex;
+        }
+        div.all-mod-tags:not(:has(div:not(.none-display))) {
+            align-content: center;
+        }
+
+        div.selected-tag {
+            background: rgb(78, 0, 151);
+        }
+        div.selected-tag:hover {
+            background: rgb(68, 0, 141);
+        }
+        div.selected-tag:active {
+            background: rgb(58, 0, 131);
+        }
+
+        p#show-more-count-tags {
+            align-self: flex-end;
+            margin-right: 5pt;
+            transition: all 0.15s;
+        }
+    </style>
+
+    <div class="popup-tags-select popup-nonvisible">
+        <input id="search-update-input-tags" gameid='{{ data[0]["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestUpdate()">
+        
+        <div class="all-mod-tags" id="tags-edit-search-tags" style="min-height: 30px;"><p>Не найдено</p></div>
+        
+        <p id="show-more-count-tags">И ещё 10 шт...</p>
+    </div>
+</div>

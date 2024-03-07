@@ -344,7 +344,8 @@ async def edit_mod(mod_id):
 
     urls = [
         ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0"
+        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0",
+        ACCOUNTS_ADDRESS+f"/list/tags/mods/%5B{mod_id}%5D"
     ]
     tasks = []
     for url in urls:
@@ -370,6 +371,7 @@ async def edit_mod(mod_id):
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
+        info[2] = info[2][0]
 
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
@@ -411,14 +413,18 @@ async def edit_mod(mod_id):
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        info[2] = await tool.get_many_mods(info[0]['dependencies'])
+        info[3] = await tool.get_many_mods(info[0]['dependencies'])
 
+    try:
+        info[2] = list(info[2].values())[0]
+    except:
+        info[2] = []
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
-    except:
-        page_html = ""
+    #try:
+    page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
+    #except:
+    #    page_html = ""
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)

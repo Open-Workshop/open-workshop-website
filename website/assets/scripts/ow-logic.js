@@ -69,3 +69,7 @@ $(window).on('resize', function() {
 $(window).on('load', function(){
     checkElementsImportHeight();
 });
+
+$('[import-height]').on('event-height', function() {
+    checkElementsImportHeight();
+});

@@ -54,6 +54,8 @@
 
           <div style="width: 30%;">
             {% include 'html-partials/screenshots-edit.html' %}
+            
+            {% include 'html-partials/tags-edit.html' %}
           </div>
         </div>
       </article>
@@ -94,6 +96,7 @@
         background-color: rgba(15, 15, 15, 0.4);
         border-radius: 5pt;
         padding: 3pt;
+        margin-bottom: 3pt;
       }
 
       input.title-mod {
@@ -135,6 +138,7 @@
     <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
     
     <script src="/assets/scripts/vendors/edit-images-list-addon.js"></script>
+    <script src="/assets/scripts/vendors/tags-edit.js"></script>
 
     <script>
       const $fullModDescView = $('article#mod-description')
@@ -176,8 +180,7 @@
 
     <script>
       const modID = {{ data[0]['result']['id'] }}
-      // TODO логика сохранения
-      // TODO после написании логики сохранения тех элементов, что уже есть, опубликовать на хост
+    
       async function saveChanges() {
         // Подготовка данных
         function getChangesModName() {
@@ -240,14 +243,36 @@
           return result
         }
         
+        function getChangesTags() {
+          const $tagsContainer = $('div#tags-edit-selected-tags')
+
+          let result = {new: [], deleted: []};
+          
+          $tagsContainer.find('div').each(function() {
+            const $this = $(this)
+            if ($this.hasAttr('saved')) {
+              if ($this.hasClass('none-display')) {
+                result.deleted.push($this.attr('tagid'))
+              }
+            } else {
+              result.new.push($this.attr('tagid'))
+            }
+          })
+
+          return result
+        }
+
 
         // Проверка есть ли разница
-        function haveDifference(title, fullDesc, logos) {
-          return {
-            all: title.changes || fullDesc.changes || logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
+        function haveDifference(title, fullDesc, logos, tags) {
+          let result = {
             modBase: title.changes || fullDesc.changes,
-            modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0
+            modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
+            modTags: tags.new.length > 0 || tags.deleted.length > 0
           }
+          result.all = result.modBase || result.modLogos || result.modTags
+
+          return result
         }
 
 
@@ -389,13 +414,48 @@
           }
         }
 
+        async function modUpdateTags(tags) {
+          console.log(tags)
+          const url = '/api/accounts/association/mod/tag?mod_id='+modID
+
+          async function editRemoteTag(mode, tag) {
+            try {
+              const response = await fetch(url+'&mode='+mode+'&tag_id='+tag, {method: 'POST'});
+
+              // 202 - ожидание
+              if (response.status != 202) {
+                new Toast({
+                  title: 'Ошибка',
+                  text: data,
+                  theme: 'warning',
+                })
+              } else {
+                console.log('Success:', await response.json());
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              new Toast({
+                title: 'Сетевая ошибка',
+                text: error,
+                theme: 'danger',
+              })
+            }
+          }
+
+          tags.new.forEach(async (tag) => {await editRemoteTag(true, tag)})
+          tags.deleted.forEach(async (tag) => {await editRemoteTag(false, tag)})
+        }
+
 
         // Проверяем, подтверждаем изменения
         const titleVal = getChangesModName()
         const fullDescVal = getChangesFullDesc()
         const changesLogosVal = getChangesLogos()
+        const changesTagsVal = getChangesTags()
 
-        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal)
+        console.log(changesTagsVal)
+
+        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal, changesTagsVal)
 
         // Если нет изменений, предупреждаем пользователя
         if (!haveChanges.all) {
@@ -412,6 +472,7 @@
         // Исполняем сохранение
         if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal)}
         if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
+        if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
 
 
         // Сообщаем пользователю об успешном сохранении

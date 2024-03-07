@@ -2530,3 +2530,8 @@ td {
 button {
   cursor: pointer;
 }
+
+
+.none-display {
+  display: none !important;
+}
