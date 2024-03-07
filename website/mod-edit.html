@@ -318,7 +318,7 @@
           if (logos.new.length > 0) {
             const urlAdd = '/api/accounts/add/resource' 
 
-            logos.new.forEach(async (logo) => {
+            for (const logo of logos.new) {
               console.log(logo)
               try {
                 var formData = new FormData();
@@ -347,13 +347,13 @@
                   theme: 'danger',
                 })
               }
-            })
+            }
           }
 
           if (logos.changed.length > 0) {
             const urlEdit = '/api/accounts/edit/resource?resource_id='
 
-            logos.changed.forEach(async (logo) => {
+            for (const logo in logos.changed) {
               console.log(logo)
               try {
                 var formData = new FormData();
@@ -381,13 +381,13 @@
                   theme: 'danger',
                 })
               }
-            })
+            }
           }
           
           if (logos.deleted.length > 0) {
             const urlDelete = '/api/accounts/delete/resource?resource_id='
 
-            logos.deleted.forEach(async (logo) => {
+            for (const logo in logos.deleted) {
               console.log(logo)
               try {
                 const response = await fetch(urlDelete+logo, {method: 'POST'});
@@ -410,7 +410,7 @@
                   theme: 'danger',
                 })
               }
-            })
+            }
           }
         }
 
