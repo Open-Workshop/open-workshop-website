@@ -318,8 +318,8 @@
           if (logos.new.length > 0) {
             const urlAdd = '/api/accounts/add/resource' 
 
-            for (const logo of logos.new) {
-              console.log(logo)
+            for (const logoID of logos.new) {
+              const logo = logos.new[logoID]
               try {
                 var formData = new FormData();
 
@@ -353,8 +353,8 @@
           if (logos.changed.length > 0) {
             const urlEdit = '/api/accounts/edit/resource?resource_id='
 
-            for (const logo in logos.changed) {
-              console.log(logo)
+            for (const logoID in logos.changed) {
+              const logo = logos.changed[logoID]
               try {
                 var formData = new FormData();
 
@@ -387,8 +387,8 @@
           if (logos.deleted.length > 0) {
             const urlDelete = '/api/accounts/delete/resource?resource_id='
 
-            for (const logo in logos.deleted) {
-              console.log(logo)
+            for (const logoID in logos.deleted) {
+              const logo = logos.deleted[logoID]
               try {
                 const response = await fetch(urlDelete+logo, {method: 'POST'});
                 const data = await response.json();
