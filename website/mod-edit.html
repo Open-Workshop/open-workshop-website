@@ -320,7 +320,6 @@
 
             for (const logoID of logos.new) {
               const logo = logos.new[logoID]
-              console.log(logoID, logo)
               
               try {
                 var formData = new FormData();
@@ -357,7 +356,6 @@
 
             for (const logoID in logos.changed) {
               const logo = logos.changed[logoID]
-              console.log(logoID, logo)
               
               try {
                 var formData = new FormData();
@@ -393,7 +391,6 @@
 
             for (const logoID in logos.deleted) {
               const logo = logos.deleted[logoID]
-              console.log(logoID, logo)
 
               try {
                 const response = await fetch(urlDelete+logo, {method: 'POST'});
@@ -450,11 +447,9 @@
           }
 
           for (const tag of tags.new) {
-            console.log(tag, tags.new[tag])
             await editRemoteTag(true, tag);
           }
           for (const tag of tags.deleted) {
-            console.log(tag, tags.deleted[tag])
             await editRemoteTag(false, tag);
           }
         }
