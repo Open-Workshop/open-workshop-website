@@ -458,7 +458,7 @@
         const changesLogosVal = getChangesLogos()
         const changesTagsVal = getChangesTags()
 
-        console.log(changesTagsVal)
+        console.log(changesLogosVal)
 
         const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal, changesTagsVal)
 
@@ -486,7 +486,7 @@
           text: 'Изменения были успешно сохранены',
           theme: 'success',
         })
-        location.reload()
+        //location.reload()
       }
     </script>
 {% endblock %}
