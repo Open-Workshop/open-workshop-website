@@ -365,7 +365,7 @@
                 if (logo.hasOwnProperty('type')) {formData.append('resource_type', logo.type)}
                 if (logo.hasOwnProperty('url')) {formData.append('resource_url', logo.url)}
 
-                const response = await fetch(urlEdit+logo, {method: 'POST', body: formData});
+                const response = await fetch(urlEdit+logo.id, {method: 'POST', body: formData});
                 const data = await response.json();
 
                 // 202 - ожидание
@@ -450,9 +450,11 @@
           }
 
           for (const tag of tags.new) {
+            console.log(tag, tags.new[tag])
             await editRemoteTag(true, tag);
           }
           for (const tag of tags.deleted) {
+            console.log(tag, tags.deleted[tag])
             await editRemoteTag(false, tag);
           }
         }
