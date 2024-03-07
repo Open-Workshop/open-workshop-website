@@ -320,6 +320,8 @@
 
             for (const logoID of logos.new) {
               const logo = logos.new[logoID]
+              console.log(logoID, logo)
+              
               try {
                 var formData = new FormData();
 
@@ -355,6 +357,8 @@
 
             for (const logoID in logos.changed) {
               const logo = logos.changed[logoID]
+              console.log(logoID, logo)
+              
               try {
                 var formData = new FormData();
 
@@ -389,6 +393,8 @@
 
             for (const logoID in logos.deleted) {
               const logo = logos.deleted[logoID]
+              console.log(logoID, logo)
+
               try {
                 const response = await fetch(urlDelete+logo, {method: 'POST'});
                 const data = await response.json();
