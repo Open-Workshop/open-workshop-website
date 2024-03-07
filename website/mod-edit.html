@@ -443,8 +443,12 @@
             }
           }
 
-          tags.new.forEach((tag) => {await editRemoteTag(true, tag)})
-          tags.deleted.forEach((tag) => {await editRemoteTag(false, tag)})
+          for (const tag of tags.new) {
+            await editRemoteTag(true, tag);
+          }
+          for (const tag of tags.deleted) {
+            await editRemoteTag(false, tag);
+          }
         }
 
 
