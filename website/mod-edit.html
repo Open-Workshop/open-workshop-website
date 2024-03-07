@@ -420,6 +420,7 @@
 
           async function editRemoteTag(mode, tag) {
             try {
+              console.log(url+'&mode='+mode+'&tag_id='+tag)
               const response = await fetch(url+'&mode='+mode+'&tag_id='+tag, {method: 'POST'});
 
               // 202 - ожидание
@@ -481,7 +482,7 @@
           text: 'Изменения были успешно сохранены',
           theme: 'success',
         })
-        location.reload()
+        //location.reload()
       }
     </script>
 {% endblock %}
