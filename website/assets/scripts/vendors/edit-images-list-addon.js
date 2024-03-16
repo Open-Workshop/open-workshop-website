@@ -5,6 +5,7 @@ const $editParent = $selectTypeScreenshotSelect.parent()
 
 $(document).ready(function() {
     $(document).on('onscreenshotselect', 'a.slider__images-item', function() {
+        console.log('onScreenshotSelect')
         $inputUrlScreenshotSelect.val($(this).attr('href'));
         $selectTypeScreenshotSelect.val($(this).attr('typecontent'));
 

@@ -1,0 +1,87 @@
+<div class="standart-panel" style="padding-top: 0;" import-height="div#mod-dependence-header">
+    <style>
+        .mod-dependence {
+            transition: all 0.2s;
+            background-color: rgb(30 30 30);
+            overflow: hidden;
+        }
+
+        .mod-dependence > e {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            width: calc(100% - 70px);
+        }
+
+        .mod-dependence > e > h3 {
+            text-overflow: ellipsis;
+            text-wrap: nowrap;
+            overflow-wrap: anywhere;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .mod-dependence > e > img {
+            width: 25pt;
+        }
+
+        #mod-dependence-selected {
+            margin-bottom: 3pt;
+            min-height: 56.5px;
+        }
+
+        
+        .all-mod-dependence {
+            padding: 2pt;
+            margin-top: -5pt;
+        }
+
+        .alls > .mod-dependence {
+            padding: 2pt;
+        }
+
+        .all-mod-dependence > .mod-dependence > e > h3 {
+            max-width: 100%;
+        }
+
+        
+        .dependence-selected {
+            background: rgb(78, 0, 151);
+        }
+        .dependence-selected:hover {
+            background: rgb(74, 0, 147);
+        }
+        .dependence-selected:active {
+            background: rgb(70, 0, 143);
+        }
+    </style>
+
+    <div id="mod-dependence-header">
+        <div id="mod-dependence-selected" class="alls">
+            <br>
+            {% for item in data[3].values() %}
+            <div class="mod-dependence" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
+                <img src="{{ item.img }}" alt="Логотип мода" errorcap>
+                <e>
+                    <h3 translate="no">{{ item.name }}</h3>
+                    <img src="/assets/images/removal-triangle.svg" alt="Кнопка удаления зависимости">
+                </e>
+            </div>
+            {% endfor %}
+            <p>Модов не выбрано</p>
+        </div>
+
+        <button onclick="$('div.popup-dependence-select').toggleClass('popup-nonvisible')" class="bottom-left-rounded">Добавить зависимость</button>
+    </div>
+
+    <div class="popup-dependence-select popup-menu-select popup-nonvisible">
+        <input id="search-update-input-dependence" gameid='{{ data[0]["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
+        
+        <div class="alls all-mod-dependence" id="dependence-edit-search-dependence">
+            <p>Не найдено</p>
+        </div>
+        
+        <p class="show-more" id="show-more-count-dependence">И ещё 10 шт...</p>
+    </div>
+</div>

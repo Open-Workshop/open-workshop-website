@@ -1,6 +1,6 @@
-<div class="standart-panel">
+<div class="standart-panel" style="padding: 0;">
     <div class="wrapper" style="width: 100%;">
-        <div style="padding-bottom: 3pt;" class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
+        <div style="padding-bottom: 3pt; border-radius: 0;" class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
             <ul class="js__slider__images slider__images">
                 {% for item in data[1]['results'] %}
                 <a starthref="{{ item['url'] }}" idimg="{{ item['id'] }}" href="{{ item['url'] }}" starttypecontent="{{ item['type'] }}" typecontent="{{ item['type'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
@@ -12,6 +12,11 @@
             <img id="no-screenshots-error" src="/assets/images/image-not-found.webp" alt="Скриншот мода" style="display: flex; width: 100%; border-top-left-radius: 10pt; border-top-right-radius: 10pt; aspect-ratio: 10 / 7;" />
 
             <style>
+                a.slider__images-item {
+                    border-top-left-radius: 5pt;
+                    border-top-right-radius: 5pt;
+                }
+
                 div.edit-logos {
                     display: flex;
                 }

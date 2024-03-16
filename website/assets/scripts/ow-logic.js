@@ -7,38 +7,40 @@ $(document).ready(function() {
 });
 
 
-// Обработчик ошибок картинок
-$('img[errorcap]').on('onerror', function() {
-    $(this).attr("src", "/assets/images/image-not-found.webp")
-});
+setInterval(function() {
+    // Обработчик ошибок картинок
+    $('img[errorcap]').on('error', function() {
+        $(this).attr("src", "/assets/images/image-not-found.webp")
+    });
 
+    // Функция динамической подсветки input элементов
+    $('input[displaylimit]').on('input', function() {
+        const myText = $(this).val();
+        const maxLength = $(this).attr('maxlength');
+        const minLength = $(this).attr('minlength');
 
-// Функция динамической подсветки input элементов
+        if ((maxLength && myText.length > maxLength) || (minLength && myText.length < minLength)) {
+            $(this).addClass('limit');
+        } else {
+            $(this).removeClass('limit');
+        }
+    });
 
-$('input[displaylimit]').on('input', function() {
-    const myText = $(this).val();
-    const maxLength = $(this).attr('maxlength');
-    const minLength = $(this).attr('minlength');
+    // Функция динамической длины input элементов
+    $('input[dynamlen]').on('input', function() {
+        const elem = $(this);
+        if ((!elem.hasAttr('empty-width')) || (elem.val().length > 0 && elem.hasAttr('empty-width'))) {
+            elem.css('width', 0);
+            elem.css('width', elem[0].scrollWidth + 8 + "px");
+        } else {
+            elem.css('width', elem.attr('empty-width'))
+        }
+    });
 
-    if ((maxLength && myText.length > maxLength) || (minLength && myText.length < minLength)) {
-        $(this).addClass('limit');
-    } else {
-        $(this).removeClass('limit');
-    }
-});
-
-
-// Функция динамической длины input элементов
-
-$('input[dynamlen]').on('input', function() {
-    const elem = $(this);
-    if ((!elem.hasAttr('empty-width')) || (elem.val().length > 0 && elem.hasAttr('empty-width'))) {
-        elem.css('width', 0);
-        elem.css('width', elem[0].scrollWidth + 8 + "px");
-    } else {
-        elem.css('width', elem.attr('empty-width'))
-    }
-});
+    $('[import-height]').on('event-height', function() {
+        checkElementsImportHeight();
+    });
+}, 50)
 
 
 // Дополняем jquery логику
@@ -67,9 +69,5 @@ $(window).on('resize', function() {
 });
 
 $(window).on('load', function(){
-    checkElementsImportHeight();
-});
-
-$('[import-height]').on('event-height', function() {
     checkElementsImportHeight();
 });

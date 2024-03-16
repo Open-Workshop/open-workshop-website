@@ -2,19 +2,19 @@
 {% block content %}
     <div style="display: flex; flex-direction: column; align-items: center;">
       <article style="display: flex; width: 900pt; max-width: 100%; justify-content: center; padding: 0;">
-        <div class="standart-panel" style="position: absolute; display: flex;">
-          <div class="standart-panel navigation">
+        <div class="standart-panel" style="position: absolute; display: flex; background: #34374500; padding: 3pt;">
+          <div class="navigation standart-panel" style="margin: 0; background: rgb(26, 27, 38);">
             <button>
               <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
             </button>
-            <button>
+            <button style="margin-left: 2pt;">
               <img src="/assets/images/image-ico.svg" alt="Иконка 'каталог'">
             </button>
-            <button>
+            <button style="margin-left: 2pt;">
               <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
             </button>
           </div>
-          <div class="standart-panel navigation">
+          <div class="navigation standart-panel" style="margin: 0; background: rgb(26, 27, 38); margin-left: 5pt;">
             <button style="background-color: #FFF8D3;" onclick="saveChanges()">
               <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
             </button>
@@ -25,8 +25,8 @@
           <div style="width: 70%;">
             <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
             
-            <div style="margin: 5pt; padding: 5pt; background-color: rgba(0, 0, 0, 0.2); border-radius: 20pt;">
-              <div style="display: flex; justify-content: space-between;">
+            <div style="margin: 5pt;">
+              <div style="display: flex; justify-content: space-between; padding: 5pt;">
                 <div class="navigation">
                   <button onclick="fullEditView(false)">
                     <img src="/assets/images/edit-ico.svg" alt="Иконка 'редактирование'">
@@ -47,7 +47,7 @@
               {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=data[0]['result']['description'] %}
                 {% include 'html-partials/desc-edit.html' %}
               {% endwith %} 
-
+              
               <article id="mod-description" style="display: none;"></article>
             </div>
           </div>
@@ -56,12 +56,18 @@
             {% include 'html-partials/screenshots-edit.html' %}
             
             {% include 'html-partials/tags-edit.html' %}
+
+            {% include 'html-partials/mod-dependence-edit.html' %}
           </div>
         </div>
       </article>
     </div>
 
     <style>
+      article {
+        background-color: rgb(12 12 25);
+      }
+
       div.navigation {
         display: flex;
       }
@@ -93,7 +99,7 @@
       }
       
       div.standart-panel {
-        background-color: rgba(15, 15, 15, 0.4);
+        background-color: rgb(16, 17, 28);
         border-radius: 5pt;
         padding: 3pt;
         margin-bottom: 3pt;
@@ -132,13 +138,15 @@
     
     <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
 
+    <script src="/assets/scripts/vendors/edit-images-list-addon.js"></script>
+
+    <script src="/assets/scripts/vendors/tags-edit.js"></script>
+    <script src="/assets/scripts/vendors/dependence-edit.js"></script>
+    
     <script src="/assets/scripts/images-list.js"></script>
     <script src="/assets/scripts/ow-prism.js"></script>
     <script src="/assets/scripts/ow-logic.js"></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
-    
-    <script src="/assets/scripts/vendors/edit-images-list-addon.js"></script>
-    <script src="/assets/scripts/vendors/tags-edit.js"></script>
 
     <script>
       const $fullModDescView = $('article#mod-description')
@@ -262,15 +270,38 @@
           return result
         }
 
+        function getChangesDependence() {
+          const $depencContainer = $('#mod-dependence-selected')
+
+          let result = {
+            new: [],
+            deleted: []
+          }
+
+          $depencContainer.find('div.mod-dependence').each(function() {
+            const $this = $(this)
+            if ($this.hasAttr('saved')) {
+              if ($this.hasClass('none-display')) {
+                result.deleted.push($this.attr('modid'))
+              }
+            } else {
+              result.new.push($this.attr('modid'))
+            }
+          })
+
+          return result
+        }
+
 
         // Проверка есть ли разница
-        function haveDifference(title, fullDesc, logos, tags) {
+        function haveDifference(title, fullDesc, logos, tags, dependence) {
           let result = {
             modBase: title.changes || fullDesc.changes,
             modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
-            modTags: tags.new.length > 0 || tags.deleted.length > 0
+            modTags: tags.new.length > 0 || tags.deleted.length > 0,
+            modDependence: dependence.new.length > 0 || dependence.deleted.length > 0
           }
-          result.all = result.modBase || result.modLogos || result.modTags
+          result.all = result.modBase || result.modLogos || result.modTags || result.modDependence
 
           return result
         }
@@ -452,16 +483,53 @@
           }
         }
 
+        async function modUpdateDependecie(depends) {
+          const url = '/api/accounts/association/mod/dependencie?mod_id='+modID
+
+          async function editRemoteDependecie(mode, dependence) {
+            try {
+              console.log(url+'&mode='+mode+'&dependencie='+dependence)
+              const response = await fetch(url+'&mode='+mode+'&dependencie='+dependence, {method: 'POST'});
+
+              // 202 - ожидание
+              if (response.status != 202) {
+                new Toast({
+                  title: 'Ошибка',
+                  text: data,
+                  theme: 'warning',
+                })
+              } else {
+                console.log('Success:', await response.json());
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              new Toast({
+                title: 'Сетевая ошибка',
+                text: error,
+                theme: 'danger',
+              })
+            }
+          }
+
+          for (const dependence of depends.new) {
+            await editRemoteDependecie(true, dependence);
+          }
+          for (const dependence of depends.deleted) {
+            await editRemoteDependecie(false, dependence);
+          }
+        }
+
 
         // Проверяем, подтверждаем изменения
         const titleVal = getChangesModName()
         const fullDescVal = getChangesFullDesc()
         const changesLogosVal = getChangesLogos()
         const changesTagsVal = getChangesTags()
+        const changesDependenceVal = getChangesDependence()
 
-        console.log(changesLogosVal)
+        console.log(changesDependenceVal)
 
-        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal, changesTagsVal)
+        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal, changesTagsVal, changesDependenceVal)
 
         // Если нет изменений, предупреждаем пользователя
         if (!haveChanges.all) {
@@ -479,6 +547,7 @@
         if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal)}
         if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
         if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
+        if (haveChanges.modDependence) {await modUpdateDependece(changesDependenceVal)}
 
 
         // Сообщаем пользователю об успешном сохранении

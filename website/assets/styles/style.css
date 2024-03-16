@@ -1634,7 +1634,7 @@ blockquote > .light {
   background-color: rgba(26, 26, 26, 0.452);
   margin-top: 5pt;
   cursor: pointer;
-  border-radius: 10pt;
+  border-radius: 5pt;
   padding: 5pt;
   display: -webkit-box;
   display: -ms-flexbox;
@@ -2534,4 +2534,83 @@ button {
 
 .none-display {
   display: none !important;
+}
+
+button.bottom-left-rounded {
+  background: rgb(43, 44, 51);
+  border: none;
+  color: white;
+  height: 21pt;
+  width: auto;
+  border-top-right-radius: 5pt;
+  border-bottom-left-radius: 5pt;
+  font-size: medium;
+  margin-left: -3pt;
+  padding-left: 5pt;
+  padding-right: 5pt;
+}
+button.bottom-left-rounded:hover {
+  background: rgb(41, 42, 49);
+}
+button.bottom-left-rounded:active {
+  background: rgb(39, 40, 47);
+}
+
+
+
+.popup-nonvisible {
+  max-height: 0;
+}
+
+.popup-menu-select {
+  background: rgba(0, 0, 0, 0.9);
+  position: sticky;
+  margin-top: 3pt;
+  border-radius: 5pt;
+  overflow: hidden;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+}
+.popup-menu-select:not(.popup-nonvisible) {
+  max-height: 500pt;
+}
+
+div.popup-menu-select > input {
+  border-radius: 0; 
+  background: #2D2D2D; 
+  width: 100%; 
+  border-radius: 4pt;
+  caret-color: white;
+  color: white;
+}
+div.popup-menu-select > input:focus {
+  outline: none;
+}
+div.popup-menu-select > p.show-more {
+  align-self: flex-end;
+  margin-right: 5pt;
+  transition: all 0.15s;
+}
+
+div.alls {
+  width: 100%;
+  min-height: 85px;
+}
+div.alls p {
+  display: none;
+  justify-content: center;
+  width: 100%;
+}
+div.alls:not(:has(div:not(.none-display))) p {
+  display: flex;
+}
+div.alls:not(:has(div:not(.none-display))) {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  flex-wrap: wrap;
 }

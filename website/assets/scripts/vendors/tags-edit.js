@@ -1,9 +1,9 @@
 
 const containerTags = $('div#tags-edit-selected-tags');
 const searchContainer = $("#tags-edit-search-tags");
-searchRequestUpdate();
+searchRequestTagUpdate();
 
-async function searchRequestUpdate() {
+async function searchRequestTagUpdate() {
     const searchInput = $("#search-update-input-tags");
     const pNoInList = $('p#show-more-count-tags');
 
@@ -71,9 +71,4 @@ function editTag(tag) {
     }
 
     containerTags.parent().parent().trigger('event-height');
-}
-
-function statePopupTagVisible() {
-    const popup = $('div.popup-tags-select');
-    popup.toggleClass('popup-nonvisible');
 }
