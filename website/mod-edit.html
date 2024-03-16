@@ -547,7 +547,7 @@
         if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal)}
         if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
         if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
-        if (haveChanges.modDependence) {await modUpdateDependece(changesDependenceVal)}
+        if (haveChanges.modDependence) {await modUpdateDependecie(changesDependenceVal)}
 
 
         // Сообщаем пользователю об успешном сохранении
@@ -556,6 +556,7 @@
           text: 'Изменения были успешно сохранены',
           theme: 'success',
         })
+        return
         location.reload()
       }
     </script>
