@@ -7,8 +7,9 @@ window.Pager = {
     
         pageSelect.call(this, page)
     
-        const variants = $(this).attr('active-in-variant') ? $(this).attr('active-in-variant').replace(/\s/g, '').split(',') : [];
-        const disabledVariants = $(this).attr('disabled-in-variant') ? $(this).attr('disabled-in-variant').replace(/\s/g, '').split(',') : [];
+        const variants = $(this).attr('active-in-variant') ? $(this).attr('active-in-variant').replace(' ', '').split(',') : [];
+        const disabledVariants = $(this).attr('disabled-in-variant') ? $(this).attr('disabled-in-variant').replace(' ', '').split(',') : [];
+        console.log(variants, disabledVariants)
         for (const variant of variants+disabledVariants) {
             console.log(variant)
             $('#'+variant).prop('disabled', disabledVariants.includes(variant));
