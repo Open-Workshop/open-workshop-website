@@ -11,12 +11,10 @@ window.Pager = {
         const disabledVariants = $(this).attr('disabled-in-variant') ? $(this).attr('disabled-in-variant').replace(' ', '').split(',') : [];
         console.log(variants, disabledVariants)
         for (const variant of variants) {
-            console.log(variant)
-            $('#'+variant).attr('disabled', 'true');
+            $('#'+variant).removeAttr('disabled');
         }
         for (const variant of disabledVariants) {
-            console.log(variant)
-            $('#'+variant).removeAttr('disabled');
+            $('#'+variant).attr('disabled', 'true');
         }
 
         function pageSelect(pageName) {
