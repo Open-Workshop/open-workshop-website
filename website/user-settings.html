@@ -11,27 +11,27 @@
     {% endif %}
     {% if (not user_data.delete_user and (user_access.any or user_access.my)) or (user_data.delete_user and user_access.admin) %}
     <article class="user-settings-cont">
-        <div class="navig-user-setting-menu">
+        <div class="navig-user-setting-menu" variants="profile, delete-account, rights, integrate">
           <h2>Навигация</h2>
           {% if not user_data.delete_user %}
-          <button id="page-profile-button" onclick="switchSettingsPage('profile')">Профиль</button>
+          <button id="page-profile-button" active-in-variant="page-save-button" variant="profile" onclick="Pager.change(this)">Профиль</button>
           {% endif %}
           {% if user_access.my or user_access.admin %}
           {% if not user_data.delete_user %}
-          <button id="page-integrate-button" onclick="switchSettingsPage('integrate')">Интеграция</button>
+          <button id="page-integrate-button" disabled-in-variant="page-save-button" variant="integrate" onclick="Pager.change(this)">Интеграция</button>
           {% endif %}
-          <button id="page-rights-button" onclick="switchSettingsPage('rights')">Права</button>
+          <button id="page-rights-button" active-in-variant="page-save-button" variant="rights" onclick="Pager.change(this)">Права</button>
           {% endif %}
 
           {% if user_access.my %}
-          <button id="page-delete-account-button" onclick="switchSettingsPage('delete-account')">Удалить аккаунт</button>
+          <button id="page-delete-account-button" disabled-in-variant="page-save-button" variant="delete-account" onclick="Pager.change(this)">Удалить аккаунт</button>
           {% endif %}
 
           <button id="page-save-button" style="margin-top: 30pt;" onclick="saveProfile()">Сохранить</button>
         </div>
         <div style="width: 100%;">
           {% if not user_data.delete_user %}
-          <div id="page-profile-div" class="user-container-settings">
+          <div id="page-profile" class="user-container-settings">
             <div class="user-left-bar">
               <div class="wrapper" style="width: 100%; max-width: 150pt;">
                 <div class="user-avatar-box">
@@ -251,7 +251,7 @@
           {% endif %}
           {% if user_access.my or user_access.admin %}
             {% if not user_data.delete_user %}
-            <div id="page-integrate-div" style="flex-direction: column;" class="user-container-settings">
+            <div id="page-integrate" style="flex-direction: column;" class="user-container-settings">
               <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
                 <img style="width: 30pt;" src="/assets/images/yandex.svg" alt="Yandex logo">
                 
@@ -282,7 +282,7 @@
               </button>
             </div>
             {% endif %}
-          <div id="page-rights-div" style="flex-direction: column;" class="user-container-settings rights-cont">
+          <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
             <div>
               <div class="button b2">
                 <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled class="checkbox" />
@@ -505,7 +505,7 @@
           </div>
           {% endif %}
           {% if user_access.my %}
-          <div id="page-delete-account-div" style="flex-direction: column;" class="user-container-settings">
+          <div id="page-delete-account" style="flex-direction: column;" class="user-container-settings">
             <div style="background: #313131; width: 177pt; border-radius: 5pt;">
               <input style="width: 100%;" class="edit-username" maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
               <button class="service" style="width: 170pt; display: flex; justify-content: center;" onclick="commitToDelete()">
@@ -555,36 +555,6 @@
             </script>
           </div>
           {% endif %}
-
-          <script>
-            switchSettingsPage(OpenWS.getFromDict(OpenWS.urlParams(window.location.href), "page", {% if not user_data.delete_user %}'profile'{% endif %}{% if user_data.delete_user %}'rights'{% endif %}));
-
-            function switchSettingsPage(newPage) {
-              object = ['profile', 'delete-account', 'rights',  'integrate']
-              for (const property_number in object) {
-                const property = object[property_number];
-                const div = document.getElementById('page-'+property+'-div');
-                const button = document.getElementById('page-'+property+'-button');
-                
-                console.log(div, button, 'page-'+property+'-div', 'page-'+property+'-button');
-                if (div) {
-                  if (newPage == property) {
-                    div.classList.remove('nov-visib');
-                    button.disabled = true;
-                  } else {
-                    div.classList.add('nov-visib');
-                    button.disabled = false;
-                  };
-                }
-              }
-              document.getElementById('page-save-button').disabled = (newPage == 'integrate' || newPage == 'delete-account');
-
-              const res = OpenWS.reselectParam("page", newPage)
-              if (res != false) {
-                window.history.pushState('page'+newPage, 'Open Workshop', res);
-              }
-            };
-          </script>
           <style>
             .nov-visib {
               display: none;
@@ -791,6 +761,13 @@
     </article>
     {% endif %}
   </div>
+
+  <script src="/assets/scripts/vendors/pager-logic.js"></script>
+  <script src="/assets/scripts/ow-logic.js"></script>
+
+  <script>
+    Pager.updateSelect.call(document.querySelector('#page-profile-button'))
+  </script>
 {% endblock %}
 
 {% block title %}

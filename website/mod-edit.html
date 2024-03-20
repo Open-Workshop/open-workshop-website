@@ -3,14 +3,14 @@
     <div style="display: flex; flex-direction: column; align-items: center;">
       <article style="display: flex; width: 900pt; max-width: 100%; justify-content: center; padding: 0;">
         <div class="standart-panel" style="position: absolute; display: flex; background: #34374500; padding: 3pt;">
-          <div class="navigation standart-panel" style="margin: 0; background: rgb(26, 27, 38);">
-            <button>
+          <div class="navigation standart-panel" style="margin: 0; background: rgb(26, 27, 38);" variants='in-mod-page, in-catalog-view, params-mod'>
+            <button id="start-page-button" variant="in-mod-page" onclick="Pager.change(this)">
               <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
             </button>
-            <button style="margin-left: 2pt;">
+            <button style="margin-left: 2pt;" variant="in-catalog-view" onclick="Pager.change(this)">
               <img src="/assets/images/image-ico.svg" alt="Иконка 'каталог'">
             </button>
-            <button style="margin-left: 2pt;">
+            <button style="margin-left: 2pt;" variant="params-mod" onclick="Pager.change(this)">
               <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
             </button>
           </div>
@@ -21,7 +21,7 @@
           </div>
         </div>
 
-        <div style="width: 100%; display: flex; margin: 3.5pt;">
+        <div style="width: 100%; display: flex; margin: 3.5pt;" id="page-in-mod-page">
           <div style="width: 70%;">
             <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
             
@@ -59,6 +59,14 @@
 
             {% include 'html-partials/mod-dependence-edit.html' %}
           </div>
+        </div>
+
+        <div id="page-in-catalog-view">
+          Страница предпосмотра в каталоге
+        </div>
+
+        <div id="page-params-mod">
+          Страница всяких настроек
         </div>
       </article>
     </div>
@@ -145,8 +153,13 @@
     
     <script src="/assets/scripts/images-list.js"></script>
     <script src="/assets/scripts/ow-prism.js"></script>
+    <script src="/assets/scripts/vendors/pager-logic.js"></script>
     <script src="/assets/scripts/ow-logic.js"></script>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script>
+
+    <script>
+      Pager.updateSelect.call(document.querySelector('#start-page-button'))
+    </script>
 
     <script>
       const $fullModDescView = $('article#mod-description')
