@@ -10,6 +10,7 @@ window.Pager = {
         const variants = $(this).attr('active-in-variant') ? $(this).attr('active-in-variant').replace(/\s/g, '').split(',') : [];
         const disabledVariants = $(this).attr('disabled-in-variant') ? $(this).attr('disabled-in-variant').replace(/\s/g, '').split(',') : [];
         for (const variant of variants+disabledVariants) {
+            console.log(variant)
             $('#'+variant).prop('disabled', disabledVariants.includes(variant));
         }
 
