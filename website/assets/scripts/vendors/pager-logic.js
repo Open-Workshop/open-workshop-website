@@ -7,15 +7,16 @@ window.Pager = {
     
         pageSelect.call(this, page)
     
-        const variants = [$(this).attr('active-in-variant'), $(this).attr('disabled-in-variant')].map(v => v.replace(/\s/g, ''))
-        for (const variant of variants) {
-            $('#'+variant).prop('disabled', variants.includes('disabled-in-variant'))
+        const variants = $(this).attr('active-in-variant') ? $(this).attr('active-in-variant').replace(/\s/g, '').split(',') : [];
+        const disabledVariants = $(this).attr('disabled-in-variant') ? $(this).attr('disabled-in-variant').replace(/\s/g, '').split(',') : [];
+        for (const variant of variants+disabledVariants) {
+            $('#'+variant).prop('disabled', disabledVariants.includes(variant));
         }
 
         function pageSelect(pageName) {
             const pages = $(this).parent().attr('variants').replace(/\s/g, '').split(',')
         
-            pages.includes(pageName) ? null : pageName = 'in-mod-page'
+            pages.includes(pageName) ? null : pageName = pages[0]
         
             for (const page of pages) {
                 const currectPage = $('#page-'+page);
