@@ -7,7 +7,7 @@ window.Pager = {
     
         pageSelect.call(this, page)
     
-        const variants = $(this).getAttrList('active-in-variant disabled-in-variant').map(v => v.replace(/\s/g, ''))
+        const variants = [$(this).attr('active-in-variant'), $(this).attr('disabled-in-variant')].map(v => v.replace(/\s/g, ''))
         for (const variant of variants) {
             $('#'+variant).prop('disabled', variants.includes('disabled-in-variant'))
         }
@@ -36,3 +36,4 @@ window.Pager = {
         }
     }
 }
+
