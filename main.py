@@ -231,7 +231,7 @@ async def mod(mod_id):
             session.close()
             print("PAGE DELETE: " + str(mod_id))
 
-        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка'))
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка')), info[0][1]
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
@@ -367,7 +367,7 @@ async def edit_mod(mod_id):
             session.close()
             print("PAGE DELETE: " + str(mod_id))
 
-        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка'))
+        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка')), info[0][1]
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
@@ -381,13 +381,13 @@ async def edit_mod(mod_id):
                 error_title='В муте',
                 error_body='Вы во временном муте',
                 error_code=403
-            ))
+            )), 403
         else:
             return await standart_response(user_req=user_req, page=await error_page(
                 error_title='Отказано в доступе',
                 error_body='Вы не имеете права редактировать чужие моды' if right_edit_mod['is_my_mod'] == 2 else 'Вы не имеете права редактировать свои моды',
                 error_code=403
-            ))
+            )), 403
 
     info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
 
@@ -442,19 +442,19 @@ async def add_mod():
 
     right_edit_mod = await check_access_mod(user_req=user_req)
 
-    if not right_edit_mod['add']:
+    if False and not right_edit_mod['add']:
         if right_edit_mod['in_mute']:
             return await standart_response(user_req=user_req, page=await error_page(
                 error_title='В муте',
                 error_body='Вы во временном муте',
                 error_code=403
-            ))
+            )), 403
         else:
             return await standart_response(user_req=user_req, page=await error_page(
                 error_title='Отказано в доступе',
                 error_body='Вы не можете публиковать моды',
                 error_code=403
-            ))
+            )), 403
 
     # Пробуем отрендерить страницу
     #try:
@@ -491,7 +491,7 @@ async def user(user_id):
             error_title=f'Ошибка ({info[0][1]})',
             error_body=info[0][0],
             error_code=info[0][1]
-        ))
+        )), info[0][1]
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
@@ -503,7 +503,7 @@ async def user(user_id):
             error_title="Этот профиль удален!",
             error_body="Профиль удален",
             error_code=404
-        ))
+        )), 404
 
     # Определяем содержание страницы
     if info[0]["general"]["mute"]:
@@ -577,7 +577,7 @@ async def user_settings(user_id):
             error_title=f'Ошибка ({info["status_code"]})',
             error_body=info["result"],
             error_code=info["status_code"]
-        ))
+        )), info["status_code"]
     else:
         info = info["result"]
 
