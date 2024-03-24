@@ -23,8 +23,13 @@
 
         <div style="width: 100%; display: flex; margin: 3.5pt;" id="page-in-mod-page">
           <div style="width: 70%;">
-            <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
-            
+            <div style="display: flex; margin-left: -4pt; margin-top: -4pt; height: 57px;">
+              <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
+              <button onclick="toggleNextPublic()" class="public-mod-toggle anime-scale" startdata="{{ data[0]['result']['public'] }}" public-mode="{{ data[0]['result']['public'] }}">
+                <img src="" alt="Иконка режима публичности">
+              </button>
+            </div>
+              
             <div style="margin: 5pt;">
               <div style="display: flex; justify-content: space-between; padding: 5pt;">
                 <div class="navigation">
@@ -114,18 +119,15 @@
       }
 
       input.title-mod {
-        border-radius: 1pt;
+        border-radius: 0pt;
         border-top-left-radius: 10pt;
-        border-bottom-right-radius: 10pt;
-
-        margin-left: -4pt;
-        margin-top: -4pt;
 
         background: #302E3F;
         border: solid #939393;
         color: white;
 
-        max-width: calc(75% - 105pt);
+        max-width: calc(66% - 105pt);
+        height: 100%;
         font-size: 20pt;
         outline: none;
         transition: border background 0.1s;
@@ -137,6 +139,28 @@
       input.title-mod:focus {
         border: solid #6b6b6b;
         background: #252330;
+      }
+
+      button.public-mod-toggle {
+        border-bottom-right-radius: 5pt;
+
+        height: 100%;
+        aspect-ratio: 1 / 1;
+
+        background: #212029;
+        border: solid #777777;
+      }
+      button.public-mod-toggle > img {
+        color: #D9D9D9;
+        width: 70%;
+      }
+      button.public-mod-toggle:hover {
+        background: #1d1c24;
+        border: solid #6e6e6e;
+      }
+      button.public-mod-toggle:active {
+        background: #19181f;
+        border: solid #646464;
       }
     </style>
 
@@ -166,6 +190,22 @@
       const $fullModDescEdit = $('div[limit=10000]#desc-edit')
       const $fullModDescEditArea = $fullModDescEdit.find('textarea.editing')
 
+      const publicButton = $('button.public-mod-toggle')
+      const publicIcon = publicButton.find('img')
+      const iconSrcMapPublic = {
+        0: ['/assets/images/svg/white/eye.svg', 'Доступен всем'],
+        1: ['/assets/images/svg/white/link.svg', 'Доступен по ссылке'],
+        2: ['/assets/images/svg/white/lock.svg', 'Доступен только владельцам'],
+      }
+      toggleNextPublic(false)
+
+      function toggleNextPublic(next = true) {
+        if (next) {
+          publicButton.attr('public-mode', (parseInt(publicButton.attr('public-mode')) + 1) % 3); 
+        }
+        publicIcon.attr('src', iconSrcMapPublic[publicButton.attr('public-mode')][0])
+        publicButton.attr('title', iconSrcMapPublic[publicButton.attr('public-mode')][1])
+      }
 
       function fullEditView(mode) {
         if (mode) {
@@ -221,6 +261,11 @@
           }
           result.changes = result.val != result.startdata
           return result
+        }
+
+        function getChangesPublic() {
+          const $publicButton = $('button.public-mod-toggle')
+          return {val: $publicButton.attr('public-mode'), changes: $publicButton.attr('public-mode') != $publicButton.attr('startdata')}
         }
 
         // Retrieves the logos of changes made in the screenshot container and organizes them into new, changed, and deleted categories.
@@ -307,9 +352,9 @@
 
 
         // Проверка есть ли разница
-        function haveDifference(title, fullDesc, logos, tags, dependence) {
+        function haveDifference(title, fullDesc, public, logos, tags, dependence) {
           let result = {
-            modBase: title.changes || fullDesc.changes,
+            modBase: title.changes || fullDesc.changes || public.changes,
             modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
             modTags: tags.new.length > 0 || tags.deleted.length > 0,
             modDependence: dependence.new.length > 0 || dependence.deleted.length > 0
@@ -321,7 +366,7 @@
 
 
         // Исполнитель базового изменения
-        async function modUpdate(titleMod, fullDesc) {
+        async function modUpdate(titleMod, fullDesc, publicMode) {
           const url = '/api/accounts/edit/mod?mod_id='+modID
 
           // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
@@ -329,6 +374,7 @@
 
           if (titleMod.changes) {formData.append('mod_name', titleMod.val)}
           if (fullDesc.changes) {formData.append('mod_description', fullDesc.val)}
+          if (publicMode.changes) {formData.append('mod_public', publicMode.val)}
 
           try {
             const response = await fetch(url, {
@@ -536,13 +582,14 @@
         // Проверяем, подтверждаем изменения
         const titleVal = getChangesModName()
         const fullDescVal = getChangesFullDesc()
+        const publicVal = getChangesPublic()
         const changesLogosVal = getChangesLogos()
         const changesTagsVal = getChangesTags()
         const changesDependenceVal = getChangesDependence()
 
         console.log(changesDependenceVal)
 
-        const haveChanges = haveDifference(titleVal, fullDescVal, changesLogosVal, changesTagsVal, changesDependenceVal)
+        const haveChanges = haveDifference(titleVal, fullDescVal, publicVal, changesLogosVal, changesTagsVal, changesDependenceVal)
 
         // Если нет изменений, предупреждаем пользователя
         if (!haveChanges.all) {
@@ -557,7 +604,7 @@
 
 
         // Исполняем сохранение
-        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal)}
+        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal, publicVal)}
         if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
         if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
         if (haveChanges.modDependence) {await modUpdateDependecie(changesDependenceVal)}
