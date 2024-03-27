@@ -94,23 +94,25 @@
                 </div>
               </div>
               <script>
-                const $cardDescD = $('div.card-description')
-                const $shortDescD = $('div[limit=256]').find('textarea.editing')
-                
-                console.log($shortDescD, $cardDescD)
+                $(document).ready(function() {
+                  const $cardDescD = $('div.card-description')
+                  const $shortDescD = $('div[limit=256]').find('textarea.editing')
+                  
+                  console.log($shortDescD, $cardDescD)
 
-                $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
-                $cardDescD.attr('cashData', $shortDescD.val())
-                $cardDescD.html(OpenWS.syntaxToHTML($shortDescD.val()))
+                  $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
+                  $cardDescD.attr('cashData', $shortDescD.val())
+                  $cardDescD.html(OpenWS.syntaxToHTML($shortDescD.val()))
 
-                setInterval(function(){
-                  const dataText = $shortDescD.val()
+                  setInterval(function(){
+                    const dataText = $shortDescD.val()
 
-                  if ($cardDescD.attr('cashData') != dataText) {
-                    $cardDescD.attr('cashData', dataText)
-                    $cardDescD.html(OpenWS.syntaxToHTML(dataText))
-                  }
-                }, 100)
+                    if ($cardDescD.attr('cashData') != dataText) {
+                      $cardDescD.attr('cashData', dataText)
+                      $cardDescD.html(OpenWS.syntaxToHTML(dataText))
+                    }
+                  }, 100)
+                })
               </script>
               <script>
                 let zindex = 1;
