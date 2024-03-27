@@ -306,8 +306,6 @@ div.card div.card-description {
   position: relative;
   font-size: 14px;
   word-wrap: break-word;
-}
-div.card div.big-desc {
   max-height: 140pt;
   overflow: hidden;
   z-index: -1;

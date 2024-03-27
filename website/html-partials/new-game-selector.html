@@ -63,7 +63,8 @@
                     // Создание элемента img с атрибутами src и alt
                     var newImg = $('<img/>', {
                         src: gameLogo,
-                        alt: 'Лого игры'
+                        alt: 'Лого игры',
+                        onerror: 'handlerImgErrorLoad(this)',
                     });
 
                     // Создание элемента p с текстом "VoxelEngine"

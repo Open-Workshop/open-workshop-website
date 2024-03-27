@@ -183,7 +183,7 @@ window.OpenWS = {
 
         image.alt = "Здесь должен быть логотип мода";
         image.id = "preview-logo-card-"+cardData.id
-        image.setAttribute("onerror", "this.src='assets/images/image-not-found.webp'")
+        image.setAttribute("onerror", "handlerImgErrorLoad(this)")
 
         imageHolder.appendChild(image);
         cardClick.appendChild(imageHolder);
@@ -251,7 +251,6 @@ window.OpenWS = {
 
         const description = document.createElement('div');
         description.classList.add('card-description');
-        description.setAttribute('style-check', "height > 130, big-desc");
 
         var desc = cardData.short_description;
         description.innerHTML = window.OpenWS.syntaxToHTML(desc, true);

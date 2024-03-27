@@ -77,7 +77,7 @@ async function searchRequestDependenceUpdate() {
         $dependenceSelected.append($('<img/>', {
             src: '/assets/images/loading.webp',
             alt: "Логотип мода",
-            errorcap: true
+            onerror: 'handlerImgErrorLoad(this)'
         }));
         var $e = $('<e/>');
         $e.append($('<h3/>', {
