@@ -71,7 +71,7 @@
             <div class="cards" style="width: auto;">
               <div class="card" id="{{ data[0]['result']['id'] }}">
                 <div class="card-click">
-                  <div class="card__image-holder card__image-holder-game">
+                  <div class="card__image-holder">
                     <img class="card__image title-card-img" alt="Здесь должен быть логотип мода" id="preview-logo-card-647960" onerror="this.src='/assets/images/image-not-found.webp'">
                   </div>
                   <div class="card-params-list">
@@ -81,7 +81,7 @@
                     <h2 id="titlename{{ data[0]['result']['id'] }}" title="{{ data[0]['result']['name'] }}">{{ data[0]['result']['name'] }}</h2>
                   </div>
                 </div>
-                <div class="card-flap flap1 card-flap-game" id="card-flap{{ data[0]['result']['id'] }}">
+                <div class="card-flap flap1" id="card-flap{{ data[0]['result']['id'] }}">
                   <div class="card-description" style-check="height > 130, big-desc">{{ data[0]['result']['short_description'] }}</div>
                   <div class="flap-buttons">
                     <a id="tomodlink{{ data[0]['result']['id'] }}" class="button-card button-flap">
@@ -97,6 +97,9 @@
                 const $cardDesc = $('div.card-description')
                 const $shortDesc = $('div[limit=256]').find('textarea.editing')
                 $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
+                $cardDesc.attr('cashData', $shortDesc.val())
+                $cardDesc.html(OpenWS.syntaxToHTML($shortDesc.val()))
+
                 setInterval(function(){
                   const dataText = $shortDesc.val()
 
