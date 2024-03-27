@@ -67,11 +67,107 @@
         </div>
 
         <div id="page-in-catalog-view">
-          Страница предпосмотра в каталоге
+          <div class="" style="display: flex; margin-top: 50pt;">
+            <div class="cards" style="width: auto;">
+              <div class="card" id="{{ data[0]['result']['id'] }}">
+                <div class="card-click">
+                  <div class="card__image-holder card__image-holder-game">
+                    <img class="card__image title-card-img" alt="Здесь должен быть логотип мода" id="preview-logo-card-647960" onerror="this.src='/assets/images/image-not-found.webp'">
+                  </div>
+                  <div class="card-params-list">
+                    <a class="tag-link card-params-list-tag" title="Количество модов для игры">📦{{ data[0]['result']['size'] }}</a>
+                  </div>
+                  <div class="card-title">
+                    <h2 id="titlename{{ data[0]['result']['id'] }}" title="{{ data[0]['result']['name'] }}">{{ data[0]['result']['name'] }}</h2>
+                  </div>
+                </div>
+                <div class="card-flap flap1 card-flap-game" id="card-flap{{ data[0]['result']['id'] }}">
+                  <div class="card-description" style-check="height > 130, big-desc">{{ data[0]['result']['short_description'] }}</div>
+                  <div class="flap-buttons">
+                    <a id="tomodlink{{ data[0]['result']['id'] }}" class="button-card button-flap">
+                      <img src="/assets/images/arrow.webp" class="img-to-mod">
+                    </a>
+                    <button id="togamelink{{ data[0]['result']['id'] }}" onclick="cardCancel({{ data[0]['result']['id'] }})" class="button-cancel button-flap" title="Завернуть карточку">
+                      <img src="/assets/images/cancel.webp" class="img-to-mod">
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <script>
+                const $cardDesc = $('div.card-description')
+                const $shortDesc = $('div[limit=256]').find('textarea.editing')
+                $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
+                setInterval(function(){
+                  const dataText = $shortDesc.val()
+
+                  if ($cardDesc.attr('cashData') != dataText) {
+                    $cardDesc.attr('cashData', dataText)
+                    $cardDesc.html(OpenWS.syntaxToHTML(dataText))
+                  }
+                }, 100)
+              </script>
+              <script>
+                let zindex = 1;
+                $("div.card-click").click(function(e){
+                  e.preventDefault();
+
+                  var isShowing = false;
+              
+                  if ($(this).parent().hasClass("show")) {
+                    isShowing = true
+                  }
+              
+                  if ($("div.cards").hasClass("showing")) {
+                    // a card is already in view
+                    $("div.card.show")
+                      .removeClass("show");
+              
+                    if (isShowing) {
+                      // this card was showing - reset the grid
+                      $("div.cards")
+                        .removeClass("showing");
+                    } else {
+                      // this card isn't showing - get in with it
+                      $(this).parent()
+                        .css({zIndex: zindex})
+                        .addClass("show");
+                    }
+              
+                    zindex=zindex+2;
+              
+                  } else {
+                    // no cards in view
+
+                    $("div.cards")
+                      .addClass("showing");
+                    $(this).parent()
+                      .css({zIndex:zindex})
+                      .addClass("show");
+              
+                    zindex=zindex+2;
+                  }
+
+                  const id = $(this).parent()[0].id;
+                  $('#card-flap'+id).css("z-index", zindex+1);
+                  $("div.panel").css({zIndex: zindex+1})
+                });
+
+                function cardCancel(id) {
+                  document.getElementById(id).classList.remove("show");
+                }
+              </script>
+            </div>
+
+            {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=data[0]['result']['short_description'] %}
+              {% include 'html-partials/desc-edit.html' %}
+            {% endwith %} 
+          </div>
         </div>
 
         <div id="page-params-mod">
-          Страница всяких настроек
+          <div style="margin-top: 50pt;">
+            Страница всяких настроек
+          </div>
         </div>
       </article>
     </div>
@@ -161,6 +257,10 @@
       button.public-mod-toggle:active {
         background: #19181f;
         border: solid #646464;
+      }
+
+      #page-in-catalog-view {
+        width: 100%;
       }
     </style>
 
@@ -262,6 +362,15 @@
           result.changes = result.val != result.startdata
           return result
         }
+        
+        function getChangesShortDesc() {
+          const $descElement = $('div[limit=256]').find('textarea.editing')
+
+          let result = {startdata: $descElement.attr('startdata'), val: $descElement.val()}
+          result.changes = result.val != result.startdata
+
+          return result
+        }
 
         function getChangesPublic() {
           const $publicButton = $('button.public-mod-toggle')
@@ -352,9 +461,9 @@
 
 
         // Проверка есть ли разница
-        function haveDifference(title, fullDesc, public, logos, tags, dependence) {
+        function haveDifference(title, fullDesc, shortDesc, public, logos, tags, dependence) {
           let result = {
-            modBase: title.changes || fullDesc.changes || public.changes,
+            modBase: title.changes || fullDesc.changes || shortDesc.changes || public.changes,
             modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
             modTags: tags.new.length > 0 || tags.deleted.length > 0,
             modDependence: dependence.new.length > 0 || dependence.deleted.length > 0
@@ -366,7 +475,7 @@
 
 
         // Исполнитель базового изменения
-        async function modUpdate(titleMod, fullDesc, publicMode) {
+        async function modUpdate(titleMod, fullDesc, shortDesc, publicMode) {
           const url = '/api/accounts/edit/mod?mod_id='+modID
 
           // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
@@ -374,6 +483,7 @@
 
           if (titleMod.changes) {formData.append('mod_name', titleMod.val)}
           if (fullDesc.changes) {formData.append('mod_description', fullDesc.val)}
+          if (shortDesc.changes) {formData.append('mod_short_description', shortDesc.val)}
           if (publicMode.changes) {formData.append('mod_public', publicMode.val)}
 
           try {
@@ -582,14 +692,15 @@
         // Проверяем, подтверждаем изменения
         const titleVal = getChangesModName()
         const fullDescVal = getChangesFullDesc()
+        const shortDescVal = getChangesShortDesc()
         const publicVal = getChangesPublic()
         const changesLogosVal = getChangesLogos()
         const changesTagsVal = getChangesTags()
         const changesDependenceVal = getChangesDependence()
 
-        console.log(changesDependenceVal)
+        console.log(shortDescVal)
 
-        const haveChanges = haveDifference(titleVal, fullDescVal, publicVal, changesLogosVal, changesTagsVal, changesDependenceVal)
+        const haveChanges = haveDifference(titleVal, fullDescVal, shortDescVal, publicVal, changesLogosVal, changesTagsVal, changesDependenceVal)
 
         // Если нет изменений, предупреждаем пользователя
         if (!haveChanges.all) {
@@ -604,7 +715,7 @@
 
 
         // Исполняем сохранение
-        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal, publicVal)}
+        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal, shortDescVal, publicVal)}
         if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
         if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
         if (haveChanges.modDependence) {await modUpdateDependecie(changesDependenceVal)}

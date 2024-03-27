@@ -24,8 +24,53 @@ setInterval(function() {
         $(this).attr("src", "/assets/images/image-not-found.webp")
     });
 
+    // Выбираем все элементы с атрибутом 'style-check'
+    $('[style-check]').each(function() {
+        var styleCheck = $(this).attr('style-check'); // Получаем значение атрибута 'style-check'
+        
+        // Разбиваем значение атрибута на основе разделителя ';'
+        var checks = styleCheck.split(';');
+        
+        
+        checks.forEach((pair) => { // Циклически обрабатываем каждую пару проверка-класс
+            var parts = pair.trim().split(' '); // Разбиваем пару на части (стиль, операнд, значение, класс)
+            
+            var styleName = parts[0].trim(); // Название стиля
+            var operand = parts[1].trim(); // Операнд
+            var value = parseFloat(parts[2]); // Значение (убедимся, что это число, а не строка)
+            var className = parts[3].trim(); // Название класса
+            
+
+            // Выполнение проверки и добавление класса
+            var styleValue = parseInt($(this).css(styleName));
+            const conditionMet = (() => {
+                switch (operand) {
+                    case '===':
+                        return styleValue === value;
+                    case '<':
+                        return styleValue < value;
+                    case '>':
+                        return styleValue > value;
+                    case '!=':
+                        return styleValue != value;
+                    default:
+                        return false;
+                }
+            })();
+
+            if (conditionMet) {
+                $(this).addClass(className);
+            } else {
+                $(this).removeClass(className);
+            }
+        });
+    });
+
     // Функция динамической подсветки input элементов
     $('input[displaylimit]').on('input', function() {
+        inputDisplayLimit.call(this);
+    });
+    $('input[displaylimit]').on('event-height', function() {
         inputDisplayLimit.call(this);
     });
 
@@ -33,11 +78,16 @@ setInterval(function() {
     $('input[dynamlen]').on('input', function() {
         inputDynamLen.call(this);
     });
+    $('input[dynamlen]').on('event-height', function() {
+        inputDynamLen.call(this);
+    });
 
     $('[import-height]').on('event-height', function() {
         checkElementsImportHeight();
     });
-}, 50)
+
+    $('input').trigger('event-height');
+}, 200)
 
 // Сами логические функции
 function inputDynamLen() {

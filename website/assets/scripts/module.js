@@ -251,6 +251,7 @@ window.OpenWS = {
 
         const description = document.createElement('div');
         description.classList.add('card-description');
+        description.setAttribute('style-check', "height > 130, big-desc");
 
         var desc = cardData.short_description;
         description.innerHTML = window.OpenWS.syntaxToHTML(desc, true);

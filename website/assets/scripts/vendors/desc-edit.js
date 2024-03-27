@@ -5,6 +5,13 @@ $(document).ready(function() {
     });
 });
 
+setInterval(function() {
+    $("textarea.editing").each(function() {
+        descOnHeight($(this).parent(), $(this));
+    });
+}, 200)
+
+
 
 function fullDescUpdate(textareaDesc) {
     const element = textareaDesc.parent();
