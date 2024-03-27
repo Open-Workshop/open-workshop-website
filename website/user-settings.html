@@ -767,6 +767,9 @@
 
   <script>
     Pager.updateSelect.call(document.querySelector('#page-profile-button'))
+    window.addEventListener('popstate', function(event) {
+      Pager.updateSelect.call(document.querySelector('#page-profile-button'))
+    });
   </script>
 {% endblock %}
 

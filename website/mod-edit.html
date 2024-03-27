@@ -111,7 +111,7 @@
                       $cardDescD.attr('cashData', dataText)
                       $cardDescD.html(OpenWS.syntaxToHTML(dataText))
                     }
-                  }, 100)
+                  }, 300)
                 })
               </script>
               <script>
@@ -291,6 +291,9 @@
 
     <script>
       Pager.updateSelect.call(document.querySelector('#start-page-button'))
+      window.addEventListener('popstate', function(event) {
+        Pager.updateSelect.call(document.querySelector('#start-page-button'))
+      });
     </script>
 
     <script>

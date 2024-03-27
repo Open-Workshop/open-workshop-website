@@ -87,7 +87,7 @@ setInterval(function() {
     });
 
     $('input').trigger('event-height');
-}, 200)
+}, 300)
 
 // Сами логические функции
 function inputDynamLen() {
