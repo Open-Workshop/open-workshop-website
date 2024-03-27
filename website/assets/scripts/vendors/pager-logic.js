@@ -22,12 +22,20 @@ window.Pager = {
         
             pages.includes(pageName) ? null : pageName = pages[0]
         
+            async function showIt(element) {
+                await new Promise(r => setTimeout(r, 100))
+                element.css('opacity', 0)
+                element.show()
+                await new Promise(r => setTimeout(r, 200))
+                element.css('opacity', 1)
+            }
+
             for (const page of pages) {
                 const currectPage = $('#page-'+page);
                 if (page == pageName) {
-                    currectPage.show()
+                    showIt(currectPage)
                 } else {
-                    currectPage.hide()
+                    currectPage.fadeOut(100);
                 }
             }
         }
@@ -41,4 +49,3 @@ window.Pager = {
         }
     }
 }
-

@@ -84,7 +84,7 @@ table {
       -ms-flex-pack: center;
           justify-content: center;
   z-index: -1;
-  background: #121230;
+  background: #0e0e25;
   background-size: 400% 400%;
 }
 
@@ -838,6 +838,10 @@ nav li li a:hover {
   --bPos: -75%;
   --fPos: -50%;
   --time: 330ms;
+
+  --main-panel-on-page-background: rgb(12 12 25);
+  --panel-on-page-background: rgb(16, 17, 28);
+  --interactive-element-background-in-panel: rgb(40 40 40);
 }
 
 .switch {
@@ -1223,8 +1227,7 @@ footer div.social-media-links a:hover svg circle {
   min-width: 100%;
   width: 100%;
   padding-bottom: 10pt;
-  -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background: var(--panel-on-page-background);
 }
 .one_slider {
   padding-bottom: 0;
@@ -1386,7 +1389,6 @@ html {
 }
 
 article {
-  background: rgba(0, 0, 0, 0.3);
   margin: 4pt;
   border-radius: 10pt;
   padding: 10pt;
@@ -1526,7 +1528,7 @@ blockquote > .light {
   margin-right: auto;
   width: 100%;
   max-width: 1000pt;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--main-panel-on-page-background);
   border-radius: 10pt;
   padding: 5pt;
   margin: 1;
@@ -1549,15 +1551,15 @@ blockquote > .light {
   align-items: center;
   text-decoration: none;
   color: rgb(248, 236, 215);
-  background-color: #0000005e;
+  background-color: rgba(63, 63, 63, 0.4);
   transition: all 50ms linear;
 }
 .download-button:hover {
-  background-color: #00000088;
+  background-color: rgba(53, 53, 53, 0.4);
   color: rgb(250, 244, 234);
 }
 .download-button:active {
-  background-color: #000000c5;
+  background-color: rgba(43, 43, 43, 0.4);
   color: white;
 }
 
@@ -1623,7 +1625,7 @@ blockquote > .light {
   }
 }
 .mod-dependence-list {
-  background: rgba(2, 0, 12, 0.199);
+  background: var(--panel-on-page-background);
   margin-top: 4pt;
   border-radius: 10pt;
   padding: 5pt;
@@ -1635,7 +1637,7 @@ blockquote > .light {
 }
 
 .mod-dependence {
-  background-color: rgba(26, 26, 26, 0.452);
+  background-color: var(--interactive-element-background-in-panel);
   margin-top: 5pt;
   cursor: pointer;
   border-radius: 5pt;
@@ -2371,6 +2373,7 @@ td {
   display: flex;
   width: 100%;
   max-width: 500pt;
+  background: var(--main-panel-on-page-background);
 }
 @media (max-width: 439px) {
   .user-settings-cont {
@@ -2617,4 +2620,8 @@ div.alls:not(:has(div:not(.none-display))) {
   justify-content: center;
   align-content: center;
   flex-wrap: wrap;
+}
+
+.main-about {
+  background: var(--main-panel-on-page-background);
 }

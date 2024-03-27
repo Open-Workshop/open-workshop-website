@@ -1,6 +1,6 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-    <div style="display: flex; flex-direction: column; align-items: center;">
+    <div id="main-mod-edit" style="opacity: 0;">
       <article style="display: flex; width: 900pt; max-width: 100%; justify-content: center; padding: 0;">
         <div class="standart-panel" style="position: absolute; display: flex; background: #34374500; padding: 3pt;">
           <div class="navigation standart-panel" style="margin: 0; background: rgb(26, 27, 38);" variants='in-mod-page, in-catalog-view, params-mod'>
@@ -177,12 +177,28 @@
             Страница всяких настроек
           </div>
         </div>
+
+        <style>
+          #page-in-mod-page, #page-in-catalog-view, #page-params-mod, #main-mod-edit {
+            transition: opacity 0.1s;
+          }
+          #main-mod-edit {
+            display: flex; flex-direction: column; align-items: center;
+          }
+        </style>
       </article>
     </div>
+    <script>
+      $(document).ready(function() {
+        setTimeout(function() {
+          $('div#main-mod-edit').css("opacity", 1);
+        }, 500)
+      })
+    </script>
 
     <style>
       article {
-        background-color: rgb(12 12 25);
+        background-color: var(--main-panel-on-page-background);
       }
 
       div.navigation {
@@ -216,7 +232,7 @@
       }
       
       div.standart-panel {
-        background-color: rgb(16, 17, 28);
+        background-color: var(--panel-on-page-background);
         border-radius: 5pt;
         padding: 3pt;
         margin-bottom: 3pt;

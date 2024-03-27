@@ -44,7 +44,7 @@ $(document).ready(function() {
 
 setInterval(function() {
     $('input').trigger('event-height');
-}, 300)
+}, 100)
 
 // Сами логические функции
 function inputDynamLen() {

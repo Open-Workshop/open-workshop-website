@@ -7,7 +7,7 @@ function editModDependence(dependenc) {
 
     const dependenceName = dependenc.find('h3').html();
     const dependencId = dependenc.attr('modid');
-    const dependencImg = dependenc.find('img[errorcap]').attr('src');
+    const dependencImg = dependenc.find('img[onerror]').attr('src');
 
     const searchedDependence = searchedDependencies.find('[modid="' + dependencId + '"]');
 
@@ -25,8 +25,8 @@ function editModDependence(dependenc) {
 
         if (containerDependencies.find('[modid="' + dependencId + '"]').length == 0) {
             let modDependenceE = $("<div>").addClass("mod-dependence").attr("modid", dependencId).attr("onclick", "editModDependence(this)");
-            console.log(dependenc, dependenc.find('img[errorcap]'), dependenc.find('img[errorcap]').attr('src'), dependencImg)
-            let logoE = $("<img>").attr("src", dependencImg).attr("alt", "Логотип мода").attr("errorcap", 'true');
+            console.log(dependenc, dependenc.find('img[errorcap]'), dependenc.find('img[onerror]').attr('src'), dependencImg)
+            let logoE = $("<img>").attr("src", dependencImg).attr("alt", "Логотип мода").attr("onerror", 'handlerImgErrorLoad(this)');
             let eE = $("<e>");
             let hE = $("<h3>").attr("translate", "no").text(dependenceName);
             let iconE = $("<img>").attr("src", "/assets/images/removal-triangle.svg").attr("alt", "Кнопка удаления зависимости");

@@ -107,7 +107,7 @@ pre[class*="language-"] {
     padding: .4em .8em;
     margin: .5em 0;
     overflow: auto;
-    background: rgb(16, 17, 28);
+    background: var(--panel-on-page-background);
 }
 
 code[class*="language-"] {

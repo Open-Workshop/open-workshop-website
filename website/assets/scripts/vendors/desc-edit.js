@@ -9,7 +9,7 @@ setInterval(function() {
     $("textarea.editing").each(function() {
         descOnHeight($(this).parent(), $(this));
     });
-}, 300)
+}, 100)
 
 
 

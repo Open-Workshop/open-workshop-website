@@ -23,6 +23,15 @@
 
                   <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
               </h4>
+              <style>
+                #mod-tags-title {
+                  display: flex;
+                  flex-wrap: wrap;
+                }
+                #mod-tags-title > a {
+                  margin: 1pt;
+                }
+              </style>
               
               <article id="mod-description">
                 {{ data[0]['result']['description'] }}
@@ -113,7 +122,7 @@
               {% endif %}
               
               {% if not user_profile %}
-              <div style="margin-top: 2pt; background: #0000004d; padding: 3pt; border-radius: 5pt;">
+              <div style="margin-top: 2pt; background: var(--panel-on-page-background); padding: 3pt; border-radius: 5pt;">
                 <h3 style="text-align: center;">Авторизированным пользователям не отображается реклама</h3>
                 <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
               </div>
