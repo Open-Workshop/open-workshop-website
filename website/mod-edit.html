@@ -94,18 +94,21 @@
                 </div>
               </div>
               <script>
-                const $cardDesc = $('div.card-description')
-                const $shortDesc = $('div[limit=256]').find('textarea.editing')
+                const $cardDescD = $('div.card-description')
+                const $shortDescD = $('div[limit=256]').find('textarea.editing')
+                
+                console.log($shortDescD, $cardDescD)
+
                 $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
-                $cardDesc.attr('cashData', $shortDesc.val())
-                $cardDesc.html(OpenWS.syntaxToHTML($shortDesc.val()))
+                $cardDescD.attr('cashData', $shortDescD.val())
+                $cardDescD.html(OpenWS.syntaxToHTML($shortDescD.val()))
 
                 setInterval(function(){
-                  const dataText = $shortDesc.val()
+                  const dataText = $shortDescD.val()
 
-                  if ($cardDesc.attr('cashData') != dataText) {
-                    $cardDesc.attr('cashData', dataText)
-                    $cardDesc.html(OpenWS.syntaxToHTML(dataText))
+                  if ($cardDescD.attr('cashData') != dataText) {
+                    $cardDescD.attr('cashData', dataText)
+                    $cardDescD.html(OpenWS.syntaxToHTML(dataText))
                   }
                 }, 100)
               </script>
