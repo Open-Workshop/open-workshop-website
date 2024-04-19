@@ -1,0 +1,56 @@
+
+select {
+    color: white;
+    background: var(--panel-on-page-background);
+    border: solid 1px var(--interactive-select);
+    box-shadow: 0 0 0px var(--interactive-select);
+
+    cursor: pointer;
+
+    transition: all 0.3s;
+
+    border-radius: 10px;
+    padding: 10px;
+    margin: 10px;
+    
+    height: var(--interactive-select-height);
+    font-size: medium;
+}
+
+select:hover {
+    border: solid 1px var(--interactive-select-hover);
+    box-shadow: 0 0 10px var(--interactive-select-hover);
+}
+
+select:active { 
+    border: solid 1px var(--interactive-select-active);
+    box-shadow: 0 0 20px var(--interactive-select-active);
+}
+
+
+div.with-button {
+    display: flex;
+    margin: 10px;
+    height: var(--interactive-select-height);
+}
+div.with-button button {
+    margin: 0;
+    padding: 0;
+
+    min-width: var(--interactive-select-height);
+    min-height: var(--interactive-select-height);
+
+    border-radius: 0 10px 10px 0;
+    height: 100%;
+
+    transition: all 0.3s;
+}
+div.with-button button * {
+    width: var(--medium-icon);
+    aspect-ratio: 1 / 1;
+}
+div.with-button select {
+    border-radius: 10px 0 0 10px;
+    margin: 0;
+    height: 100%;
+}

@@ -1,0 +1,36 @@
+
+balloon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4;
+
+    position: fixed;
+    
+    aspect-ratio: 1 / 1;
+    width: 65px;
+    margin: 10px;
+    border-radius: 100%;
+    
+    background: var(--interactive-element-background);
+    box-shadow: 0 0 10px var(--panel-on-page-background);
+
+    cursor: pointer;
+
+    transition: all 0.3s;
+}
+
+balloon * {
+    width: 80%;
+}
+
+
+balloon:hover {
+    background: var(--interactive-element-background-hover);
+    box-shadow: 0 0 20px var(--panel-on-page-background);
+}
+
+balloon:active {
+    background: var(--interactive-element-background-active);
+    box-shadow: 0 0 30px var(--panel-on-page-background);
+}

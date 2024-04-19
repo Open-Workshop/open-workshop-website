@@ -122,7 +122,7 @@
               {% endif %}
               
               {% if not user_profile %}
-              <div style="margin-top: 2pt; background: var(--panel-on-page-background); padding: 3pt; border-radius: 5pt;">
+              <div style="margin-top: 2pt; background: var(--panel-on-page-background); padding: 3pt; border-radius: 10px;">
                 <h3 style="text-align: center;">Авторизированным пользователям не отображается реклама</h3>
                 <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
               </div>
@@ -138,7 +138,7 @@
 {% endblock %}
 
 {% block title %}
-{{ data[0]['result']['name'] }} - Open Work для {{ data[0]['result']['game']['name'] }}
+{{ data[0]['result']['name'] }} - Open Mod для {{ data[0]['result']['game']['name'] }}
 {% endblock %}
 
 {% block description %}

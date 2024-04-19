@@ -1,0 +1,59 @@
+
+button, .button-style {
+    background-color: var(--interactive-element-background);
+    color: var(--interactive-element-text);
+
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 200ms ease;
+}
+button:hover, .button-style:hover {
+    background-color: var(--interactive-element-background-hover);
+    color: var(--interactive-element-text-hover);
+}
+button:active, .button-style:active {
+    background-color: var(--interactive-element-background-active);
+    color: var(--interactive-element-text-active);
+}
+button:disabled, .button-style:disabled {
+    background-color: var(--interactive-element-background-disabled);
+    color: var(--interactive-element-text-disabled);
+
+    cursor: default;
+}
+
+button.toggled, .button-style.button-style-toggled {
+    filter: brightness(80%);
+}
+button.toggled:hover, .button-style.button-style-toggled:hover {
+    filter: brightness(90%);
+}
+button.toggled:active, .button-style.button-style-toggled:active {
+    filter: brightness(100%);
+}
+
+
+button, .button-style {
+    min-width: 50px;
+    min-height: 50px;
+    padding: 15px;
+    font-size: large;
+}
+button.small, .button-style.button-style-small {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 10px;
+    font-size: medium;
+}
+button.small-padding, .button-style.button-style-small-padding {
+    padding: 5px;
+}
+
+
+.invert * {
+    transition: all 200ms ease;
+}
+.invert.toggled > img {
+    rotate: 180deg;
+}

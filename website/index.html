@@ -1,74 +1,61 @@
 {% extends 'html-partials/standart.html' %}
 
 {% block content %}
-  <div class="box">
-    <div class="panel">
-      <div id="container" class="moved">
-        <h2 style="text-align: center;">Менюшка с настройками 😯</h2>
+  <main class="catalog">
+    <div id="settings-catalog">
+      <h2 style="text-align: center;">Менюшка с настройками 😯</h2>
 
-        <div class="text-field">
-          <div class="text-field__icon">
-            <input class="text-field__input" onchange="namerEvent()" type="search" name="find" id="param-name" placeholder="Поиск по имени">
-            <span class="text-field__aicon">
-              <svg style="color: white;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                <path
-                  d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
-              </svg>
-            </span>
-          </div>
+      <div class="text-field">
+        <div class="text-field__icon">
+          <input class="text-field__input" onchange="namerEvent()" type="search" name="find" id="param-name" placeholder="Поиск по имени">
+          <span class="text-field__aicon">
+            <svg style="color: white;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path
+                d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+            </svg>
+          </span>
         </div>
-        
-        <select onchange="pageSizeReselect()" id="page-size-selector" title="Установи какое количество карточек будет загружаться на страницу :)">
-          <option value="10">10 карточек на странице</option>
-          <option value="25" selected>25 карточек на странице</option>
-          <option value="30">30 карточек на странице</option>
-        </select>
-        
-        <div class="sort-selector">
-          <select onchange="sortReselect()" id="sort-selector" title="Сортировка">
-            <option class="sortOptionGame" value="TYPE" title="Игра/программа">Сортировка по типу</option>
-            <option class="sortOptionGame" value="MODS_COUNT" selected>Сортировка по количеству модов</option>
-            <option class="sortOptionMod" value="SIZE">Сортировка по размеру</option>
-            <option class="sortOptionMod" value="UPDATE_DATE">Сортировка по дате обновления</option>
-            <option value="MOD_DOWNLOADS">Сортировка по загрузкам</option>
-            <option value="CREATION_DATE">Сортировка по дате создания</option>
-            <option value="NAME">Сортировка по алфавиту</option>
-            <option value="SOURCE">Сортировка по источнику</option>
-          </select>
-          <button onclick="sortReselectMode()" id="sort-button-mode" title="Инверсия сортировки">
-            <img src="/assets/images/from-less-to-more-sort.svg" id="sort-button-mode-icon-lm" alt="От меньшего к большему">
-            <img src="/assets/images/from-more-to-less-sort.svg" id="sort-button-mode-icon-ml" alt="От большего к меньшему">
-          </button>
-          <input class="input-checkbox" id="sort-checkbox-mode" type="checkbox" hidden>
-        </div>
-
-        <div style="margin-top: 6pt;" style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
-          <input class="input-checkbox" onchange="modDependenceSelectMode()" id="independence-mods-selector-checkbox" type="checkbox">
-          <label style="margin-left: 2pt; pointer-events: none; margin-top: 1pt;">Независимые моды</label>
-        </div>
-
-        <article style="margin-top: 9pt;" class="game-selector-in-menu">
-          <div style="margin-bottom: 3pt; cursor: pointer;" onclick="document.getElementById('game-selector-in-menu-checkbox').click();">
-            <input class="input-checkbox" onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
-            <label style="pointer-events: none;">Выбрать игру</label>
-          </div>
-          <div id="currectGames">
-            <button onclick="gameReset()" id="currectGamesReset"><img src="assets/images/reset.webp" alt="Кнопка сброса фильтрации по игре"></button>
-            <label id="game-selector-in-menu-currect-game" title="Отображаются все моды">Игра не выбрана</label>
-          </div>
-        </article>
       </div>
       
-      <div class="space-h"></div>
-
-      <div style="display: flex; width: 50pt;">
-        <label class="switch">
-          <input onclick="moveContainer()" type="checkbox" hidden>
-          <div class="switch__wrapper">
-            <div class="switch__toggle"></div>
-          </div>
-        </label>
+      <select onchange="pageSizeReselect()" id="page-size-selector" title="Установи какое количество карточек будет загружаться на страницу :)">
+        <option value="10">10 карточек на странице</option>
+        <option value="25" selected>25 карточек на странице</option>
+        <option value="30">30 карточек на странице</option>
+      </select>
+      
+      <div class="sort-selector">
+        <select onchange="sortReselect()" id="sort-selector" title="Сортировка">
+          <option class="sortOptionGame" value="TYPE" title="Игра/программа">Сортировка по типу</option>
+          <option class="sortOptionGame" value="MODS_COUNT" selected>Сортировка по количеству модов</option>
+          <option class="sortOptionMod" value="SIZE">Сортировка по размеру</option>
+          <option class="sortOptionMod" value="UPDATE_DATE">Сортировка по дате обновления</option>
+          <option value="MOD_DOWNLOADS">Сортировка по загрузкам</option>
+          <option value="CREATION_DATE">Сортировка по дате создания</option>
+          <option value="NAME">Сортировка по алфавиту</option>
+          <option value="SOURCE">Сортировка по источнику</option>
+        </select>
+        <button onclick="sortReselectMode()" id="sort-button-mode" title="Инверсия сортировки">
+          <img src="/assets/images/from-less-to-more-sort.svg" id="sort-button-mode-icon-lm" alt="От меньшего к большему">
+          <img src="/assets/images/from-more-to-less-sort.svg" id="sort-button-mode-icon-ml" alt="От большего к меньшему">
+        </button>
+        <input class="input-checkbox" id="sort-checkbox-mode" type="checkbox" hidden>
       </div>
+
+      <div style="margin-top: 6pt;" style="cursor: pointer;" title="В выдаче будут только моды не имеющие зависимостей" class="independence-mods-selector" onclick="document.getElementById('independence-mods-selector-checkbox').click();">
+        <input class="input-checkbox" onchange="modDependenceSelectMode()" id="independence-mods-selector-checkbox" type="checkbox">
+        <label style="margin-left: 2pt; pointer-events: none; margin-top: 1pt;">Независимые моды</label>
+      </div>
+
+      <article style="margin-top: 9pt;" class="game-selector-in-menu">
+        <div style="margin-bottom: 3pt; cursor: pointer;" onclick="document.getElementById('game-selector-in-menu-checkbox').click();">
+          <input class="input-checkbox" onchange="gameSelectMode()" id="game-selector-in-menu-checkbox" type="checkbox">
+          <label style="pointer-events: none;">Выбрать игру</label>
+        </div>
+        <div id="currectGames">
+          <button onclick="gameReset()" id="currectGamesReset"><img src="assets/images/reset.webp" alt="Кнопка сброса фильтрации по игре"></button>
+          <label id="game-selector-in-menu-currect-game" title="Отображаются все моды">Игра не выбрана</label>
+        </div>
+      </article>
     </div>
 
     <div id="cards-container" class="cards">
@@ -127,7 +114,7 @@
       renderCards(); // Вызываем функцию renderCards для рендеринга карточек
     </script>
 
-  </div>
+  </main>
 {% endblock %}
 
 {% block title %}

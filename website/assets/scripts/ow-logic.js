@@ -1,4 +1,51 @@
 
+
+// Расширяем его, добавляя метод get с возможностью значения по умолчанию
+class Dictionary {
+    constructor(old = {}) {
+        for (const key in old) {
+            if (old[key] instanceof Object) {
+                this[key] = new Dictionary(old[key]);
+            } else {
+                this[key] = old[key];
+            }
+        }
+    }
+
+
+    get(key, defaultValue = undefined) {
+        return this[key] !== undefined ? this[key] : defaultValue;
+    }
+
+    set(key, value) {
+        this[key] = value;
+    }
+
+    pop(key) {
+        delete this[key];
+        return this;
+    }
+
+    replaceKey(oldKey, newKey) {
+        this[newKey] = this.pop(oldKey);
+    }
+
+
+    keys() {
+        return Object.keys(this);
+    }
+
+    values() {
+        return Object.values(this);
+    }
+
+
+    duplicate() {
+        return new Dictionary(this);
+    }
+}
+
+  
 // Handlers
 
 function handlerImgErrorLoad(element) {

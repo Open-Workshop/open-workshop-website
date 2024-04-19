@@ -1,13 +1,13 @@
-<div class="standart-panel" style="padding-top: 0pt;" import-height="div#selected-tags">
+<div class="standart-panel" style="padding-top: 0pt; width: 100%;" import-height="div#selected-tags">
     <div id="selected-tags">
         <div class="all-mod-tags alls" id="tags-edit-selected-tags">
-            {% for item in data[2] %}
+            {% for item in tags %}
                 <div tagid="{{ item.id }}" saved onclick="editTag(this)">{{ item.name }}</div>
             {% endfor %}
             <p>Тегов не выбрано</p>
         </div>
         
-        <button onclick="$('div.popup-tags-select').toggleClass('popup-nonvisible')" class="bottom-left-rounded">Добавить тег</button>
+        <button onclick="$('div.popup-tags-select').toggleClass('popup-nonvisible')" class="small">Добавить тег</button>
     </div>
 
     <style>
@@ -21,6 +21,11 @@
             display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
+        }
+
+        #selected-tags {
+            border-radius: 10px;
+            backdrop-filter: brightness(0.5);
         }
 
         div.all-mod-tags > div {
@@ -55,7 +60,7 @@
     </style>
 
     <div class="popup-tags-select popup-menu-select popup-nonvisible">
-        <input id="search-update-input-tags" gameid='{{ data[0]["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestTagUpdate()">
+        <input id="search-update-input-tags" gameid='{{ game }}' type="text" placeholder="Поиск..." oninput="searchRequestTagUpdate()">
         
         <div class="alls all-mod-tags" id="tags-edit-search-tags"><p>Не найдено</p></div>
         

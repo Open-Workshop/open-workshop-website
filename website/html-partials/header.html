@@ -1,0 +1,49 @@
+<header>
+    <div style="max-width: 1500px; width: 100%; display: flex; justify-content: space-between;">
+        <a class="no-recolor" id="logo" href="/" translate="no">Open Workshop</a>
+
+        {% if catalog %}
+        <input type="search" placeholder="Поиск..." id="search-in-catalog-header" autocomplete="off" onchange="nameSearch(this)">
+        {% endif %}
+
+        <nav>
+            <ul>
+                <li>
+                    <a href="/about">О проекте</a>
+                </li>
+                <li>
+                    <a href="/apis" translate="no">API</a>
+                </li>
+                
+                {% if not user_profile %}
+                <li id="login-pc" class="dropdown">
+                    <a class="no-recolor" translate="no">Вход</a>
+                    <ul>
+                        <img onclick="serviceAuthorization('/api/accounts/authorization/yandex/link')" src="/assets/images/webp/yandex.webp" alt="Yandex logo">
+                        <img onclick="serviceAuthorization('/api/accounts/authorization/google/link')" src="/assets/images/webp/google.webp" alt="Google logo">
+                    </ul>
+                </li>
+                {% endif %}
+                
+                {% if user_profile %}
+                <li id="profile-pc" class="dropdown">
+                    <img src="{{ user_profile.avatar_url }}" alt="Аватар пользователя">
+                    <a href="/user/{{ user_profile.id }}" style="cursor: pointer;"></a>
+                    <ul>
+                        <a href="/mod/add">Загрузить мод</a>
+                        <a href="/user/{{ user_profile.id }}/mods">Мои моды</a>
+                        <a href="/user/{{ user_profile.id }}/settings">Настройки</a>
+                        <a onclick="logon()">Выйти</a>
+                    </ul>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    
+    <cookies>
+        <span class="desktop">Ради вашего удобства наш сайт использует cookies! <a href="/legal/cookies">Узнать больше!</a></span>
+        <span class="mobile">Мы используем <a href="/legal/cookies">cookies</a></span>
+        <button class="small" onclick="cookiesOkPress()">OK</button>
+    </cookies>
+</header>

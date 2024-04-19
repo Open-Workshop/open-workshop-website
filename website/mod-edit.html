@@ -60,7 +60,11 @@
           <div style="width: 30%;">
             {% include 'html-partials/screenshots-edit.html' %}
             
-            {% include 'html-partials/tags-edit.html' %}
+            {% with tags=data[2] %}
+              {% with game=data[0]["result"]["game"]["id"] %}
+                {% include 'html-partials/tags-edit.html' %}
+              {% endwith %}
+            {% endwith %}
 
             {% include 'html-partials/mod-dependence-edit.html' %}
           </div>
@@ -206,7 +210,7 @@
       }
 
       div.navigation > button {
-        border-radius: 7pt;
+        border-radius: 10px;
         background-color: #D9D9D9;
         border: none;
         width: 35pt;
@@ -249,7 +253,6 @@
         max-width: calc(66% - 105pt);
         height: 100%;
         font-size: 20pt;
-        outline: none;
         transition: border background 0.1s;
       }
       input.title-mod:hover {
@@ -760,7 +763,7 @@
 {% endblock %}
 
 {% block title %}
-{{ data[0]['result']['name'] }} - edit Open Work
+{{ data[0]['result']['name'] }} - edit Open Mod
 {% endblock %}
 
 {% block description %}

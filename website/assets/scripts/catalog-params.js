@@ -1,0 +1,197 @@
+
+let blocking = false
+let outOfCards = false
+
+let warns = [false, false, false]
+
+
+
+$(document).ready(async function() {
+    const params = URLManager.getParams();
+
+    const sgame = params.get('sgame', 'yes') == 'yes'
+
+    $('setting#depen').find('input').attr('checked', params.depen == 'yes');
+    $('setting#game-select').find('input').attr('checked', sgame);
+    $('input#search-in-catalog-header').val(params.get('name', ''));
+    $('input#search-in-catalog-menu').val(params.get('name', ''));
+    
+    Catalog.removeAll();
+    URLManager.updateParam('page', Number(URLManager.getParams().get('page', 0)));
+    render(URLManager.getParams());
+
+    sortOptionsList(sgame);
+    const sortMode = params.get('sort', 'iDOWNLOADS');
+    $('button#sort-select-invert').toggleClass('toggled', sortMode.startsWith('i'));
+    $('select#sort-select').val(sortMode.replace('i', ''));
+
+
+    if (params.get('game', '') != '') {
+        const response = await fetch('https://api.openworkshop.su/info/game/'+params.get('game', ''));
+        if (response.status == 200) {
+            const data = await response.json();
+
+            $('setting#game-select').find('img').attr('src', data.result.logo)
+            $('setting#game-select').find('label').text(data.result.name)
+        }
+    }
+})
+
+
+function undependencyMod() {
+    const $this = $(this);
+    const $input = $this.find('input');
+
+    const checked = !$input.prop('checked');
+
+    $input.prop('checked', checked);
+    URLManager.updateParams([
+        new Dictionary({'key': 'depen', 'value': checked ? 'yes' : 'no', 'default': 'no'}),
+        new Dictionary({'key': 'page', 'value': 0})
+    ]);
+    resetCatalog();
+}
+
+function stateMachineGameSelect() {
+    const $this = $(this);
+    const $input = $this.find('input');
+
+    const params = URLManager.getParams();
+
+    const checked = !$input.prop('checked');
+    if (!checked && params.get('game', '') == '') {
+        $this.find('label').text('Выберете игру!');
+    } else {
+        $input.prop('checked', checked);
+        sortOptionsList(checked);
+        URLManager.updateParams([
+            new Dictionary({'key': 'sgame', 'value': checked ? 'yes' : 'no', 'default': 'yes'}),
+            new Dictionary({'key': 'page', 'value': 0})
+        ])
+        $('#settings-catalog').removeClass('full-screen');
+        resetCatalog();
+    }
+}
+
+function gameSelect(gameID) {
+    sortOptionsList(false)
+    URLManager.updateParams([
+        new Dictionary({'key': 'sgame', 'value': 'no', 'default': 'yes'}), 
+        new Dictionary({'key': 'game', 'value': gameID, 'default': ''}),
+        new Dictionary({'key': 'page', 'value': 0})
+    ]);
+
+    $('setting#game-select').find('img').attr('src', $('img#preview-logo-card-'+gameID).attr('src'))
+    $('setting#game-select').find('label').text($('h2#titlename'+gameID).text())
+
+    resetCatalog();
+}
+
+function nameSearch(input) {
+    const $input = $(input);
+
+    $('input#search-in-catalog-header').val($input.val());
+    $('input#search-in-catalog-menu').val($input.val());
+
+    URLManager.updateParams([
+        new Dictionary({'key': 'name', 'value': $input.val(), 'default': ''}),
+        new Dictionary({'key': 'page', 'value': 0})
+    ]);
+
+    resetCatalog();
+}
+
+function sortSelect(input) {
+    const $this = $(input);
+
+    const invertMode = $('button#sort-select-invert').hasClass('toggled') ? 'i' : '';
+    URLManager.updateParams([
+        new Dictionary({'key': 'sort', 'value': invertMode+$this.val(), 'default': 'iDOWNLOADS'}),
+        new Dictionary({'key': 'page', 'value': 0})
+    ]);
+
+    resetCatalog();
+}
+
+function invertSort(button) {
+    const $this = $(button);
+
+    const invertMode = $this.hasClass('toggled') ? 'i' : '';
+    URLManager.updateParams([
+        new Dictionary({'key': 'sort', 'value': invertMode+$('select#sort-select').val(), 'default': 'iDOWNLOADS'}),
+        new Dictionary({'key': 'page', 'value': 0})
+    ]);
+
+    resetCatalog();
+}
+
+
+async function render(params) {
+    const res = await Catalog.addPage(params);
+    if (res.results.length > 0) {
+        if (params.get('sgame', 'yes') == 'no') {
+            await Cards.setterImgs(params.get('page', 0))
+        } else {
+            Catalog.masonry();
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+function resetCatalog() {
+    blocking = false
+    outOfCards = false
+    warns = [false, false, false]
+    Catalog.removeAll();
+    render(URLManager.getParams());
+}
+
+
+function sortOptionsList(mode) {
+    $('select#sort-select').toggleClass('game', !mode).toggleClass('mod', mode);
+}
+
+
+setInterval(async () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 2500 && !blocking && !outOfCards) {
+        blocking = true
+
+        let params = URLManager.getParams();
+        params.set('page', Number(params.get('page', 0))+1);
+
+        const renderRes = await render(params);
+
+        if (renderRes) {
+            URLManager.updateParam('page', Number(params.get('page', 0)));
+            const countElems = document.querySelectorAll('.card').length
+            if (countElems >= 500 && warns[0] === false) {
+            warns[0] = true
+            new Toast({
+                title: 'Рекомендуем обновить страницу',
+                text: 'На странице '+countElems+' карточек из-за чего рендер замедляется!',
+                theme: 'warning'
+            })
+            } else if (countElems > 700 && warns[1] === false) {
+            warns[1] = true
+            new Toast({
+                title: 'Обновите страницу',
+                text: 'На странице '+countElems+' карточек из-за чего рендер замедляется!!',
+                theme: 'error'
+            })
+            } else if (countElems > 1000 && warns[2] === false) {
+                warns[2] = true
+                new Toast({
+                    title: 'Обновите страницу!',
+                    text: 'На странице '+countElems+' карточек из-за чего рендер замедляется!!!',
+                    theme: 'critical'
+                })
+            }
+        } else {
+            outOfCards = true
+        }
+        
+        blocking = false
+    }
+}, 500);

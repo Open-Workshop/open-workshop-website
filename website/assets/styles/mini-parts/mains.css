@@ -1,0 +1,61 @@
+
+:root {
+    --standart-main-width: 1000px;
+    --about-main-width: 700px;
+    --catalog-main-width: 2000px;
+}
+
+
+main {
+    background-color: var(--main-panel-on-page-background);
+
+    border-radius: 10px;
+    padding: 3pt;
+    margin-bottom: 3pt;
+
+    height: fit-content;
+    max-width: var(--standart-main-width);
+
+    z-index: 0;
+}
+
+main.about {
+    margin: 10pt;
+    padding: 0;
+    text-align: left;
+    max-width: var(--about-main-width);
+}
+main.about h1 {
+    margin-left: 30px;
+}
+main.about h2 {
+    margin-left: 15px;
+}
+main.about h3 {
+    margin-left: 10px;
+}
+main.about h4 {
+    margin-left: 5px;
+}
+
+main.catalog {
+    background: none;
+    width: var(--catalog-main-width);
+    max-width: var(--catalog-main-width);
+    display: flex;
+    flex-direction: row;
+}
+
+
+@media screen and (max-width: 700px) {
+    main.about {
+        margin: 0;
+        border-radius: 0;
+    }
+}
+@media screen and (max-width: 1000px) {
+    main:not([class]) {
+        margin: 0;
+        border-radius: 0;
+    }
+}

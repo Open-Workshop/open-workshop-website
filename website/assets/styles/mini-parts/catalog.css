@@ -1,0 +1,112 @@
+
+header input[type="search"] {
+    width: calc(100% - 600px);
+    max-width: 600px;
+}
+
+
+div#settings-catalog > div#settings-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    width: 350px;
+    height: fit-content;
+
+    margin-left: 15px;
+    
+    position: sticky;
+    top: 75px;
+}
+
+div#settings-catalog > div#settings-menu > hr, div#settings-catalog > div#settings-menu > setting {
+    width: 100%;
+    max-width: 400px;
+}
+div#settings-catalog > div#settings-menu > setting {
+    display: flex;
+    align-items: center;
+    
+    padding: 2px;
+}
+div#settings-catalog > div#settings-menu > setting > input[type="search"] {
+    margin: 5px 0;
+    width: 100%;
+    pointer-events: all;
+}
+div#settings-catalog > div#settings-menu > setting, div#settings-catalog > div#settings-menu > setting * {
+    cursor: pointer;
+    font-size: large;
+}
+div#settings-catalog > div#settings-menu > setting * {
+    pointer-events: none;
+}
+div#settings-catalog > div#settings-menu > setting > img {
+    height: 45px;
+    padding: 3px;
+    border-radius: 10px;
+}
+
+
+div#selectors-catalog {
+    display: flex;
+    flex-direction: row;
+    
+    margin-left: 10px;
+    width: 100%;
+}
+
+div#settings-catalog.full-screen > div#settings-menu {
+    position: fixed;
+    background: var(--main-panel-on-page-background);
+    z-index: 1;
+    top: var(--header-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+div#settings-catalog:not(.full-screen) > div#settings-menu > .in-full {
+    display: none;
+}
+div#settings-catalog.full-screen > div#settings-menu > .in-full {
+    display: auto;
+}
+
+
+select.game > option.game {
+    display: none;
+}
+
+select.mod > option.mod {
+    display: none;
+}
+
+
+#full-settings-menu {
+    top: calc(var(--header-height) * 2);
+    right: 0;
+}
+
+
+@media screen and (max-width: 810px) {
+    header input[type="search"] {
+        display: none;
+    }
+    div#settings-catalog:not(.full-screen) > div#settings-menu {
+        display: none;
+    }
+    balloon {
+        display: flex;
+    }
+}
+@media screen and (min-width: 811px) {
+    div.cards {
+        width: calc(100% - 350px);
+    }
+    div#settings-catalog:not(.full-screen) balloon {
+        display: none;
+    }
+}

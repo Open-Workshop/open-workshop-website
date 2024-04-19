@@ -12,6 +12,7 @@ Clean-param: page_size /mod/*
 Clean-param: name /mod/*
 Clean-param: game /mod/*
 Clean-param: game_select /mod/*
+Clean-param: sgame /mod/*
 Clean-param: dependencies /mod/*
 Clean-param: sort /mod/*
 Disallow: /mod/*/edit

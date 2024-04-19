@@ -1,0 +1,12 @@
+
+img.scale {
+    transition: scale 0.3s;
+}
+
+img.scale:hover {
+    scale: 1.05;
+}
+
+img.scale:active {
+    scale: 0.95;
+}

@@ -1,9 +1,9 @@
 
 if (!document.cookie.includes('cooks')) {
-    document.getElementById('cookie-bar').classList.add('cookie-bar-show');
+    $('cookies').addClass('show');
 }
 function cookiesOkPress() {
-    document.getElementById('cookie-bar').classList.remove('cookie-bar-show');
+    $('cookies').removeClass('show');
     document.cookie = "cooks=1; path=/; max-age=31536000";
 }
 

@@ -1,0 +1,111 @@
+
+div.cards {
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+  
+div.card {
+    margin: 8px;
+    width: 300px;
+    transition: all 0.2s 0s ease-in;
+}
+
+.card:not(.show) .card-flap * {
+    pointer-events: none;
+    cursor: default;
+}
+
+div.card-click {
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.4);
+}
+  
+div.card-click img {
+    width: 100%;
+}
+
+.card-params-list {
+    height: 26px;
+    margin-top: -32px;
+    display: flex;
+    margin-left: 1px;
+}
+.card-params-list a {
+    margin-left: 1pt;
+    backdrop-filter: blur(5px);
+}
+
+div.card h2 {
+    font-size: 24px;
+    letter-spacing: -0.05em;
+    padding: 4px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+div.card div.card-flap {
+    backdrop-filter: blur(9px);
+    padding: 5pt;
+    border-radius: 4px;
+    position: absolute;
+    min-height: 100%;
+    width: 225pt;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    background: rgba(26, 26, 26, 0.85);
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+div.card:not(.show) div.card-flap button {
+    pointer-events: none;
+}
+
+div.flap-buttons {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+div.flap-buttons button, div.flap-buttons a {
+    aspect-ratio: 1 / 1;
+    margin: 2.5px;
+}
+
+div.flap-buttons img {
+    width: 40px;
+}
+
+div.card article {
+    padding: 0;
+    padding-bottom: 10px;
+    max-height: 140pt;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0) 100%);
+    font-size: 14px;
+    text-align: left;
+}
+
+div.card div.card-actions {
+    box-shadow: 0 2px 0px 0 rgba(0, 0, 0, 0.075);
+    padding: 10px 15px 20px;
+    text-align: center;
+}
+
+div.card.show {
+    transform: scale(1) !important;
+    z-index: 1;
+    transition: z-index 0ms !important;
+}
+
+div.card.show div.card-flap {
+    opacity: 1 !important;
+    transition: opacity 0.3s;
+    pointer-events: all;
+}

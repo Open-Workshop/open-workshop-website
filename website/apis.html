@@ -1,21 +1,18 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-    <div class="main-about">
+    <main class="about">
         <article>
             <h1>📜 <a class="steam-link" href="https://api.openworkshop.su/">Catalog API</a></h1>
             <p>Микросервис с каталогом модификаций.</p>
         </article>
+        
+        <hr>
+
         <article>
             <h1>👤 <a class="steam-link" href="/api/accounts">Accounts API</a></h1>
             <p>Микросервис с аккаунтами и возможностью через них управлять микросервисом каталога.</p>
         </article>
-    </div>
-
-    <style>
-        .main-about > article {
-            background: var(--panel-on-page-background);
-        }
-    </style>
+    </main>
 
     <script src="assets/scripts/about.js"></script>
 {% endblock %}
