@@ -69,6 +69,15 @@ window.Catalog = {
 
         return data
     },
+    notFound: function() {
+        $('#cards').append(Cards.create({
+            'name': 'Ничего не найдено',
+            'short_description': 'По выбранным параметрам ничего не найдено (×﹏×)',
+            'logo': '/assets/images/webp/not-found.webp',
+        }, 0, false))
+        msnry.appended(element)
+        Catalog.masonry();
+    },
     masonry: function() {
         $('#cards').css('width', 'auto');
         msnry.reloadItems();

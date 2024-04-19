@@ -16,9 +16,8 @@ $(document).ready(async function() {
     $('input#search-in-catalog-header').val(params.get('name', ''));
     $('input#search-in-catalog-menu').val(params.get('name', ''));
     
-    Catalog.removeAll();
     URLManager.updateParam('page', Number(URLManager.getParams().get('page', 0)));
-    render(URLManager.getParams());
+    resetCatalog();
 
     sortOptionsList(sgame);
     const sortMode = params.get('sort', 'iDOWNLOADS');
@@ -140,12 +139,20 @@ async function render(params) {
     }
 }
 
-function resetCatalog() {
+async function resetCatalog() {
     blocking = false
     outOfCards = false
     warns = [false, false, false]
+
+    $('label#end-of-cards').fadeOut(100);
     Catalog.removeAll();
-    render(URLManager.getParams());
+    const renderRes = await render(URLManager.getParams());
+    console.log(renderRes)
+    if (!renderRes) {
+        $('label#end-of-cards').hide()
+        outOfCards = true
+        Catalog.notFound();
+    }
 }
 
 
@@ -190,8 +197,9 @@ setInterval(async () => {
             }
         } else {
             outOfCards = true
+            $('label#end-of-cards').fadeIn(100);
         }
         
         blocking = false
     }
-}, 500);
+}, 2000);

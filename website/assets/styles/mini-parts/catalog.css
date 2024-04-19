@@ -91,6 +91,12 @@ select.mod > option.mod {
 }
 
 
+label#end-of-cards {
+    font-size: larger;
+    padding: 10px;
+}
+
+
 @media screen and (max-width: 810px) {
     header input[type="search"] {
         display: none;
