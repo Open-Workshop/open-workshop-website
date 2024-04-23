@@ -3,8 +3,12 @@ window.Formating = {
     syntax2HTML: function(text, short = false) {
         const regex = /(?<!\[url=|\[img=|\[img\])(https?:\/\/\S+)/gim;
         text = text.replace(regex, url => {
-            const domain = new URL(url).hostname;
-            return `<a class="steam-link" href="${url}">${domain}</a>`;
+            try {
+                const domain = new URL(url).hostname;
+                return `<a class="steam-link" href="${url}">${domain}</a>`;
+            } catch (e) {
+                return `<a class="steam-link" href="${url}">${url}</a>`
+            }
         });
 
         text = text.replace(/(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig, (match, url, randomText) => {

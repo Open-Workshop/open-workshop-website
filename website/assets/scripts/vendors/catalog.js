@@ -52,9 +52,14 @@ window.Catalog = {
                 settings.set(key, values[key][settings.get(key)])
             }
         }
+        // Заменяем теги
+        if (settings.get('tags', '').length > 0) {
+            settings.set('tags', '['+String(settings.get('tags').split("_"))+']')
+            console.log(settings.get('tags'))
+        }
 
         // Запрос
-        const url = 'https://api.openworkshop.su' + (settings.get('sgame', 'yes') == 'yes' ? '/list/games/' : '/list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
+        const url = 'https://api.openworkshop.su/' + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
         let response = await fetch(url, {method: 'GET', redirect: 'follow'})

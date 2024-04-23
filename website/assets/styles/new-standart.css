@@ -6,8 +6,8 @@
     --header-background: black;
     --header-height: 66px;
     
-    --main-panel-on-page-background: #23232B;
-    --panel-on-page-background: #33333F;
+    --main-panel-on-page-background: #171718;
+    --panel-on-page-background: #212225;
 
     --interactive-element-background: rgb(45, 45, 128);
     --interactive-element-background-hover: rgb(35, 35, 118);
@@ -53,6 +53,12 @@ body * {
     outline: 0;
 }
 
+*, *:before, *:after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
 hr {
     border: 0;
     height: 1px;
@@ -64,18 +70,16 @@ article {
     margin: 5px;
     padding: 5px;
     line-height: 1.2;
+    color: rgb(230, 230, 230);
 }
 
-h1, h2, h3, h4, h5, h6 {
-    color: rgb(200, 200, 200);
-}
 h1 {
     font-size: 25px;
-    color: rgb(203, 203, 203);
+    color: rgb(255, 255, 255);
 }
 h2 {
     font-size: 22px;
-    color: rgb(213, 213, 213);
+    color: rgb(245, 245, 245);
 }
 h3 {
     font-size: 18px;
@@ -83,13 +87,15 @@ h3 {
 }
 h4 {
     font-size: 15px;
-    color: rgb(233, 233, 233);
+    color: rgb(235, 235, 235);
 }
 h5 {
     font-size: 13px;
+    color: rgb(225, 225, 225);
 }
 h6 {
     font-size: 11px;
+    color: rgb(215, 215, 215);
 }
 
 i {

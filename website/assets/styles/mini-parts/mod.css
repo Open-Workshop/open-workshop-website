@@ -1,0 +1,47 @@
+
+main.mod > div {
+    display: flex;
+    flex-direction: column;
+}
+
+main.mod > div.info-text {
+    width: 70%;
+}
+
+main.mod > div.right-bar {
+    width: 30%;
+    align-items: center;
+}
+
+
+div#title-bar {
+    display: flex;
+    justify-content: space-between;
+}
+div#title-bar > h1 {
+    font-size: 28px;
+}
+
+a#mod-setting-gear {
+    padding: 0;
+    margin: 1px;
+    margin-right: 5px;
+
+    cursor: pointer;
+}
+a#mod-setting-gear * {
+    width: 40px;
+    
+    transition: rotate 300ms;
+}
+
+a#mod-setting-gear:hover * {
+    rotate: 90deg;
+}
+
+
+@media screen and (max-width: 700px) {
+    main.mod > div {
+        min-width: 100%;
+    }    
+}

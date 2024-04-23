@@ -34,11 +34,11 @@ div#settings-catalog > div#settings-menu > setting > input[type="search"] {
     width: 100%;
     pointer-events: all;
 }
-div#settings-catalog > div#settings-menu > setting, div#settings-catalog > div#settings-menu > setting * {
+div#settings-catalog > div#settings-menu > setting, div#settings-catalog > div#settings-menu > setting:not(.with-events) * {
     cursor: pointer;
     font-size: large;
 }
-div#settings-catalog > div#settings-menu > setting * {
+div#settings-catalog > div#settings-menu > setting:not(.with-events) * {
     pointer-events: none;
 }
 div#settings-catalog > div#settings-menu > setting > img {

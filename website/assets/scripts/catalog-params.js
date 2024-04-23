@@ -15,11 +15,13 @@ $(document).ready(async function() {
     $('setting#game-select').find('input').attr('checked', sgame);
     $('input#search-in-catalog-header').val(params.get('name', ''));
     $('input#search-in-catalog-menu').val(params.get('name', ''));
+    $("#search-update-input-tags").attr('gameid', params.get('game', ''));
     
     URLManager.updateParam('page', Number(URLManager.getParams().get('page', 0)));
     resetCatalog();
 
     sortOptionsList(sgame);
+    TagsSelector.setDefaultSelectedTags(params.get('tags', '').replaceAll("_", ","))
     const sortMode = params.get('sort', 'iDOWNLOADS');
     $('button#sort-select-invert').toggleClass('toggled', sortMode.startsWith('i'));
     $('select#sort-select').val(sortMode.replace('i', ''));
@@ -82,6 +84,8 @@ function gameSelect(gameID) {
 
     $('setting#game-select').find('img').attr('src', $('img#preview-logo-card-'+gameID).attr('src'))
     $('setting#game-select').find('label').text($('h2#titlename'+gameID).text())
+    $("#search-update-input-tags").attr('gameid', gameID);
+    TagsSelector.unselectAllTags();
 
     resetCatalog();
 }
@@ -123,6 +127,22 @@ function invertSort(button) {
 
     resetCatalog();
 }
+
+setInterval(function() {
+    if ($('div.popup-tags-select').hasClass('popup-nonvisible')) {
+        const params = URLManager.getParams();
+        const tags = TagsSelector.returnSelectedTags().selected
+
+        if (String(tags).replaceAll(",", "_") != params.get('tags', '')) {
+            console.log(tags, params.get('tags', ''))
+            URLManager.updateParams([
+                new Dictionary({'key': 'tags', 'value': String(tags).replaceAll(",", "_"), 'default': ''}),
+                new Dictionary({'key': 'page', 'value': 0})
+            ]);
+            resetCatalog();
+        }
+    }
+}, 1000)
 
 
 async function render(params) {

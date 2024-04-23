@@ -2,12 +2,12 @@
     <div id="selected-tags">
         <div class="all-mod-tags alls" id="tags-edit-selected-tags">
             {% for item in tags %}
-                <div tagid="{{ item.id }}" saved onclick="editTag(this)">{{ item.name }}</div>
+                <div tagid="{{ item.id }}" saved onclick="TagsSelector.editTag(this)">{{ item.name }}</div>
             {% endfor %}
             <p>Тегов не выбрано</p>
         </div>
         
-        <button onclick="$('div.popup-tags-select').toggleClass('popup-nonvisible')" class="small">Добавить тег</button>
+        <button id="popup-menu-tags-toggle" onclick="$('div.popup-tags-select').toggleClass('popup-nonvisible'); if (!$('div.popup-tags-select').hasClass('popup-nonvisible')) { TagsSelector.searchRequestTagUpdate() }" class="small">Добавить тег</button>
     </div>
 
     <style>
@@ -60,10 +60,12 @@
     </style>
 
     <div class="popup-tags-select popup-menu-select popup-nonvisible">
-        <input id="search-update-input-tags" gameid='{{ game }}' type="text" placeholder="Поиск..." oninput="searchRequestTagUpdate()">
+        <input id="search-update-input-tags" gameid='{{ game }}' type="text" placeholder="Поиск..." oninput="TagsSelector.searchRequestTagUpdate()">
         
         <div class="alls all-mod-tags" id="tags-edit-search-tags"><p>Не найдено</p></div>
         
         <p class="show-more" id="show-more-count-tags">И ещё 10 шт...</p>
     </div>
+
+    <script src="/assets/scripts/vendors/tags-edit.js"></script>
 </div>

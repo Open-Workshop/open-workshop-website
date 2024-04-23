@@ -1,140 +1,105 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-    <div style="margin: 2pt;">
-        <article class="mod-container">
-            <div class="mod-big-cont">
-              <div style="display: flex; justify-content: space-between;">
-                <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }} {% if data[0]['result']['public'] != 0 %}<a title="Тип публичности" class="tag-link-red" translate="no">{% if data[0]['result']['public'] == 2 %}НЕПУБЛИЧНЫЙ{% endif %}{% if data[0]['result']['public'] == 1 %}ТОЛЬКО ПО ССЫЛКЕ{% endif %}</a>{% endif %}</h1> 
-              
-                {% if right_edit['edit'] %}
-                <a href="/mod/{{ data[0]['result']['id'] }}/edit" style="margin-right: 3pt;" class="user-setting-gear">
-                  <img src="/assets/images/settings.svg" alt="Перейти в настройки">
-                </a>
-                {% endif %}
-              </div>
-              <h4 id="mod-tags-title">
-                  <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ data[0]['result']['game']['name'] }}</a>
-                  <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
-                  <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ data[0]['result']['downloads'] }}</a>
+<main class="mod">
+    <div class="info-text">
+        <div id="title-bar">
+            <h1 id="mod-name-title" translate="no">{{ data[0]['result']['name'] }} {% if data[0]['result']['public'] != 0 %}<a title="Тип публичности" class="tag-link-red" translate="no">{% if data[0]['result']['public'] == 2 %}непубличен{% endif %}{% if data[0]['result']['public'] == 1 %}по ссылке{% endif %}</a>{% endif %}</h1> 
+            
+            {% if right_edit['edit'] %}
+            <a href="/mod/{{ data[0]['result']['id'] }}/edit" id="mod-setting-gear">
+                <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
+            </a>
+            {% endif %}
+        </div>
 
-                  {% if data[0]['result']['date_update_js'] != data[0]['result']['date_creation_js'] %}
-                  <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update'] }}</a>
-                  {% endif %}
+        <h4 id="mod-tags-title">
+            <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ data[0]['result']['game']['name'] }}</a>
+            <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
+            <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ data[0]['result']['downloads'] }}</a>
 
-                  <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
-              </h4>
-              <style>
-                #mod-tags-title {
-                  display: flex;
-                  flex-wrap: wrap;
-                }
-                #mod-tags-title > a {
-                  margin: 1pt;
-                }
-              </style>
-              
-              <article id="mod-description">
-                {{ data[0]['result']['description'] }}
-              </article>
-              <script src="/assets/scripts/mod.js"></script>
-              <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script><script  src="./script.js"></script>
-            </div>
+            {% if data[0]['result']['date_update_js'] != data[0]['result']['date_creation_js'] %}
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update'] }}</a>
+            {% endif %}
 
-            <div class="right-bar-mod">
-              {% if data[1]['results']|length >0 %}
-              <div class="wrapper" style="width: 100%;">
-                <div class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
-                  <ul class="js__slider__images slider__images">
-                    {% for item in data[1]['results'] %}
-                      <a href="{{ item['url'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
-                        <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />  
-                      </a>
-                    {% endfor %}
-                  </ul>
-              
-                  {% if data[0]["no_many_screenshots"] == false %}
-                  <div class="slider__controls">
-                    <ol class="js__slider__pagers slider__pagers"></ol>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-              <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
-              <script src="/assets/scripts/images-list.js"></script>
-              {% endif %}
+            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
+        </h4>
 
-
-              {% if data[2] | length > 0 %}
-              <div class="mod-dependence-list" style="display: flex; flex-wrap: wrap; align-content: center;">
-                <style>
-                  .dop-tag-link {
-                    cursor: auto;
-                    margin: 1pt;
-                    height: 20pt;
-                  }
-                  .dop-tag-link > h3 {
-                    font-size: 12pt;
-                  }
-                </style>
-                {% for item in data[2] %}
-                  <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}" href="/mod/{{ item.id }}"><h3 translate="no">{{ item.name }}</h3></a>
-                {% endfor %}
-              </div>
-              {% endif %}
-
-
-              {% if authors | length > 0 %}
-              <div class="mod-dependence-list">
-                <style>
-                  .user-author > p {
-                    font-size: 20pt;
-                    color: white;
-                  }
-                  .user-author > p > grade {
-                    font-size: 15pt;
-                    height: 22pt;
-                  }
-                  .user-author > img {
-                    width: 30pt;
-                  }
-                </style>
-
-                <h2>Авторы</h2>
-                {% for item in authors %}
-                  <a class="mod-dependence user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
-                    <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
-                    <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
-                  </a>
-                {% endfor %}
-              </div>
-              {% endif %}
-
-              {% if data[0]['dependencies_count'] > 0 %}
-              <div class="mod-dependence-list">
-                <h2>Зависимости мода</h2>
-                {% for item in data[3].values() %}
-                  <a class="mod-dependence" href="/mod/{{ item.id }}">
-                    <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
-                    <h3 translate="no">{{ item.name }}</h3>
-                  </a>
-                {% endfor %}
-              </div>
-              {% endif %}
-              
-              {% if not user_profile %}
-              <div style="margin-top: 2pt; background: var(--panel-on-page-background); padding: 3pt; border-radius: 10px;">
-                <h3 style="text-align: center;">Авторизированным пользователям не отображается реклама</h3>
-                <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
-              </div>
-              {% endif %}
-
-              {% if data[0]['result']['public'] != 2 %}
-              <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
-              {% endif %}
-            </div>
+        <article id="mod-description">
+        {{ data[0]['result']['description'] }}
         </article>
+        <script src="/assets/scripts/mod.js"></script>
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.min.js'></script><script  src="./script.js"></script>
     </div>
 
+    <div class="right-bar">
+        {% if data[1]['results']|length >0 %}
+        <div class="wrapper">
+        <div class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
+            <ul class="js__slider__images slider__images">
+            {% for item in data[1]['results'] %}
+                <a href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
+                <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />  
+                </a>
+            {% endfor %}
+            </ul>
+        
+            {% if data[0]["no_many_screenshots"] == false %}
+            <div class="slider__controls">
+            <ol class="js__slider__pagers slider__pagers"></ol>
+            </div>
+            {% endif %}
+        </div>
+        </div>
+        <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+        <script src="/assets/scripts/images-list.js"></script>
+        {% endif %}
+
+
+        {% if data[2] | length > 0 %}
+        <div class="mod-dependence-list">
+        {% for item in data[2] %}
+            <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}" href="/mod/{{ item.id }}"><h3 translate="no">{{ item.name }}</h3></a>
+        {% endfor %}
+        </div>
+        {% endif %}
+
+
+        {% if authors | length > 0 %}
+        <div class="mod-dependence-list">
+        <h2>Авторы</h2>
+        {% for item in authors %}
+            <a class="mod-dependence user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+            <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+            <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
+            </a>
+        {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if data[0]['dependencies_count'] > 0 %}
+        <div class="mod-dependence-list">
+        <h2>Зависимости мода</h2>
+        {% for item in data[3].values() %}
+            <a class="mod-dependence" href="/mod/{{ item.id }}">
+            <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+            <h3 translate="no">{{ item.name }}</h3>
+            </a>
+        {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% if not user_profile %}
+        <div class="mod-dependence-list">
+            <h3>Авторизированным пользователям не отображается реклама</h3>
+            <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
+        </div>
+        {% endif %}
+
+        {% if data[0]['result']['public'] != 2 %}
+        <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
+        {% endif %}
+    </div>
+</main>
 {% endblock %}
 
 {% block title %}

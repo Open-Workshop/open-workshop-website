@@ -3,7 +3,7 @@ const millisecondsPerDay = 1000 * 60 * 60 * 24; // Количество милл
 
 $(document).ready(function() {
     const md = document.getElementById('mod-description');
-    md.innerHTML = OpenWS.syntaxToHTML(md.innerHTML);
+    md.innerHTML = Formating.syntax2HTML(md.innerHTML);
 
     const gameLabel = document.getElementById('mod-for-game-label');
     let dopLink = ""

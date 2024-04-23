@@ -8,7 +8,7 @@
       </balloon>
 
       <div id="settings-menu">
-        <setting class="in-full">
+        <setting class="in-full with-events">
           <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
         </setting>
 
@@ -27,9 +27,9 @@
           <label>Независимые моды</label>
         </setting>
 
-        <hr style="display: none;">
+        <hr>
 
-        <setting style="display: none;">
+        <setting class="with-events">
           {% with tags={} %}
             {% with game=0 %}
               {% include 'html-partials/tags-edit.html' %}
