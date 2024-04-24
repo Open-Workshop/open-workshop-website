@@ -27,7 +27,8 @@ class Dictionary {
     }
 
     replaceKey(oldKey, newKey) {
-        this[newKey] = this.pop(oldKey);
+        this[newKey] = this.get(oldKey);
+        delete this[oldKey];
     }
 
 

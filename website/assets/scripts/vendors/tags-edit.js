@@ -13,14 +13,9 @@ window.TagsSelector = {
         const ref = await fetch('https://api.openworkshop.su/list/tags/'+searchInput.attr('gameid')+'?page_size=30&name=' + searchInput.val());
 
         const data = await ref.json();
-        console.log(data)
-
-        console.log(searchContainer.find('p')[0])
         searchContainer.html(searchContainer.find('p')[0]);
 
         data.results.forEach(t => {
-            console.log(t)
-
             const newtag = searchContainer.append('<div onclick="TagsSelector.editTag(this)" tagid="' + t.id + '">' + t.name + '</div>').find('div:last');
 
             const inCont = containerTags.find('[tagid="' + t.id + '"]');
@@ -82,11 +77,10 @@ window.TagsSelector = {
         if (tags.length == 0) return;
 
         const url = 'https://api.openworkshop.su/list/tags/' + $('input#search-update-input-tags').attr('gameid') + '?tags_ids=[' + tags + ']';
-        console.log(url)
+        
         const ref = await fetch(url);
         const data = await ref.json();
 
-        console.log(data)
         data.results.forEach(t => {
             // создаем новый тег
             containerTags.append('<div tagid="' + t.id + '" saved onclick="TagsSelector.editTag(this)">' + t.name + '</div>');
@@ -96,10 +90,9 @@ window.TagsSelector = {
     },
     returnSelectedTags() {
         const allTags = Array.from(containerTags.find('[tagid]'));
-        console.log(allTags)
+
         const standardTags = allTags.filter(t => Number($(t).attr('saved')));
         const notStandardTags = allTags.filter(t => !Number($(t).attr('saved')));
-        console.log(standardTags, notStandardTags)
 
         return {
             standard: standardTags.map(t => Number($(t).attr('tagid'))), // изначальные стандартные

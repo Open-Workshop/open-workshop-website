@@ -34,7 +34,9 @@ window.Catalog = {
         const keys = [['depen', 'dependencies']]
         keys.forEach(key => {
             if (settings.get(key[0]) != undefined) {
+                console.log(key[0], key[1], settings.get(key[0]))
                 settings.replaceKey(key[0], key[1])
+                console.log(key[0], key[1], settings.get(key[1]))
             }
         })
         // Заменяем кастомные значения на стандартные
@@ -65,12 +67,19 @@ window.Catalog = {
         let response = await fetch(url, {method: 'GET', redirect: 'follow'})
         let data = await response.json();
 
-
-        data.results.forEach(element => {
-            element.doplink = doplink
-            $('#cards').append(Cards.create(element, settings.get('page', 0), true, settings.get('name', ''), settings.get('sgame', 'yes') == 'yes'))
-            msnry.appended(element)
-        })
+        if (response.status == 200) {
+            data.results.forEach(element => {
+                if ($('#cards').find('div#'+element.id).length <= 0) {
+                    element.doplink = doplink
+                    $('#cards').append(Cards.create(element, settings.get('page', 0), true, settings.get('name', ''), settings.get('sgame', 'yes') == 'yes'))
+                    msnry.appended(element)
+                } else {
+                    console.log('Duplicate (xuricat paradox): ', element)
+                }
+            })
+        } else {
+            console.log('Error addPage: ' + data)
+        }
 
         return data
     },

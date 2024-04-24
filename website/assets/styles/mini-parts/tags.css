@@ -1,0 +1,43 @@
+
+.tag-link, .tag-link-green, .tag-link-blue, .tag-link-red, .tag-link-orange {
+    display: inline-flex;
+
+    background-color: rgb(61, 61, 61, 0.5);
+    color: rgb(230, 238, 255);
+
+    transition : background-color 0.1s;
+    
+    border-radius: 4pt;
+    
+    padding: 1pt;
+    padding-left: 3pt;
+    padding-right: 3pt;
+    
+    margin: 2px;
+    
+    font-size: large;
+    font-style: normal;
+    text-decoration: inherit;
+}
+
+.tag-link-green {
+    background-color: rgb(0, 94, 0);
+}
+.tag-link-green:hover {
+    background-color: rgb(0, 80, 0);
+}
+.tag-link-green:active {
+    background-color: rgb(0, 68, 30);
+}
+
+.tag-link-blue {
+    background-color: blue;
+}
+
+.tag-link-red {
+    background-color: red;
+}
+
+.tag-link-orange {
+    background-color: rgb(194, 126, 0);
+}

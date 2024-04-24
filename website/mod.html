@@ -12,7 +12,7 @@
             {% endif %}
         </div>
 
-        <h4 id="mod-tags-title">
+        <div id="mod-tags-title">
             <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ data[0]['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ data[0]['result']['game']['name'] }}</a>
             <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
             <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ data[0]['result']['downloads'] }}</a>
@@ -22,7 +22,7 @@
             {% endif %}
 
             <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
-        </h4>
+        </div>
 
         <article id="mod-description">
         {{ data[0]['result']['description'] }}
@@ -33,7 +33,6 @@
 
     <div class="right-bar">
         {% if data[1]['results']|length >0 %}
-        <div class="wrapper">
         <div class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
             <ul class="js__slider__images slider__images">
             {% for item in data[1]['results'] %}
@@ -49,7 +48,6 @@
             </div>
             {% endif %}
         </div>
-        </div>
         <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
         <script src="/assets/scripts/images-list.js"></script>
         {% endif %}
@@ -58,7 +56,7 @@
         {% if data[2] | length > 0 %}
         <div class="mod-dependence-list">
         {% for item in data[2] %}
-            <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}" href="/mod/{{ item.id }}"><h3 translate="no">{{ item.name }}</h3></a>
+            <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}"><h3 translate="no">{{ item.name }}</h3></a>
         {% endfor %}
         </div>
         {% endif %}

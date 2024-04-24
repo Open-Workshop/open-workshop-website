@@ -267,43 +267,6 @@ table {
   background-color: rgba(229, 255, 0, 0.4);
 }
 
-.steam-link, .tag-link, .tag-link-green, .tag-link-blue, .tag-link-red, .tag-link-orange {
-  background-color: rgb(61, 61, 61, 0.5);
-  border-radius: 4pt;
-  padding: 1pt;
-  padding-left: 3pt;
-  padding-right: 3pt;
-  color: rgb(230, 238, 255);
-  font-style: normal;
-  text-decoration: inherit;
-  transition : background-color 0.1s;
-  height: 100%;
-  display: inline-flex;
-  font-size: large;
-}
-
-.tag-link-green {
-  background-color: green;
-}
-.tag-link-green:hover {
-  background-color: rgb(0, 104, 0);
-}
-.tag-link-green:active {
-  background-color: rgb(0, 87, 0);
-}
-
-.tag-link-blue {
-  background-color: blue;
-}
-
-.tag-link-red {
-  background-color: red;
-}
-
-.tag-link-orange {
-  background-color: rgb(194, 126, 0);
-}
-
 .independence-mods-selector {
   margin: 0;
   margin-top: 3pt;
@@ -642,8 +605,10 @@ blockquote > .light {
   border-radius: 10px;
   padding: 5pt;
   width: 100%;
+  display: flex;
+  flex-wrap: wrap;
 }
-.mod-dependence-list > h2 {
+.mod-dependence-list > h3, .mod-dependence-list > h4 {
   width: 100%;
   text-align: center;
 }

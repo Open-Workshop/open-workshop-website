@@ -22,6 +22,15 @@ div#title-bar > h1 {
     font-size: 28px;
 }
 
+div#mod-tags-title {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+div#mod-tags-title > * {
+    margin: 2px;
+}
+
 a#mod-setting-gear {
     padding: 0;
     margin: 1px;

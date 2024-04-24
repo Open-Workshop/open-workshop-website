@@ -5,21 +5,21 @@ window.Formating = {
         text = text.replace(regex, url => {
             try {
                 const domain = new URL(url).hostname;
-                return `<a class="steam-link" href="${url}">${domain}</a>`;
+                return `<a class="tag-link" href="${url}">${domain}</a>`;
             } catch (e) {
-                return `<a class="steam-link" href="${url}">${url}</a>`
+                return `<a class="tag-link" href="${url}">${url}</a>`
             }
         });
 
         text = text.replace(/(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig, (match, url, randomText) => {
-            return `<a class="steam-link" href="${url}">${randomText}</a>`;
+            return `<a class="tag-link" href="${url}">${randomText}</a>`;
         });
 
         // Заменим ссылки
-        text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="steam-link" href="$2">$1</a>');
+        text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a class="tag-link" href="$2">$1</a>');
 
         text = text.replace(/(?:\[url=)(.*?)](.*?)(?:\[\/url\])/ig, (match, url, randomText) => {
-            return `<a class="steam-link" href="https://${url}">${randomText}</a>`;
+            return `<a class="tag-link" href="https://${url}">${randomText}</a>`;
         });
 
         // Заменим выделение жирным текстом

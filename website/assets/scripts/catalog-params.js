@@ -147,14 +147,19 @@ setInterval(function() {
 
 async function render(params) {
     const res = await Catalog.addPage(params);
-    if (res.results.length > 0) {
-        if (params.get('sgame', 'yes') == 'no') {
-            await Cards.setterImgs(params.get('page', 0))
+    try {    
+        if (res.results && res.results.length > 0) {
+            if (params.get('sgame', 'yes') == 'no') {
+                await Cards.setterImgs(params.get('page', 0))
+            } else {
+                Catalog.masonry();
+            }
+            return true
         } else {
-            Catalog.masonry();
+            return false
         }
-        return true
-    } else {
+    } catch (error) {
+        console.log(error)
         return false
     }
 }

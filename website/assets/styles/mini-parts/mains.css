@@ -67,6 +67,9 @@ main.mod {
     }
     main.mod {
         flex-direction: column;
+        
+        border-radius: 0;
+        width: 100%;
     }
 }
 @media screen and (max-width: 1000px) {
