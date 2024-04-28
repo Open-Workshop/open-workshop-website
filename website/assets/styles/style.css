@@ -633,7 +633,7 @@ blockquote > .light {
 .mod-dependence img {
   border-radius: 5pt;
   margin-right: 5pt;
-  width: 50pt;
+  max-width: 50pt;
   height: 30pt;
 }
 .mod-dependence h3 {

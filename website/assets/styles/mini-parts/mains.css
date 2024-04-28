@@ -59,6 +59,10 @@ main.mod {
     display: flex;
 }
 
+main.user {
+    max-width: 670px;
+}
+
 
 @media screen and (max-width: 700px) {
     main {

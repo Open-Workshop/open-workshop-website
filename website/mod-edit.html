@@ -106,14 +106,14 @@
 
                   $('img.card__image').attr('src', $('a.slider__images-item[typecontent="logo"]').attr('href'))
                   $cardDescD.attr('cashData', $shortDescD.val())
-                  $cardDescD.html(OpenWS.syntaxToHTML($shortDescD.val()))
+                  $cardDescD.html(Formating.syntax2HTML($shortDescD.val()))
 
                   setInterval(function(){
                     const dataText = $shortDescD.val()
 
                     if ($cardDescD.attr('cashData') != dataText) {
                       $cardDescD.attr('cashData', dataText)
-                      $cardDescD.html(OpenWS.syntaxToHTML(dataText))
+                      $cardDescD.html(Formating.syntax2HTML(dataText))
                     }
                   }, 300)
                 })
@@ -344,7 +344,7 @@
 
           console.log($fullModDescEditArea.val())
 
-          $fullModDescView.html(OpenWS.syntaxToHTML($fullModDescEditArea.val()))
+          $fullModDescView.html(Formating.syntax2HTML($fullModDescEditArea.val()))
         } else {
           $fullModDescEdit.show()
           $fullModDescView.hide()
@@ -365,7 +365,7 @@
         }
 
         fullDescUpdate($fullModDescEditArea)
-        $fullModDescView.html(OpenWS.syntaxToHTML($fullModDescEdit.find('textarea.editing').val()))
+        $fullModDescView.html(Formating.syntax2HTML($fullModDescEdit.find('textarea.editing').val()))
       }
     </script>
 

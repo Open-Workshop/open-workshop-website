@@ -58,6 +58,11 @@ function handlerImgErrorLoad(element) {
 // Триггерим логику при инициализации
 
 $(document).ready(function() {
+    // Дополняем jquery логику
+    $.fn.hasAttr = function(name) {  
+        return this.attr(name) !== undefined;
+    };
+
     const $body = $('body');
     // Обработчик ошибок картинок
     $('img').on('error', function() {
@@ -116,14 +121,6 @@ function inputDisplayLimit() {
         $(this).removeClass('limit');
     }
 }
-
-
-
-
-// Дополняем jquery логику
-$.fn.hasAttr = function(name) {  
-    return this.attr(name) !== undefined;
-};
 
 
 // Автоматическая подгонка высоты одного элемента к другому

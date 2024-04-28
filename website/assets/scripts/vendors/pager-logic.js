@@ -2,7 +2,7 @@
 window.Pager = {
     updateSelect: function() {
         console.log(this, window.location.href)
-        const page = OpenWS.getFromDict(OpenWS.urlParams(window.location.href), 'page', '')
+        const page = URLManager.getParams().get('page', '')
         console.log(page)
     
         pageSelect.call(this, page)
@@ -41,10 +41,11 @@ window.Pager = {
         }
     },
     change: function(button) {
-        console.log(button, $(button).attr('variant'))
-        const res = OpenWS.reselectParam('page', $(button).attr('variant'))
-        if (res != false) {
-            window.history.pushState('page', 'Open Workshop', res);
+        const currect = URLManager.getParams().get('page', '');
+        const target = $(button).attr('variant');
+
+        if (currect != target) {
+            URLManager.updateParam('page', target);
             Pager.updateSelect.call(button)
         }
     }
