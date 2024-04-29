@@ -1,0 +1,38 @@
+
+main.user.settings > pager {
+    width: min-content;
+    max-width: 200px;
+}
+main.user.settings > pager > * {
+    text-align: center;
+
+    width: 100%;
+}
+main.user.settings > pager > label {
+    display: block;
+
+    font-size: x-large;
+
+    padding: 5px;
+}
+main.user.settings > pager > button {
+    margin: 1px;
+}
+
+
+button#page-save-button {
+    margin-top: 10px;
+}
+
+
+@media screen and (max-width: 450px) {
+    main.user.settings > pager {
+        width: 100%;
+        align-self: center;
+    }
+}
+@media screen and (min-width: 451px) {
+    main.user.settings > pager {
+        margin-right: 10px;
+    }    
+}

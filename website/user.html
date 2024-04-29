@@ -10,7 +10,7 @@
             </div>
 
             {% if user_data.general.mute %}
-            <div id="noVote" style="display: flex; align-items: center; justify-content: center;">
+            <div id="noVote">
               <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
             </div>
             {% endif %}
@@ -26,7 +26,7 @@
             {{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %} 
           </div>
           {% if user_data.general.editable.any %}
-          <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear">
+          <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
             <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
           </a>
           {% endif %}
@@ -98,7 +98,7 @@
     </div>
     {% endif %}
     
-    <article id="mod-description">
+    <article>
       <h5>Тут будут ваши форумы, друзья и т.п.! Осталось только дождаться :)</h5>
     </article>
   </main>

@@ -3,3 +3,13 @@
     color: white;
     font-size: x-large;
 }
+
+div#noVote {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+main.user > article {
+    text-align: center;
+}

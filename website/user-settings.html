@@ -1,772 +1,769 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-  <div style="margin: 2pt; display: flex; flex-direction: column; align-items: center;">
+  <main class="user settings">
     {% if not user_access.any %}
-    <article class="user-settings-cont" style="display: flex; justify-content: center;">
-      <h1 style="text-align: center;">
-        {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
-        {% if not user_access.my %}Этот профиль удален!{% endif %}
-      </h1>
-    </article>
+    <h1 style="text-align: center;">
+      {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
+      {% if not user_access.my %}Этот профиль удален!{% endif %}
+    </h1>
     {% endif %}
+
     {% if (not user_data.delete_user and (user_access.any or user_access.my)) or (user_data.delete_user and user_access.admin) %}
-    <article class="user-settings-cont">
-        <div class="navig-user-setting-menu" variants="profile, delete-account, rights, integrate">
-          <h2>Навигация</h2>
-          {% if not user_data.delete_user %}
-          <button id="page-profile-button" active-in-variant="page-save-button" variant="profile" onclick="Pager.change(this)">Профиль</button>
-          {% endif %}
-          {% if user_access.my or user_access.admin %}
-          {% if not user_data.delete_user %}
-          <button id="page-integrate-button" disabled-in-variant="page-save-button" variant="integrate" onclick="Pager.change(this)">Интеграция</button>
-          {% endif %}
-          <button id="page-rights-button" active-in-variant="page-save-button" variant="rights" onclick="Pager.change(this)">Права</button>
-          {% endif %}
+    <pager variants="profile, delete-account, rights, integrate">
+      <label>Навигация</label>
+      {% if not user_data.delete_user %}
+      <button id="page-profile-button" active-in-variant="page-save-button" variant="profile" onclick="Pager.change(this)">Профиль</button>
+      {% endif %}
+      {% if user_access.my or user_access.admin %}
+      {% if not user_data.delete_user %}
+      <button id="page-integrate-button" disabled-in-variant="page-save-button" variant="integrate" onclick="Pager.change(this)">Интеграция</button>
+      {% endif %}
+      <button id="page-rights-button" active-in-variant="page-save-button" variant="rights" onclick="Pager.change(this)">Права</button>
+      {% endif %}
 
-          {% if user_access.my %}
-          <button id="page-delete-account-button" disabled-in-variant="page-save-button" variant="delete-account" onclick="Pager.change(this)">Удалить аккаунт</button>
-          {% endif %}
+      {% if user_access.my %}
+      <button id="page-delete-account-button" disabled-in-variant="page-save-button" variant="delete-account" onclick="Pager.change(this)">Удалить аккаунт</button>
+      {% endif %}
 
-          <button id="page-save-button" style="margin-top: 30pt;" onclick="saveProfile()">Сохранить</button>
-        </div>
-        <div style="width: 100%;">
-          {% if not user_data.delete_user %}
-          <div id="page-profile" class="user-container-settings">
-            <div class="user-left-bar">
-              <div class="wrapper" style="width: 100%; max-width: 150pt;">
-                <div class="user-avatar-box">
-                    <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_access.avatar %} user-avatar-e{% endif %}"{% if user_access.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
-      
-                    {% if user_access.avatar %}
-                    <img class="user-edit-icon user-edit-icon-e" src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
-                    {% endif %}
-                    <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
-                </div>
+      <button id="page-save-button" onclick="saveProfile()">Сохранить</button>
+    </pager>
+    <div style="width: 100%;">
+      {% if not user_data.delete_user %}
+      <div id="page-profile" class="user-container-settings">
+        <div class="user-left-bar">
+          <div class="wrapper" style="width: 100%; max-width: 150pt;">
+            <div class="user-avatar-box">
+                <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_access.avatar %} user-avatar-e{% endif %}"{% if user_access.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
+  
                 {% if user_access.avatar %}
-                <div style="cursor: pointer; height: auto;" class="independence-mods-selector" onclick="document.getElementById('reset-avatar-checkbox').click();">
-                  <input class="input-checkbox" style="margin: 4pt;" onchange="" id="reset-avatar-checkbox" type="checkbox">
-                  <label style="margin-left: 2pt; cursor: pointer; margin-top: 1pt;">Сбросить аватар</label>
-                </div>
+                <img class="user-edit-icon user-edit-icon-e" src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
                 {% endif %}
-                
-                {% if user_access.mute %}
-                <div class="medium-6 columns">
-                  <input style="width: 100%;" id="mute-datetime" type="datetime-local"{% if user_data.general.mute %} startdata="{{ user_data.general.mute_js }}" value="{{ user_data.general.mute_js }}"{% endif %} class='date'>
-                </div>
-                <style>
-                  input.date{
-                    margin-top: 5pt;
-                    border-radius: 10px;
-                    height: auto;
-                    transition: all ease 200ms;
-                    box-shadow: 0px 0px 3px 3px #4a4a4a;
-                    background: #313131;
-                    color: white;
-                  }
-
-                  input.date:hover{
-                    box-shadow:0px 0px 5px 5px rgb(165, 165, 165);
-                  }
-                </style>
-                {% endif %}
-
-                <script>
-                  {% if user_access.mute %}
-                  document.getElementById('mute-datetime').min = new Date().toLocaleString("sv-SE", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit"
-                  }).replace(" ", "T");
-                  {% endif %}
-
-                  const input = document.getElementById('file-select-avatar');
-                  const img = document.getElementById('user-avatar-img');
-
-                  input.addEventListener('change', function() {
-                    const file = input.files[0];
-
-                    //Initiate the JavaScript Image object.
-                    const reader = new FileReader();
-
-                    //Read the contents of Image File.
-                    reader.readAsDataURL(file);
-                    reader.onload = function (e) {
-
-                      var image = new Image();
-
-                      //Set the Base64 string return from FileReader as source.
-                      image.src = e.target.result;
-
-                      //Validate the File Height and Width.
-                      image.onload = function () {
-                        var height = this.height;
-                        var width = this.width;
-                        
-                        if (Math.abs(width / height - 1) > 0.05) {
-                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
-                          img.src = img.getAttribute("startdata")
-                          banner_error_a = {
-                            title: 'Неправильный аватар!',
-                            text: 'Аватар должен быть квадратным!',
-                            theme: 'warning',
-                            autohide: true,
-                            interval: 6000
-                          };
-
-                          new Toast(banner_error_a)
-                        } else if (width < 60 || height < 60) {     // Проверяем разрешение < 60px
-                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
-                          img.src = img.getAttribute("startdata")
-                          banner_error_a = {
-                            title: 'Неправильный аватар!',
-                            text: 'Слишком маленькое разрешение аватара!',
-                            theme: 'warning',
-                            autohide: true,
-                            interval: 6000
-                          };
-
-                          new Toast(banner_error_a)
-                        } else if (file.size > 2 * 1024 * 1024) {
-                          input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
-                          img.src = img.getAttribute("startdata")
-                          banner_error_a = {
-                            title: 'Неправильный аватар!',
-                            text: 'Аватар не должен быть тяжелее 2МБ!',
-                            theme: 'warning',
-                            autohide: true,
-                            interval: 6000
-                          };
-
-                          new Toast(banner_error_a)
-                        } else {
-                          img.src = e.target.result;
-                        }
-                      };
-                    }
-                  });
-                </script>
-              </div>
+                <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
             </div>
-    
-            <div style="width: 100%">
-              <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
-                <div {% if user_access.grade or user_access.username %}style="display: flex; align-items: center;"{% endif %}>
-                  {% if not user_access.username %}
-                  {{ user_data.general.username }}
-                  {% endif %}
+            {% if user_access.avatar %}
+            <div style="cursor: pointer; height: auto;" class="independence-mods-selector" onclick="document.getElementById('reset-avatar-checkbox').click();">
+              <input class="input-checkbox" style="margin: 4pt;" onchange="" id="reset-avatar-checkbox" type="checkbox">
+              <label style="margin-left: 2pt; cursor: pointer; margin-top: 1pt;">Сбросить аватар</label>
+            </div>
+            {% endif %}
+            
+            {% if user_access.mute %}
+            <div class="medium-6 columns">
+              <input style="width: 100%;" id="mute-datetime" type="datetime-local"{% if user_data.general.mute %} startdata="{{ user_data.general.mute_js }}" value="{{ user_data.general.mute_js }}"{% endif %} class='date'>
+            </div>
+            <style>
+              input.date{
+                margin-top: 5pt;
+                border-radius: 10px;
+                height: auto;
+                transition: all ease 200ms;
+                box-shadow: 0px 0px 3px 3px #4a4a4a;
+                background: #313131;
+                color: white;
+              }
 
-                  {% if user_access.username %}
-                  <input class="edit-username" maxlength="18" startdata="{{ user_data.general.username }}" id="username" value="{{ user_data.general.username }}" name="username" oninput="usernameEditEvent()">
-                  {% endif %}
+              input.date:hover{
+                box-shadow:0px 0px 5px 5px rgb(165, 165, 165);
+              }
+            </style>
+            {% endif %}
 
-                  {% if user_access.grade %}
-                  <input id="grade" placeholder="Звание..." maxlength="18" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" class="tag-link-red grade-edit" value="{{ user_data.general.grade }}" oninput="gradeEditEvent()">
-                  {% endif %}
-                  {% if not user_access.grade and user_data.general.grade|length >0 %}
-                  <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
-                  {% endif %}
-
-                  <script>
-                    const usernameElement = document.getElementById('username');
-
-                    usernameEditEvent()
-                    function usernameEditEvent() {
-                      if (usernameElement) {
-                        const myText = usernameElement.value;
-
-                        if (myText.length >= 18 || myText.length <= 1) {
-                          usernameElement.classList.add('limit');
-                        } else {
-                          usernameElement.classList.remove('limit')
-                        }
-
-                        usernameElement.style.width = 0;
-                        usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
-                      }
-                    }
-                    
-                    const gradeElement = document.getElementById('grade');
-
-                    gradeEditEvent()
-                    function gradeEditEvent() {
-                      if (gradeElement) {
-                        const myText = gradeElement.value;
-
-                        gradeElement.style.width = 0;
-                        gradeElement.style.width = gradeElement.scrollWidth+5 + "px";
-                      }
-                    }
-                  </script>
-                </div>
-              </h1>
-              <h4 id="mod-tags-title">
-                  <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
-                  <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
-                    {% if user_data.general.reputation < 0 %}👿{% endif %}
-                    {% if user_data.general.reputation > 0 %}😇{% endif %}
-                    <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
-                    {% if user_data.general.reputation == 0 %}👀{% endif %}
-                  </div>
-    
-                  {% if user_data.general.author_mods > 0 %}
-                  <a title="Автор {{ user_data.general.author_mods }} модов" class="tag-link-orange" translate="no">📤{{ user_data.general.author_mods }}</a>
-                  {% endif %}
-    
-                  {% if user_data.general.comments > 0 %}
-                  <a title="Оставил {{ user_data.general.comments }} комментариев" class="tag-link-orange" translate="no">✏️{{ user_data.general.comments }}</a>
-                  {% endif %}
-              </h4>
-    
-              {% if user_access.about %}
-              <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}</textarea>
+            <script>
+              {% if user_access.mute %}
+              document.getElementById('mute-datetime').min = new Date().toLocaleString("sv-SE", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit"
+              }).replace(" ", "T");
               {% endif %}
-              {% if not user_access.about and user_data.general.about_enable %}
-              <article id="mod-description">{{ user_data.general.about }}</article>
+
+              const input = document.getElementById('file-select-avatar');
+              const img = document.getElementById('user-avatar-img');
+
+              input.addEventListener('change', function() {
+                const file = input.files[0];
+
+                //Initiate the JavaScript Image object.
+                const reader = new FileReader();
+
+                //Read the contents of Image File.
+                reader.readAsDataURL(file);
+                reader.onload = function (e) {
+
+                  var image = new Image();
+
+                  //Set the Base64 string return from FileReader as source.
+                  image.src = e.target.result;
+
+                  //Validate the File Height and Width.
+                  image.onload = function () {
+                    var height = this.height;
+                    var width = this.width;
+                    
+                    if (Math.abs(width / height - 1) > 0.05) {
+                      input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                      img.src = img.getAttribute("startdata")
+                      banner_error_a = {
+                        title: 'Неправильный аватар!',
+                        text: 'Аватар должен быть квадратным!',
+                        theme: 'warning',
+                        autohide: true,
+                        interval: 6000
+                      };
+
+                      new Toast(banner_error_a)
+                    } else if (width < 60 || height < 60) {     // Проверяем разрешение < 60px
+                      input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                      img.src = img.getAttribute("startdata")
+                      banner_error_a = {
+                        title: 'Неправильный аватар!',
+                        text: 'Слишком маленькое разрешение аватара!',
+                        theme: 'warning',
+                        autohide: true,
+                        interval: 6000
+                      };
+
+                      new Toast(banner_error_a)
+                    } else if (file.size > 2 * 1024 * 1024) {
+                      input.value = '';  // Сбрасываем выбранный файл, если не соответствует критериям
+                      img.src = img.getAttribute("startdata")
+                      banner_error_a = {
+                        title: 'Неправильный аватар!',
+                        text: 'Аватар не должен быть тяжелее 2МБ!',
+                        theme: 'warning',
+                        autohide: true,
+                        interval: 6000
+                      };
+
+                      new Toast(banner_error_a)
+                    } else {
+                      img.src = e.target.result;
+                    }
+                  };
+                }
+              });
+            </script>
+          </div>
+        </div>
+
+        <div style="width: 100%">
+          <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
+            <div {% if user_access.grade or user_access.username %}style="display: flex; align-items: center;"{% endif %}>
+              {% if not user_access.username %}
+              {{ user_data.general.username }}
+              {% endif %}
+
+              {% if user_access.username %}
+              <input class="edit-username" maxlength="18" startdata="{{ user_data.general.username }}" id="username" value="{{ user_data.general.username }}" name="username" oninput="usernameEditEvent()">
+              {% endif %}
+
+              {% if user_access.grade %}
+              <input id="grade" placeholder="Звание..." maxlength="18" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" class="tag-link-red grade-edit" value="{{ user_data.general.grade }}" oninput="gradeEditEvent()">
+              {% endif %}
+              {% if not user_access.grade and user_data.general.grade|length >0 %}
+              <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
               {% endif %}
 
               <script>
-                const tx = document.getElementsByTagName("textarea");
-                for (let i = 0; i < tx.length; i++) {
-                  tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
-                  tx[i].addEventListener("input", OnInput, false);
+                const usernameElement = document.getElementById('username');
+
+                usernameEditEvent()
+                function usernameEditEvent() {
+                  if (usernameElement) {
+                    const myText = usernameElement.value;
+
+                    if (myText.length >= 18 || myText.length <= 1) {
+                      usernameElement.classList.add('limit');
+                    } else {
+                      usernameElement.classList.remove('limit')
+                    }
+
+                    usernameElement.style.width = 0;
+                    usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
+                  }
                 }
+                
+                const gradeElement = document.getElementById('grade');
 
-                function OnInput() {
-                  this.style.height = 0;
-                  this.style.height = (this.scrollHeight) + "px";
+                gradeEditEvent()
+                function gradeEditEvent() {
+                  if (gradeElement) {
+                    const myText = gradeElement.value;
 
-                  console.log(this.value.length)
-                  if (this.value.length > 512) {
-                    this.classList.add('limit');
-                  } else {
-                    this.classList.remove('limit')
+                    gradeElement.style.width = 0;
+                    gradeElement.style.width = gradeElement.scrollWidth+5 + "px";
                   }
                 }
               </script>
             </div>
-          </div>
+          </h1>
+          <h4 id="mod-tags-title">
+              <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
+              <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
+                {% if user_data.general.reputation < 0 %}👿{% endif %}
+                {% if user_data.general.reputation > 0 %}😇{% endif %}
+                <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
+                {% if user_data.general.reputation == 0 %}👀{% endif %}
+              </div>
+
+              {% if user_data.general.author_mods > 0 %}
+              <a title="Автор {{ user_data.general.author_mods }} модов" class="tag-link-orange" translate="no">📤{{ user_data.general.author_mods }}</a>
+              {% endif %}
+
+              {% if user_data.general.comments > 0 %}
+              <a title="Оставил {{ user_data.general.comments }} комментариев" class="tag-link-orange" translate="no">✏️{{ user_data.general.comments }}</a>
+              {% endif %}
+          </h4>
+
+          {% if user_access.about %}
+          <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}</textarea>
           {% endif %}
-          {% if user_access.my or user_access.admin %}
-            {% if not user_data.delete_user %}
-            <div id="page-integrate" style="flex-direction: column;" class="user-container-settings">
-              <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
-                <img style="width: 30pt;" src="/assets/images/yandex.svg" alt="Yandex logo">
-                
-                <p>
-                  {% if user_access.my %}
-                    {% if user_data.private.yandex %}Отключить{% endif %}
-                    {% if not user_data.private.yandex %}Подключить{% endif %}
-                  {% endif %}
-                  {% if not user_access.my %}
-                    {% if not user_data.private.yandex %}Отключен{% endif %}
-                    {% if user_data.private.yandex %}Подключен{% endif %}
-                  {% endif %}
-                </p>
-              </button>
-              <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.google %}onclick="serviceConnect('/api/accounts/authorization/google/link')"{% endif %}{% if user_access.my and user_data.private.google %}onclick="serviceDisconnect('google')"{% endif %}>
-                <img style="width: 30pt;" src="/assets/images/google.svg" alt="Google logo">
-                
-                <p>
-                  {% if user_access.my %}
-                    {% if user_data.private.google %}Отключить{% endif %}
-                    {% if not user_data.private.google %}Подключить{% endif %}
-                  {% endif %}
-                  {% if not user_access.my %}
-                    {% if not user_data.private.google %}Отключен{% endif %}
-                    {% if user_data.private.google %}Подключен{% endif %}
-                  {% endif %}
-                </p>
-              </button>
-            </div>
-            {% endif %}
-          <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Администратор</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Писать комментарии</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Оставлять реакции</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Создавать реакции</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Публиковать моды</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять авторство модов</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять свои моды</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять чужие моды</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Удалять свои моды</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Удалять чужие моды</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Мутить пользователей</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Создавать форумы</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять авторство форумов</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять свои форумы</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять чужие форумы</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Удалять свои форумы</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Удалять чужие форумы</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять никнейм</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Изменять "обо мне"</p>
-            </div>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Менять аватар</p>
-            </div>
-            <hr>
-            <div>
-              <div class="button b2">
-                <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-                <div class="knobs">
-                  <span></span>
-                </div>
-                <div class="layer"></div>
-              </div>
-              <p>Голосовать за репутацию</p>
-            </div>
-
-            <link href="/assets/styles/vendors/checkbox.css" rel="stylesheet"/>
-          </div>
+          {% if not user_access.about and user_data.general.about_enable %}
+          <article id="mod-description">{{ user_data.general.about }}</article>
           {% endif %}
-          {% if user_access.my %}
-          <div id="page-delete-account" style="flex-direction: column;" class="user-container-settings">
-            <div style="background: #313131; width: 177pt; border-radius: 10px;">
-              <input style="width: 100%;" class="edit-username" maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
-              <button class="service" style="width: 170pt; display: flex; justify-content: center;" onclick="commitToDelete()">
-                <p>Удалить аккаунт</p>
-              </button>
-            </div>
-            <script>
-              const usernameDeleteElement = document.getElementById('username-access-delete');
 
-              usernameDeleteEditEvent()
-              function usernameDeleteEditEvent() {
-                console.log(usernameDeleteElement)
-                if (usernameDeleteElement) {
-                  const myText = usernameDeleteElement.value;
+          <script>
+            const tx = document.getElementsByTagName("textarea");
+            for (let i = 0; i < tx.length; i++) {
+              tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+              tx[i].addEventListener("input", OnInput, false);
+            }
 
-                  if (usernameDeleteElement.getAttribute("startdata") != myText) {
-                    console.log("ADDDDDDD")
-                    usernameDeleteElement.classList.add('limit');
-                  } else {
-                    console.log("REMOVEEEEE")
-                    usernameDeleteElement.classList.remove('limit')
-                  }
-                }
+            function OnInput() {
+              this.style.height = 0;
+              this.style.height = (this.scrollHeight) + "px";
+
+              console.log(this.value.length)
+              if (this.value.length > 512) {
+                this.classList.add('limit');
+              } else {
+                this.classList.remove('limit')
               }
-
-              function commitToDelete() {
-                if (usernameDeleteElement) {
-                  const myText = usernameDeleteElement.value;
-
-                  if (usernameDeleteElement.getAttribute("startdata") != myText) {
-                    banner_error_a = {
-                      title: 'Ошибка',
-                      text: 'Ради безопасности введите свой никнейм в поле!',
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
-
-                    new Toast(banner_error_a);
-                  } else {
-                    fetch('/api/accounts/authorization/delete', {method: 'POST'}).then(response => {
-                      location.reload();
-                    })
-                  }
-                }
-              }
-            </script>
-          </div>
-          {% endif %}
-          <style>
-            .nov-visib {
-              display: none;
             }
-            button.service {
-              cursor: pointer;
-              border: none;
-              width: 160pt;
-              max-width: 100%;
-              background: bisque;
-              border-radius: 5pt;
-              padding-top: 2pt;
-              padding-bottom: 2pt;
-              padding-right: 2pt;
-              display: flex;
-              align-items: center;
-              margin: 3pt;
-              padding-left: 1pt;
-            }
-            button.sconnected {
-              cursor: auto;
-              pointer-events: none;
-              background: #ffad4b;
-            }
-            button.service > p {
-              font-size: 20pt;
-              font-family: cursive;
-            }
-          </style>
+          </script>
         </div>
-        <style>
-          #page-profile, #page-integrate, #page-rights, #page-delete-account {
-            transition: opacity 0.2s;
-          }
-        </style>
+      </div>
+      {% endif %}
+      {% if user_access.my or user_access.admin %}
+        {% if not user_data.delete_user %}
+        <div id="page-integrate" style="flex-direction: column;" class="user-container-settings">
+          <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
+            <img style="width: 30pt;" src="/assets/images/yandex.svg" alt="Yandex logo">
+            
+            <p>
+              {% if user_access.my %}
+                {% if user_data.private.yandex %}Отключить{% endif %}
+                {% if not user_data.private.yandex %}Подключить{% endif %}
+              {% endif %}
+              {% if not user_access.my %}
+                {% if not user_data.private.yandex %}Отключен{% endif %}
+                {% if user_data.private.yandex %}Подключен{% endif %}
+              {% endif %}
+            </p>
+          </button>
+          <button class="service{% if not user_access.my %} sconnected{% endif %}" {% if user_access.my and not user_data.private.google %}onclick="serviceConnect('/api/accounts/authorization/google/link')"{% endif %}{% if user_access.my and user_data.private.google %}onclick="serviceDisconnect('google')"{% endif %}>
+            <img style="width: 30pt;" src="/assets/images/google.svg" alt="Google logo">
+            
+            <p>
+              {% if user_access.my %}
+                {% if user_data.private.google %}Отключить{% endif %}
+                {% if not user_data.private.google %}Подключить{% endif %}
+              {% endif %}
+              {% if not user_access.my %}
+                {% if not user_data.private.google %}Отключен{% endif %}
+                {% if user_data.private.google %}Подключен{% endif %}
+              {% endif %}
+            </p>
+          </button>
+        </div>
+        {% endif %}
+      <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Администратор</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Писать комментарии</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Оставлять реакции</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Создавать реакции</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Публиковать моды</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять авторство модов</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять свои моды</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять чужие моды</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Удалять свои моды</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Удалять чужие моды</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Мутить пользователей</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Создавать форумы</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять авторство форумов</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять свои форумы</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять чужие форумы</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Удалять свои форумы</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Удалять чужие форумы</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять никнейм</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Изменять "обо мне"</p>
+        </div>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Менять аватар</p>
+        </div>
+        <hr>
+        <div>
+          <div class="button b2">
+            <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
+            <div class="knobs">
+              <span></span>
+            </div>
+            <div class="layer"></div>
+          </div>
+          <p>Голосовать за репутацию</p>
+        </div>
 
+        <link href="/assets/styles/vendors/checkbox.css" rel="stylesheet"/>
+      </div>
+      {% endif %}
+      {% if user_access.my %}
+      <div id="page-delete-account" style="flex-direction: column;" class="user-container-settings">
+        <div style="background: #313131; width: 177pt; border-radius: 10px;">
+          <input style="width: 100%;" class="edit-username" maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
+          <button class="service" style="width: 170pt; display: flex; justify-content: center;" onclick="commitToDelete()">
+            <p>Удалить аккаунт</p>
+          </button>
+        </div>
         <script>
-          function saveProfile() {
-            let data = {}
+          const usernameDeleteElement = document.getElementById('username-access-delete');
 
-            let tofetch = false
-            let url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
-            let formData = new FormData();
+          usernameDeleteEditEvent()
+          function usernameDeleteEditEvent() {
+            console.log(usernameDeleteElement)
+            if (usernameDeleteElement) {
+              const myText = usernameDeleteElement.value;
 
-            const username = document.getElementById('username');
-            if (username && username.value != username.getAttribute("startdata")) {
-              formData.append('username', username.value);
-              tofetch = true
-            }
-            const grade = document.getElementById('grade');
-            if (grade && grade.value != grade.getAttribute("startdata")) {
-              formData.append('grade', grade.value);
-              tofetch = true
-            }
-            const about = document.getElementById('mod-description');
-            if (about && about.value != about.getAttribute("startdata")) {
-              formData.append('about', about.value);
-              tofetch = true
-            }
-            const input = document.getElementById('file-select-avatar');
-            if (input && input.files[0]) {
-              formData.append('avatar', input.files[0]);
-              tofetch = true
-            } else {
-              formData.append('avatar', '');
-            }
-
-            const emptyAvatar = document.getElementById('reset-avatar-checkbox');
-            if (emptyAvatar && emptyAvatar.checked) {
-              formData.append('empty_avatar', emptyAvatar.checked);
-              tofetch = true
-            }
-            const mute = document.getElementById('mute-datetime');
-            if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
-              formData.append('mute', mute.value);
-              tofetch = true
-            }
-
-            console.log(url)
-
-            if (tofetch) {
-              fetch(url, {
-                method: 'POST',
-                body: formData
-              }).then(response => {
-                if (response.status === 202) {
-                  console.log('Код ответа равен 202!');
-                } else {
-                  console.log('Код ответа не равен 202');
-                  response.text().then(text => {
-                    banner_error_a = {
-                      title: 'Профиль',
-                      text: text.substring(1, text.length - 1),
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
-
-                    new Toast(banner_error_a);
-                  });
-                }
-              }).catch(error => {
-                console.error('Произошла ошибка при отправке запроса: ' + error);
-                banner_error_a = {
-                  title: 'Профиль',
-                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
-                  theme: 'danger',
-                  autohide: true,
-                  interval: 6000
-                };
-
-              new Toast(banner_error_a)
-              });
-            }
-
-
-
-            var tofetchTWO = false
-            formData = new FormData();
-
-            // Запрос на редактирование прав
-            url = '/api/accounts/edit/profile/rights?user_id={{ user_data.general.id }}&'
-            function addRight(nameCheckbox) {
-              const checkbox = document.getElementById('checkbox-rights-edit-'+nameCheckbox);
-
-              console.log(checkbox)
-              if (checkbox && checkbox.hasAttribute('startdata') != checkbox.checked) {
-                tofetchTWO = true
-                formData.append(nameCheckbox, checkbox.checked);
+              if (usernameDeleteElement.getAttribute("startdata") != myText) {
+                console.log("ADDDDDDD")
+                usernameDeleteElement.classList.add('limit');
+              } else {
+                console.log("REMOVEEEEE")
+                usernameDeleteElement.classList.remove('limit')
               }
             }
-            
-            const rightsList = [
-              'admin',
-              'write_comments',
-              'set_reactions',
-              'create_reactions',
-              'mute_users',
-              'publish_mods',
-              'change_authorship_mods',
-              'change_self_mods',
-              'change_mods',
-              'delete_self_mods',
-              'delete_mods',
-              'create_forums',
-              'change_authorship_forums',
-              'change_self_forums',
-              'change_forums',
-              'delete_self_forums',
-              'delete_forums',
-              'change_username',
-              'change_about',
-              'change_avatar',
-              'vote_for_reputation'
-            ]
-            for (i in rightsList) {
-              addRight(rightsList[i])
-            }
+          }
 
-            if (tofetchTWO) {
-              fetch(url, {
-                method: 'POST',
-                body: formData
-              }).then(response => {
-                if (response.status === 202) {
-                  console.log('Код ответа равен 202!');
-                } else {
-                  console.log('Код ответа не равен 202');
-                  response.text().then(text => {
-                    banner_error_a = {
-                      title: 'Права',
-                      text: text.substring(1, text.length - 1),
-                      theme: 'warning',
-                      autohide: true,
-                      interval: 6000
-                    };
+          function commitToDelete() {
+            if (usernameDeleteElement) {
+              const myText = usernameDeleteElement.value;
 
-                    new Toast(banner_error_a);
-                  });
-                }
-              }).catch(error => {
-                console.error('Произошла ошибка при отправке запроса: ' + error);
+              if (usernameDeleteElement.getAttribute("startdata") != myText) {
                 banner_error_a = {
-                  title: 'Права',
-                  text: 'При запросе на сервер произошла непредвиденная ошибка...',
-                  theme: 'danger',
+                  title: 'Ошибка',
+                  text: 'Ради безопасности введите свой никнейм в поле!',
+                  theme: 'warning',
                   autohide: true,
                   interval: 6000
                 };
 
-              new Toast(banner_error_a)
-              });
-            }
-            
-            if (tofetch || tofetchTWO) {
-              location.reload();
-            } else {
-              banner_error_a = {
-                title: 'Сохранение',
-                text: 'Вы не внесли изменений которые можно сохранить',
-                theme: 'warning',
-                autohide: true,
-                interval: 6000
-              };
-
-              new Toast(banner_error_a);
+                new Toast(banner_error_a);
+              } else {
+                fetch('/api/accounts/authorization/delete', {method: 'POST'}).then(response => {
+                  location.reload();
+                })
+              }
             }
           }
         </script>
-    </article>
+      </div>
+      {% endif %}
+      <style>
+        .nov-visib {
+          display: none;
+        }
+        button.service {
+          cursor: pointer;
+          border: none;
+          width: 160pt;
+          max-width: 100%;
+          background: bisque;
+          border-radius: 5pt;
+          padding-top: 2pt;
+          padding-bottom: 2pt;
+          padding-right: 2pt;
+          display: flex;
+          align-items: center;
+          margin: 3pt;
+          padding-left: 1pt;
+        }
+        button.sconnected {
+          cursor: auto;
+          pointer-events: none;
+          background: #ffad4b;
+        }
+        button.service > p {
+          font-size: 20pt;
+          font-family: cursive;
+        }
+      </style>
+    </div>
+    <style>
+      #page-profile, #page-integrate, #page-rights, #page-delete-account {
+        transition: opacity 0.2s;
+      }
+    </style>
+
+    <script>
+      function saveProfile() {
+        let data = {}
+
+        let tofetch = false
+        let url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
+        let formData = new FormData();
+
+        const username = document.getElementById('username');
+        if (username && username.value != username.getAttribute("startdata")) {
+          formData.append('username', username.value);
+          tofetch = true
+        }
+        const grade = document.getElementById('grade');
+        if (grade && grade.value != grade.getAttribute("startdata")) {
+          formData.append('grade', grade.value);
+          tofetch = true
+        }
+        const about = document.getElementById('mod-description');
+        if (about && about.value != about.getAttribute("startdata")) {
+          formData.append('about', about.value);
+          tofetch = true
+        }
+        const input = document.getElementById('file-select-avatar');
+        if (input && input.files[0]) {
+          formData.append('avatar', input.files[0]);
+          tofetch = true
+        } else {
+          formData.append('avatar', '');
+        }
+
+        const emptyAvatar = document.getElementById('reset-avatar-checkbox');
+        if (emptyAvatar && emptyAvatar.checked) {
+          formData.append('empty_avatar', emptyAvatar.checked);
+          tofetch = true
+        }
+        const mute = document.getElementById('mute-datetime');
+        if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
+          formData.append('mute', mute.value);
+          tofetch = true
+        }
+
+        console.log(url)
+
+        if (tofetch) {
+          fetch(url, {
+            method: 'POST',
+            body: formData
+          }).then(response => {
+            if (response.status === 202) {
+              console.log('Код ответа равен 202!');
+            } else {
+              console.log('Код ответа не равен 202');
+              response.text().then(text => {
+                banner_error_a = {
+                  title: 'Профиль',
+                  text: text.substring(1, text.length - 1),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a);
+              });
+            }
+          }).catch(error => {
+            console.error('Произошла ошибка при отправке запроса: ' + error);
+            banner_error_a = {
+              title: 'Профиль',
+              text: 'При запросе на сервер произошла непредвиденная ошибка...',
+              theme: 'danger',
+              autohide: true,
+              interval: 6000
+            };
+
+          new Toast(banner_error_a)
+          });
+        }
+
+
+
+        var tofetchTWO = false
+        formData = new FormData();
+
+        // Запрос на редактирование прав
+        url = '/api/accounts/edit/profile/rights?user_id={{ user_data.general.id }}&'
+        function addRight(nameCheckbox) {
+          const checkbox = document.getElementById('checkbox-rights-edit-'+nameCheckbox);
+
+          console.log(checkbox)
+          if (checkbox && checkbox.hasAttribute('startdata') != checkbox.checked) {
+            tofetchTWO = true
+            formData.append(nameCheckbox, checkbox.checked);
+          }
+        }
+        
+        const rightsList = [
+          'admin',
+          'write_comments',
+          'set_reactions',
+          'create_reactions',
+          'mute_users',
+          'publish_mods',
+          'change_authorship_mods',
+          'change_self_mods',
+          'change_mods',
+          'delete_self_mods',
+          'delete_mods',
+          'create_forums',
+          'change_authorship_forums',
+          'change_self_forums',
+          'change_forums',
+          'delete_self_forums',
+          'delete_forums',
+          'change_username',
+          'change_about',
+          'change_avatar',
+          'vote_for_reputation'
+        ]
+        for (i in rightsList) {
+          addRight(rightsList[i])
+        }
+
+        if (tofetchTWO) {
+          fetch(url, {
+            method: 'POST',
+            body: formData
+          }).then(response => {
+            if (response.status === 202) {
+              console.log('Код ответа равен 202!');
+            } else {
+              console.log('Код ответа не равен 202');
+              response.text().then(text => {
+                banner_error_a = {
+                  title: 'Права',
+                  text: text.substring(1, text.length - 1),
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a);
+              });
+            }
+          }).catch(error => {
+            console.error('Произошла ошибка при отправке запроса: ' + error);
+            banner_error_a = {
+              title: 'Права',
+              text: 'При запросе на сервер произошла непредвиденная ошибка...',
+              theme: 'danger',
+              autohide: true,
+              interval: 6000
+            };
+
+          new Toast(banner_error_a)
+          });
+        }
+        
+        if (tofetch || tofetchTWO) {
+          location.reload();
+        } else {
+          banner_error_a = {
+            title: 'Сохранение',
+            text: 'Вы не внесли изменений которые можно сохранить',
+            theme: 'warning',
+            autohide: true,
+            interval: 6000
+          };
+
+          new Toast(banner_error_a);
+        }
+      }
+    </script>
     {% endif %}
-  </div>
+  </main>
 
   <script src="/assets/scripts/vendors/pager-logic.js"></script>
   <script src="/assets/scripts/ow-logic.js"></script>

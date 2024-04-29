@@ -618,6 +618,7 @@ blockquote > .light {
   cursor: pointer;
   border-radius: 5pt;
   padding: 5pt;
+  width: 100%;
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -1233,62 +1234,8 @@ td {
   background: #700000;
 }
 
-.navig-user-setting-menu {
-  background: #191919ed;
-  height: 100%;
-  margin: 3pt;
-  padding: 3pt;
-  border-radius: 4pt;
-  display: flex;
-  flex-direction: column;
-}
-.navig-user-setting-menu > button {
-  border-radius: 5pt;
-  border: none;
-  font-size: 15pt;
-  background: chocolate;
-  color: white;
-  padding-bottom: 2pt;
-  padding-left: 3pt;
-  padding-right: 3pt;
-  font-variant: all-small-caps;
-  margin-top: 2pt;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  box-shadow:0px 0px 0px 0px chocolate;
-} 
-.navig-user-setting-menu > h2 {
-  color: white;
-} 
-.navig-user-setting-menu > button:disabled {
-  background: #4d260b;
-  box-shadow:0px 0px 0px 0px rgb(184, 92, 26);
-  pointer-events: none;
-  cursor: none;
-} 
-.navig-user-setting-menu > button:hover {
-  background: #b65b1a;
-  box-shadow:0px 0px 1px 1px rgb(184, 92, 26);
-} 
-.navig-user-setting-menu > button:active {
-  background: #a15117;
-  box-shadow:0px 0px 2px 2px rgb(167, 83, 23);
-}
 
-
-
-.user-settings-cont {
-  display: flex;
-  width: 100%;
-  max-width: 500pt;
-  background: var(--main-panel-on-page-background);
-}
 @media (max-width: 439px) {
-  .user-settings-cont {
-    flex-direction: column;
-    align-items: center;
-  }
   .user-container {
     display: block;
   }
@@ -1307,9 +1254,6 @@ td {
   }
 }
 @media (min-width: 440px) {
-  .user-settings-cont {
-    flex-direction: row;
-  }
   .user-container {
     display: -webkit-box;
     display: -ms-flexbox;
