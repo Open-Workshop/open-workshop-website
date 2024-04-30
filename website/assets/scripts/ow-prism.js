@@ -1,7 +1,7 @@
 
 // Стандартное форматирование ow в описаниях
 
-b={
+const ow_prism_b={
     pattern: /\[b\](.*?)\[\/b\]/gms,
     inside: {
         'punctuation': /\[\/?b\]/ig,
@@ -9,7 +9,7 @@ b={
         'content': /.*/ig,
     }
 }
-i={
+const ow_prism_i={
     pattern: /\[i\](.*?)\[\/i\]/gms,
     inside: {
         'punctuation': /\[\/?i\]/ig,
@@ -17,32 +17,32 @@ i={
         'content': /.*/ig,
     }
 }
-img={
+const ow_prism_img={
     pattern: /\[img\](.*?)\[\/img\]/ig,
     inside: {
         'punctuation': /\[\/?img|\]/ig,
         'content': /.*/ig,
     }
 }
-url={
+const ow_prism_url={
     pattern: /(?:\[url=)(https?:\/\/.*?)(?:\])(.*?)(?:\[\/url\])/ig,
     inside: {
-        'img': img,
+        'img': ow_prism_img,
         'punctuation': /\[\/?url=?|\]/ig,
         'link': /https?:\/\/\S+/ig,
-        'bold': b,
-        'italic': i,
+        'bold': ow_prism_b,
+        'italic': ow_prism_i,
         'content': /.*/ig,
     }
 }
-htitle={
+const ow_prism_htitle={
     pattern: /\[(h[1-6])\](.*?)\[\/\1\]/gs,
     inside: {
-        'url': url,
-        'img': img,
+        'url': ow_prism_url,
+        'img': ow_prism_img,
         'punctuation': /\[\/?(h[1-6])\]/ig,
-        'bold': b,
-        'italic': i,
+        'bold': ow_prism_b,
+        'italic': ow_prism_i,
         'content': /.*/ig,
     }
 }
@@ -54,21 +54,21 @@ $(document).ready(function() {
             inside: {
                 "list": /\[\/?list\]/ig,
                 "point": /\[\*\]/ig,
-                'title': htitle,
-                'img': img,
-                'url': url,
+                'title': ow_prism_htitle,
+                'img': ow_prism_img,
+                'url': ow_prism_url,
                 'link': /https?:\/\/\S+/ig,
-                'bold': b,
-                'italic': i,
+                'bold': ow_prism_b,
+                'italic': ow_prism_i,
                 'content': /.*/ig,
             }
         },
-        'url': url,
-        'img': img,
-        'title': htitle,
+        'url': ow_prism_url,
+        'img': ow_prism_img,
+        'title': ow_prism_htitle,
         'link': /https?:\/\/\S+/ig,
-        'italic': i,
-        'bold': b,
+        'italic': ow_prism_i,
+        'bold': ow_prism_b,
     };
     
     Prism.languages.webmanifest = Prism.languages.ow;

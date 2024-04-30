@@ -3,14 +3,13 @@ $(document).ready(function() {
         $(this).attr('startdata', $(this).val());
         fullDescUpdate($(this));
     });
+    
+    setInterval(function() {
+        $("textarea.editing").each(function() {
+            descOnHeight($(this).parent(), $(this));
+        });
+    }, 100)
 });
-
-setInterval(function() {
-    $("textarea.editing").each(function() {
-        descOnHeight($(this).parent(), $(this));
-    });
-}, 100)
-
 
 
 function fullDescUpdate(textareaDesc) {

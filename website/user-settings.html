@@ -219,31 +219,13 @@
           </h4>
 
           {% if user_access.about %}
-          <textarea class="edit-about-settings" placeholder="Обо мне..." startdata="{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}" title="Эта информация будет доступна всем. Учитывайте при написании правила сайта иначе могут быть проблемы!" style="height: 51px;" id="mod-description">{% if user_data.general.about_enable %}{{ user_data.general.about }}{% endif %}</textarea>
+            {% with limit=512, placeholder='Обо мне...', init_text=(user_data.general.about if user_data.general.about_enable else "") %}
+              {% include 'html-partials/desc-edit.html' %}
+            {% endwith %}
           {% endif %}
           {% if not user_access.about and user_data.general.about_enable %}
           <article id="mod-description">{{ user_data.general.about }}</article>
           {% endif %}
-
-          <script>
-            const tx = document.getElementsByTagName("textarea");
-            for (let i = 0; i < tx.length; i++) {
-              tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
-              tx[i].addEventListener("input", OnInput, false);
-            }
-
-            function OnInput() {
-              this.style.height = 0;
-              this.style.height = (this.scrollHeight) + "px";
-
-              console.log(this.value.length)
-              if (this.value.length > 512) {
-                this.classList.add('limit');
-              } else {
-                this.classList.remove('limit')
-              }
-            }
-          </script>
         </div>
       </div>
       {% endif %}
@@ -597,37 +579,37 @@
         let url = '/api/accounts/profile/edit/{{ user_data.general.id }}?'
         let formData = new FormData();
 
-        const username = document.getElementById('username');
-        if (username && username.value != username.getAttribute("startdata")) {
-          formData.append('username', username.value);
+        const $username = $('#username');
+        if ($username.val() != $username.attr("startdata")) {
+          formData.append('username', $username.val());
           tofetch = true
         }
-        const grade = document.getElementById('grade');
-        if (grade && grade.value != grade.getAttribute("startdata")) {
-          formData.append('grade', grade.value);
+        const $grade = $('#grade');
+        if ($grade.val() != $grade.attr("startdata")) {
+          formData.append('grade', $grade.val());
           tofetch = true
         }
-        const about = document.getElementById('mod-description');
-        if (about && about.value != about.getAttribute("startdata")) {
-          formData.append('about', about.value);
+        const $about = $("#page-profile").find("textarea.editing");
+        if ($about.val() != $about.attr("startdata")) {
+          formData.append('about', $about.val());
           tofetch = true
         }
-        const input = document.getElementById('file-select-avatar');
-        if (input && input.files[0]) {
-          formData.append('avatar', input.files[0]);
+        const $input = $("#file-select-avatar");
+        if ($input.get(0).files.length > 0) {
+          formData.append('avatar', $input.get(0).files[0]);
           tofetch = true
         } else {
           formData.append('avatar', '');
         }
 
-        const emptyAvatar = document.getElementById('reset-avatar-checkbox');
-        if (emptyAvatar && emptyAvatar.checked) {
-          formData.append('empty_avatar', emptyAvatar.checked);
+        const $emptyAvatar = $("#reset-avatar-checkbox");
+        if ($emptyAvatar.is(":checked")) {
+          formData.append('empty_avatar', true);
           tofetch = true
         }
-        const mute = document.getElementById('mute-datetime');
-        if (mute && ((mute.hasAttribute("startdata") && mute.value != mute.getAttribute("startdata")) || (mute.value && !mute.hasAttribute("startdata")))) {
-          formData.append('mute', mute.value);
+        const $mute = $('#mute-datetime');
+        if (($mute.attr("startdata") && $mute.val() != $mute.attr("startdata")) || ($mute.val() && !$mute.attr("startdata"))) {
+          formData.append('mute', $mute.val());
           tofetch = true
         }
 
@@ -766,7 +748,6 @@
   </main>
 
   <script src="/assets/scripts/vendors/pager-logic.js"></script>
-  <script src="/assets/scripts/ow-logic.js"></script>
 
   <script>
     Pager.updateSelect.call(document.querySelector('#page-profile-button'))

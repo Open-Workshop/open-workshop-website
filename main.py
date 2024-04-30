@@ -608,13 +608,9 @@ async def user_settings(user_id):
 
     print(user_p, editable)
 
-    try:
-        page_html = render_template("user-settings.html", user_data=info, user_access=editable,
-                                   is_user_data={"id": user_id, "logo": info['general']['avatar_url']},
-                                   user_profile=user_p)
-    except:
-        page_html = ""
-
+    page_html = render_template("user-settings.html", user_data=info, user_access=editable,
+                               is_user_data={"id": user_id, "logo": info['general']['avatar_url']},
+                               user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
