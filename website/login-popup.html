@@ -27,20 +27,13 @@
             </div>
             
             {% if russia %}
-            <div class="outline-container" id="from-russia-question">
+            <div class="outline-container" id="from-russia-question" onclick="fromRussia()">
+                <input class="input-checkbox" id="russia-checkbox" type="checkbox">
                 <label>Вы находитесь на территории РФ?</label>
-                <div onclick="fromRussia(true)">
-                    <input class="input-checkbox" id="yes-russia-checkbox" type="checkbox">
-                    <label>Да</label>
-                </div>
-                <div onclick="fromRussia(false)">
-                    <input class="input-checkbox" id="no-russia-checkbox" type="checkbox">
-                    <label>Нет</label>
-                </div>
             </div>
             {% endif %}
 
-            <button id="continue-link" onclick="window.location.href = '{{ link }}'" disabled>Продолжить</button>
+            <button id="continue-link" onclick="continueAuth()" disabled>Продолжить</button>
             
             <script>
                 function toLink(link) {
@@ -57,18 +50,21 @@
                     checkContinue();
                 }
                 
-                function fromRussia(from) {
-                    $('#yes-russia-checkbox').prop('checked', from);
-                    $('#no-russia-checkbox').prop('checked', !from);
+                function fromRussia() {
+                    const $ruCheckbox = $('input#russia-checkbox')
 
-                    document.cookie = "fromRussia="+from+"; expires="+new Date(Date.now() + 30*24*60*60*1000).toUTCString()+"; path=/";
+                    $ruCheckbox.prop('checked', !$ruCheckbox.prop('checked'));
+                }
 
-                    checkContinue();
+                function continueAuth() {
+                    document.cookie = "fromRussia="+$('input#legal-checkbox').prop('checked')+"; expires="+new Date(Date.now() + 30*24*60*60*1000).toUTCString()+"; path=/";
+
+                    window.location.href = '{{ link }}'
                 }
 
 
                 function checkContinue() {
-                    $('#continue-link').prop('disabled', !CookieManager.has('fromRussia') || !$('#legal-checkbox').prop('checked'));
+                    $('#continue-link').prop('disabled', !$('#legal-checkbox').prop('checked'));
                 }
             </script>
         </main>
