@@ -97,6 +97,12 @@ label#end-of-cards {
 }
 
 
+#bresults-context {
+    text-align: right;
+    margin-top: 10px;
+}
+
+
 @media screen and (max-width: 810px) {
     header input[type="search"] {
         display: none;
