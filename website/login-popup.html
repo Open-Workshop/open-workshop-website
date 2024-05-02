@@ -59,6 +59,7 @@
                 function continueAuth() {
                     const $ruCheckbox = $('input#russia-checkbox')
                     if ($ruCheckbox) {
+                        console.log(!$ruCheckbox.prop('checked'))
                         document.cookie = "fromRussia="+!$ruCheckbox.prop('checked')+"; expires="+new Date(Date.now() + 30*24*60*60*1000).toUTCString()+"; path=/";
                     }
 
