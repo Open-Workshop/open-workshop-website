@@ -1,5 +1,5 @@
 
-if (!document.cookie.includes('cooks')) {
+if (!CookieManager.has('cooks')) {
     $('cookies').addClass('show');
 }
 function cookiesOkPress() {

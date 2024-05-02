@@ -29,7 +29,7 @@ function authWindow(serviceUrl, bannerCloseWindow) {
       'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
   );
 
-  const AT = getCookie('accessJS');
+  const AT = CookieManager.get('accessJS');
   const interval = setInterval(() => {
     if (win.closed) {
       console.log("Окно закрыто :(");
@@ -41,8 +41,8 @@ function authWindow(serviceUrl, bannerCloseWindow) {
       }, 1000);
     }
     
-    console.log(AT, getCookie("accessJS"))
-    if (document.cookie.includes('accessJS') && (AT == null || AT != getCookie("accessJS"))) {
+    console.log(AT, CookieManager.get("accessJS"))
+    if (CookieManager.has('accessJS') && (AT == null || AT != CookieManager.get("accessJS"))) {
       console.log("Кука появилась!");
 
       clearInterval(interval);
@@ -50,32 +50,19 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 
       location.reload();
     }
-    if (document.cookie.includes('popupLink')) {
+    if (CookieManager.has('popupLink')) {
       console.log("Пользователь переходит на другую страницу!");
 
       clearInterval(interval);
       win.close();
 
-      const link = getCookie("popupLink");
+      const link = CookieManager.get("popupLink");
       console.log(link)
       document.cookie = "popupLink=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
       location.href = link;
     }
   }, 200);
-}
-
-
-function getCookie(cookieName) {
-  const equalSign = cookieName + '=';
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    let trimmedCookie = cookie.trim();
-    if (trimmedCookie.startsWith(equalSign)) {
-      return trimmedCookie.substring(equalSign.length);
-    }
-  }
-  return null;
 }
 
 function serviceDisconnect(service) {

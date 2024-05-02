@@ -7,26 +7,17 @@
         <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico"/>
         
         <link href="/assets/styles/new-standart.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/header.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/mains.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/button.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/a.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/input.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/select.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/balloon.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/img.css" rel="stylesheet"/>
-        <link href="/assets/styles/vendors/cards.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/mod.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/images-view.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/tags.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/user.css" rel="stylesheet"/>
-        <link href="/assets/styles/mini-parts/user-setting.css" rel="stylesheet"/>
         <link href="/assets/styles/mini-parts/containers.css" rel="stylesheet"/>
-        <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
         
         <link href="/assets/styles/mini-parts/login-popup.css" rel="stylesheet"/>
 
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="/assets/scripts/vendors/cookie-manager.js"></script>
     </head>
     <body>
         <main class="login-popup">
@@ -77,8 +68,7 @@
 
 
                 function checkContinue() {
-                    console.log('checkContinue', document.cookie.includes('fromRussia') && $('#legal-checkbox').prop('checked'), document.cookie.includes('fromRussia'), $('#legal-checkbox').prop('checked'))
-                    $('#continue-link').prop('disabled', !document.cookie.includes('fromRussia') || !$('#legal-checkbox').prop('checked'));
+                    $('#continue-link').prop('disabled', !CookieManager.has('fromRussia') || !$('#legal-checkbox').prop('checked'));
                 }
             </script>
         </main>
