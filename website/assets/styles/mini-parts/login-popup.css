@@ -1,0 +1,49 @@
+
+main.login-popup > div#legal {
+    max-width: 380px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    cursor: pointer;
+}
+main.login-popup > div#legal > * {
+    cursor: pointer;
+}
+
+main.login-popup > div#legal > input {
+    margin-right: 5px;
+}
+
+
+main.login-popup > div#from-russia-question {
+    display: flex;
+    flex-direction: column;
+
+    max-width: 380px;
+}
+main.login-popup > div#from-russia-question > div {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+main.login-popup > div#from-russia-question > div > * {
+    cursor: pointer;
+}
+main.login-popup > div#from-russia-question > div > label {
+    margin-left: 5px;
+}
+main.login-popup > div#from-russia-question > label {
+    text-align: center;
+    font-size: larger;
+}
+
+
+input[type="checkbox"] {
+    pointer-events: none;
+}
+
+
+button#continue-link {
+    margin-top: 20px;
+}

@@ -11,7 +11,7 @@ $(document).ready(function() {
         dopLink = "?"+window.location.href.split("?").pop();
     }
 
-    const depens = Array.from(document.getElementsByClassName("mod-dependence"));
+    const depens = Array.from(document.getElementsByClassName("element"));
     depens.forEach(depen => {
         depen.href = depen.href+dopLink;
     });

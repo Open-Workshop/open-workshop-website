@@ -599,51 +599,7 @@ blockquote > .light {
     max-width: 100%;
   }
 }
-.mod-dependence-list {
-  border: solid 1px var(--panel-on-page-background);
-  margin-top: 4pt;
-  border-radius: 10px;
-  padding: 5pt;
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-}
-.mod-dependence-list > h3, .mod-dependence-list > h4 {
-  width: 100%;
-  text-align: center;
-}
 
-.mod-dependence {
-  margin-top: 5pt;
-  cursor: pointer;
-  border-radius: 5pt;
-  padding: 5pt;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  vertical-align: middle;
-  padding-top: auto;
-  padding-bottom: auto;
-  transition: background-color 0.1s;
-}
-.mod-dependence:hover {
-  background-color: rgba(15, 15, 15, 0.9);
-}
-
-.mod-dependence img {
-  border-radius: 5pt;
-  margin-right: 5pt;
-  max-width: 50pt;
-  height: 30pt;
-}
-.mod-dependence h3 {
-  vertical-align: middle;
-}
-.mod-dependence div {
-  height: 10%;
-  vertical-align: middle;
-}
 
 .text-field__input {
   display: block;

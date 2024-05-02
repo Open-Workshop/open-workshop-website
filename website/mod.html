@@ -53,7 +53,7 @@
 
 
         {% if data[2] | length > 0 %}
-        <div class="mod-dependence-list">
+        <div class="outline-container">
         {% for item in data[2] %}
             <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег мода: {{ item.name }}"><h3 translate="no">{{ item.name }}</h3></a>
         {% endfor %}
@@ -62,31 +62,31 @@
 
 
         {% if authors | length > 0 %}
-        <div class="mod-dependence-list">
+        <div class="outline-container">
         <h2>Авторы</h2>
         {% for item in authors %}
-            <a class="mod-dependence user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
-            <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
-            <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
+            <a class="element user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+                <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
             </a>
         {% endfor %}
         </div>
         {% endif %}
 
         {% if data[0]['dependencies_count'] > 0 %}
-        <div class="mod-dependence-list">
+        <div class="outline-container">
         <h2>Зависимости мода</h2>
         {% for item in data[3].values() %}
-            <a class="mod-dependence" href="/mod/{{ item.id }}">
-            <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
-            <h3 translate="no">{{ item.name }}</h3>
+            <a class="element" href="/mod/{{ item.id }}">
+                <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                <h3 translate="no">{{ item.name }}</h3>
             </a>
         {% endfor %}
         </div>
         {% endif %}
         
         {% if not user_profile %}
-        <div class="mod-dependence-list">
+        <div class="outline-container">
             <h3>Авторизированным пользователям не отображается реклама</h3>
             <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
         </div>

@@ -4,71 +4,83 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Согласие с правилами сервиса</title>
-        <link href="/assets/styles/style.css" rel="stylesheet"/>
+        <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico"/>
+        
+        <link href="/assets/styles/new-standart.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/header.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/mains.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/button.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/a.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/input.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/select.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/balloon.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/img.css" rel="stylesheet"/>
+        <link href="/assets/styles/vendors/cards.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/mod.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/images-view.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/tags.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/user.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/user-setting.css" rel="stylesheet"/>
+        <link href="/assets/styles/mini-parts/containers.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+        
+        <link href="/assets/styles/mini-parts/login-popup.css" rel="stylesheet"/>
+
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     </head>
-    <body style="background: #121230; display: flex; flex-direction: column; height: 100%; align-items: center;">
-        <div style="margin-top: 60pt;" style="cursor: pointer;" class="independence-mods-selector" onclick="document.getElementById('legal-checkbox').click();">
-            <input class="input-checkbox" onchange="toggleLink()" id="legal-checkbox" type="checkbox">
-            <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Я согласен с <a class="tag-link-blue" onclick="toLegal('/legal/site-rules')" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и<br>на <a class="tag-link-blue" onclick="toLegal('/legal/privacy-policy')" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
-        </div>
-        
-        {% if russia %}
-        <div style="background: #2a2a2a; padding: 3pt; border-radius: 10px; margin-top: 5pt;">
-            <h2>Вы находитесь на территории РФ?</h2>
-            <div style="cursor: pointer;" class="independence-mods-selector" onclick="document.getElementById('yes-russia-checkbox').click();">
-                <input class="input-checkbox" onchange="fromRussia(true)" id="yes-russia-checkbox" type="checkbox">
-                <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Да</label>
+    <body>
+        <main class="login-popup">
+            <div class="outline-container" id="legal" onclick="checkLegal()">
+                <input class="input-checkbox" id="legal-checkbox" type="checkbox">
+                <label>Я согласен с <a class="tag-link-blue" onclick="toLink('/legal/site-rules')" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и на <a class="tag-link-blue" onclick="toLink('/legal/privacy-policy')" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
             </div>
-            <div style="cursor: pointer;" class="independence-mods-selector" onclick="document.getElementById('no-russia-checkbox').click();">
-                <input class="input-checkbox" onchange="fromRussia(false)" id="no-russia-checkbox" type="checkbox">
-                <label style="margin-left: 6pt; cursor: pointer; margin-top: 1pt;">Нет</label>
+            
+            {% if russia %}
+            <div class="outline-container" id="from-russia-question">
+                <label>Вы находитесь на территории РФ?</label>
+                <div onclick="fromRussia(true)">
+                    <input class="input-checkbox" id="yes-russia-checkbox" type="checkbox">
+                    <label>Да</label>
+                </div>
+                <div onclick="fromRussia(false)">
+                    <input class="input-checkbox" id="no-russia-checkbox" type="checkbox">
+                    <label>Нет</label>
+                </div>
             </div>
-        </div>
+            {% endif %}
 
-        <script>
-            function fromRussia(mode) {
-                document.getElementById('yes-russia-checkbox').checked = mode;
-                document.getElementById('no-russia-checkbox').checked = !mode;
+            <button id="continue-link" onclick="window.location.href = '{{ link }}'" disabled>Продолжить</button>
+            
+            <script>
+                function toLink(link) {
+                    document.cookie = "popupLink="+link+"; path=/";
+                }
+
+
+                function checkLegal() {
+                    console.log('checkLegal')
+
+                    const $legalCheckbox = $('input#legal-checkbox')
+                    $legalCheckbox.prop('checked', !$legalCheckbox.prop('checked'));
+
+                    checkContinue();
+                }
                 
-                document.cookie = "fromRussia="+mode+"; path=/; max-age=2592000; secure; samesite=lax;";
-                
-                document.getElementById('continue-link').classList.remove("ru-disabled");
-            }
-        </script>
-        <style>
-            a.ru-disabled {
-                pointer-events: none;
-                color: #ccc;
-            }
-        </style>
-        {% endif %}
+                function fromRussia(from) {
+                    $('#yes-russia-checkbox').prop('checked', from);
+                    $('#no-russia-checkbox').prop('checked', !from);
 
-        <a style="margin-top: 5pt;" id="continue-link" class="{% if russia %}ru-disabled {% endif %}disabled tag-link" href="{{ link }}" disabled>Продолжить</a>
-        
-        <script>
-            function toggleLink() {
-                const checkbox = document.getElementById('legal-checkbox');
-                const link = document.getElementById('continue-link');
+                    document.cookie = "fromRussia="+from+"; expires="+new Date(Date.now() + 30*24*60*60*1000).toUTCString()+"; path=/";
 
-                if (checkbox.checked) {
-                    link.classList.remove("disabled")
-                } else {
-                    link.classList.add("disabled")
-                };
-            }
-            function toLegal(legal) {
-                document.getElementById('legal-checkbox').click();
-                document.cookie = "popupLink="+legal+"; path=/";
-            }
-        </script>
-        <style>
-            a.disabled {
-                pointer-events: none;
-                color: #ccc;
-            }
-            .tag-link-blue {
-                cursor: help;
-            }
-        </style>
+                    checkContinue();
+                }
+
+
+                function checkContinue() {
+                    console.log('checkContinue', document.cookie.includes('fromRussia') && $('#legal-checkbox').prop('checked'), document.cookie.includes('fromRussia'), $('#legal-checkbox').prop('checked'))
+                    $('#continue-link').prop('disabled', !document.cookie.includes('fromRussia') || !$('#legal-checkbox').prop('checked'));
+                }
+            </script>
+        </main>
     </body>
 </html>

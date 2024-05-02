@@ -1,18 +1,18 @@
 <div class="standart-panel" style="padding-top: 0;" import-height="div#mod-dependence-header">
     <style>
-        .mod-dependence {
+        .element {
             transition: all 0.2s;
             overflow: hidden;
         }
 
-        .mod-dependence > e {
+        .element > e {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             width: calc(100% - 70px);
         }
 
-        .mod-dependence > e > h3 {
+        .element > e > h3 {
             text-overflow: ellipsis;
             text-wrap: nowrap;
             overflow-wrap: anywhere;
@@ -21,7 +21,7 @@
             align-items: center;
         }
 
-        .mod-dependence > e > img {
+        .element > e > img {
             width: 25pt;
         }
 
@@ -36,11 +36,11 @@
             margin-top: -5pt;
         }
 
-        .alls > .mod-dependence {
+        .alls > .element {
             padding: 2pt;
         }
 
-        .all-mod-dependence > .mod-dependence > e > h3 {
+        .all-mod-dependence > .element > e > h3 {
             max-width: 100%;
         }
 
@@ -60,7 +60,7 @@
         <div id="mod-dependence-selected" class="alls">
             <br>
             {% for item in data[3].values() %}
-            <div class="mod-dependence" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
+            <div class="element" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
                 <img src="{{ item.img }}" alt="Логотип мода" errorcap>
                 <e>
                     <h3 translate="no">{{ item.name }}</h3>

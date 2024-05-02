@@ -68,6 +68,20 @@ main.user.settings {
     display: flex;
 }
 
+main.login-popup {
+    position: fixed;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background: none;
+
+    width: 100%;
+    max-width: none;
+    top: 20%;
+}
+
 @media screen and (max-width: 450px) {
     main.user.settings {
         flex-direction: column;

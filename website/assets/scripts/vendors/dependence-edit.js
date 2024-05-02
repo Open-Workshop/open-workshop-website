@@ -24,7 +24,7 @@ function editModDependence(dependenc) {
         searchedDependence.addClass('dependence-selected');
 
         if (containerDependencies.find('[modid="' + dependencId + '"]').length == 0) {
-            let modDependenceE = $("<div>").addClass("mod-dependence").attr("modid", dependencId).attr("onclick", "editModDependence(this)");
+            let modDependenceE = $("<div>").addClass("element").attr("modid", dependencId).attr("onclick", "editModDependence(this)");
             console.log(dependenc, dependenc.find('img[errorcap]'), dependenc.find('img[onerror]').attr('src'), dependencImg)
             let logoE = $("<img>").attr("src", dependencImg).attr("alt", "Логотип мода").attr("onerror", 'handlerImgErrorLoad(this)');
             let eE = $("<e>");
@@ -62,7 +62,7 @@ async function searchRequestDependenceUpdate() {
     data.results.forEach(t => {
         ids.push(t.id)
 
-        let classes = "mod-dependence"
+        let classes = "element"
 
         if (containerDependencies.find('[modid="' + t.id + '"]').length > 0) {
             classes += " dependence-selected";

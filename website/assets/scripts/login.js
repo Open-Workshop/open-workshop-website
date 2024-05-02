@@ -1,57 +1,26 @@
 
-function serviceAuthorization(serviceUrl)
-{
-  var x = screen.width/2 - 400/2;
-  var y = screen.height/2 - 570/2;
-  
-  const win = window.open('/api/login-popup?f='+serviceUrl,
-      '_blank', 
-      'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
-  );
+function serviceAuthorization(serviceUrl) {
+  const banner = {
+    title: 'Авторизация прервана',
+    text: 'Вы закрыли авторизационное окно',
+    theme: 'dark'
+  };
 
-  const AT = getCookie('accessJS');
-  const interval = setInterval(() => {
-    if (win.closed) {
-      console.log("Окно закрыто :(");
-
-      banner_error_a = {
-        title: 'Авторизация прервана',
-        text: 'Вы закрыли авторизационное окно',
-        theme: 'dark',
-        autohide: true,
-        interval: 6000
-      };
-
-      window.setTimeout(() => {
-        new Toast(banner_error_a)
-      }, 1000);
-
-      clearInterval(interval);
-    }
-    if (document.cookie.includes('accessJS') && (AT == null || AT != getCookie('accessJS'))) {
-      console.log("Кука появилась!");
-
-      win.close();
-
-      location.reload();
-      clearInterval(interval);
-    }
-    if (document.cookie.includes('popupLink')) {
-      console.log("Пользователь переходит на другую страницу!");
-
-      win.close();
-
-      const link = getCookie("popupLink");
-      console.log(link)
-      document.cookie = "popupLink=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      document.location = link
-    }
-  }, 100);
+  authWindow(serviceUrl, banner);
 };
 
-function serviceConnect(serviceUrl)
-{
+function serviceConnect(serviceUrl) {
+  const banner = {
+    title: 'Подключение прервано',
+    text: 'Вы закрыли авторизационное окно',
+    theme: 'dark'
+  };
+
+  authWindow(serviceUrl, banner);
+};
+
+
+function authWindow(serviceUrl, bannerCloseWindow) {
   var x = screen.width/2 - 400/2;
   var y = screen.height/2 - 570/2;
   
@@ -65,51 +34,46 @@ function serviceConnect(serviceUrl)
     if (win.closed) {
       console.log("Окно закрыто :(");
 
-      banner_error_a = {
-        title: 'Подключение прервана',
-        text: 'Вы закрыли авторизационное окно',
-        theme: 'dark',
-        autohide: true,
-        interval: 6000
-      };
+      clearInterval(interval);
 
       window.setTimeout(() => {
-        new Toast(banner_error_a)
+        new Toast(bannerCloseWindow)
       }, 1000);
-
-      clearInterval(interval);
     }
     
     console.log(AT, getCookie("accessJS"))
     if (document.cookie.includes('accessJS') && (AT == null || AT != getCookie("accessJS"))) {
       console.log("Кука появилась!");
 
+      clearInterval(interval);
       win.close();
 
       location.reload();
-      clearInterval(interval);
     }
     if (document.cookie.includes('popupLink')) {
       console.log("Пользователь переходит на другую страницу!");
 
+      clearInterval(interval);
       win.close();
 
       const link = getCookie("popupLink");
       console.log(link)
       document.cookie = "popupLink=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
-      document.location = link
+      location.href = link;
     }
-  }, 100);
-};
+  }, 200);
+}
 
-function getCookie(name) {
-  var nameEQ = name + "=";
-  var ca = document.cookie.split(';');
-  for(var i=0;i < ca.length;i++) {
-      var c = ca[i];
-      while (c.charAt(0)==' ') c = c.substring(1,c.length);
-      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+
+function getCookie(cookieName) {
+  const equalSign = cookieName + '=';
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    let trimmedCookie = cookie.trim();
+    if (trimmedCookie.startsWith(equalSign)) {
+      return trimmedCookie.substring(equalSign.length);
+    }
   }
   return null;
 }

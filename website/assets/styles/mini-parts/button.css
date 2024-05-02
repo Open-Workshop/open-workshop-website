@@ -16,7 +16,7 @@ button:active, .button-style:active {
     background-color: var(--interactive-element-background-active);
     color: var(--interactive-element-text-active);
 }
-button:disabled, .button-style:disabled {
+button:disabled, .button-style.disabled {
     background-color: var(--interactive-element-background-disabled);
     color: var(--interactive-element-text-disabled);
 

@@ -1,0 +1,46 @@
+
+.outline-container {
+    border: solid 1px var(--panel-on-page-background);
+    margin-top: 4pt;
+    border-radius: 10px;
+    padding: 5pt;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+}
+.outline-container > h3, .outline-container > h4 {
+    width: 100%;
+    text-align: center;
+}
+
+
+.outline-container > .element {
+    margin-top: 5pt;
+    cursor: pointer;
+    border-radius: 5pt;
+    padding: 5pt;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    vertical-align: middle;
+    padding-top: auto;
+    padding-bottom: auto;
+    transition: background-color 0.1s;
+}
+.outline-container > .element:hover {
+    background-color: rgba(15, 15, 15, 0.9);
+}
+.outline-container > .element img {
+    border-radius: 5pt;
+    margin-right: 5pt;
+    max-width: 50pt;
+    height: 30pt;
+}
+.outline-container > .element h3 {
+    vertical-align: middle;
+}
+.outline-container > .element div {
+    height: 10%;
+    vertical-align: middle;
+}
