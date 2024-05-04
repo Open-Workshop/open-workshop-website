@@ -29,6 +29,7 @@ button#page-save-button {
     transition: opacity 0.2s;
 }
 
+
 #page-rights > div {
     display: flex;
     align-items: center;
@@ -36,6 +37,10 @@ button#page-save-button {
     width: 100%;
 }
 
+
+#page-integrate {
+    justify-content: center;
+}
 #page-integrate > button.service {
     background: none;
     min-width: 140px;
@@ -53,6 +58,19 @@ button#page-save-button {
 }
 
 
+#page-delete-account > div {
+    display: flex;
+    flex-direction: column;
+
+    width: 200px;
+    max-width: 95%;
+}
+#page-delete-account > div > button {
+    margin: 10px;
+    margin-top: 0;
+}
+
+
 @media screen and (max-width: 450px) {
     main.user.settings > pager {
         width: 100%;
@@ -62,5 +80,8 @@ button#page-save-button {
 @media screen and (min-width: 451px) {
     main.user.settings > pager {
         margin-right: 10px;
-    }    
+    }
+    main.user.settings > hr#mobile-hr-user-settings {
+        display: none;
+    }
 }

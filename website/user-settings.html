@@ -27,6 +27,7 @@
 
       <button id="page-save-button" onclick="saveProfile()">Сохранить</button>
     </pager>
+    <hr id="mobile-hr-user-settings">
     <div style="width: 100%;">
       {% if not user_data.delete_user %}
       <div id="page-profile" class="user-container-settings">
@@ -262,107 +263,111 @@
           </button>
         </div>
         {% endif %}
-      <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled />
-          <p>Администратор</p>
+        <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled />
+            <p>Администратор</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Писать комментарии</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Оставлять реакции</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Создавать реакции</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Публиковать моды</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять авторство модов</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять свои моды</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять чужие моды</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Удалять свои моды</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Удалять чужие моды</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Мутить пользователей</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Создавать форумы</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять авторство форумов</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять свои форумы</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять чужие форумы</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Удалять свои форумы</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Удалять чужие форумы</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять никнейм</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Изменять "обо мне"</p>
+          </div>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Менять аватар</p>
+          </div>
+          <hr>
+          <div>
+            <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
+            <p>Голосовать за репутацию</p>
+          </div>
         </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Писать комментарии</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Оставлять реакции</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Создавать реакции</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Публиковать моды</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять авторство модов</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять свои моды</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять чужие моды</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Удалять свои моды</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Удалять чужие моды</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Мутить пользователей</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Создавать форумы</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять авторство форумов</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять свои форумы</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять чужие форумы</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Удалять свои форумы</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Удалять чужие форумы</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять никнейм</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Изменять "обо мне"</p>
-        </div>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Менять аватар</p>
-        </div>
-        <hr>
-        <div>
-          <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
-          <p>Голосовать за репутацию</p>
-        </div>
-      </div>
       {% endif %}
       {% if user_access.my %}
       <div id="page-delete-account" style="flex-direction: column;" class="user-container-settings">
-        <div style="background: #313131; width: 177pt; border-radius: 10px;">
-          <input style="width: 100%;" class="edit-username" maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
-          <button class="service" style="width: 170pt; display: flex; justify-content: center;" onclick="commitToDelete()">
-            <p>Удалить аккаунт</p>
-          </button>
+        <div>
+          <input maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
+          
+          <div class="outline-container">
+            <input type="checkbox" id="checkbox-delete-confirm">
+            <label>Я осознаю возможные риски</label>
+          </div>
+          
+          <button>Удалить аккаунт</button>
         </div>
         <script>
           const usernameDeleteElement = document.getElementById('username-access-delete');
@@ -391,6 +396,16 @@
                 banner_error_a = {
                   title: 'Ошибка',
                   text: 'Ради безопасности введите свой никнейм в поле!',
+                  theme: 'warning',
+                  autohide: true,
+                  interval: 6000
+                };
+
+                new Toast(banner_error_a);
+              } else if ($('#checkbox-delete-confirm').prop('checked') == false) {
+                banner_error_a = {
+                  title: 'Ошибка',
+                  text: 'Подтвердите осознание рисков!',
                   theme: 'warning',
                   autohide: true,
                   interval: 6000
