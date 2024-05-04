@@ -358,12 +358,12 @@
         </div>
       {% endif %}
       {% if user_access.my %}
-      <div id="page-delete-account" style="flex-direction: column;" class="user-container-settings">
+      <div id="page-delete-account" class="user-container-settings">
         <div>
           <input maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
           
           <div class="outline-container">
-            <input type="checkbox" id="checkbox-delete-confirm">
+            <input type="checkbox" id="checkbox-delete-confirm" onchange="activateDeleteButton()">
             <label>Я осознаю возможные риски</label>
           </div>
           
