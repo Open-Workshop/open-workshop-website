@@ -28,6 +28,7 @@
     --interactive-input-active: rgb(35, 35, 108);
 
     --interactive-input-checkbox-disc: white;
+    --interactive-input-checkbox-disc-disabled: gray;
 
     --interactive-select-height: 40px;
     --interactive-select: rgb(45, 45, 128);

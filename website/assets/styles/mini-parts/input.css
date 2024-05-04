@@ -83,6 +83,14 @@ input[type=checkbox]:checked::after {
   left: 19.5px;
 }
 
-input[type=checkbox]:checked:hover {
+input[type=checkbox]:checked:not(:disabled):hover {
   background-color: var(--interactive-input-hover);
+}
+
+input[type=checkbox]:disabled::after {
+  background-color: var(--interactive-input-checkbox-disc-disabled);
+}
+input[type=checkbox]:disabled {
+  cursor: auto;
+  box-shadow: 0 0 0px var(--interactive-input);
 }
