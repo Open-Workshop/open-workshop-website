@@ -32,12 +32,14 @@ div.card-click img {
 
 .card-params-list {
     height: 26px;
-    margin-top: -32px;
+    margin-top: -30px;
     display: flex;
     margin-left: 1px;
 }
 .card-params-list a {
     margin-left: 1pt;
+    margin-top: -3px;
+
     backdrop-filter: blur(5px);
 }
 

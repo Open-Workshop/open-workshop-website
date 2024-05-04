@@ -1,6 +1,6 @@
 
 window.Cards = {
-    create: function(cardData, page, toLink = true, searchCard = "", isGame = false) {
+    create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = []) {
         // Создаем карточку
         const card = document.createElement('div');
         card.setAttribute('pageOwner', page);
@@ -40,36 +40,28 @@ window.Cards = {
         const paramsList = document.createElement('div');
         paramsList.classList.add('card-params-list');
 
-        if (cardData.hasOwnProperty("mods_count")) {
-            const tagModCount = document.createElement('a');
-            tagModCount.classList.add('tag-link');
+        tags.forEach(tag => {
+            const aElement = document.createElement('a');
+            aElement.classList.add('tag-link');
 
-            tagModCount.innerText = "🔭"+cardData.mods_count
-            tagModCount.title = "Количество модов для игры"
-
-            paramsList.appendChild(tagModCount);
-        }
-
-        if (cardData.hasOwnProperty("size")) {
-            const tagModCount = document.createElement('a');
-            tagModCount.classList.add('tag-link');
-            tagModCount.classList.add('card-params-list-tag');
-            
-            if (cardData.size > 1000000000) {
-                cardData.size = (cardData.size / 1073741824).toFixed(0) + " GB";
-            } else if (cardData.size > 1000000) {
-                cardData.size = (cardData.size / 1048576).toFixed(0) + " MB";
-            } else if (cardData.size > 1000) {
-                cardData.size = (cardData.size / 1024).toFixed(0) + " KB";
-            } else {
-                cardData.size = cardData.size  + " B";
+            let tagVal = tag.value;
+            if (tag.type == "size") {
+                if (tagVal > 1000000000) {
+                    tagVal = (tagVal / 1073741824).toFixed(0) + " GB";
+                } else if (tagVal > 1000000) {
+                    tagVal = (tagVal / 1048576).toFixed(0) + " MB";
+                } else if (tagVal > 1000) {
+                    tagVal = (tagVal / 1024).toFixed(0) + " KB";
+                } else {
+                    tagVal = tagVal  + " B";
+                }
             }
 
-            tagModCount.innerText = "📦"+cardData.size
-            tagModCount.title = "Размер мода"
+            aElement.innerText = tag.text+tagVal
+            aElement.title = tag.description
 
-            paramsList.appendChild(tagModCount);
-        }
+            paramsList.appendChild(aElement);
+        })
 
         cardClick.appendChild(paramsList);
 

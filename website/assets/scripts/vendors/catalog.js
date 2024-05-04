@@ -29,6 +29,7 @@ window.Catalog = {
         settings.set('description', true)
         settings.set('short_description', true)
         settings.set('page_size', 30)
+        settings.set('statistics', true)
 
         // Заменяем кастомные ключи на стандартные
         const keys = [['depen', 'dependencies']]
@@ -71,7 +72,32 @@ window.Catalog = {
             data.results.forEach(element => {
                 if ($('#cards').find('div#'+element.id).length <= 0) {
                     element.doplink = doplink
-                    $('#cards').append(Cards.create(element, settings.get('page', 0), true, settings.get('name', ''), settings.get('sgame', 'yes') == 'yes'))
+
+                    const tags = []
+                    if (element.mods_downloads || element.downloads) {
+                        tags.push({
+                            'text': '📥',
+                            'description': element.mods_downloads ? 'Скачиваний у всех модов игры' : 'Скачиваний',
+                            'value': element.mods_downloads || element.downloads
+                        })
+                    }
+                    if (element.size) {
+                        tags.push({
+                            'text': '📦',
+                            'description': 'Размер мода',
+                            'value': element.size,
+                            'type': 'size'
+                        })
+                    }
+                    if (element.mods_count) {
+                        tags.push({
+                            'text': '🔭',
+                            'description': 'Количество модов',
+                            'value': element.mods_count
+                        })
+                    }
+
+                    $('#cards').append(Cards.create(element, settings.get('page', 0), true, settings.get('name', ''), settings.get('sgame', 'yes') == 'yes', tags))
                     msnry.appended(element)
                 } else {
                     console.log('Duplicate (xuricat paradox): ', element)
