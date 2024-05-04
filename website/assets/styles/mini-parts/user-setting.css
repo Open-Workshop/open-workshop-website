@@ -86,6 +86,27 @@ main.user.settings > hr#mobile-hr-user-settings {
 }
 
 
+#user-right-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+
+    width: 100%;
+}
+#user-right-bar > input {
+    margin: 5px;
+    padding: 5px;
+
+    font-size: x-large;
+
+    transition: all 0.3s, width 0s;
+}
+#user-right-bar > h1 {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+
 @media screen and (max-width: 450px) {
     main.user.settings > pager {
         width: 100%;

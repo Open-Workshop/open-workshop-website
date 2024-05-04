@@ -150,74 +150,20 @@
           </div>
         </div>
 
-        <div style="width: 100%">
-          <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">
-            <div {% if user_access.grade or user_access.username %}style="display: flex; align-items: center;"{% endif %}>
-              {% if not user_access.username %}
-              {{ user_data.general.username }}
-              {% endif %}
+        <div id="user-right-bar">
+          {% if user_access.username %}
+          <input id="username" placeholder="Псевдоним..." dynamlen displaylimit minlength="3" maxlength="18" empty-width="160px" startdata="{{ user_data.general.username }}" value="{{ user_data.general.username }}" name="username">
+          {% endif %}
+          {% if not user_access.username %}
+          <h1>{{ user_data.general.username }} </h1>
+          {% endif %}
 
-              {% if user_access.username %}
-              <input class="edit-username" maxlength="18" startdata="{{ user_data.general.username }}" id="username" value="{{ user_data.general.username }}" name="username" oninput="usernameEditEvent()">
-              {% endif %}
-
-              {% if user_access.grade %}
-              <input id="grade" placeholder="Звание..." maxlength="18" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" class="tag-link-red grade-edit" value="{{ user_data.general.grade }}" oninput="gradeEditEvent()">
-              {% endif %}
-              {% if not user_access.grade and user_data.general.grade|length >0 %}
-              <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
-              {% endif %}
-
-              <script>
-                const usernameElement = document.getElementById('username');
-
-                usernameEditEvent()
-                function usernameEditEvent() {
-                  if (usernameElement) {
-                    const myText = usernameElement.value;
-
-                    if (myText.length >= 18 || myText.length <= 1) {
-                      usernameElement.classList.add('limit');
-                    } else {
-                      usernameElement.classList.remove('limit')
-                    }
-
-                    usernameElement.style.width = 0;
-                    usernameElement.style.width = usernameElement.scrollWidth+5 + "px";
-                  }
-                }
-                
-                const gradeElement = document.getElementById('grade');
-
-                gradeEditEvent()
-                function gradeEditEvent() {
-                  if (gradeElement) {
-                    const myText = gradeElement.value;
-
-                    gradeElement.style.width = 0;
-                    gradeElement.style.width = gradeElement.scrollWidth+5 + "px";
-                  }
-                }
-              </script>
-            </div>
-          </h1>
-          <h4 id="mod-tags-title">
-              <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
-              <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
-                {% if user_data.general.reputation < 0 %}👿{% endif %}
-                {% if user_data.general.reputation > 0 %}😇{% endif %}
-                <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
-                {% if user_data.general.reputation == 0 %}👀{% endif %}
-              </div>
-
-              {% if user_data.general.author_mods > 0 %}
-              <a title="Автор {{ user_data.general.author_mods }} модов" class="tag-link-orange" translate="no">📤{{ user_data.general.author_mods }}</a>
-              {% endif %}
-
-              {% if user_data.general.comments > 0 %}
-              <a title="Оставил {{ user_data.general.comments }} комментариев" class="tag-link-orange" translate="no">✏️{{ user_data.general.comments }}</a>
-              {% endif %}
-          </h4>
+          {% if user_access.grade %}
+          <input id="grade" placeholder="Звание..." dynamlen maxlength="18" empty-width="110px" startdata="{{ user_data.general.grade }}" type="text" title="Звание пользователя (за определенные заслуги)" value="{{ user_data.general.grade }}">
+          {% endif %}
+          {% if not user_access.grade and user_data.general.grade|length >0 %}
+          <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
+          {% endif %}
 
           {% if user_access.about %}
             {% with limit=512, placeholder='Обо мне...', init_text=(user_data.general.about if user_data.general.about_enable else "") %}
