@@ -233,7 +233,7 @@
         {% if not user_data.delete_user %}
         <div id="page-integrate" class="user-container-settings">
           <button class="service" {% if not user_access.my %}disabled{% endif %} {% if user_access.my and not user_data.private.yandex %}onclick="serviceConnect('/api/accounts/authorization/yandex/link')"{% endif %}{% if user_access.my and user_data.private.yandex %}onclick="serviceDisconnect('yandex')"{% endif %}>
-            <img style="width: 30pt;" src="/assets/images/webp/yandex.webp" alt="Yandex logo" onerror="handlerImgErrorLoad(this)">
+            <img src="/assets/images/webp/yandex.webp" alt="Yandex logo" onerror="handlerImgErrorLoad(this)">
             
             <p>
               {% if user_access.my %}
@@ -247,7 +247,7 @@
             </p>
           </button>
           <button class="service" {% if not user_access.my %}disabled{% endif %} {% if user_access.my and not user_data.private.google %}onclick="serviceConnect('/api/accounts/authorization/google/link')"{% endif %}{% if user_access.my and user_data.private.google %}onclick="serviceDisconnect('google')"{% endif %}>
-            <img style="width: 30pt;" src="/assets/images/webp/google.webp" alt="Google logo" onerror="handlerImgErrorLoad(this)">
+            <img src="/assets/images/webp/google.webp" alt="Google logo" onerror="handlerImgErrorLoad(this)">
             
             <p>
               {% if user_access.my %}
