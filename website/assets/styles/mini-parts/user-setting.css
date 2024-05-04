@@ -62,12 +62,25 @@ button#page-save-button {
     display: flex;
     flex-direction: column;
 
-    width: 200px;
+    width: 250px;
     max-width: 95%;
+}
+#page-delete-account > div > div.outline-container {
+    flex-wrap: nowrap;
+
+    width: -webkit-fill-available;
+
+    margin: 10px;
+    margin-top: 0;
 }
 #page-delete-account > div > button {
     margin: 10px;
     margin-top: 0;
+}
+
+
+main.user.settings > hr#mobile-hr-user-settings {
+    margin-top: 5px;
 }
 
 
