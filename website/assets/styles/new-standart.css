@@ -62,6 +62,8 @@ body * {
 hr {
     border: 0;
     height: 1px;
+    width: 100%;
+
     background: #333;
     background-image: linear-gradient(to right, #8d8d8d, #fff, #8d8d8d);
 }
