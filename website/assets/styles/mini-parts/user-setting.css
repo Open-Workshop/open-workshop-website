@@ -38,9 +38,11 @@ button#page-save-button {
 }
 
 
-#page-integrate {
+#page-integrate, #page-delete-account {
     justify-content: center;
 }
+
+
 #page-integrate > button.service {
     background: none;
     min-width: 140px;

@@ -367,10 +367,15 @@
             <label>Я осознаю возможные риски</label>
           </div>
           
-          <button>Удалить аккаунт</button>
+          <button onclick="commitToDelete()" disabled>Удалить аккаунт</button>
         </div>
         <script>
           const usernameDeleteElement = document.getElementById('username-access-delete');
+
+          function activateDeleteButton() {
+            const $checkboxConfirm = $('input#checkbox-delete-confirm');
+            $('#page-delete-account > div > button').prop('disabled', !$checkboxConfirm.is(':checked'));
+          }
 
           usernameDeleteEditEvent()
           function usernameDeleteEditEvent() {
@@ -396,16 +401,6 @@
                 banner_error_a = {
                   title: 'Ошибка',
                   text: 'Ради безопасности введите свой никнейм в поле!',
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
-
-                new Toast(banner_error_a);
-              } else if ($('#checkbox-delete-confirm').prop('checked') == false) {
-                banner_error_a = {
-                  title: 'Ошибка',
-                  text: 'Подтвердите осознание рисков!',
                   theme: 'warning',
                   autohide: true,
                   interval: 6000
