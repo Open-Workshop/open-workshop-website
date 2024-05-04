@@ -264,224 +264,96 @@
         {% endif %}
       <div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-admin" {% if user_data.rights.admin %}startdata checked{% endif %} disabled />
           <p>Администратор</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-write_comments" {% if user_data.rights.write_comments %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Писать комментарии</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-set_reactions" {% if user_data.rights.set_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Оставлять реакции</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-create_reactions" {% if user_data.rights.create_reactions %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Создавать реакции</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-publish_mods" {% if user_data.rights.publish_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Публиковать моды</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_authorship_mods" {% if user_data.rights.change_authorship_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять авторство модов</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_self_mods" {% if user_data.rights.change_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять свои моды</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_mods" {% if user_data.rights.change_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять чужие моды</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-delete_self_mods" {% if user_data.rights.delete_self_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Удалять свои моды</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-delete_mods" {% if user_data.rights.delete_mods %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Удалять чужие моды</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-mute_users" {% if user_data.rights.mute_users %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Мутить пользователей</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-create_forums" {% if user_data.rights.create_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Создавать форумы</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_authorship_forums" {% if user_data.rights.change_authorship_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять авторство форумов</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_self_forums" {% if user_data.rights.change_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять свои форумы</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_forums" {% if user_data.rights.change_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять чужие форумы</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-delete_self_forums" {% if user_data.rights.delete_self_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Удалять свои форумы</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-delete_forums" {% if user_data.rights.delete_forums %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Удалять чужие форумы</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_username" {% if user_data.rights.change_username %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять никнейм</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_about" {% if user_data.rights.change_about %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Изменять "обо мне"</p>
         </div>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit-change_avatar" {% if user_data.rights.change_avatar %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Менять аватар</p>
         </div>
         <hr>
         <div>
-          <div class="button b2">
-            <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} class="checkbox" />
-            <div class="knobs">
-              <span></span>
-            </div>
-            <div class="layer"></div>
-          </div>
+          <input type="checkbox" id="checkbox-rights-edit_vote_for_reputation" {% if user_data.rights.vote_for_reputation %}startdata checked{% endif %} {% if not user_access.admin %}disabled{% endif %} />
           <p>Голосовать за репутацию</p>
         </div>
-
-        <link href="/assets/styles/vendors/checkbox.css" rel="stylesheet"/>
       </div>
       {% endif %}
       {% if user_access.my %}
@@ -535,42 +407,8 @@
         </script>
       </div>
       {% endif %}
-      <style>
-        .nov-visib {
-          display: none;
-        }
-        button.service {
-          cursor: pointer;
-          border: none;
-          width: 160pt;
-          max-width: 100%;
-          background: bisque;
-          border-radius: 5pt;
-          padding-top: 2pt;
-          padding-bottom: 2pt;
-          padding-right: 2pt;
-          display: flex;
-          align-items: center;
-          margin: 3pt;
-          padding-left: 1pt;
-        }
-        button.sconnected {
-          cursor: auto;
-          pointer-events: none;
-          background: #ffad4b;
-        }
-        button.service > p {
-          font-size: 20pt;
-          font-family: cursive;
-        }
-      </style>
     </div>
-    <style>
-      #page-profile, #page-integrate, #page-rights, #page-delete-account {
-        transition: opacity 0.2s;
-      }
-    </style>
-
+    
     <script>
       function saveProfile() {
         let data = {}
