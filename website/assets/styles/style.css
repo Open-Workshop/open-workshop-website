@@ -1046,16 +1046,6 @@ td {
 }
 
 
-.user-avatar {
-  border-radius: 5pt;
-}
-
-.user-left-bar {
-  margin-top: 2pt;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
 .user-container .user-container-settings {
   margin-left: auto;
@@ -1192,9 +1182,6 @@ td {
 
 
 @media (max-width: 439px) {
-  .user-container {
-    display: block;
-  }
   .user-avatar {
     min-width: 100%;
   }
@@ -1207,21 +1194,6 @@ td {
   }
   input.date{
     font-size: 100%;
-  }
-}
-@media (min-width: 440px) {
-  .user-container {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    width: 100%;
-  }
-  .user-left-bar {
-    margin-right: 5pt;
-  }
-  .user-avatar {
-    max-width: 250px;
-    min-width: 150px;
   }
 }
 

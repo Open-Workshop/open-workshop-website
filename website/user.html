@@ -1,21 +1,17 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
   <main class="user">
-    <div class="user-container">
+    <div class="user-profile">
       <div class="user-left-bar">
-        <div class="wrapper" style="width: 100%;">
-          <div>
-            <div class="user-avatar-box">
-              <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
-            </div>
-
-            {% if user_data.general.mute %}
-            <div id="noVote">
-              <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
-            </div>
-            {% endif %}
-          </div>
+        <div class="user-avatar-box">
+          <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
         </div>
+
+        {% if user_data.general.mute %}
+        <div id="noVote">
+          <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
+        </div>
+        {% endif %}
       </div>
 
       <script src="/assets/scripts/user.js"></script>

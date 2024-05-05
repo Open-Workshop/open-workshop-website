@@ -13,3 +13,36 @@ div#noVote {
 main.user > article {
     text-align: center;
 }
+
+
+.user-avatar {
+    border-radius: 5pt;
+}
+
+.user-left-bar {
+    margin-top: 2pt;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+
+@media (max-width: 439px) {
+    .user-profile {
+        display: block;
+    }
+}
+
+@media (min-width: 440px) {
+    .user-profile {
+        display: flex;
+        width: 100%;
+    }
+    .user-left-bar {
+        margin-right: 5pt;
+    }
+    .user-avatar {
+        max-width: 200px;
+        min-width: 200px;
+    }
+}
