@@ -90,6 +90,7 @@ main.user.settings > hr#mobile-hr-user-settings {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
+    align-content: flex-start;
 
     width: 100%;
 }
