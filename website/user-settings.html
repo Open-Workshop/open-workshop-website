@@ -34,7 +34,7 @@
         <div class="user-left-bar">
           <div class="wrapper" style="width: 100%; max-width: 150pt;">
             <div class="user-avatar-box">
-                <img startdata="{{ user_data.general.avatar }}" src="{{ user_data.general.avatar }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar">
+                <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar">
   
                 {% if user_access.avatar %}
                 <div class="user-edit-icon" onclick="$('#reset-avatar').removeClass('toggled'); $('#file-select-avatar').click();">
