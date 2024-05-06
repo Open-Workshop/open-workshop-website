@@ -367,7 +367,7 @@
     </div>
     
     <script>
-      function saveProfile() {
+      async function saveProfile() {
         let data = {}
 
         let tofetch = false
@@ -411,27 +411,26 @@
         console.log(url)
 
         if (tofetch) {
-          fetch(url, {
-            method: 'POST',
-            body: formData
-          }).then(response => {
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              body: formData
+            });
             if (response.status === 202) {
               console.log('Код ответа равен 202!');
             } else {
-              console.log('Код ответа не равен 202');
-              response.text().then(text => {
-                banner_error_a = {
-                  title: 'Профиль',
-                  text: text.substring(1, text.length - 1),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
+              const text = await response.text();
+              banner_error_a = {
+                title: 'Профиль',
+                text: text.substring(1, text.length - 1),
+                theme: 'warning',
+                autohide: true,
+                interval: 6000
+              };
 
-                new Toast(banner_error_a);
-              });
+              new Toast(banner_error_a);
             }
-          }).catch(error => {
+          } catch (error) {
             console.error('Произошла ошибка при отправке запроса: ' + error);
             banner_error_a = {
               title: 'Профиль',
@@ -441,8 +440,8 @@
               interval: 6000
             };
 
-          new Toast(banner_error_a)
-          });
+            new Toast(banner_error_a);
+          }
         }
 
 
@@ -490,27 +489,26 @@
         }
 
         if (tofetchTWO) {
-          fetch(url, {
-            method: 'POST',
-            body: formData
-          }).then(response => {
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              body: formData
+            });
             if (response.status === 202) {
               console.log('Код ответа равен 202!');
             } else {
-              console.log('Код ответа не равен 202');
-              response.text().then(text => {
-                banner_error_a = {
-                  title: 'Права',
-                  text: text.substring(1, text.length - 1),
-                  theme: 'warning',
-                  autohide: true,
-                  interval: 6000
-                };
+              const text = await response.text();
+              banner_error_a = {
+                title: 'Права',
+                text: text.substring(1, text.length - 1),
+                theme: 'warning',
+                autohide: true,
+                interval: 6000
+              };
 
-                new Toast(banner_error_a);
-              });
+              new Toast(banner_error_a);
             }
-          }).catch(error => {
+          } catch (error) {
             console.error('Произошла ошибка при отправке запроса: ' + error);
             banner_error_a = {
               title: 'Права',
@@ -520,8 +518,8 @@
               interval: 6000
             };
 
-          new Toast(banner_error_a)
-          });
+            new Toast(banner_error_a)
+          }
         }
         
         if (tofetch || tofetchTWO) {
