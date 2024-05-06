@@ -50,38 +50,22 @@
             </div>
             
             {% if user_access.mute %}
-            <div class="medium-6 columns">
-              <input style="width: 100%;" id="mute-datetime" type="datetime-local"{% if user_data.general.mute %} startdata="{{ user_data.general.mute_js }}" value="{{ user_data.general.mute_js }}"{% endif %} class='date'>
+            <div class="datatime-delta">
+              <input type="number" min="0" max="100" value="0" title="Оставьте поле=0 чтобы не учитывать изменения" id="mute-delta">
+              <select id="mute-delta-unit">
+                <option value="60">минут</option>
+                <option value="3600" selected>часов</option>
+                <option value="86400">дней</option>
+                <option value="604800">недель</option>
+                <option value="18144000">месяцев</option>
+              </select>
             </div>
-            <style>
-              input.date{
-                margin-top: 5pt;
-                border-radius: 10px;
-                height: auto;
-                transition: all ease 200ms;
-                box-shadow: 0px 0px 3px 3px #4a4a4a;
-                background: #313131;
-                color: white;
-              }
-
-              input.date:hover{
-                box-shadow:0px 0px 5px 5px rgb(165, 165, 165);
-              }
-            </style>
+            {% endif %}
+            {% if user_data.general.mute %}
+            <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
             {% endif %}
 
             <script>
-              {% if user_access.mute %}
-              document.getElementById('mute-datetime').min = new Date().toLocaleString("sv-SE", {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit"
-              }).replace(" ", "T");
-              {% endif %}
-
               const input = document.getElementById('file-select-avatar');
               const img = document.getElementById('user-avatar-img');
 
@@ -402,9 +386,13 @@
           formData.append('empty_avatar', true);
           tofetch = true
         }
-        const $mute = $('#mute-datetime');
-        if (($mute.attr("startdata") && $mute.val() != $mute.attr("startdata")) || ($mute.val() && !$mute.attr("startdata"))) {
-          formData.append('mute', $mute.val());
+        const $mute = $('#mute-delta'); // int число
+        if ($mute.length && $mute.val() > 0) {
+          const $unitSize = $('#mute-delta-unit'); // размерность (минута, час, день) (содержит на сколько нужно умножить секунду)
+
+          const dateResult = new Date(Date.now() + ($mute.val() * $unitSize.val() * 1000));
+
+          formData.append('mute', dateResult);
           tofetch = true
         }
 

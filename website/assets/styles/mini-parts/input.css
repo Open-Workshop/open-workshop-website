@@ -94,3 +94,41 @@ input[type=checkbox]:disabled {
   cursor: auto;
   box-shadow: 0 0 0px var(--interactive-input);
 }
+
+
+/* Delta input (время) */
+
+/*
+<div class="datatime-delta"> <-- контейнер
+  <input type="number" min="1" max="100" value="1"> <-- поле ввода
+  <select> <-- уровень детализации
+    <option value="minute">минут</option>
+    <option value="hour" selected>часов</option>
+    <option value="day">дней</option>
+    <option value="week">недель</option>
+    <option value="month">месяцев</option>
+  </select>
+</div>
+*/
+
+.datatime-delta {
+  display: flex;
+  align-items: center;
+}
+
+.datatime-delta > * {
+  border-radius: 0;
+  margin: 0;
+}
+.datatime-delta > input {
+  width: 45%;
+
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+.datatime-delta > select {
+  width: 55%;
+
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}

@@ -4,11 +4,6 @@
     font-size: x-large;
 }
 
-div#noVote {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
 main.user > article {
     text-align: center;
@@ -24,6 +19,16 @@ main.user > article {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+
+.user-mute-profile {
+    display: inline-block;
+    text-align: center;
+
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--interactive-element-background);
 }
 
 
