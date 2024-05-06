@@ -392,7 +392,7 @@
 
           const dateResult = new Date(Date.now() + ($mute.val() * $unitSize.val() * 1000));
 
-          formData.append('mute', dateResult.toISOString());
+          formData.append('mute', dateResult.toISOString().slice(0, 19));
           tofetch = true
         }
 
