@@ -1068,28 +1068,6 @@ td {
 }
 
 
-.user-avatar-box {
-  display: flex; 
-  justify-content: center; 
-  align-items: center;
-}
-.user-edit-icon {
-  width: 0pt;
-  position: absolute;
-  padding-left: 10pt;
-  pointer-events: none;
-}
-.user-avatar-box > img {
-  transition: all 0.2s;
-}
-.user-avatar-box:hover > .user-avatar-e {
-  opacity: 10%;
-  cursor: pointer;
-}
-.user-avatar-box:hover > .user-edit-icon-e {
-  width: 50pt;
-}
-
 @media (min-width: 680px) {
   .user-container-settings {
     display: -webkit-box;

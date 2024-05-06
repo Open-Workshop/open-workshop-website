@@ -34,19 +34,20 @@
         <div class="user-left-bar">
           <div class="wrapper" style="width: 100%; max-width: 150pt;">
             <div class="user-avatar-box">
-                <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar{% if user_access.avatar %} user-avatar-e{% endif %}"{% if user_access.avatar %} onclick="document.getElementById('file-select-avatar').click();"{% endif %}>
+                <img startdata="https://openworkshop.su/api/accounts/profile/avatar/1" src="https://openworkshop.su/api/accounts/profile/avatar/1" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar">
   
                 {% if user_access.avatar %}
-                <img class="user-edit-icon user-edit-icon-e" src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
+                <div class="user-edit-icon" onclick="$('#reset-avatar').removeClass('toggled'); $('#file-select-avatar').click();">
+                  <img src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
+                </div>
+
+                <div id="reset-avatar" onclick="$(this).toggleClass('toggled')" title="Сбросить аватар">
+                  <img src="/assets/images/svg/white/trash.svg" alt="Иконка мусорного ведра">
+                </div>
                 {% endif %}
+
                 <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
             </div>
-            {% if user_access.avatar %}
-            <div style="cursor: pointer; height: auto;" class="independence-mods-selector" onclick="document.getElementById('reset-avatar-checkbox').click();">
-              <input class="input-checkbox" style="margin: 4pt;" onchange="" id="reset-avatar-checkbox" type="checkbox">
-              <label style="margin-left: 2pt; cursor: pointer; margin-top: 1pt;">Сбросить аватар</label>
-            </div>
-            {% endif %}
             
             {% if user_access.mute %}
             <div class="medium-6 columns">
@@ -155,7 +156,7 @@
           <input id="username" placeholder="Псевдоним..." dynamlen displaylimit minlength="3" maxlength="18" empty-width="160px" startdata="{{ user_data.general.username }}" value="{{ user_data.general.username }}" name="username">
           {% endif %}
           {% if not user_access.username %}
-          <h1>{{ user_data.general.username }} </h1>
+          <h1>{{ user_data.general.username }}</h1>
           {% endif %}
 
           {% if user_access.grade %}
@@ -396,8 +397,8 @@
           formData.append('avatar', '');
         }
 
-        const $emptyAvatar = $("#reset-avatar-checkbox");
-        if ($emptyAvatar.is(":checked")) {
+        const $emptyAvatar = $("#reset-avatar");
+        if ($emptyAvatar.hasClass('toggled')) {
           formData.append('empty_avatar', true);
           tofetch = true
         }

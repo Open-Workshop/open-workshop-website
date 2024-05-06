@@ -108,6 +108,93 @@ main.user.settings > hr#mobile-hr-user-settings {
 }
 
 
+
+.user-avatar-box {
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+
+    position: relative;
+}
+.user-edit-icon {
+    width: 0pt;
+    position: absolute;
+    padding-left: 10pt;
+    pointer-events: none;
+}
+
+.user-avatar-box > .user-edit-icon {
+    transition: all 0.3s;
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+    bottom: 00;
+    top: 0;
+    
+    padding: 0;
+    margin: 0;
+    
+    height: 100%;
+    width: 100%;
+    
+    cursor: pointer;
+    pointer-events: all;
+}
+.user-avatar-box > .user-edit-icon:hover {
+    background: rgba(0, 0, 0, 0.5);
+}
+.user-avatar-box > .user-edit-icon > img {
+    transition: all 0.3s;
+
+    position: absolute;
+
+    width: 40px;
+    margin: 40%;
+
+    opacity: 0;
+    scale: 0;
+}
+.user-avatar-box > .user-edit-icon:hover > img {
+    opacity: 1;
+    scale: 1;
+}
+
+
+#reset-avatar {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+
+    padding: 3px 0px 0px 3px;
+
+    cursor: pointer;
+
+    border-top-left-radius: 10px;
+    background: var(--main-panel-on-page-background);
+}
+#reset-avatar > img {
+    width: 40px;
+    
+    filter: brightness(0.4);
+    scale: 0.8;
+
+    transition: all 0.3s;
+}
+#reset-avatar:hover > img {
+    scale: 0.85;
+}
+
+#reset-avatar.toggled > img {
+    filter: brightness(1);
+    scale: 1;
+}
+#reset-avatar.toggled:hover > img {
+    scale: 0.95;
+}
+
+
 @media screen and (max-width: 450px) {
     main.user.settings > pager {
         width: 100%;
