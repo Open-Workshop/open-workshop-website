@@ -1,20 +1,20 @@
 User-agent: *
 
-Disallow: /
+Clean-param: page /
+Clean-param: name /
+Clean-param: game /
+Clean-param: sgame /
+Clean-param: depen /
+Clean-param: sort /
+Clean-param: tags /
+
+Allow: /
 
 Allow: /about
 Allow: /apis
 Allow: /legal/
 
 Allow: /mod/*
-Clean-param: page /mod/*
-Clean-param: page_size /mod/*
-Clean-param: name /mod/*
-Clean-param: game /mod/*
-Clean-param: game_select /mod/*
-Clean-param: sgame /mod/*
-Clean-param: dependencies /mod/*
-Clean-param: sort /mod/*
 Disallow: /mod/*/edit
 
 Allow: /user/*
