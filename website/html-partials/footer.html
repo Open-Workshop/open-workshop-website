@@ -4,9 +4,9 @@
 <section class="phone-menu" hidden="hidden">
     <div class="phone-menu-header">
         {% if user_profile %}
-        <a id="profile-mobile" style="display: flex; text-decoration: none;" href="/user/{{ user_profile.id }}">
+        <a class="profile-mobile" href="/user/{{ user_profile.id }}">
         <img class="user-avatar-mini" src="{{ user_profile.avatar_url }}">
-        <p style="width: auto; margin-left: 5pt; color: white;">{{ user_profile.username }}</p>
+        <p style="width: auto; margin-left: 5pt;">{{ user_profile.username }}</p>
         {% if user_profile.mute %}
         <a style="margin-left: 3pt;" title="Вы временно лишены голоса" class="tag-link-red" translate="no">MUTED</a>
         {% endif %}

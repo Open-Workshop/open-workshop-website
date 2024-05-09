@@ -93,6 +93,10 @@ button.phone-navigator {
 }
 
 .phone-menu > .phone-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     padding: 15px 20px;
 }
 .phone-menu > .phone-menu-header p {
@@ -102,6 +106,12 @@ button.phone-navigator {
     justify-content: center;
     width: 100%;
 }
+.phone-menu > .phone-menu-header > .profile-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 
 .user-avatar-mini {
     border-radius: 100%;
