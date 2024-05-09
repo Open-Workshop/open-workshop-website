@@ -1,83 +1,85 @@
 {% extends 'html-partials/standart.html' %}
 
 {% block content %}
-  <main class="catalog">
-    <div id="settings-catalog">
-      <balloon onclick="$('div#settings-catalog').toggleClass('full-screen')" id="full-settings-menu">
-        <img src="/assets/images/svg/white/gear.svg" alt="Шестерёнка" class="scale">
-      </balloon>
+<link href="/assets/styles/pages/catalog.css" rel="stylesheet"/>
 
-      <div id="settings-menu">
-        <setting class="in-full with-events">
-          <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
-        </setting>
+<main class="catalog">
+  <div id="settings-catalog">
+    <balloon onclick="$('div#settings-catalog').toggleClass('full-screen')" id="full-settings-menu">
+      <img src="/assets/images/svg/white/gear.svg" alt="Шестерёнка" class="scale">
+    </balloon>
 
-        <hr class="in-full">
+    <div id="settings-menu">
+      <setting class="in-full with-events">
+        <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
+      </setting>
 
-        <setting id="game-select" onclick="stateMachineGameSelect.call(this)">
-          <input type="checkbox" hidden>
-          <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
-          <label>Выбрать игру</label>
-        </setting>
+      <hr class="in-full">
 
-        <hr>
+      <setting id="game-select" onclick="stateMachineGameSelect.call(this)">
+        <input type="checkbox" hidden>
+        <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
+        <label>Выбрать игру</label>
+      </setting>
 
-        <setting id="depen" onclick="undependencyMod.call(this)">
-          <input type="checkbox">
-          <label>Независимые моды</label>
-        </setting>
+      <hr>
 
-        <hr>
+      <setting id="depen" onclick="undependencyMod.call(this)">
+        <input type="checkbox">
+        <label>Независимые моды</label>
+      </setting>
 
-        <setting class="with-events">
-          {% with tags={} %}
-            {% with game=0 %}
-              {% include 'html-partials/tags-edit.html' %}
-            {% endwith %}
+      <hr>
+
+      <setting class="with-events">
+        {% with tags={} %}
+          {% with game=0 %}
+            {% include 'html-partials/tags-edit.html' %}
           {% endwith %}
-        </setting>
+        {% endwith %}
+      </setting>
 
-        {% if not user_profile %}
-        <p id="bresults-context">Войдите чтобы скрыть рекламу!</p>
-        <script src="//s.contemio.ru/c.js"></script>
-        <div id="bresults">
-          <script async defer>cbanner.load(22981, "contemio.ru");</script>
-        </div>
-        {% endif %}
+      {% if not user_profile %}
+      <p id="bresults-context">Войдите чтобы скрыть рекламу!</p>
+      <script src="//s.contemio.ru/c.js"></script>
+      <div id="bresults">
+        <script async defer>cbanner.load(22981, "contemio.ru");</script>
       </div>
+      {% endif %}
     </div>
+  </div>
 
-    <div id="cards-container" class="cards">
-        <div id="selectors-catalog">
-            <div class="with-button" style="margin-left: 0;">
-                <select id="sort-select" title="Сортировка" onchange="sortSelect(this)">
-                    <option class="game" value="MODS" selected>Сортировка по количеству модов</option>
-                    <option class="mod" value="SIZE">Сортировка по размеру</option>
-                    <option class="mod" value="UPDATE">Сортировка по дате обновления</option>
-                    <option value="DOWNLOADS">Сортировка по загрузкам</option>
-                    <option value="CREATION">Сортировка по дате создания</option>
-                    <option value="NAME">Сортировка по алфавиту</option>
-                </select>
-                <button id="sort-select-invert" class="invert" title="Инверсия сортировки" onclick="$(this).toggleClass('toggled'); invertSort(this)">
-                    <img src="/assets/images/svg/white/sort.svg" alt="Инверсия сортировки">
-                </button>
-                <input class="input-checkbox" id="sort-checkboxmode" type="checkbox" hidden>
-            </div>
-        </div>
+  <div id="cards-container" class="cards">
+      <div id="selectors-catalog">
+          <div class="with-button" style="margin-left: 0;">
+              <select id="sort-select" title="Сортировка" onchange="sortSelect(this)">
+                  <option class="game" value="MODS" selected>Сортировка по количеству модов</option>
+                  <option class="mod" value="SIZE">Сортировка по размеру</option>
+                  <option class="mod" value="UPDATE">Сортировка по дате обновления</option>
+                  <option value="DOWNLOADS">Сортировка по загрузкам</option>
+                  <option value="CREATION">Сортировка по дате создания</option>
+                  <option value="NAME">Сортировка по алфавиту</option>
+              </select>
+              <button id="sort-select-invert" class="invert" title="Инверсия сортировки" onclick="$(this).toggleClass('toggled'); invertSort(this)">
+                  <img src="/assets/images/svg/white/sort.svg" alt="Инверсия сортировки">
+              </button>
+              <input class="input-checkbox" id="sort-checkboxmode" type="checkbox" hidden>
+          </div>
+      </div>
+
+      <div id="cards">
+        <!-- Тута карточки -->  
+      </div>
+
+      <label id="end-of-cards">Вы увидели все карточки ʕᵔᴥᵔʔ</label>
+  </div>
+
+  <script src='//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
+  <script src='https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'></script>
   
-        <div id="cards">
-          <!-- Тута карточки -->  
-        </div>
-
-        <label id="end-of-cards">Вы увидели все карточки ʕᵔᴥᵔʔ</label>
-    </div>
-
-    <script src='//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
-    <script src='https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'></script>
-    
-    <script src="/assets/scripts/vendors/catalog.js"></script>
-    <script src="/assets/scripts/catalog-params.js"></script>
-  </main>
+  <script src="/assets/scripts/vendors/catalog.js"></script>
+  <script src="/assets/scripts/catalog-params.js"></script>
+</main>
 {% endblock %}
 
 {% block title %}

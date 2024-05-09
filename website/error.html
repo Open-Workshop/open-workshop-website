@@ -1,15 +1,18 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-    <div class="centered">
-        <div style="max-width: 90%; display: flex; flex-direction: column;">
-            <h1 id="title_not_found" title="{{ error }}" class="not__found__page__error"></h1>
-            <br>
-            <a href="/" id="link_not_found" title="нажми здесь чтобы вернуться на главную" class="not__found__page__link"></a>
-        </div>
-    </div>
+<link rel="stylesheet" href="/assets/styles/pages/error.css">
 
-    <script src="/assets/scripts/404.js"></script>
+<main class="error">
+    <h1>{{ error }}</h1>
+    <br>
+    <a href="/">нажми здесь чтобы вернуться на главную</a>
+</main>
 {% endblock %}
+
 {% block title %}
 OW: {{ error_title }}
+{% endblock %}
+
+{% block description %}
+{{ error_description }}
 {% endblock %}

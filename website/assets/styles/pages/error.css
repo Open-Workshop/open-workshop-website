@@ -1,0 +1,13 @@
+
+main.error > * {
+    text-align: center;
+}
+
+main.error > h1 {
+    font-size: 2rem;
+}
+
+main.error > a {
+    font-size: 1.4rem;
+    cursor: pointer;
+}

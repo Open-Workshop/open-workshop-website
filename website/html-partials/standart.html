@@ -5,6 +5,7 @@
     <title>{% block title %}Open Workshop{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{% block description %}Свободный каталог модификаций{% endblock %}">
+    <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico"/>
 
     <meta property="og:site_name" content="Open Workshop" />
     <meta property="og:title" content="{{ self.title() }}">
@@ -23,33 +24,32 @@
     <meta property="og:type" content="article" />
     <link rel="canonical" href="https://openworkshop.su/user/{{ is_user_data['id'] }}">
     {% endif %}
-    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml"/>
 
-    <link rel="icon" type="image/x-icon" href="/assets/images/favicon.ico"/>
 
+    <!-- основные -->
     <link href="/assets/styles/new-standart.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/header.css" rel="stylesheet"/>
     <link href="/assets/styles/mini-parts/mains.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/button.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/a.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/input.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/select.css" rel="stylesheet"/>
+    <link href="/assets/styles/mini-parts/header.css" rel="stylesheet"/>
+
+    <!-- элементы -->
+    <link href="/assets/styles/elements/a.css" rel="stylesheet"/>
+    <link href="/assets/styles/elements/input.css" rel="stylesheet"/>
+    <link href="/assets/styles/elements/select.css" rel="stylesheet"/>
+    <link href="/assets/styles/elements/button.css" rel="stylesheet"/>
+    <link href="/assets/styles/elements/img.css" rel="stylesheet"/>
+
+    <!-- структуры -->
     <link href="/assets/styles/mini-parts/balloon.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/img.css" rel="stylesheet"/>
-    <link href="/assets/styles/vendors/cards.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/mod.css" rel="stylesheet"/>
     <link href="/assets/styles/mini-parts/images-view.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/tags.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/user.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/user-setting.css" rel="stylesheet"/>
+    <link href="/assets/styles/vendors/ow-language.css" rel="stylesheet"/>
+    <link href="/assets/styles/vendors/cards.css" rel="stylesheet"/>
     <link href="/assets/styles/mini-parts/containers.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="/assets/styles/vendors/ow-language.css">
+    <link href="/assets/styles/mini-parts/tags.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.css?_cacheOverride=1695405606905">
 
     <link href="/assets/styles/style.css" rel="stylesheet"/>
 
     {% if catalog %}
-    <link href="/assets/styles/mini-parts/catalog.css" rel="stylesheet"/>
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/masonry-layout@4/dist/masonry.pkgd.min.css">
     <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
 
@@ -59,14 +59,13 @@
     <link rel="canonical" href="https://openworkshop.su">
     {% endif %}
     
-    <meta name="yandex-verification" content="4f45530de4f44a80" />
-    <meta name="msvalidate.01" content="93E9A08A2C90737FB01BF7BE50B2433F" />
-
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml"/>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     
+    <!-- Сторонние сервисы -->
+    <meta name="yandex-verification" content="4f45530de4f44a80" />
+    <meta name="msvalidate.01" content="93E9A08A2C90737FB01BF7BE50B2433F" />
     <link href="/assets/styles/vendors/toast.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/magnific-popup.js/1.1.0/magnific-popup.css?_cacheOverride=1695405606905">
-    
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
   </head>
   <body>
