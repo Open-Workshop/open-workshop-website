@@ -36,7 +36,8 @@
     --interactive-select-active: rgb(35, 35, 108);
 
     --icon-footer: #0096a1;
-    --medium-icon: 30px;
+    --icon-footer-hover: #0ebac7;
+    --medium-icon: 35px;
 }
 
 html {
@@ -67,6 +68,13 @@ hr {
 
     background: #333;
     background-image: linear-gradient(to right, #8d8d8d, #fff, #8d8d8d);
+}
+
+br {
+    display: block;
+    height: 5px;
+    line-height: 22px;
+    content: " ";
 }
 
 article {

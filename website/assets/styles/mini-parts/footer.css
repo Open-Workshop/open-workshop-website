@@ -1,0 +1,149 @@
+
+footer {
+    display: flex;
+    justify-content: center;
+
+    padding-bottom: 5px;
+}
+
+footer li {
+    display: inline;
+    margin: 5px;
+
+    cursor: context-menu;
+}
+
+footer a {
+    display: inline-block;
+    transition: 0.3s;
+}
+
+footer a svg {
+    height: var(--medium-icon);
+}
+
+footer a:hover {
+    transform: translateY(-4px);
+}
+
+footer a svg path {
+    fill: var(--icon-footer);
+    transition: 0.3s;
+}
+
+footer a:hover svg path {
+    fill: var(--icon-footer-hover);
+}
+
+
+button.phone-navigator {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0);
+    padding: 10px 20px;
+
+    background: linear-gradient(to right, #014769, #00013f);
+    box-shadow: 0 2px 40px -10px #0089ff;
+    
+    z-index: 9;
+}
+
+.phone-full-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    
+    z-index: 100;
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+.phone-full-background.active {
+    background-color: #0000006e;
+    pointer-events: all;
+}
+
+
+.phone-menu {
+    position: fixed;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    width: 100%;
+    background: var(--main-panel-on-page-background);
+    padding-bottom: 15px;
+    bottom: 0;
+    z-index: 105;
+    transition: 0.2s cubic-bezier(0.7, 0, 0.3, 1);
+}
+.phone-menu[hidden] {
+    bottom: -100%;
+}
+
+.phone-menu > div {
+    width: 100%;
+}
+.phone-menu > hr {
+    width: 95%;
+}
+
+.phone-menu > .phone-menu-header {
+    padding: 15px 20px;
+}
+.phone-menu > .phone-menu-header p {
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.user-avatar-mini {
+    border-radius: 100%;
+    width: 30px;
+}
+
+.phone-menu > .phone-menu-actions {
+    display: flex;
+    padding: 10px 15px;
+}
+.phone-menu > .phone-menu-actions a {
+    flex: 1 1 1px;
+    padding: 1px 8px;
+    
+    color: white;
+    text-align: center;
+    font-size: large;
+
+    cursor: pointer;
+}
+
+.phone-menu > .phone-menu-contacts {
+    display: flex;
+    padding: 8px;
+}
+.phone-menu > .phone-menu-contacts svg {
+    width: 100%;
+    fill: #0096a1;
+}
+.phone-menu > .phone-menu-contacts a {
+    flex: 1 1 30%;
+    padding: 5px;
+    margin: 5px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+
+
+@media only screen and (min-width: 780px) {
+    button.phone-navigator {
+        opacity: 0;
+        pointer-events: none;
+    }
+}

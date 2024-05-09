@@ -1,9 +1,8 @@
-<div class="full__phone"></div>
-<button class="menu__button">
-    Навигатор
-</button>
-<section class="menu__body" hidden="hidden">
-    <div class="menu__header">
+<div class="phone-full-background" onclick="hideMenu()"></div>
+<button class="phone-navigator" onclick="showMenu()">Навигатор</button>
+
+<section class="phone-menu" hidden="hidden">
+    <div class="phone-menu-header">
         {% if user_profile %}
         <a id="profile-mobile" style="display: flex; text-decoration: none;" href="/user/{{ user_profile.id }}">
         <img class="user-avatar-mini" src="{{ user_profile.avatar_url }}">
@@ -18,12 +17,14 @@
         <p>Навигация</p>
         {% endif %}
     </div>
-    <div class="menu__links">
+    <hr>
+    <div class="phone-menu-actions">
         <a href="/">На главную</a>
         <a href="/apis">API</a>
         <a href="/about">О проекте</a>
     </div>
-    <div class="menu__links">
+    <hr>
+    <div class="phone-menu-actions">
         {% if not user_profile %}
         <a onclick="serviceAuthorization('/api/accounts/authorization/yandex/link')">Войти с Яндекс</a>
         <a onclick="serviceAuthorization('/api/accounts/authorization/google/link')">Войти с Google</a>
@@ -35,7 +36,8 @@
         <a onclick="logon()">Выйти</a>
         {% endif %}
     </div>
-    <div class="menu__contact">
+    <hr>
+    <div class="phone-menu-contacts">
         <!-- telegram -->
         <a href="https://t.me/sphere_games"> 
             <svg xmlns="http://www.w3.org/2000/svg" fill="var(--icon-footer)" height="32" viewbox="0 0 48 48" width="32">
@@ -63,29 +65,25 @@
 </section>
 
 <script>
-const button = document.querySelector('.menu__button');
-const menu = document.querySelector('.menu__body');
-const close = document.querySelector('.full__phone');
+    const $button = $('section.menu__button');
+    const $menu = $('section.phone-menu');
+    const $close = $('.phone-full-background');
 
-function showMenu() {
-    button.setAttribute('hidden', '');
-    menu.removeAttribute('hidden');
-    close.classList.add('full__phone__active')
-};
+    function showMenu() {
+        $button.attr('hidden', '');
+        $menu.removeAttr('hidden');
+        $close.addClass('active')
+    };
 
-function hideMenu() {
-    menu.setAttribute('hidden', '');
-    button.removeAttribute('hidden');
-    close.classList.remove('full__phone__active')
-};
-
-button.addEventListener('click', showMenu);
-close.addEventListener('click', hideMenu);
+    function hideMenu() {
+        $menu.attr('hidden', '');
+        $button.removeAttr('hidden');
+        $close.removeClass('active')
+    };
 </script>
 
 <footer>
-    <div class="social-media-links">
-    <ul id="pc-links-footer">
+    <ul>
         <li>
             <!-- telegram -->
             <a href="https://t.me/sphere_games">
@@ -94,7 +92,6 @@ close.addEventListener('click', hideMenu);
                 </svg>
             </a>
         </li>
-
         <li>
             <!-- discord -->
             <a href="https://discord.gg/UnJnGHNbBp">
@@ -103,7 +100,6 @@ close.addEventListener('click', hideMenu);
                 </svg>
             </a>
         </li>
-        
         <li>
             <!-- github -->
             <a href="https://github.com/Open-Workshop">
@@ -113,5 +109,4 @@ close.addEventListener('click', hideMenu);
             </a>
         </li>
     </ul>
-    </div>
 </footer>
