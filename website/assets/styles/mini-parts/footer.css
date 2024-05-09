@@ -157,3 +157,9 @@ button.phone-navigator {
         pointer-events: none;
     }
 }
+
+@media screen and (max-width: 781px) {
+    footer {
+        opacity: 0;
+    }
+}
