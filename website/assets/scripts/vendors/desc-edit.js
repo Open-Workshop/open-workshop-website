@@ -14,6 +14,7 @@ $(document).ready(function() {
 
 function fullDescUpdate(textareaDesc) {
     const element = textareaDesc.parent();
+    console.log(element, textareaDesc, textareaDesc.val())
     descUpdate(element, textareaDesc.val());
     descOnHeight(element, textareaDesc);
     limitRenderUpdate(element, textareaDesc);
@@ -60,6 +61,7 @@ function descUpdate(root, text) {
     } else {
         result_element.removeClass("invisible-highlighting")
         root.find('textarea.editing').removeClass("invisible-highlighting")
+        console.log("Prism.highlightElement(result_element[0])", result_element[0])
         Prism.highlightElement(result_element[0]);
     }
 }

@@ -62,7 +62,7 @@ window.Catalog = {
         }
 
         // Запрос
-        const url = 'https://api.openworkshop.su/' + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
+        const url = 'https://new.openworkshop.su/api/manager/' + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
         let response = await fetch(url, {method: 'GET', redirect: 'follow'})
@@ -122,17 +122,6 @@ window.Catalog = {
         $('#cards').css('width', 'auto');
         msnry.reloadItems();
         msnry.layout();
-    },
-    sitemap: async function(data) {
-        try {
-            const response = await fetch('https://openworkshop.su/api/regist/page/', {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify(data) 
-            });
-        } catch (error) {
-            console.log(error);
-        }
     },
     cardShow: function(cardClick) {
         const $cards = $('#cards');

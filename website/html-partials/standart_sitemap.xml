@@ -14,8 +14,8 @@
 	</url>
 {% for item in data %}
 	<url>
-		<loc>https://{% if www %}www.{% endif %}openworkshop.su/mod/{{ item.mod_id }}</loc>
-		<lastmod>{{ item.date_update }}</lastmod>
+		<loc>https://{% if www %}www.{% endif %}openworkshop.su/mod/{{ item.id }}</loc>
+		<lastmod>{{ item.date_update_file }}</lastmod>
         <changefreq>monthly</changefreq>
 		<priority>0.5</priority>
 	</url>

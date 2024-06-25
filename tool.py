@@ -2,10 +2,10 @@ from flask import request, make_response
 import aiohttp
 import json
 import asyncio
+import re
 
 
-SERVER_ADDRESS = "http://127.0.0.1:8000"
-ACCOUNTS_ADDRESS = "http://127.0.0.1:7070/api/accounts"
+MANAGER_ADDRESS = "https://new.openworkshop.su/api/manager"
 
 
 
@@ -18,7 +18,7 @@ async def get_user_req(avatar_url:bool = True):
 
     if not user_id or (not refresh_cookie and not access_cookie): return False
 
-    url = ACCOUNTS_ADDRESS + f"/profile/info/{user_id}?general=true&rights=true&private=false"
+    url = MANAGER_ADDRESS + f"/profile/info/{user_id}?general=true&rights=true&private=false"
     headers = {
         'Cookie': ''
     }
@@ -70,7 +70,7 @@ async def get_accounts(url:str, last_req:dict = None):
     access_cookie = last_req["access"][0] if last_req and last_req["access"] else request.cookies.get('accessToken')
     refresh_cookie = last_req["refresh"][0] if last_req and last_req["refresh"] else request.cookies.get('refreshToken')
 
-    url = ACCOUNTS_ADDRESS+url
+    url = MANAGER_ADDRESS+url
     headers = {
         'Cookie': ''
     }
@@ -109,18 +109,18 @@ async def get_accounts(url:str, last_req:dict = None):
 
 async def check_access_user(user_req:dict, user_id:int):
     access = {
-        "avatar": False,
-        "username": False,
+        "avatar": True,#False,
+        "username": True,
         "about": False,
-        "mute": False,
-        "grade": False,
+        "mute": True,#False,
+        "grade": True,
         "my": False, # Мой ли это профиль
         "admin": False, # Является ли спрашивающий админом
-        "any": False # Включает в себя лиш поля доступа к редактированию (т.е. не включает my и admin)
+        "any": True#False # Включает в себя лиш поля доступа к редактированию (т.е. не включает my и admin)
     }
     user_p = False
 
-    if user_req and type(user_req["result"]) is dict:
+    if False and user_req and type(user_req["result"]) is dict:
         user_p = user_req["result"]["general"]
         rights = user_req["result"]["rights"]
         is_admin = rights["admin"]
@@ -181,6 +181,11 @@ async def check_access_mod(user_req:dict, authors:list = []):
                 access["edit"] = user_req["result"]["rights"]["change_mods"]
                 access["delete"] = user_req["result"]["rights"]["delete_mods"]
 
+    for i in access.keys():
+        access[i] = True
+
+    print(access)
+
     return access
 
 
@@ -240,8 +245,8 @@ async def get_many_mods(mods:list[int]) -> dict:
     mods = list(map(int, mods))
 
     urls = [
-        SERVER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(mods) + "&general=true",
-        SERVER_ADDRESS + '/list/resources_mods/' + str(mods) + '?page_size=30&page=0&types_resources=["logo"]'
+        MANAGER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(mods) + "&general=true",
+        MANAGER_ADDRESS + '/list/resources_mods/' + str(mods) + '?page_size=30&page=0&types_resources=["logo"]'
     ]
     print(urls)
     tasks = []
@@ -274,3 +279,17 @@ async def fetch(url, access_cookie = None, refresh_cookie = None, return_code:bo
         text = await response.text()
         if return_code: return [json.loads(text), response.status]
         else: return json.loads(text)
+
+
+async def remove_words_short(text, words):
+    for word in words:
+        text = text.replace("["+word+"]", '')
+        text = text.replace("[/"+word+"]", '')
+
+    text = re.sub(r"\[url=.*?\]", "", text)
+    text = re.sub(r"\[img\].*?\[/img\]", "", text)
+
+    text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
+    return text
+async def remove_words_long(text):
+    return text
