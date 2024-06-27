@@ -241,31 +241,6 @@ async def size_format(size:int) -> str:
 
     return text_size
 
-async def get_many_mods(mods:list[int]) -> dict:
-    mods = list(map(int, mods))
-
-    urls = [
-        MANAGER_ADDRESS + "/list/mods/?page_size=30&page=0&allowed_ids=" + str(mods) + "&general=true",
-        MANAGER_ADDRESS + '/list/resources_mods/' + str(mods) + '?page_size=30&page=0&types_resources=["logo"]'
-    ]
-    print(urls)
-    tasks = []
-    for url in urls:
-        tasks.append(fetch(url))
-    result = await asyncio.gather(*tasks)
-
-    depen = {}
-    for i in mods:
-        depen[int(i)] = {"img": "", "name": str(i), "id": i}
-    print(result)
-    for mod in result[0]["results"]:
-        depen[mod["id"]]["name"] = mod["name"]
-    if type(result[1]) is dict:
-        for img in result[1]["results"]:
-            depen[img["owner_id"]]["img"] = img["url"]
-
-    return depen
-
 async def fetch(url, access_cookie = None, refresh_cookie = None, return_code:bool = False):
     headers = {
         'Cookie': ''
@@ -276,9 +251,9 @@ async def fetch(url, access_cookie = None, refresh_cookie = None, return_code:bo
 
     async with aiohttp.ClientSession() as session:
         response = await session.get(url=url, timeout=aiohttp.ClientTimeout(total=5), headers=headers)
-        text = await response.text()
-        if return_code: return [json.loads(text), response.status]
-        else: return json.loads(text)
+        content = await response.json()
+        if return_code: return [content, response.status]
+        else: return content
 
 
 async def remove_words_short(text, words):

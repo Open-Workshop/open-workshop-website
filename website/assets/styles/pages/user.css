@@ -12,6 +12,7 @@ main.user > article {
 
 .user-avatar {
     border-radius: 5pt;
+    aspect-ratio: 1 / 1;
 }
 
 .user-left-bar {

@@ -203,8 +203,8 @@ async def mod(mod_id):
 
     urls = [
         MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        MANAGER_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0",
-        MANAGER_ADDRESS+f"/list/tags/mods/%5B{mod_id}%5D"
+        MANAGER_ADDRESS+"/list/resources_mods/["+str(mod_id)+"]?page_size=30&page=0",
+        MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
     ]
     tasks = []
     for url in urls:
@@ -427,7 +427,7 @@ async def user(user_id):
 
     urls = [
         MANAGER_ADDRESS + f"/profile/info/{user_id}",
-        MANAGER_ADDRESS + f"/list/mods/{user_id}?page_size=5"
+        MANAGER_ADDRESS + f"/list/mods/?user={user_id}&page_size=4"
     ]
     tasks = []
     for url in urls:
@@ -474,21 +474,34 @@ async def user(user_id):
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-    if len(info[1]) > 0:
+    print(info[1])
+    if len(info[1]['results']) > 0:
+        resources_mods = await fetch(f'https://new.openworkshop.su/api/manager/list/resources/mods/{[i["id"] for i in info[1]["results"]]}?page_size=10&page=0&types_resources=["logo"]')
+
+        mods_data = [
+            {
+                'id': int(i['id']),
+                'name': i['name'],
+                'img': ''
+            }
+            for i in info[1]['results']
+        ]
+        print(mods_data)
+        for i in resources_mods['results']:
+            mods_data[i['owner_id']]['img'] = i['url']
+        print(mods_data)
+
         user_mods = {
-            'not_show_all': len(info[1]) > 3,
-            'mods_data': await tool.get_many_mods(info[1].keys())
+            'not_show_all': len(info[1]['results']) > 3,
+            'mods_data': mods_data
         }
     else:
         user_mods = False
 
     user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
-    try:
-        page_html = render_template("user.html", user_data=info[0], user_profile=user_p, user_mods=user_mods,
-                                    is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']})
-    except:
-        page_html = ""
+    page_html = render_template("user.html", user_data=info[0], user_profile=user_p, user_mods=user_mods,
+                                is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']})
 
 
     # Возвращаем ответ
