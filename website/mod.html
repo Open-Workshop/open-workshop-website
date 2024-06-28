@@ -19,8 +19,8 @@
             <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
             <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ data[0]['result']['downloads'] }}</a>
 
-            {% if data[0]['result']['date_update_js'] != data[0]['result']['date_creation_js'] %}
-            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update'] }}</a>
+            {% if data[0]['result']['date_update_file_js'] != data[0]['result']['date_creation_js'] %}
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_file_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update_file'] }}</a>
             {% endif %}
 
             <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
@@ -119,5 +119,5 @@
 {% endblock %}
 
 {% block modified_time %}
-{{ is_mod_data["date_update"] }}
+{{ is_mod_data["date_update_file"] }}
 {% endblock %}

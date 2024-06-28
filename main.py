@@ -203,7 +203,7 @@ async def mod(mod_id):
 
     urls = [
         MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        MANAGER_ADDRESS+"/list/resources_mods/["+str(mod_id)+"]?page_size=30&page=0",
+        MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
         MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
     ]
     tasks = []
@@ -222,13 +222,11 @@ async def mod(mod_id):
         info[1] = info[1][0]
         info[2] = info[2][0][str(mod_id)]
 
-    print(urls[2], info[2])
-
     info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
-        "date_update": info[0]['result'].get("date_update", ""),
+        "date_update_file": info[0]['result'].get("date_update_file", ""),
         "logo": ""
     }
 
@@ -247,9 +245,9 @@ async def mod(mod_id):
     info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
     info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
-    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update_file'])
+    info[0]['result']['date_update_file_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update_file'] = dates.format_date(input_date_update, locale=launge)
 
     info[0]['result']['id'] = mod_id
 
@@ -258,7 +256,27 @@ async def mod(mod_id):
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        info[3] = await tool.get_many_mods(info[0]['dependencies'])
+        d_urls = [
+            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+        ]
+        print(d_urls)
+        tasks = []
+        for url in d_urls:
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
+        d_info = await asyncio.gather(*tasks)
+
+        print(d_info)
+
+        for inf in d_info[0]['results']:
+            info[3][inf['id']] = {
+                'id': inf['id'],
+                'img': '',
+                'name': inf['name']
+            }
+
+        for inf in d_info[1]['results']:
+            info[3][inf['owner_id']]['img'] = inf['url']
 
     authors_info = []
     if len(info[0]['authors']) > 0:
@@ -279,10 +297,7 @@ async def mod(mod_id):
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
     # Пробуем отрендерить страницу
-    #try:
     page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_info)
-    #except:
-    #    page_html = ""
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -341,7 +356,7 @@ async def edit_mod(mod_id):
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
-        "date_update": info[0]['result'].get("date_update", ""),
+        "date_update_file": info[0]['result'].get("date_update_file", ""),
         "logo": ""
     }
 
@@ -349,9 +364,9 @@ async def edit_mod(mod_id):
     info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
     info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
-    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update_file'])
+    info[0]['result']['date_update_file_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update_file'] = dates.format_date(input_date_update, locale=launge)
 
     info[0]['result']['id'] = mod_id
 
@@ -361,7 +376,27 @@ async def edit_mod(mod_id):
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        info[3] = await tool.get_many_mods(info[0]['dependencies'])
+        d_urls = [
+            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+        ]
+        print(d_urls)
+        tasks = []
+        for url in d_urls:
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
+        d_info = await asyncio.gather(*tasks)
+
+        print(d_info)
+
+        for inf in d_info[0]['results']:
+            info[3][inf['id']] = {
+                'id': inf['id'],
+                'img': '',
+                'name': inf['name']
+            }
+
+        for inf in d_info[1]['results']:
+            info[3][inf['owner_id']]['img'] = inf['url']
 
     try:
         info[2] = list(info[2].values())[0]
