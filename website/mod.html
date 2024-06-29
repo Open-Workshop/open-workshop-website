@@ -19,8 +19,8 @@
             <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ data[0]['result']['size'] }}</a>
             <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ data[0]['result']['downloads'] }}</a>
 
-            {% if data[0]['result']['date_update_js'] != data[0]['result']['date_creation_js'] %}
-            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update'] }}</a>
+            {% if data[0]['result']['date_update_file_js'] != data[0]['result']['date_creation_js'] %}
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ data[0]['result']['date_update_file_js'] }}" class="tag-link" translate="no">⏳{{ data[0]['result']['date_update_file'] }}</a>
             {% endif %}
 
             <a title="Дата появления" id="date_creation_a_tag" datejs="{{ data[0]['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ data[0]['result']['date_creation'] }}</a>
@@ -67,8 +67,8 @@
         <div class="outline-container">
         <h2>Авторы</h2>
         {% for item in authors %}
-            <a class="element user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
-                <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+            <a class="element user-author" {% if item.owner %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+                <img src="https://new.openworkshop.su/api/manager/profile/avatar/{{ item.id }}" alt="Аватар пользователя" onerror="this.src='/assets/images/image-not-found.webp'">
                 <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
             </a>
         {% endfor %}
@@ -95,7 +95,7 @@
         {% endif %}
 
         {% if data[0]['result']['public'] != 2 %}
-        <a class="download-button" href="https://api.openworkshop.su/download/{{ data[0]['result']['id'] }}">Загрузить</a>
+        <a class="download-button" href="https://new.openworkshop.su/api/manager/download/{{ data[0]['result']['id'] }}">Загрузить</a>
         {% endif %}
     </div>
 </main>
@@ -119,5 +119,5 @@
 {% endblock %}
 
 {% block modified_time %}
-{{ is_mod_data["date_update"] }}
+{{ is_mod_data["date_update_file"] }}
 {% endblock %}

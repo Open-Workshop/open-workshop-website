@@ -28,12 +28,16 @@ $(document).ready(async function() {
 
 
     if (params.get('game', '') != '') {
-        const response = await fetch('https://api.openworkshop.su/info/game/'+params.get('game', ''));
-        if (response.status == 200) {
-            const data = await response.json();
+        const [gameResponse, logoResponse] = await Promise.all([
+            fetch('https://new.openworkshop.su/api/manager/list/games/?allowed_ids=['+params.get('game', '')+']'),
+            fetch('https://new.openworkshop.su/api/manager/list/resources/games/['+params.get('game', '')+']?types_resources=["logo"]&only_urls=true')
+        ]);
 
-            $('setting#game-select').find('img').attr('src', data.result.logo)
-            $('setting#game-select').find('label').text(data.result.name)
+        if (gameResponse.ok && logoResponse.ok) {
+            const [data, logo] = await Promise.all([gameResponse.json(), logoResponse.json()]);
+
+            $('setting#game-select').find('img').attr('src', logo.results[0])
+            $('setting#game-select').find('label').text(data.results[0].name)
         }
     }
 })
@@ -149,11 +153,8 @@ async function render(params) {
     const res = await Catalog.addPage(params);
     try {    
         if (res.results && res.results.length > 0) {
-            if (params.get('sgame', 'yes') == 'no') {
-                await Cards.setterImgs(params.get('page', 0))
-            } else {
-                Catalog.masonry();
-            }
+            owner_type = params.get('sgame', 'yes') == 'yes' ? 'games' : 'mods' // Если игра то games, иначе mods
+            await Cards.setterImgs(params.get('page', 0), owner_type)
             return true
         } else {
             return false

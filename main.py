@@ -1,7 +1,6 @@
-from tool import get_user_req, standart_response, get_tokens_cookies, check_access_mod, SERVER_ADDRESS, ACCOUNTS_ADDRESS
-from flask import Flask, render_template, send_from_directory, request, make_response
+from tool import get_user_req, standart_response, get_tokens_cookies, check_access_mod, MANAGER_ADDRESS
+from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from sqlalchemy.orm import sessionmaker
-from sql_client import Page, engine
 from sqlalchemy import insert, delete
 from pathlib import Path
 from babel import dates
@@ -10,8 +9,8 @@ import asyncio
 from tool import fetch
 import tool
 import time
-import re
 import os
+import sitemap_connector as sitemapper
 
 
 app = Flask(__name__, template_folder='website')
@@ -197,16 +196,28 @@ async def mod(mod_id):
     global MONTHS_NAMES
     launge = "ru"
 
+
+    ## TODO ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
+
+    if mod_id > 60000:
+        tor = await fetch(f'https://new.openworkshop.su/api/manager/list/mods/?primary_sources=["steam"]&allowed_sources_ids=[{mod_id}]')
+        if len(tor['results']) > 0:
+            return redirect("/mod/"+str(tor['results'][0]['id']), code=308)
+
+    ## / ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
+
+
     # Определяем права
     user_req = await get_user_req()
 
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        ACCOUNTS_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        ACCOUNTS_ADDRESS+"/list/resources_mods/%5B"+str(mod_id)+"%5D?page_size=30&page=0",
-        ACCOUNTS_ADDRESS+f"/list/tags/mods/%5B{mod_id}%5D"
+        MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
+        MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
     ]
+    print(urls)
     tasks = []
     for url in urls:
         tasks.append(fetch(url, access_cookie, refresh_cookie, True))
@@ -217,33 +228,17 @@ async def mod(mod_id):
         user_p = user_req["result"]["general"]
 
     if type(info[0][0]) is str:
-        if info[0][1] == 404:
-            # Создание сессии
-            Session = sessionmaker(bind=engine)
-            session = Session()
-
-            # Выполнение операции DELETE
-            delete_query = delete(Page).where(Page.mod_id == int(mod_id))
-            session.execute(delete_query)
-
-            # Завершение операции
-            session.commit()
-            session.close()
-            print("PAGE DELETE: " + str(mod_id))
-
         return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка')), info[0][1]
     else:
         info[0] = info[0][0]
         info[1] = info[1][0]
         info[2] = info[2][0][str(mod_id)]
 
-    print(urls[2], info[2])
-
     info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
-        "date_update": info[0]['result'].get("date_update", ""),
+        "date_update_file": info[0]['result'].get("date_update_file", ""),
         "logo": ""
     }
 
@@ -262,65 +257,58 @@ async def mod(mod_id):
     info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
     info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
-    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update_file'])
+    info[0]['result']['date_update_file_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update_file'] = dates.format_date(input_date_update, locale=launge)
 
     info[0]['result']['id'] = mod_id
 
-    info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
-    info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
+    info[0]['result']['short_description'] = await tool.remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
+    info[0]['result']['description'] = await tool.remove_words_long(text=info[0]['result']['description'])
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        info[3] = await tool.get_many_mods(info[0]['dependencies'])
+        d_urls = [
+            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+        ]
+        print(d_urls)
+        tasks = []
+        for url in d_urls:
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
+        d_info = await asyncio.gather(*tasks)
 
-    authors_info = []
+        print(d_info)
+
+        for inf in d_info[0]['results']:
+            info[3][inf['id']] = {
+                'id': inf['id'],
+                'img': '',
+                'name': inf['name']
+            }
+
+        for inf in d_info[1]['results']:
+            info[3][inf['owner_id']]['img'] = inf['url']
+
+
+    authors_result = []
     if len(info[0]['authors']) > 0:
         authors_tasks = []
         for author in info[0]['authors']:
-            print(f'{ACCOUNTS_ADDRESS}/profile/info/{author["user"]}')
-            authors_tasks.append(fetch(f'{ACCOUNTS_ADDRESS}/profile/info/{author["user"]}', access_cookie, refresh_cookie))
+            authors_tasks.append(fetch(f'{MANAGER_ADDRESS}/profile/info/{author}', access_cookie, refresh_cookie))
         authors_info = await asyncio.gather(*authors_tasks)
 
-        for i in range(len(info[0]['authors'])):
-            authors_info[i] = authors_info[i]['general']
-            if authors_info[i]['avatar_url'] == 'local':
-                authors_info[i]['avatar_url'] = f'/api/accounts/profile/avatar/{authors_info[i]["id"]}'
-            authors_info[i]['owner_mod'] = info[0]['authors'][i]['owner']
-        print(authors_info)
+        for i in range(len(authors_info)):
+            uid = authors_info[i]['general']['id']
+
+            authors_info[i]['general']['owner'] = info[0]['authors'][str(uid)]['owner']
+            authors_result.append(authors_info[i]['general'])
 
 
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
-    # Создание сессии
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    # Выполнение запроса
-    query = session.query(Page)
-    query = query.filter_by(mod_id=mod_id)
-    query = query.first()
-
-    if query is None:
-        insert_statement = insert(Page).values(
-            mod_id=info[0]['result']['id'],
-            game_id=info[0]['result']["game"]['id'],
-            date_update=input_date_update
-        )
-
-        session.execute(insert_statement)
-    else:
-        session.query(Page).filter_by(mod_id=mod_id).update({'date_update': input_date_update, "game_id": info[0]['result']["game"]['id']})
-    session.commit()
-
-    session.close()
-
     # Пробуем отрендерить страницу
-    #try:
-    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_info)
-    #except:
-    #    page_html = ""
+    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_result)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -343,9 +331,9 @@ async def edit_mod(mod_id):
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        ACCOUNTS_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        ACCOUNTS_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0",
-        ACCOUNTS_ADDRESS+f"/list/tags/mods/%5B{mod_id}%5D"
+        MANAGER_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        MANAGER_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0",
+        MANAGER_ADDRESS + f"/list/tags/mods/%5B{mod_id}%5D"
     ]
     tasks = []
     for url in urls:
@@ -353,20 +341,6 @@ async def edit_mod(mod_id):
     info = await asyncio.gather(*tasks)
 
     if type(info[0][0]) is str:
-        if info[0][1] == 404:
-            # Создание сессии
-            Session = sessionmaker(bind=engine)
-            session = Session()
-
-            # Выполнение операции DELETE
-            delete_query = delete(Page).where(Page.mod_id == int(mod_id))
-            session.execute(delete_query)
-
-            # Завершение операции
-            session.commit()
-            session.close()
-            print("PAGE DELETE: " + str(mod_id))
-
         return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка')), info[0][1]
     else:
         info[0] = info[0][0]
@@ -393,7 +367,7 @@ async def edit_mod(mod_id):
 
     is_mod = {
         "date_creation": info[0]['result'].get('date_creation', ""),
-        "date_update": info[0]['result'].get("date_update", ""),
+        "date_update_file": info[0]['result'].get("date_update_file", ""),
         "logo": ""
     }
 
@@ -401,19 +375,39 @@ async def edit_mod(mod_id):
     info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
     info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
 
-    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update'])
-    info[0]['result']['date_update_js'] = input_date_update.strftime(js_datetime)
-    info[0]['result']['date_update'] = dates.format_date(input_date_update, locale=launge)
+    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update_file'])
+    info[0]['result']['date_update_file_js'] = input_date_update.strftime(js_datetime)
+    info[0]['result']['date_update_file'] = dates.format_date(input_date_update, locale=launge)
 
     info[0]['result']['id'] = mod_id
 
-    info[0]['result']['short_description'] = await remove_words_short(text=info[0]['result']['short_description'],
+    info[0]['result']['short_description'] = await tool.remove_words_short(text=info[0]['result']['short_description'],
                                                                       words=SHORT_WORDS)
-    info[0]['result']['description'] = await remove_words_long(text=info[0]['result']['description'])
+    info[0]['result']['description'] = await tool.remove_words_long(text=info[0]['result']['description'])
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
-        info[3] = await tool.get_many_mods(info[0]['dependencies'])
+        d_urls = [
+            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+        ]
+        print(d_urls)
+        tasks = []
+        for url in d_urls:
+            tasks.append(fetch(url, access_cookie, refresh_cookie))
+        d_info = await asyncio.gather(*tasks)
+
+        print(d_info)
+
+        for inf in d_info[0]['results']:
+            info[3][inf['id']] = {
+                'id': inf['id'],
+                'img': '',
+                'name': inf['name']
+            }
+
+        for inf in d_info[1]['results']:
+            info[3][inf['owner_id']]['img'] = inf['url']
 
     try:
         info[2] = list(info[2].values())[0]
@@ -478,8 +472,8 @@ async def user(user_id):
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        ACCOUNTS_ADDRESS + f"/profile/info/{user_id}",
-        ACCOUNTS_ADDRESS + f"/list/mods/{user_id}?page_size=4"
+        MANAGER_ADDRESS + f"/profile/info/{user_id}",
+        MANAGER_ADDRESS + f"/list/mods/?user={user_id}&page_size=4"
     ]
     tasks = []
     for url in urls:
@@ -526,21 +520,34 @@ async def user(user_id):
     elif info[0]['general']['avatar_url'] == "local":
         info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
 
-    if len(info[1]) > 0:
+    print(info[1])
+    if len(info[1]['results']) > 0:
+        resources_mods = await fetch(f'https://new.openworkshop.su/api/manager/list/resources/mods/{[i["id"] for i in info[1]["results"]]}?page_size=10&page=0&types_resources=["logo"]')
+
+        mods_data = [
+            {
+                'id': int(i['id']),
+                'name': i['name'],
+                'img': ''
+            }
+            for i in info[1]['results']
+        ]
+        print(mods_data)
+        for i in resources_mods['results']:
+            mods_data[i['owner_id']]['img'] = i['url']
+        print(mods_data)
+
         user_mods = {
-            'not_show_all': len(info[1]) > 3,
-            'mods_data': await tool.get_many_mods(info[1].keys())
+            'not_show_all': len(info[1]['results']) > 3,
+            'mods_data': mods_data
         }
     else:
         user_mods = False
 
     user_p, info[0]['general']['editable'] = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
-    try:
-        page_html = render_template("user.html", user_data=info[0], user_profile=user_p, user_mods=user_mods,
-                                    is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']})
-    except:
-        page_html = ""
+    page_html = render_template("user.html", user_data=info[0], user_profile=user_p, user_mods=user_mods,
+                                is_user_data={"id": user_id, "logo": info[0]['general']['avatar_url']})
 
 
     # Возвращаем ответ
@@ -628,19 +635,6 @@ async def user_mods(user_id):
 async def login_popup():
     return render_template("login-popup.html", link=request.args.get('f'), russia=not bool(request.cookies.get('fromRussia')))
 
-async def remove_words_short(text, words):
-    for word in words:
-        text = text.replace("["+word+"]", '')
-        text = text.replace("[/"+word+"]", '')
-
-    text = re.sub(r"\[url=.*?\]", "", text)
-    text = re.sub(r"\[img\].*?\[/img\]", "", text)
-
-    text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
-    return text
-async def remove_words_long(text):
-    return text
-
 
 @app.route('/<path:filename>')
 async def serve_static(filename):
@@ -720,17 +714,27 @@ async def sitemap():
     page_ret.mimetype = "application/xml"
 
     return page_ret
-async def sitemap_generator(file_path:str):
+async def sitemap_generator(file_path:str) -> str:
+    """
+    Asynchronously generates a sitemap based on the provided file path.
+
+    Parameters:
+    file_path (str): The path to the file to write the sitemap.
+
+    Returns:
+    str: The generated sitemap page.
+    """
     with open(file_path, "w") as file:
         start = time.time()
 
         # Создание сессии
-        Session = sessionmaker(bind=engine)
-        session = Session()
+        session = sessionmaker(bind=sitemapper.engine)()
 
         # Выполнение запроса
-        query = session.query(Page).limit(49000).all()
-        result = [obj.__dict__ for obj in query]
+        query = session.query(sitemapper.Mod).filter(sitemapper.Mod.condition == 0, sitemapper.Mod.public == 0)
+        result = [obj.__dict__ for obj in query.limit(49000).all()]
+
+        session.close()
 
         print("SITEMAP RENDER START FROM: " + str(time.time() - start))
 
@@ -741,42 +745,6 @@ async def sitemap_generator(file_path:str):
         print("SITEMAP RENDER FINISH: " + str(time.time() - start))
         return page
 
-
-@app.route('/api/regist/page/', methods=["POST"])
-async def regist_cards_sitemap():
-    try:
-        data = request.get_json(force=True)
-
-        ids = [id.get("id", -1) for id in data["results"]]
-        conditions = await fetch(SERVER_ADDRESS+"/list/mods/?page_size=50&dates=true&general=false&allowed_ids="+str(ids))
-
-        # Создание сессии
-        Session = sessionmaker(bind=engine)
-        session = Session()
-
-        # Выполнение запроса
-        real_ids = session.query(Page).filter(Page.mod_id.in_(ids)).all()
-        real_ids = [obj.__dict__.get("mod_id", -1) for obj in real_ids]
-
-        for mod_data in conditions["results"]:
-            if mod_data["id"] not in real_ids:
-                insert_statement = insert(Page).values(
-                    mod_id=mod_data["id"],
-                    date_update=datetime.datetime.fromisoformat(mod_data["date_update"])
-                )
-
-                session.execute(insert_statement)
-            else:
-                session.query(Page).filter_by(mod_id=mod_data["id"]).update(
-                    {'date_update': datetime.datetime.fromisoformat(mod_data["date_update"])})
-
-        session.commit()
-        session.close()
-
-        return "ok"
-    except:
-        print("BIG PAGE PARSE: ERROR")
-        return "error"
 
 if __name__ == '__main__':
     #app.run()

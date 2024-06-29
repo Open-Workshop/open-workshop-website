@@ -9,7 +9,7 @@ function cookiesOkPress() {
 
 
 async function logon() {
-    const response = await fetch("https://openworkshop.su/api/accounts/authorization/logout", {
+    const response = await fetch("https://new.openworkshop.su/api/accounts/authorization/logout", {
       method: "POST"
     });
   

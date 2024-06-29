@@ -6,7 +6,7 @@
   <div class="user-profile">
     <div class="user-left-bar">
       <div class="user-avatar-box">
-        <img src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
+        <img src="https://new.openworkshop.su/api/manager/profile/avatar/{{ user_data.general.id }}" onerror="handlerImgErrorLoad(this)" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
       </div>
 
       {% if user_data.general.mute %}
@@ -85,7 +85,7 @@
       </a>
       {% endif %}
     </h3>
-    {% for item in user_mods['mods_data'].values() %}
+    {% for item in user_mods['mods_data'] %}
     <a class="element user-mod" href="/mod/{{ item.id }}">
       <img src="{{ item.img }}" onerror="handlerImgErrorLoad(this)" alt="Логотип мода">
       <p translate="no">{{ item.name }}</p>
