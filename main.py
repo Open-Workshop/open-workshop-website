@@ -1,5 +1,5 @@
 from tool import get_user_req, standart_response, get_tokens_cookies, check_access_mod, MANAGER_ADDRESS
-from flask import Flask, render_template, send_from_directory, request, make_response
+from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import insert, delete
 from pathlib import Path
@@ -195,6 +195,17 @@ async def mod(mod_id):
     global SHORT_WORDS
     global MONTHS_NAMES
     launge = "ru"
+
+
+    ## TODO ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
+
+    if mod_id > 60000:
+        tor = await fetch(f'https://new.openworkshop.su/api/manager/list/mods/?primary_sources=["steam"]&allowed_sources_ids=[{mod_id}]')
+        if len(tor['results']) > 0:
+            return redirect("/mod/"+str(tor['results'][0]['id']), code=308)
+
+    ## / ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
+
 
     # Определяем права
     user_req = await get_user_req()
