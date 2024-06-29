@@ -724,7 +724,8 @@ async def sitemap_generator(file_path:str) -> str:
     Returns:
     str: The generated sitemap page.
     """
-    with open(file_path, "w") as file:
+    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+    with open(file_path, "w", encoding="utf-8") as file:
         start = time.time()
 
         # Создание сессии
