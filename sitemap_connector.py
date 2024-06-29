@@ -3,8 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 import ow_config as config
 
 
-#engine = create_engine(f'mysql+mysqldb://{config.user_sql}:{config.password_sql}@{config.url_sql}/catalog')
-engine = create_engine(f'sqlite:///catalog.db') # Для тестов sqlite
+engine = create_engine(f'mysql+mysqldb://{config.user_sql}:{config.password_sql}@{config.url_sql}/catalog')
+#engine = create_engine(f'sqlite:///catalog.db') # Для тестов sqlite
 base = declarative_base()
 
 
