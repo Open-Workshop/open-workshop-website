@@ -206,6 +206,7 @@ async def mod(mod_id):
         MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
         MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
     ]
+    print(urls)
     tasks = []
     for url in urls:
         tasks.append(fetch(url, access_cookie, refresh_cookie, True))
@@ -278,26 +279,25 @@ async def mod(mod_id):
         for inf in d_info[1]['results']:
             info[3][inf['owner_id']]['img'] = inf['url']
 
-    authors_info = []
+
+    authors_result = []
     if len(info[0]['authors']) > 0:
         authors_tasks = []
         for author in info[0]['authors']:
-            print(f'{MANAGER_ADDRESS}/profile/info/{author["user"]}')
-            authors_tasks.append(fetch(f'{MANAGER_ADDRESS}/profile/info/{author["user"]}', access_cookie, refresh_cookie))
+            authors_tasks.append(fetch(f'{MANAGER_ADDRESS}/profile/info/{author}', access_cookie, refresh_cookie))
         authors_info = await asyncio.gather(*authors_tasks)
 
-        for i in range(len(info[0]['authors'])):
-            authors_info[i] = authors_info[i]['general']
-            if authors_info[i]['avatar_url'] == 'local':
-                authors_info[i]['avatar_url'] = f'/api/accounts/profile/avatar/{authors_info[i]["id"]}'
-            authors_info[i]['owner_mod'] = info[0]['authors'][i]['owner']
-        print(authors_info)
+        for i in range(len(authors_info)):
+            uid = authors_info[i]['general']['id']
+
+            authors_info[i]['general']['owner'] = info[0]['authors'][str(uid)]['owner']
+            authors_result.append(authors_info[i]['general'])
 
 
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
     # Пробуем отрендерить страницу
-    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_info)
+    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_result)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)

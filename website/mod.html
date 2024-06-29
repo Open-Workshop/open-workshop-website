@@ -67,8 +67,8 @@
         <div class="outline-container">
         <h2>Авторы</h2>
         {% for item in authors %}
-            <a class="element user-author" {% if item.owner_mod %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
-                <img src="{{ item.avatar_url }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+            <a class="element user-author" {% if item.owner %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+                <img src="https://new.openworkshop.su/api/manager/profile/avatar/{{ item.id }}" alt="Аватар пользователя" onerror="this.src='/assets/images/image-not-found.webp'">
                 <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
             </a>
         {% endfor %}
