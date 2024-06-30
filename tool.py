@@ -44,7 +44,10 @@ async def get_user_req(avatar_url:bool = True):
             new_user_id = response.cookies.get('userID')
             if new_user_id: new_user_id = [new_user_id.value, dict(new_user_id.items())]
 
-            user_response = json.loads(await response.text())
+            if response.status == 200:
+                user_response = json.loads(await response.text())
+            else:
+                user_response = False
             status_code = response.status
 
     # Доп. обработки
