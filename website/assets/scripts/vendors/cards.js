@@ -139,7 +139,7 @@ window.Cards = {
         let ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
         console.log('setterImgs', ids)
 
-        const response = await fetch(`https://new.openworkshop.su/api/manager/list/resources/${owner_type}/[${ids}]?page_size=50&types_resources=["logo"]`);
+        const response = await fetch(`https://openworkshop.su/api/manager/list/resources/${owner_type}/[${ids}]?page_size=50&types_resources=["logo"]`);
         const data = await response.json();
 
         function changeImage(img, pic) {

@@ -62,7 +62,7 @@ window.Catalog = {
         }
 
         // Запрос
-        const url = 'https://new.openworkshop.su/api/manager/' + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
+        const url = 'https://openworkshop.su/api/manager/' + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
         let response = await fetch(url, {method: 'GET', redirect: 'follow'})

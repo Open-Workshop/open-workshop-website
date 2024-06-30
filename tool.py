@@ -5,7 +5,7 @@ import asyncio
 import re
 
 
-MANAGER_ADDRESS = "https://new.openworkshop.su/api/manager"
+MANAGER_ADDRESS = "https://openworkshop.su/api/manager"
 
 
 

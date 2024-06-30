@@ -20,7 +20,7 @@
                 async function searchUpdateInput() {
                     $('div.popup-game-select').addClass('reset');
 
-                    const ref = await fetch('https://new.openworkshop.su/api/manager/list/games/?page_size=5&name=' + $('input#search-update-input').val());
+                    const ref = await fetch('https://openworkshop.su/api/manager/list/games/?page_size=5&name=' + $('input#search-update-input').val());
                     const data = await ref.json()
 
                     clearSearchResults();

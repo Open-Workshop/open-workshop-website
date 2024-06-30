@@ -29,8 +29,8 @@ $(document).ready(async function() {
 
     if (params.get('game', '') != '') {
         const [gameResponse, logoResponse] = await Promise.all([
-            fetch('https://new.openworkshop.su/api/manager/list/games/?allowed_ids=['+params.get('game', '')+']'),
-            fetch('https://new.openworkshop.su/api/manager/list/resources/games/['+params.get('game', '')+']?types_resources=["logo"]&only_urls=true')
+            fetch('https://openworkshop.su/api/manager/list/games/?allowed_ids=['+params.get('game', '')+']'),
+            fetch('https://openworkshop.su/api/manager/list/resources/games/['+params.get('game', '')+']?types_resources=["logo"]&only_urls=true')
         ]);
 
         if (gameResponse.ok && logoResponse.ok) {
