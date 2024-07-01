@@ -1,16 +1,16 @@
-from tool import get_user_req, standart_response, get_tokens_cookies, check_access_mod, MANAGER_ADDRESS
+from tool import check_access_mod
 from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import insert, delete
 from pathlib import Path
 from babel import dates
 import datetime
 import asyncio
-from tool import fetch
 import tool
 import time
 import os
 import sitemap_connector as sitemapper
+import ow_config as config
+from user_manager import UserHandler
 
 
 app = Flask(__name__, template_folder='website')
@@ -19,20 +19,6 @@ SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
 
-MONTHS_NAMES = {
-    1: "января",
-    2: "февраля",
-    3: "марта",
-    4: "апреля",
-    5: "мая",
-    6: "июня",
-    7: "июля",
-    8: "августа",
-    9: "сентября",
-    10: "октября",
-    11: "ноября",
-    12: "декабря",
-}
 
 js_datetime = "%Y-%m-%d %H:%M:%S"
 
@@ -40,6 +26,15 @@ js_datetime = "%Y-%m-%d %H:%M:%S"
 @app.route('/')
 @app.route('/index')
 async def index():
+    ### СТАЛО ###
+    async with UserHandler() as handler:
+        page_html = handler.render("index.html", catalog=True)
+
+        return handler.finish(page_html)
+    ### СТАЛО ###
+
+
+    ### БЫЛО ###
     # Определяем права
     user_req = await get_user_req()
 
@@ -48,13 +43,11 @@ async def index():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("index.html", catalog=True, user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("index.html", catalog=True, user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
+    ### БЫЛО ###
 
 @app.route('/about')
 @app.route('/about.html')
@@ -67,10 +60,7 @@ async def about():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("about.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("about.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -86,10 +76,7 @@ async def apis():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("apis.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("apis.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -105,10 +92,7 @@ async def legal_cookies():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("legal/cookies.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("legal/cookies.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -124,10 +108,7 @@ async def legal_license():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("legal/license.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("legal/license.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -143,10 +124,7 @@ async def site_rules():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("legal/site-rules.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("legal/site-rules.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -162,10 +140,7 @@ async def copyright():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("legal/copyright.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("legal/copyright.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -181,10 +156,7 @@ async def legal_privacy_policy():
         user_p = user_req["result"]["general"]
 
     # Пробуем отрендерить страницу
-    try:
-        page_html = render_template("legal/privacy-policy.html", user_profile=user_p)
-    except:
-        page_html = ""
+    page_html = render_template("legal/privacy-policy.html", user_profile=user_p)
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -193,7 +165,6 @@ async def legal_privacy_policy():
 @app.route('/mod/<int:mod_id>.html')
 async def mod(mod_id):
     global SHORT_WORDS
-    global MONTHS_NAMES
     launge = "ru"
 
 
@@ -213,9 +184,9 @@ async def mod(mod_id):
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
-        MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
+        config.MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        config.MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
+        config.MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
     ]
     print(urls)
     tasks = []
@@ -269,8 +240,8 @@ async def mod(mod_id):
     info.append({})
     if info[0]['dependencies_count'] > 0:
         d_urls = [
-            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
-            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+            config.MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            config.MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
         ]
         print(d_urls)
         tasks = []
@@ -295,7 +266,7 @@ async def mod(mod_id):
     if len(info[0]['authors']) > 0:
         authors_tasks = []
         for author in info[0]['authors']:
-            authors_tasks.append(fetch(f'{MANAGER_ADDRESS}/profile/info/{author}', access_cookie, refresh_cookie))
+            authors_tasks.append(fetch(f'{config.MANAGER_ADDRESS}/profile/info/{author}', access_cookie, refresh_cookie))
         authors_info = await asyncio.gather(*authors_tasks)
 
         for i in range(len(authors_info)):
@@ -318,7 +289,6 @@ async def mod(mod_id):
 @app.route('/mod/<int:mod_id>/edit.html')
 async def edit_mod(mod_id):
     global SHORT_WORDS
-    global MONTHS_NAMES
     launge = "ru"
 
     # Определяем права
@@ -331,9 +301,9 @@ async def edit_mod(mod_id):
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        MANAGER_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        MANAGER_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0",
-        MANAGER_ADDRESS + f"/list/tags/mods/%5B{mod_id}%5D"
+        config.MANAGER_ADDRESS + f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+        config.MANAGER_ADDRESS + "/list/resources_mods/%5B" + str(mod_id) + "%5D?page_size=30&page=0",
+        config.MANAGER_ADDRESS + f"/list/tags/mods/%5B{mod_id}%5D"
     ]
     tasks = []
     for url in urls:
@@ -382,14 +352,14 @@ async def edit_mod(mod_id):
     info[0]['result']['id'] = mod_id
 
     info[0]['result']['short_description'] = await tool.remove_words_short(text=info[0]['result']['short_description'],
-                                                                      words=SHORT_WORDS)
+                                                                           words=SHORT_WORDS)
     info[0]['result']['description'] = await tool.remove_words_long(text=info[0]['result']['description'])
 
     info.append({})
     if info[0]['dependencies_count'] > 0:
         d_urls = [
-            MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
-            MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+            config.MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+            config.MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
         ]
         print(d_urls)
         tasks = []
@@ -415,10 +385,7 @@ async def edit_mod(mod_id):
         info[2] = []
 
     # Пробуем отрендерить страницу
-    #try:
     page_html = render_template("mod-edit.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod)
-    #except:
-    #    page_html = ""
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -451,11 +418,7 @@ async def add_mod():
             )), 403
 
     # Пробуем отрендерить страницу
-    #try:
     page_html = render_template("mod-add.html", user_profile=user_p)
-    #except:
-    #    page_html = ""
-
 
     # Возвращаем ответ
     return await standart_response(user_req=user_req, page=page_html)
@@ -472,8 +435,8 @@ async def user(user_id):
     access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
 
     urls = [
-        MANAGER_ADDRESS + f"/profile/info/{user_id}",
-        MANAGER_ADDRESS + f"/list/mods/?user={user_id}&page_size=4"
+        config.MANAGER_ADDRESS + f"/profile/info/{user_id}",
+        config.MANAGER_ADDRESS + f"/list/mods/?user={user_id}&page_size=4"
     ]
     tasks = []
     for url in urls:
@@ -518,11 +481,11 @@ async def user(user_id):
     if info[0]['general']['avatar_url'] is None or len(info[0]['general']['avatar_url']) <= 0:
         info[0]['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
     elif info[0]['general']['avatar_url'] == "local":
-        info[0]['general']['avatar_url'] = f"/api/accounts/profile/avatar/{user_id}"
+        info[0]['general']['avatar_url'] = f"/api/manager/profile/avatar/{user_id}"
 
     print(info[1])
     if len(info[1]['results']) > 0:
-        resources_mods = await fetch(f'https://openworkshop.su/api/manager/list/resources/mods/{[i["id"] for i in info[1]["results"]]}?page_size=10&page=0&types_resources=["logo"]')
+        resources_mods = await fetch(f'/api/manager/list/resources/mods/{[i["id"] for i in info[1]["results"]]}?page_size=10&page=0&types_resources=["logo"]')
 
         mods_data = [
             {
@@ -748,6 +711,6 @@ async def sitemap_generator(file_path:str) -> str:
 
 
 if __name__ == '__main__':
-    #app.run()
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=6060, threads=100)
+    app.run()
+    #from waitress import serve
+    #serve(app, host="0.0.0.0", port=6060, threads=100)
