@@ -1,4 +1,6 @@
 import re
+from user_manager import UserHandler
+from flask import render_template
 
 
 async def check_access_user(user_req:dict, user_id:int):
@@ -38,6 +40,7 @@ async def check_access_user(user_req:dict, user_id:int):
         access["any"] = access["avatar"] or access["username"] or access["about"] or access["mute"] or access["grade"]
 
     return user_p, access
+
 
 async def check_access_mod(user_req:dict, authors:list = []):
     access = {
@@ -81,6 +84,15 @@ async def check_access_mod(user_req:dict, authors:list = []):
     print(access)
 
     return access
+
+
+async def error_page(error_title:str, error_body:str, error_code:int = 200):
+    try:
+        async with UserHandler() as handler:
+            page_html = handler.render("error.html", error=error_body, error_title=error_title)
+            return handler.finish(page_html), error_code
+    except:
+        return render_template("error.html", error=error_body, error_title=error_title), error_code
 
 
 async def size_format(size:int) -> str:

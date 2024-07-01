@@ -1,14 +1,12 @@
 from tool import check_access_mod
 from flask import Flask, render_template, send_from_directory, request, make_response, redirect
-from sqlalchemy.orm import sessionmaker
 from pathlib import Path
 from babel import dates
 import datetime
 import asyncio
 import tool
-import time
 import os
-import sitemap_connector as sitemapper
+import sitemapper as sitemapper
 import ow_config as config
 from user_manager import UserHandler
 
@@ -25,141 +23,30 @@ js_datetime = "%Y-%m-%d %H:%M:%S"
 
 @app.route('/')
 @app.route('/index')
-async def index():
-    ### СТАЛО ###
-    async with UserHandler() as handler:
-        page_html = handler.render("index.html", catalog=True)
-
-        return handler.finish(page_html)
-    ### СТАЛО ###
-
-
-    ### БЫЛО ###
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("index.html", catalog=True, user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-    ### БЫЛО ###
-
+@app.route('/index.html')
 @app.route('/about')
 @app.route('/about.html')
-async def about():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("about.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/apis')
 @app.route('/apis.html')
-async def apis():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("apis.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/legal/cookies')
 @app.route('/legal/cookies.html')
-async def legal_cookies():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("legal/cookies.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/legal/license')
 @app.route('/legal/license.html')
-async def legal_license():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("legal/license.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/legal/site-rules')
 @app.route('/legal/site-rules.html')
-async def site_rules():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("legal/site-rules.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/legal/copyright')
 @app.route('/legal/copyright.html')
-async def copyright():
-    # Определяем права
-    user_req = await get_user_req()
-
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("legal/copyright.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
-
 @app.route('/legal/privacy-policy')
 @app.route('/legal/privacy-policy.html')
-async def legal_privacy_policy():
-    # Определяем права
-    user_req = await get_user_req()
+async def unified_route():
+    url = request.path
+    if url == '/': url = '/index'
+    if not url.endswith('.html'): url += '.html'
 
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
+    async with UserHandler() as handler:
+        page_html = handler.render(url[1:], catalog=(url=='/index.html'))
+        return handler.finish(page_html)
 
-    # Пробуем отрендерить страницу
-    page_html = render_template("legal/privacy-policy.html", user_profile=user_p)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
 
 @app.route('/mod/<int:mod_id>')
 @app.route('/mod/<int:mod_id>.html')
@@ -321,13 +208,13 @@ async def edit_mod(mod_id):
 
     if not right_edit_mod['edit']:
         if right_edit_mod['in_mute']:
-            return await standart_response(user_req=user_req, page=await error_page(
+            return await standart_response(user_req=user_req, page=await tool.error_page(
                 error_title='В муте',
                 error_body='Вы во временном муте',
                 error_code=403
             )), 403
         else:
-            return await standart_response(user_req=user_req, page=await error_page(
+            return await standart_response(user_req=user_req, page=await tool.error_page(
                 error_title='Отказано в доступе',
                 error_body='Вы не имеете права редактировать чужие моды' if right_edit_mod['is_my_mod'] == 2 else 'Вы не имеете права редактировать свои моды',
                 error_code=403
@@ -405,13 +292,13 @@ async def add_mod():
 
     if False and not right_edit_mod['add']:
         if right_edit_mod['in_mute']:
-            return await standart_response(user_req=user_req, page=await error_page(
+            return await standart_response(user_req=user_req, page=await tool.error_page(
                 error_title='В муте',
                 error_body='Вы во временном муте',
                 error_code=403
             )), 403
         else:
-            return await standart_response(user_req=user_req, page=await error_page(
+            return await standart_response(user_req=user_req, page=await tool.error_page(
                 error_title='Отказано в доступе',
                 error_body='Вы не можете публиковать моды',
                 error_code=403
@@ -444,7 +331,7 @@ async def user(user_id):
     info = await asyncio.gather(*tasks)
 
     if info[0][1] != 200:
-        return await standart_response(user_req=user_req, page=await error_page(
+        return await standart_response(user_req=user_req, page=await tool.error_page(
             error_title=f'Ошибка ({info[0][1]})',
             error_body=info[0][0],
             error_code=info[0][1]
@@ -456,7 +343,7 @@ async def user(user_id):
     info[0]['delete_user'] = info[0]['general']['username'] is None
 
     if info[0]['delete_user']:
-        return await standart_response(user_req=user_req, page=await error_page(
+        return await standart_response(user_req=user_req, page=await tool.error_page(
             error_title="Этот профиль удален!",
             error_body="Профиль удален",
             error_code=404
@@ -527,7 +414,7 @@ async def user_settings(user_id):
     user_p, editable = await tool.check_access_user(user_req=user_req, user_id=user_id)
 
     if not editable['any'] and not editable['my']:
-        return await error_page(
+        return await tool.error_page(
             error_title=f'Отказано в доступе!',
             error_body='Вы не имеете права редактировать этот профиль!',
             error_code=403
@@ -543,7 +430,7 @@ async def user_settings(user_id):
     info = await tool.get_accounts(urls[0], user_req)
 
     if info['status_code'] != 200:
-        return await standart_response(user_req=user_req, page=await error_page(
+        return await standart_response(user_req=user_req, page=await tool.error_page(
             error_title=f'Ошибка ({info["status_code"]})',
             error_body=info["result"],
             error_code=info["status_code"]
@@ -588,13 +475,13 @@ async def user_settings(user_id):
 @app.route('/user/<int:user_id>/mods')
 @app.route('/user/<int:user_id>/mods.html')
 async def user_mods(user_id):
-    return await error_page(
+    return await tool.error_page(
         error_title='Зайдите попозже...',
         error_body=f'Эта страница вскоре будет доступна! ({user_id})'
     )
 
 
-@app.route('/api/login-popup/')
+@app.route('/api/login-popup')
 async def login_popup():
     return render_template("login-popup.html", link=request.args.get('f'), russia=not bool(request.cookies.get('fromRussia')))
 
@@ -614,7 +501,7 @@ async def serve_static(filename):
 
 @app.errorhandler(404)
 async def page_not_found(_error):
-    return await error_page(
+    return await tool.error_page(
         error_title='Not Found (404)',
         error_body='404 страница не найдена',
         error_code=404
@@ -622,29 +509,11 @@ async def page_not_found(_error):
 
 @app.errorhandler(500)
 async def internal_server_error(_error):
-    return await error_page(
+    return await tool.error_page(
         error_title='Internal Server Error (500)',
         error_body='На сервере произошла внутренняя ошибка, и он не смог выполнить ваш запрос. Либо сервер перегружен, либо в приложении ошибка.',
         error_code=500
     )
-
-
-async def error_page(error_title:str, error_body:str, error_code:int = 200):
-    try:
-        # Определяем права
-        user_req = await get_user_req()
-
-        user_p = False
-        if user_req and type(user_req["result"]) is dict:
-            user_p = user_req["result"]["general"]
-
-        # Пробуем отрендерить страницу
-        page_html = render_template("error.html", user_profile=user_p, error=error_body, error_title=error_title)
-
-        # Возвращаем ответ
-        return await standart_response(user_req=user_req, page=page_html), error_code
-    except:
-        return render_template("error.html", error=error_body, error_title=error_title), error_code
 
 
 @app.route('/sitemap.xml')
@@ -662,10 +531,10 @@ async def sitemap():
 
         if diff > datetime.timedelta(hours=5):
             print("sitemap.xml regenerate")
-            page = await sitemap_generator(file_path)
+            page = await sitemapper.generate(file_path)
     else:
         print("sitemap.xml generate")
-        page = await sitemap_generator(file_path)
+        page = await sitemapper.generate(file_path)
 
     if "page" not in locals():
         print("sitemap.xml relevant")
@@ -677,37 +546,6 @@ async def sitemap():
     page_ret.mimetype = "application/xml"
 
     return page_ret
-async def sitemap_generator(file_path:str) -> str:
-    """
-    Asynchronously generates a sitemap based on the provided file path.
-
-    Parameters:
-    file_path (str): The path to the file to write the sitemap.
-
-    Returns:
-    str: The generated sitemap page.
-    """
-    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as file:
-        start = time.time()
-
-        # Создание сессии
-        session = sessionmaker(bind=sitemapper.engine)()
-
-        # Выполнение запроса
-        query = session.query(sitemapper.Mod).filter(sitemapper.Mod.condition == 0, sitemapper.Mod.public == 0)
-        result = [obj.__dict__ for obj in query.limit(49000).all()]
-
-        session.close()
-
-        print("SITEMAP RENDER START FROM: " + str(time.time() - start))
-
-        start = time.time()
-        page = render_template("html-partials/standart_sitemap.xml", data=result, www="www." in file_path)
-
-        file.write(page)
-        print("SITEMAP RENDER FINISH: " + str(time.time() - start))
-        return page
 
 
 if __name__ == '__main__':
