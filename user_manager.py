@@ -13,6 +13,7 @@ class UserHandler:
 
         self.id = None
         self.profile = None
+        self.rights = {}
 
     async def __aenter__(self):
         self.session = ClientSession()
@@ -55,9 +56,41 @@ class UserHandler:
             
             self.id = uid
             self.profile = result.get('general', False)
+            self.rights = result.get('rights', {})
         else:
             self.id = -1
             self.profile = False
+
+    def access_to_mod(self, my_mode: bool = False, owner_mode: bool = False):
+        access = {
+            "add": False,
+            "edit": False,
+            "delete": False,
+            "admin": False, # Является ли спрашивающий админом
+            "is_my_mod": 2, # 0 - мой мод, 1 - соавтор мода, 2 - не мой мод
+            "in_mute": False
+        }
+
+        if len(self.rights) > 0:
+            access["in_mute"] = self.profile["mute"]
+            access["admin"] = self.rights["admin"]
+
+            access["is_my_mod"] = 0 if my_mode else 1 if owner_mode else 2
+
+            if access["admin"]:
+                access["add"] = True
+                access["edit"] = True
+                access["delete"] = True
+            elif not access["in_mute"]:
+                access["add"] = self.rights["publish_mods"]
+                if access["is_my_mod"] < 2: # Мой мод
+                    access["edit"] = self.rights["change_self_mods"]
+                    access["delete"] = self.rights["delete_self_mods"] and access["is_my_mod"] == 0
+                else: # Чужой мод
+                    access["edit"] = self.rights["change_mods"]
+                    access["delete"] = self.rights["delete_mods"]
+
+        return access
 
     async def fetch(self, url: str, method: str = 'GET', data: dict = None, headers: dict = None) -> tuple[int, str | dict | list]:
         """

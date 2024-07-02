@@ -116,7 +116,6 @@ async def mod(mod_id):
 
         info['result']['id'] = mod_id # Фиксируем для рендера шаблона id мода
 
-
         dependencies = {}
         if info['dependencies_count'] > 0: # Чекаем, есть ли зависимости
             # Формируем запрос на получение зависимостей
@@ -144,6 +143,8 @@ async def mod(mod_id):
             for resource in dependencies_resources['results']:
                 dependencies[resource['owner_id']]['img'] = resource['url']
 
+        user_is_author = False
+        user_is_owner = False
 
         authors = []
         if len(info['authors']) > 0:
@@ -151,20 +152,21 @@ async def mod(mod_id):
 
             for status_code, author in authors_info:
                 author_to_add = author['general']
-
                 author_to_add['owner'] = info['authors'][str(author_to_add['id'])]['owner']
+
+                if handler.profile:
+                    if author_to_add['id'] == handler.profile['id']:
+                        user_is_author = True
+                        user_is_owner = author_to_add['owner']
+
                 authors.append(author_to_add)
 
+        right_edit_mod = handler.access_to_mod(my_mode=user_is_author, owner_mode=user_is_owner)
 
-    # TODO дописать логику /mod/{mod_id}
+        # TODO дописать логику /mod/{mod_id} и адаптировать mod.html файл к нему
+        page_html = handler.render("mod.html", data=info, is_mod_data=is_mod, right_edit=right_edit_mod, authors=authors_result)
 
-    right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
-
-    # Пробуем отрендерить страницу
-    page_html = render_template("mod.html", data=info, is_mod_data=is_mod, user_profile=user_p, right_edit=right_edit_mod, authors=authors_result)
-
-    # Возвращаем ответ
-    return await standart_response(user_req=user_req, page=page_html)
+        return handler.finish(page_html)
 
 
 @app.route('/mod/<int:mod_id>/edit')

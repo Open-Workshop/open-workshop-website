@@ -42,50 +42,6 @@ async def check_access_user(user_req:dict, user_id:int):
     return user_p, access
 
 
-async def check_access_mod(user_req:dict, authors:list = []):
-    access = {
-        "add": False,
-        "edit": False,
-        "delete": False,
-        "admin": False, # Является ли спрашивающий админом
-        "is_my_mod": 2,
-        "in_mute": False
-    }
-
-    if user_req and type(user_req["result"]) is dict:
-        access["in_mute"] = user_req["result"]["general"]["mute"]
-        access["admin"] = user_req["result"]["rights"]["admin"]
-
-        for holder in authors:
-            if int(user_req['id']) == int(holder['user']):
-                access["is_my_mod"] = 0 if holder['owner'] else 1
-                break
-        else:
-            access["is_my_mod"] = 2
-
-        print(access["is_my_mod"])
-
-        if access["admin"]:
-            access["add"] = True
-            access["edit"] = True
-            access["delete"] = True
-        elif not access["in_mute"]:
-            access["add"] = user_req["result"]["rights"]["publish_mods"]
-            if access["is_my_mod"] < 2: # Мой мод
-                access["edit"] = user_req["result"]["rights"]["change_self_mods"]
-                access["delete"] = user_req["result"]["rights"]["delete_self_mods"] and access["is_my_mod"] == 0
-            else: # Чужой мод
-                access["edit"] = user_req["result"]["rights"]["change_mods"]
-                access["delete"] = user_req["result"]["rights"]["delete_mods"]
-
-    for i in access.keys():
-        access[i] = True
-
-    print(access)
-
-    return access
-
-
 async def error_page(error_title:str, error_body:str, error_code:int = 200):
     try:
         async with UserHandler() as handler:
