@@ -109,17 +109,3 @@ async def size_format(size:int) -> str:
         text_size = size_set()
 
     return text_size
-
-
-async def remove_words_short(text, words):
-    for word in words:
-        text = text.replace("["+word+"]", '')
-        text = text.replace("[/"+word+"]", '')
-
-    text = re.sub(r"\[url=.*?\]", "", text)
-    text = re.sub(r"\[img\].*?\[/img\]", "", text)
-
-    text = re.sub(r'(\n\s*)+\n+', '\n\n', text)
-    return text
-async def remove_words_long(text):
-    return text

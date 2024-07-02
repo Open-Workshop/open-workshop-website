@@ -1,6 +1,7 @@
 from aiohttp import ClientSession
 from flask import request, make_response, render_template
 import ow_config as config
+import asyncio
 
 
 class UserHandler:

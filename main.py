@@ -1,4 +1,5 @@
 from tool import check_access_mod
+import aiohttp
 from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from pathlib import Path
 from babel import dates
@@ -51,117 +52,111 @@ async def unified_route():
 @app.route('/mod/<int:mod_id>')
 @app.route('/mod/<int:mod_id>.html')
 async def mod(mod_id):
-    global SHORT_WORDS
     launge = "ru"
 
 
     ## TODO ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
 
     if mod_id > 60000:
-        tor = await fetch(f'https://openworkshop.su/api/manager/list/mods/?primary_sources=["steam"]&allowed_sources_ids=[{mod_id}]')
-        if len(tor['results']) > 0:
-            return redirect("/mod/"+str(tor['results'][0]['id']), code=308)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'https://openworkshop.su/api/manager/list/mods/?primary_sources=["steam"]&allowed_sources_ids=[{mod_id}]') as response:
+                tor = await response.json()
+                if len(tor['results']) > 0:
+                    return redirect(
+                        "/mod/" + str(tor['results'][0]['id']),
+                        code=308
+                    )
 
     ## / ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
 
 
-    # Определяем права
-    user_req = await get_user_req()
+    async with UserHandler() as handler:
+        # Определяем запросы
+        api_urls = {
+            "info": f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
+            "resources": f"/list/resources/mods/[{mod_id}]?page_size=30",
+            "tags": f"/list/tags/mods/[{mod_id}]"
+        }
 
-    access_cookie, refresh_cookie = await get_tokens_cookies(last_req=user_req)
+        # Запрашиваем
+        info_result, resources_result, tags_result = await asyncio.gather(
+            handler.fetch(api_urls["info"]),
+            handler.fetch(api_urls["resources"]),
+            handler.fetch(api_urls["tags"])
+        )
 
-    urls = [
-        config.MANAGER_ADDRESS+"/info/mod/"+str(mod_id)+"?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-        config.MANAGER_ADDRESS+"/list/resources/mods/["+str(mod_id)+"]?page_size=30",
-        config.MANAGER_ADDRESS+f"/list/tags/mods/[{mod_id}]"
-    ]
-    print(urls)
-    tasks = []
-    for url in urls:
-        tasks.append(fetch(url, access_cookie, refresh_cookie, True))
-    info = await asyncio.gather(*tasks)
+        # Первичная распаковка данных
+        info_code, info = info_result
+        resources_code, resources = resources_result
+        tags_code, tags = tags_result
 
-    user_p = False
-    if user_req and type(user_req["result"]) is dict:
-        user_p = user_req["result"]["general"]
+        # Проверка результатов
+        if type(info) is str:
+            # Сервер ответил на информацию о моде ошибкой (возврашаем ошибку пользователю)
+            return await handler.finish(handler.render("error.html", error=info[0], error_title='Ошибка')), info_code
+        else:
+            # Вторичная (косметическая на самом деле) распаковка
+            tags = tags[str(mod_id)]
 
-    if type(info[0][0]) is str:
-        return await standart_response(user_req=user_req, page=render_template("error.html", user_profile=user_p, error=info[0][0], error_title='Ошибка')), info[0][1]
-    else:
-        info[0] = info[0][0]
-        info[1] = info[1][0]
-        info[2] = info[2][0][str(mod_id)]
+        info['result']['size'] = await tool.size_format(info['result']['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
 
-    info[0]['result']['size'] = await tool.size_format(info[0]['result']['size'])
+        for image in resources["results"]: # Ищем логотип мода
+            if image and image["type"] == "logo":
+                info["result"]["logo"] = image["url"] # Фиксируем, что нашли его
+                if len(resources["results"]) > 1: # Если по мимо него есть скриншоты - выбиваем из окна скриншотов (по принципу либо это(лого), либо того(скриншоты))
+                    resources["results"].remove(image)
+                break
 
-    is_mod = {
-        "date_creation": info[0]['result'].get('date_creation', ""),
-        "date_update_file": info[0]['result'].get("date_update_file", ""),
-        "logo": ""
-    }
+        info["no_many_screenshots"] = len(resources["results"]) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
-    todelpop = None
-    for img_id in range(len(info[1]["results"])):
-        img = info[1]["results"][img_id]
-        if img is not None and img["type"] == "logo":
-            is_mod["logo"] = img["url"]
-            if len(info[1]["results"]) > 1:
-                todelpop = img_id
-    if todelpop: info[1]["results"].pop(todelpop)
+        for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
+            input_date = datetime.datetime.fromisoformat(info['result'][key])
+            info['result'][f'{key}_js'] = input_date.strftime(js_datetime)
+            info['result'][key] = dates.format_date(input_date, locale=launge)
 
-    info[0]["no_many_screenshots"] = len(info[1]["results"]) <= 1
-
-    input_date = datetime.datetime.fromisoformat(info[0]['result']['date_creation'])
-    info[0]['result']['date_creation_js'] = input_date.strftime(js_datetime)
-    info[0]['result']['date_creation'] = dates.format_date(input_date, locale=launge)
-
-    input_date_update = datetime.datetime.fromisoformat(info[0]['result']['date_update_file'])
-    info[0]['result']['date_update_file_js'] = input_date_update.strftime(js_datetime)
-    info[0]['result']['date_update_file'] = dates.format_date(input_date_update, locale=launge)
-
-    info[0]['result']['id'] = mod_id
-
-    info[0]['result']['short_description'] = await tool.remove_words_short(text=info[0]['result']['short_description'], words=SHORT_WORDS)
-    info[0]['result']['description'] = await tool.remove_words_long(text=info[0]['result']['description'])
-
-    info.append({})
-    if info[0]['dependencies_count'] > 0:
-        d_urls = [
-            config.MANAGER_ADDRESS+f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
-            config.MANAGER_ADDRESS+f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
-        ]
-        print(d_urls)
-        tasks = []
-        for url in d_urls:
-            tasks.append(fetch(url, access_cookie, refresh_cookie))
-        d_info = await asyncio.gather(*tasks)
-
-        print(d_info)
-
-        for inf in d_info[0]['results']:
-            info[3][inf['id']] = {
-                'id': inf['id'],
-                'img': '',
-                'name': inf['name']
-            }
-
-        for inf in d_info[1]['results']:
-            info[3][inf['owner_id']]['img'] = inf['url']
+        info['result']['id'] = mod_id # Фиксируем для рендера шаблона id мода
 
 
-    authors_result = []
-    if len(info[0]['authors']) > 0:
-        authors_tasks = []
-        for author in info[0]['authors']:
-            authors_tasks.append(fetch(f'{config.MANAGER_ADDRESS}/profile/info/{author}', access_cookie, refresh_cookie))
-        authors_info = await asyncio.gather(*authors_tasks)
+        dependencies = {}
+        if info['dependencies_count'] > 0: # Чекаем, есть ли зависимости
+            # Формируем запрос на получение зависимостей
+            dependencies_urls = [
+                f'/list/mods/?page_size=50&allowed_ids={info[0]["dependencies"]}',
+                f'/list/resources/mods/{info[0]["dependencies"]}?page_size=30'
+            ]
+            
+            # Запрашиваем
+            dependencies_info, dependencies_resources = await asyncio.gather(*[handler.fetch(url) for url in dependencies_urls])
 
-        for i in range(len(authors_info)):
-            uid = authors_info[i]['general']['id']
+            # Распаковка данных
+            dependencies_info_code, dependencies_info = dependencies_info
+            dependencies_resources_code, dependencies_resources = dependencies_resources
 
-            authors_info[i]['general']['owner'] = info[0]['authors'][str(uid)]['owner']
-            authors_result.append(authors_info[i]['general'])
+            # Добавляем зависимости
+            for dependency in dependencies_info['results']:
+                dependencies[dependency['id']] = {
+                    'id': dependency['id'],
+                    'img': '',
+                    'name': dependency['name']
+                }
 
+            # Добавляем логотипы зависимостям
+            for resource in dependencies_resources['results']:
+                dependencies[resource['owner_id']]['img'] = resource['url']
+
+
+        authors = []
+        if len(info['authors']) > 0:
+            authors_info = await asyncio.gather([handler.fetch(f'/profile/info/{author}') for author in info['authors']])
+
+            for status_code, author in authors_info:
+                author_to_add = author['general']
+
+                author_to_add['owner'] = info['authors'][str(author_to_add['id'])]['owner']
+                authors.append(author_to_add)
+
+
+    # TODO дописать логику /mod/{mod_id}
 
     right_edit_mod = await check_access_mod(user_req=user_req, authors=info[0]["authors"])
 
@@ -489,18 +484,12 @@ async def login_popup():
 @app.route('/<path:filename>')
 async def serve_static(filename):
     if filename.startswith("/html-partials/") or filename.startswith("html-partials/"):
-        return await page_not_found(404)
-
-    if filename.endswith(".html"):
-        try:
-            return render_template(filename)
-        except:
-            return await page_not_found(404)
+        return await page_not_found()
 
     return send_from_directory("website", filename)
 
 @app.errorhandler(404)
-async def page_not_found(_error):
+async def page_not_found(_error = -1):
     return await tool.error_page(
         error_title='Not Found (404)',
         error_body='404 страница не найдена',
@@ -508,7 +497,7 @@ async def page_not_found(_error):
     )
 
 @app.errorhandler(500)
-async def internal_server_error(_error):
+async def internal_server_error(_error = -1):
     return await tool.error_page(
         error_title='Internal Server Error (500)',
         error_body='На сервере произошла внутренняя ошибка, и он не смог выполнить ваш запрос. Либо сервер перегружен, либо в приложении ошибка.',
