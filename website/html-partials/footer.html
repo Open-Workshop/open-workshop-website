@@ -26,8 +26,8 @@
     <hr>
     <div class="phone-menu-actions">
         {% if not user_profile %}
-        <a onclick="serviceAuthorization('/api/accounts/authorization/yandex/link')">Войти с Яндекс</a>
-        <a onclick="serviceAuthorization('/api/accounts/authorization/google/link')">Войти с Google</a>
+        <a onclick="serviceAuthorization('/api/manager/authorization/yandex/link')">Войти с Яндекс</a>
+        <a onclick="serviceAuthorization('/api/manager/authorization/google/link')">Войти с Google</a>
         {% endif %}
         {% if user_profile %}
         <a href="/user/{{ user_profile.id }}/settings">Настройки</a>

@@ -59,7 +59,7 @@
     <div id="mod-dependence-header">
         <div id="mod-dependence-selected" class="alls">
             <br>
-            {% for item in data[3].values() %}
+            {% for item in dependencies.values() %}
             <div class="element" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
                 <img src="{{ item.img }}" alt="Логотип мода" errorcap>
                 <e>
@@ -75,7 +75,7 @@
     </div>
 
     <div class="popup-dependence-select popup-menu-select popup-nonvisible">
-        <input id="search-update-input-dependence" gameid='{{ data[0]["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
+        <input id="search-update-input-dependence" gameid='{{ info["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
         
         <div class="alls all-mod-dependence" id="dependence-edit-search-dependence">
             <p>Не найдено</p>

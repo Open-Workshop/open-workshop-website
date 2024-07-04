@@ -1,8 +1,8 @@
 <div class="standart-panel" style="padding: 0;">
     <div class="wrapper" style="width: 100%;">
-        <div style="padding-bottom: 3pt; border-radius: 0;" class="slider{% if data[0]['no_many_screenshots'] %} one_slider{% endif %}">
+        <div style="padding-bottom: 3pt; border-radius: 0;" class="slider{% if resources['no_many_screenshots'] %} one_slider{% endif %}">
             <ul class="js__slider__images slider__images">
-                {% for item in data[1]['results'] %}
+                {% for item in resources['results'] %}
                 <a starthref="{{ item['url'] }}" idimg="{{ item['id'] }}" href="{{ item['url'] }}" starttypecontent="{{ item['type'] }}" typecontent="{{ item['type'] }}" style="min-width: 100%;" class="slider__images-item without-caption image-link">
                     <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />
                 </a>

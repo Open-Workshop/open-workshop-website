@@ -24,8 +24,8 @@
         <div style="width: 100%; display: flex; margin: 3.5pt;" id="page-in-mod-page">
           <div style="width: 70%;">
             <div style="display: flex; margin-left: -4pt; margin-top: -4pt; height: 57px;">
-              <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ data[0]['result']['name'] }}" value="{{ data[0]['result']['name'] }}">
-              <button onclick="toggleNextPublic()" class="public-mod-toggle anime-scale" startdata="{{ data[0]['result']['public'] }}" public-mode="{{ data[0]['result']['public'] }}">
+              <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ info['result']['name'] }}" value="{{ info['result']['name'] }}">
+              <button onclick="toggleNextPublic()" class="public-mod-toggle anime-scale" startdata="{{ info['result']['public'] }}" public-mode="{{ info['result']['public'] }}">
                 <img src="" alt="Иконка режима публичности">
               </button>
             </div>
@@ -49,7 +49,7 @@
                 </div>
               </div>
 
-              {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=data[0]['result']['description'] %}
+              {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=info['result']['description'] %}
                 {% include 'html-partials/desc-edit.html' %}
               {% endwith %} 
               
@@ -60,10 +60,8 @@
           <div style="width: 30%;">
             {% include 'html-partials/screenshots-edit.html' %}
             
-            {% with tags=data[2] %}
-              {% with game=data[0]["result"]["game"]["id"] %}
-                {% include 'html-partials/tags-edit.html' %}
-              {% endwith %}
+            {% with game=info["result"]["game"]["id"] %}
+              {% include 'html-partials/tags-edit.html' %}
             {% endwith %}
 
             {% include 'html-partials/mod-dependence-edit.html' %}
@@ -73,25 +71,25 @@
         <div id="page-in-catalog-view">
           <div class="" style="display: flex; margin-top: 50pt;">
             <div class="cards" style="width: auto;">
-              <div class="card" id="{{ data[0]['result']['id'] }}">
+              <div class="card" id="{{ info['result']['id'] }}">
                 <div class="card-click">
                   <div class="card__image-holder">
                     <img class="card__image title-card-img" alt="Здесь должен быть логотип мода" id="preview-logo-card-647960" onerror="this.src='/assets/images/image-not-found.webp'">
                   </div>
                   <div class="card-params-list">
-                    <a class="tag-link card-params-list-tag" title="Количество модов для игры">📦{{ data[0]['result']['size'] }}</a>
+                    <a class="tag-link card-params-list-tag" title="Количество модов для игры">📦{{ info['result']['size'] }}</a>
                   </div>
                   <div class="card-title">
-                    <h2 id="titlename{{ data[0]['result']['id'] }}" title="{{ data[0]['result']['name'] }}">{{ data[0]['result']['name'] }}</h2>
+                    <h2 id="titlename{{ info['result']['id'] }}" title="{{ info['result']['name'] }}">{{ info['result']['name'] }}</h2>
                   </div>
                 </div>
-                <div class="card-flap flap1" id="card-flap{{ data[0]['result']['id'] }}">
-                  <div class="card-description">{{ data[0]['result']['short_description'] }}</div>
+                <div class="card-flap flap1" id="card-flap{{ info['result']['id'] }}">
+                  <div class="card-description">{{ info['result']['short_description'] }}</div>
                   <div class="flap-buttons">
-                    <a id="tomodlink{{ data[0]['result']['id'] }}" class="button-card button-flap">
+                    <a id="tomodlink{{ info['result']['id'] }}" class="button-card button-flap">
                       <img src="/assets/images/arrow.webp" class="img-to-mod">
                     </a>
-                    <button id="togamelink{{ data[0]['result']['id'] }}" onclick="cardCancel({{ data[0]['result']['id'] }})" class="button-cancel button-flap" title="Завернуть карточку">
+                    <button id="togamelink{{ info['result']['id'] }}" onclick="cardCancel({{ info['result']['id'] }})" class="button-cancel button-flap" title="Завернуть карточку">
                       <img src="/assets/images/cancel.webp" class="img-to-mod">
                     </button>
                   </div>
@@ -170,7 +168,7 @@
               </script>
             </div>
 
-            {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=data[0]['result']['short_description'] %}
+            {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
               {% include 'html-partials/desc-edit.html' %}
             {% endwith %} 
           </div>
@@ -363,7 +361,7 @@
     </script>
 
     <script>
-      const modID = {{ data[0]['result']['id'] }}
+      const modID = {{ info['result']['id'] }}
     
       async function saveChanges() {
         // Подготовка данных
@@ -499,7 +497,7 @@
 
         // Исполнитель базового изменения
         async function modUpdate(titleMod, fullDesc, shortDesc, publicMode) {
-          const url = '/api/accounts/edit/mod?mod_id='+modID
+          const url = '/api/manager/edit/mod?mod_id='+modID
 
           // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
           var formData = new FormData();
@@ -539,7 +537,7 @@
         async function modUpdateLogos(logos) {
           // Все изменения POST и происходят внутри body
           if (logos.new.length > 0) {
-            const urlAdd = '/api/accounts/add/resource' 
+            const urlAdd = '/api/manager/add/resource' 
 
             for (const logo of logos.new) {
               try {
@@ -573,7 +571,7 @@
           }
 
           if (logos.changed.length > 0) {
-            const urlEdit = '/api/accounts/edit/resource?resource_id='
+            const urlEdit = '/api/manager/edit/resource?resource_id='
 
             for (const logoID in logos.changed) {
               const logo = logos.changed[logoID]
@@ -608,7 +606,7 @@
           }
           
           if (logos.deleted.length > 0) {
-            const urlDelete = '/api/accounts/delete/resource?resource_id='
+            const urlDelete = '/api/manager/delete/resource?resource_id='
 
             for (const logoID in logos.deleted) {
               const logo = logos.deleted[logoID]
@@ -640,7 +638,7 @@
 
         async function modUpdateTags(tags) {
           console.log(tags)
-          const url = '/api/accounts/association/mod/tag?mod_id='+modID
+          const url = '/api/manager/association/mod/tag?mod_id='+modID
 
           async function editRemoteTag(mode, tag) {
             try {
@@ -676,7 +674,7 @@
         }
 
         async function modUpdateDependecie(depends) {
-          const url = '/api/accounts/association/mod/dependencie?mod_id='+modID
+          const url = '/api/manager/association/mod/dependencie?mod_id='+modID
 
           async function editRemoteDependecie(mode, dependence) {
             try {
@@ -756,9 +754,9 @@
 {% endblock %}
 
 {% block title %}
-{{ data[0]['result']['name'] }} - edit Open Mod
+{{ info['result']['name'] }} - edit Open Mod
 {% endblock %}
 
 {% block description %}
-{{ data[0]['result']['short_description'] }}
+{{ info['result']['short_description'] }}
 {% endblock %}

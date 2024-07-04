@@ -19,14 +19,7 @@ class UserHandler:
         self.session = ClientSession()
         self.cookies = request.cookies
         for key in request.cookies.keys():
-            self.cookie_params[key] = {
-                'max_age': request.cookies.get(key, max_age=None),
-                'secure': request.cookies.get(key, secure=None),
-                'httponly': request.cookies.get(key, httponly=None),
-                'path': request.cookies.get(key, path='/'),
-                'domain': request.cookies.get(key, domain=None),
-                'samesite': request.cookies.get(key, samesite='lax'),
-            }
+            self.cookie_params[key] = {}
         await self._initialize_profile()
         return self
 
@@ -52,7 +45,7 @@ class UserHandler:
             if not avatar_url:
                 result['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
             elif avatar_url.startswith("local"):
-                result['general']['avatar_url'] = f"/api/accounts/profile/avatar/{uid}"
+                result['general']['avatar_url'] = f"/api/manager/profile/avatar/{uid}"
             
             self.id = uid
             self.profile = result.get('general', False)
@@ -61,7 +54,7 @@ class UserHandler:
             self.id = -1
             self.profile = False
 
-    def access_to_mod(self, my_mode: bool = False, owner_mode: bool = False):
+    def access_to_mod(self, my_mod: bool = False, owner_mod: bool = False):
         access = {
             "add": False,
             "edit": False,
@@ -75,7 +68,7 @@ class UserHandler:
             access["in_mute"] = self.profile["mute"]
             access["admin"] = self.rights["admin"]
 
-            access["is_my_mod"] = 0 if my_mode else 1 if owner_mode else 2
+            access["is_my_mod"] = 0 if my_mod else 1 if owner_mod else 2
 
             if access["admin"]:
                 access["add"] = True
@@ -89,6 +82,10 @@ class UserHandler:
                 else: # Чужой мод
                     access["edit"] = self.rights["change_mods"]
                     access["delete"] = self.rights["delete_mods"]
+
+        access['any'] = access['add'] or access['edit'] or access['delete'] or access['admin'] or access['in_mute'] or access['in_mute'] <= 1
+
+        access['any'] = True
 
         return access
 

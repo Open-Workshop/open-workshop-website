@@ -6,7 +6,7 @@
   <div class="user-profile">
     <div class="user-left-bar">
       <div class="user-avatar-box">
-        <img src="https://openworkshop.su/api/manager/profile/avatar/{{ user_data.general.id }}" onerror="handlerImgErrorLoad(this)" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
+        <img src="{{ user_data.general.avatar_url }}" onerror="handlerImgErrorLoad(this)" alt="Аватар пользователя" style="width: 100%;" class="user-avatar" />
       </div>
 
       {% if user_data.general.mute %}

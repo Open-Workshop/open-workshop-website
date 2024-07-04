@@ -66,7 +66,7 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 }
 
 function serviceDisconnect(service) {
-  fetch("/api/accounts/authorization/disconnect?service_name="+service, {
+  fetch("/api/manager/authorization/disconnect?service_name="+service, {
     method: 'POST'
   }).then(response => {
     if (response.status === 200) {
