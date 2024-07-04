@@ -87,13 +87,6 @@
         </div>
         {% endif %}
         
-        {% if not user_profile %}
-        <div class="outline-container">
-            <h3>Авторизированным пользователям не отображается реклама</h3>
-            <script src="//s.contemio.ru/c.js"></script><div id="cresults"><script async defer>ctext.load(22981, "contemio.ru");</script></div>
-        </div>
-        {% endif %}
-
         {% if info['result']['public'] != 2 %}
         <a class="download-button" href="https://openworkshop.su/api/manager/download/{{ info['result']['id'] }}">Загрузить</a>
         {% endif %}
