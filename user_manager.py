@@ -68,7 +68,7 @@ class UserHandler:
             access["in_mute"] = self.profile["mute"]
             access["admin"] = self.rights["admin"]
 
-            access["is_my_mod"] = 0 if my_mod else 1 if owner_mod else 2
+            access["is_my_mod"] = 1 if owner_mod else 0 if my_mod else 2
 
             if access["admin"]:
                 access["add"] = True
@@ -83,7 +83,7 @@ class UserHandler:
                     access["edit"] = self.rights["change_mods"]
                     access["delete"] = self.rights["delete_mods"]
 
-        access['any'] = access['add'] or access['edit'] or access['delete'] or access['admin'] or access['in_mute'] or access['in_mute'] <= 1
+        access['any'] = access['add'] or access['edit'] or access['delete'] or access['admin'] or access['is_my_mod'] <= 1
 
         return access
 

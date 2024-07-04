@@ -289,7 +289,7 @@ async def user_settings(user_id):
         editable = handler.access_to_mod()
         editable['my'] = handler.profile and user_id==handler.profile.get('id', -1)
 
-        if not editable['any'] and not editable['my']:
+        if not editable['any']:
             return handler.finish(handler.render("error.html", error='Вы не имеете прав редактировать этот профиль!', error_title='Отказано в доступе!')), 403
 
         info_profile_code, info_profile = await handler.fetch(
