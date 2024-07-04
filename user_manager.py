@@ -85,8 +85,6 @@ class UserHandler:
 
         access['any'] = access['add'] or access['edit'] or access['delete'] or access['admin'] or access['in_mute'] or access['in_mute'] <= 1
 
-        access['any'] = True
-
         return access
 
     async def fetch(self, url: str, method: str = 'GET', data: dict = None, headers: dict = None) -> tuple[int, str | dict | list]:

@@ -9,13 +9,13 @@ function cookiesOkPress() {
 
 
 async function logon() {
-    const response = await fetch("https://openworkshop.su/api/manager/authorization/logout", {
+    const response = await fetch("https://openworkshop.su/api/manager/session/logout", {
       method: "POST"
     });
   
     location.reload();
 }
-  
+
 
 
 if (!document.getElementsByClassName("toast-container")) {
@@ -43,7 +43,7 @@ if (condition1) {
             theme: 'dark',
             autohide: true,
             interval: 18000,
-            link: 'https://discord.gg/UnJnGHNbBp'
+            link: 'https://discord.gg/em7ag3EGgs'
         },
         {
             title: 'Браузерное расширение',
@@ -52,14 +52,6 @@ if (condition1) {
             autohide: true,
             interval: 18000,
             link: 'https://github.com/Open-Workshop/open-workshop-browser-extension/releases/tag/v1.0.0'
-        },
-        {
-            title: 'Попробуй Telegram бота!',
-            text: 'Запустить 📌',
-            theme: 'dark',
-            autohide: true,
-            interval: 18000,
-            link: 'https://t.me/get_from_steam_bot'
         }
     ];
 
