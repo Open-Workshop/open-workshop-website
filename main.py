@@ -1,4 +1,3 @@
-import aiohttp
 from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from pathlib import Path
 from babel import dates
@@ -8,6 +7,7 @@ import tool
 import os
 import sitemapper as sitemapper
 from user_manager import UserHandler
+import ow_config
 
 
 app = Flask(__name__, template_folder='website')
@@ -43,7 +43,10 @@ async def unified_route():
     if not url.endswith('.html'): url += '.html'
 
     async with UserHandler() as handler:
-        page_html = handler.render(url[1:], catalog=(url=='/index.html'))
+        page_html = handler.render(url[1:],
+                                   catalog=(url=='/index.html'),
+                                   manager_addres=ow_config.MANAGER_ADDRESS,
+                                   storage_address=ow_config.STORAGE_ADDRESS)
         return handler.finish(page_html)
 
 
@@ -53,18 +56,6 @@ async def unified_route():
 @app.route('/mod/<int:mod_id>/edit.html')
 async def mod_view_and_edit(mod_id):
     launge = "ru"
-
-    ## TODO ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
-    if mod_id > 60000:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(f'https://openworkshop.su/api/manager/list/mods/?primary_sources=["steam"]&allowed_sources_ids=[{mod_id}]') as response:
-                tor = await response.json()
-                if len(tor['results']) > 0:
-                    return redirect(
-                        "/mod/" + str(tor['results'][0]['id']),
-                        code=308
-                    )
-    ## / ЗАТЫЧКА!! ПОТОМ УБРАТЬ!!! ##
 
     async with UserHandler() as handler:
         # Определяем запросы
