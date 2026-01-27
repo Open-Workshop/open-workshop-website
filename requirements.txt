@@ -1,0 +1,6 @@
+flask[async]
+aiohttp
+SQLAlchemy
+babel
+mysqlclient
+waitress
