@@ -139,7 +139,7 @@ window.Cards = {
         let ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
         console.log('setterImgs', ids)
 
-        const managerUrl = document.body.dataset.managerUrl;
+        const managerUrl = document.body.getAttribute('manager-url');
         const response = await fetch(`${managerUrl}/list/resources/${owner_type}/[${ids}]?page_size=50&types_resources=["logo"]`, {
             credentials: 'include'
         });

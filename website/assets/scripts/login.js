@@ -66,7 +66,7 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 }
 
 function serviceDisconnect(service) {
-  const managerUrl = document.body.dataset.managerUrl;
+  const managerUrl = document.body.getAttribute('manager-url');
   fetch(`${managerUrl}/session/${service}/disconnect`, {
     method: 'POST'
   }).then(response => {

@@ -9,7 +9,7 @@ function cookiesOkPress() {
 
 
 async function logon() {
-    const managerUrl = document.body.dataset.managerUrl;
+    const managerUrl = document.body.getAttribute('manager-url');
     const response = await fetch(`${managerUrl}/session/logout`, {
         method: "POST",
         credentials: 'include'

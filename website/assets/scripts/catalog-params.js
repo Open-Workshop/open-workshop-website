@@ -28,7 +28,7 @@ $(document).ready(async function() {
 
 
     if (params.get('game', '') != '') {
-        const managerUrl = document.body.dataset.managerUrl;
+        const managerUrl = document.body.getAttribute('manager-url');
         const [gameResponse, logoResponse] = await Promise.all([
             fetch(`${managerUrl}/list/games/?allowed_ids=['+params.get('game', '')+']`),
             fetch(`${managerUrl}/list/resources/games/['+params.get('game', '')+']?types_resources=["logo"]&only_urls=true`)

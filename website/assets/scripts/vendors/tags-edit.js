@@ -10,7 +10,7 @@ window.TagsSelector = {
         pNoInList.addClass('hiden');
         searchContainer.addClass('hiden');
 
-        const managerUrl = document.body.dataset.managerUrl;
+        const managerUrl = document.body.getAttribute('manager-url');
         const ref = await fetch(`${managerUrl}/list/tags?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val(), {
             credentials: 'include'
         });
@@ -79,7 +79,7 @@ window.TagsSelector = {
     async setDefaultSelectedTags(tags) {
         if (tags.length == 0) return;
 
-        const managerUrl = document.body.dataset.managerUrl;
+        const managerUrl = document.body.getAttribute('manager-url');
         const url = `${managerUrl}/list/tags?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
         
         const ref = await fetch(url, {

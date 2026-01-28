@@ -53,7 +53,7 @@ async function searchRequestDependenceUpdate() {
     pNoInList.addClass('hiden');
     searchedDependencies.addClass('hiden');
 
-    const managerUrl = document.body.dataset.managerUrl;
+    const managerUrl = document.body.getAttribute('manager-url');
     const ref = await fetch(`${managerUrl}/list/mods/?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val(), {
         credentials: 'include'
     });

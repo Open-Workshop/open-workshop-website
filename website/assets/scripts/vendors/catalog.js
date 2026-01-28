@@ -62,7 +62,7 @@ window.Catalog = {
         }
 
         // Запрос
-        const managerUrl = document.body.dataset.managerUrl;
+        const managerUrl = document.body.getAttribute('manager-url');
         const url = managerUrl + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
