@@ -443,7 +443,7 @@
       formData = new FormData();
 
       // Запрос на редактирование прав
-      url = '{{ manager_address }}/profile/edit/rights?user_id={{ user_data.general.id }}&'
+      url = '{{ manager_address }}/profile/edit/rights?user_id={{ user_data.general.id }}'
       function addRight(nameCheckbox) {
         const checkbox = document.getElementById('checkbox-rights-edit-'+nameCheckbox);
 
