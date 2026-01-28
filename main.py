@@ -277,7 +277,7 @@ async def user_settings(user_id):
     launge = "ru"
 
     async with UserHandler() as handler:
-        editable = handler.access_to_profile()
+        editable = handler.access_to_profile(user_id)
 
         if not editable['any']:
             return handler.finish(handler.render("error.html", error='Вы не имеете прав редактировать этот профиль!', error_title='Отказано в доступе!')), 403
