@@ -240,7 +240,7 @@ async def user(user_id):
         if profile_info['general']['avatar_url'] is None or len(profile_info['general']['avatar_url']) <= 0:
             profile_info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
         elif profile_info['general']['avatar_url'].startswith("local"):
-            profile_info['general']['avatar_url'] = f"/api/manager/profile/avatar/{user_id}"
+            profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }/profile/avatar/{user_id}"
 
         if len(user_mods['results']) > 0:
             resources_mods_code, resources_mods = await handler.fetch(f'/list/resources/mods/{[i["id"] for i in user_mods["results"]]}?page_size=10&page=0&types_resources=["logo"]')
@@ -312,7 +312,7 @@ async def user_settings(user_id):
         if info_profile['general']['avatar_url'] is None or len(info_profile['general']['avatar_url']) <= 0:
             info_profile['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
         elif info_profile['general']['avatar_url'].startswith("local"):
-            info_profile['general']['avatar_url'] = f"/api/manager/profile/avatar/{user_id}"
+            info_profile['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }/profile/avatar/{user_id}"
 
         info_profile['delete_user'] = info_profile['general']['username'] is None
 
@@ -389,6 +389,6 @@ async def sitemap():
 
 
 if __name__ == '__main__':
-    #app.run()
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=6660, threads=100)
+    app.run(port=6660)
+    #from waitress import serve
+    #serve(app, host="0.0.0.0", port=6660, threads=100)
