@@ -280,7 +280,7 @@ async def user_settings(user_id):
         editable = handler.access_to_profile(user_id)
 
         if not editable['any']:
-            return handler.finish(handler.render("error.html", error=f"Вы не имеете прав редактировать этот профиль! {str(editable)} {str(handler.rights)}", error_title='Отказано в доступе!')), 403
+            return handler.finish(handler.render("error.html", error=f"Вы не имеете прав редактировать этот профиль!", error_title='Отказано в доступе!')), 403
 
         info_profile_code, info_profile = await handler.fetch(
             f"/profile/info/{user_id}?general=true"+("&rights=true&private=true" if editable["admin"] or editable['my'] else "")

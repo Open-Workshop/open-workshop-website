@@ -33,6 +33,7 @@ class UserHandler:
         """
         uid = self.cookies.get('userID', None)
         if not uid or (not self.cookies.get('refreshToken', None) and not self.cookies.get('accessToken', None)):
+            print("Запрос от анонимного юзера")
             self.id = -1
             self.profile = False
             return
@@ -49,7 +50,10 @@ class UserHandler:
             self.id = uid
             self.profile = result.get('general', False)
             self.rights = result.get('rights', {})
+
+            print(f"Запрос от юзера {self.id}")
         else:
+            print("Запрос от не анонимного юзера (ошибка сервера, считаем анонимным)")
             self.id = -1
             self.profile = False
 
@@ -98,7 +102,7 @@ class UserHandler:
         access["mute_users"] = ((not self.profile["mute"] and self.rights["mute_users"]) or self.rights["admin"]) and not access["my"]
         access["any"] = access["my"] or access["mute_users"] or access["grade"] or access["change_username"] or access["change_about"] or access["change_avatar"]
 
-        print(access, flush=True)
+        print(f"Access2Profile: {', '.join(f'{k}={v}' for k, v in access.items())}", flush=True)
 
         return access
 
@@ -121,6 +125,8 @@ class UserHandler:
             if not url.startswith('/'):
                 url = '/' + url
             url = config.MANAGER_ADDRESS + url
+
+        print(f"Запрос к внешниму серверу: {url}", flush=True)
 
         async with self.session.request(method, url, data=data, headers=headers, cookies=self.cookies) as response:
             # Обновление только изменившихся кук
