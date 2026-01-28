@@ -90,11 +90,11 @@ class UserHandler:
     def access_to_profile(self, target_profile: int) -> dict:
         access = {
             "my": self.id == target_profile,
-            "admin": self.profile["admin"],
+            "admin": self.rights["admin"],
             "grade": access["admin"]
         }
         for key in ["change_username", "change_about", "change_avatar"]: #  "mute_users"
-            access[key] = (self.profile[key] and not self.profile["mute"] and access["my"]) or self.rights["admin"]
+            access[key] = (self.rights[key] and not self.profile["mute"] and access["my"]) or self.rights["admin"]
         access["mute_users"] = ((not self.profile["mute"] and self.rights["mute_users"]) or self.rights["admin"]) and not access["my"]
         access["any"] = access["mute_users"] or access["grade"] or access["change_username"] or access["change_about"] or access["change_avatar"]
 
