@@ -39,7 +39,7 @@
           <div class="user-avatar-box">
               <img startdata="{{ user_data.general.avatar_url }}" src="{{ user_data.general.avatar_url }}" alt="Аватар пользователя" id="user-avatar-img" style="width: 100%;" class="user-avatar">
 
-              {% if user_access.avatar %}
+              {% if user_access.change_avatar %}
               <div class="user-edit-icon" onclick="$('#reset-avatar').removeClass('toggled'); $('#file-select-avatar').click();">
                 <img src="/assets/images/icon-edit.svg" alt="Выбрать аватар">
               </div>
@@ -52,7 +52,7 @@
               <input type="file" accept=".png, .jpg" style="display: none;" id="file-select-avatar">
           </div>
           
-          {% if user_access.mute %}
+          {% if user_access.mute_users %}
           <div class="datatime-delta">
             <input type="number" min="0" max="100" value="0" title="Оставьте поле=0 чтобы не учитывать изменения" id="mute-delta">
             <select id="mute-delta-unit">
@@ -139,10 +139,10 @@
       </div>
 
       <div id="user-right-bar">
-        {% if user_access.username %}
+        {% if user_access.change_username %}
         <input id="username" placeholder="Псевдоним..." dynamlen displaylimit minlength="3" maxlength="18" empty-width="160px" startdata="{{ user_data.general.username }}" value="{{ user_data.general.username }}" name="username">
         {% endif %}
-        {% if not user_access.username %}
+        {% if not user_access.change_username %}
         <h1>{{ user_data.general.username }}</h1>
         {% endif %}
 
@@ -153,12 +153,12 @@
         <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>
         {% endif %}
 
-        {% if user_access.about %}
+        {% if user_access.change_about %}
           {% with limit=512, placeholder='Обо мне...', init_text=(user_data.general.about if user_data.general.about_enable else "") %}
             {% include 'html-partials/desc-edit.html' %}
           {% endwith %}
         {% endif %}
-        {% if not user_access.about and user_data.general.about_enable %}
+        {% if not user_access.change_about and user_data.general.about_enable %}
         <article id="mod-description">{{ user_data.general.about }}</article>
         {% endif %}
       </div>
