@@ -13,6 +13,8 @@ class UserHandler:
 
         self.id = None
         self.profile = None
+        self.response = None
+        self.response_code = 200
         self.rights = {}
 
     async def __aenter__(self):
@@ -41,6 +43,8 @@ class UserHandler:
             return
         
         code, result = await self.fetch(f"/profile/info/{uid}?general=true&rights=true")
+        self.response = result
+        self.response_code = code
         
         if code == 200 and isinstance(result, dict):
             avatar_url = result['general'].get('avatar_url', '')
@@ -93,8 +97,9 @@ class UserHandler:
         return access
 
     def access_to_profile(self, target_profile: int) -> dict:
+        print(f"Проверка соотвествия профилей A2P: {self.id} == {target_profile} is {int(self.id) == int(target_profile)}")
         access = {
-            "my": self.id == target_profile,
+            "my": int(self.id) == int(target_profile),
             "admin": self.rights["admin"],
         }
         access["grade"] = access["admin"]
@@ -153,7 +158,7 @@ class UserHandler:
             return response.status, content
 
     def render(self, filename: str, **kwargs) -> str:
-        return render_template(filename, user_profile=self.profile, **kwargs)
+        return render_template(filename, manager_address=config.MANAGER_ADDRESS, user_profile=self.profile, **kwargs)
 
     def finish(self, page: str) -> make_response:
         """

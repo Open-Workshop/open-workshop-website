@@ -45,7 +45,6 @@ async def unified_route():
     async with UserHandler() as handler:
         page_html = handler.render(url[1:],
                                    catalog=(url=='/index.html'),
-                                   manager_addres=ow_config.MANAGER_ADDRESS,
                                    storage_address=ow_config.STORAGE_ADDRESS)
         return handler.finish(page_html)
 
@@ -282,9 +281,13 @@ async def user_settings(user_id):
         if not editable['any']:
             return handler.finish(handler.render("error.html", error=f"Вы не имеете прав редактировать этот профиль!", error_title='Отказано в доступе!')), 403
 
-        info_profile_code, info_profile = await handler.fetch(
-            f"/profile/info/{user_id}?general=true"+("&rights=true&private=true" if editable["admin"] or editable['my'] else "")
-        )
+        if handler.id == user_id:
+            info_profile_code = handler.response_code
+            info_profile = handler.response
+        else:
+            info_profile_code, info_profile = await handler.fetch(
+                f"/profile/info/{user_id}?general=true"+("&rights=true&private=true" if editable["admin"] or editable['my'] else "")
+            )
 
         if info_profile_code != 200:
             return handler.finish(handler.render(
