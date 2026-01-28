@@ -1,12 +1,13 @@
 from aiohttp import ClientSession
 from flask import request, make_response, render_template
+import copy
 import ow_config as config
 
 
 class UserHandler:
     def __init__(self):
         self.session = None
-        self.cookies = None
+        self.cookies = None  # Это будет изменяемый словарь
         self.cookie_params = {}
         self.changed_cookies = {}
 
@@ -16,8 +17,9 @@ class UserHandler:
 
     async def __aenter__(self):
         self.session = ClientSession()
-        self.cookies = request.cookies
-        for key in request.cookies.keys():
+        # Создаем изменяемую копию куки
+        self.cookies = dict(request.cookies)
+        for key in self.cookies.keys():
             self.cookie_params[key] = {}
         await self._initialize_profile()
         return self
@@ -97,7 +99,7 @@ class UserHandler:
         }
         access["grade"] = access["admin"]
         
-        for key in ["change_username", "change_about", "change_avatar"]: #  "mute_users"
+        for key in ["change_username", "change_about", "change_avatar"]:
             access[key] = (self.rights[key] and not self.profile["mute"] and access["my"]) or self.rights["admin"]
         access["mute_users"] = ((not self.profile["mute"] and self.rights["mute_users"]) or self.rights["admin"]) and not access["my"]
         access["any"] = access["my"] or access["mute_users"] or access["grade"] or access["change_username"] or access["change_about"] or access["change_avatar"]
