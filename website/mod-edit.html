@@ -497,7 +497,7 @@
 
         // Исполнитель базового изменения
         async function modUpdate(titleMod, fullDesc, shortDesc, publicMode) {
-          const url = '/api/manager/edit/mod?mod_id='+modID
+          const url = '{{ manager_address }}/edit/mod?mod_id='+modID
 
           // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
           var formData = new FormData();
@@ -537,7 +537,7 @@
         async function modUpdateLogos(logos) {
           // Все изменения POST и происходят внутри body
           if (logos.new.length > 0) {
-            const urlAdd = '/api/manager/add/resource' 
+            const urlAdd = '{{ manager_address }}/add/resource' 
 
             for (const logo of logos.new) {
               try {
@@ -571,7 +571,7 @@
           }
 
           if (logos.changed.length > 0) {
-            const urlEdit = '/api/manager/edit/resource?resource_id='
+            const urlEdit = '{{ manager_address }}/edit/resource?resource_id='
 
             for (const logoID in logos.changed) {
               const logo = logos.changed[logoID]
@@ -606,7 +606,7 @@
           }
           
           if (logos.deleted.length > 0) {
-            const urlDelete = '/api/manager/delete/resource?resource_id='
+            const urlDelete = '{{ manager_address }}/delete/resource?resource_id='
 
             for (const logoID in logos.deleted) {
               const logo = logos.deleted[logoID]
@@ -638,7 +638,7 @@
 
         async function modUpdateTags(tags) {
           console.log(tags)
-          const url = '/api/manager/association/mod/tag?mod_id='+modID
+          const url = '{{ manager_address }}/association/mod/tag?mod_id='+modID
 
           async function editRemoteTag(mode, tag) {
             try {
@@ -674,7 +674,7 @@
         }
 
         async function modUpdateDependecie(depends) {
-          const url = '/api/manager/association/mod/dependencie?mod_id='+modID
+          const url = '{{ manager_address }}/association/mod/dependencie?mod_id='+modID
 
           async function editRemoteDependecie(mode, dependence) {
             try {

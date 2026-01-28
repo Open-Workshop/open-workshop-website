@@ -108,7 +108,7 @@
         function renderNewSelectedGame() {
             $buttonGameName.attr('disabled', '');
             // Make a GET request to the API endpoint
-            fetch("https://openworkshop.su/api/manager/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
+            fetch("{{ manager_address }}/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
                 // Parse the JSON response
                 response.json().then(json => {
                     // Update the UI based on the JSON data
@@ -163,7 +163,7 @@
                     }
 
                     // делаем запрос к серверу
-                    response = await fetch('https://openworkshop.su/api/manager/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {method: 'GET'})
+                    response = await fetch('{{ manager_address }}/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {method: 'GET'})
                     const data = await response.json()
 
                     console.log(data.results)

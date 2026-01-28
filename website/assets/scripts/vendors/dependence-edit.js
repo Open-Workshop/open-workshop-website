@@ -53,7 +53,8 @@ async function searchRequestDependenceUpdate() {
     pNoInList.addClass('hiden');
     searchedDependencies.addClass('hiden');
 
-    const ref = await fetch('https://openworkshop.su/api/manager/list/mods/?page_size=5&game='+searchInput.attr('gameid')+'&name=' + searchInput.val());
+    const managerUrl = document.body.dataset.managerUrl;
+    const ref = await fetch(`${managerUrl}/list/mods/?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val());
     const data = await ref.json();
 
     let ids = []
@@ -90,7 +91,7 @@ async function searchRequestDependenceUpdate() {
         searchedDependencies.append($dependenceSelected);
     })
     
-    const refImgs = await fetch('https://openworkshop.su/api/manager/list/resources_mods/['+ids+']?types_resources=["logo"]');
+    const refImgs = await fetch(`${managerUrl}/list/resources_mods/[${ids}]?types_resources=["logo"]`);
     const dataImgs = await refImgs.json();
 
     console.log(dataImgs)

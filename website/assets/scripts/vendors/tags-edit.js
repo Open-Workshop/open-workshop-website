@@ -10,7 +10,8 @@ window.TagsSelector = {
         pNoInList.addClass('hiden');
         searchContainer.addClass('hiden');
 
-        const ref = await fetch('https://openworkshop.su/api/manager/list/tags?game_id='+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val());
+        const managerUrl = document.body.dataset.managerUrl;
+        const ref = await fetch(`${managerUrl}/list/tags?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val());
 
         const data = await ref.json();
         searchContainer.html(searchContainer.find('p')[0]);
@@ -76,7 +77,8 @@ window.TagsSelector = {
     async setDefaultSelectedTags(tags) {
         if (tags.length == 0) return;
 
-        const url = 'https://openworkshop.su/api/manager/list/tags?game_id=' + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
+        const managerUrl = document.body.dataset.managerUrl;
+        const url = `${managerUrl}/list/tags?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
         
         const ref = await fetch(url);
         const data = await ref.json();

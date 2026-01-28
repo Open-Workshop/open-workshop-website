@@ -9,7 +9,8 @@ function cookiesOkPress() {
 
 
 async function logon() {
-    const response = await fetch("https://openworkshop.su/api/manager/session/logout", {
+    const managerUrl = document.body.dataset.managerUrl;
+    const response = await fetch(`${managerUrl}/session/logout`, {
       method: "POST"
     });
   

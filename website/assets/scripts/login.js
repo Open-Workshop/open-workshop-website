@@ -66,7 +66,8 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 }
 
 function serviceDisconnect(service) {
-  fetch("/api/manager/session/"+service+"/disconnect", {
+  const managerUrl = document.body.dataset.managerUrl;
+  fetch(`${managerUrl}/session/${service}/disconnect`, {
     method: 'POST'
   }).then(response => {
     if (response.status === 200) {
