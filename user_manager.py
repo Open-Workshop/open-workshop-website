@@ -90,8 +90,9 @@ class UserHandler:
         access = {
             "my": self.id == target_profile,
             "admin": self.rights["admin"],
-            "grade": access["admin"]
         }
+        access["grade"] = access["admin"]
+        
         for key in ["change_username", "change_about", "change_avatar"]: #  "mute_users"
             access[key] = (self.rights[key] and not self.profile["mute"] and access["my"]) or self.rights["admin"]
         access["mute_users"] = ((not self.profile["mute"] and self.rights["mute_users"]) or self.rights["admin"]) and not access["my"]
