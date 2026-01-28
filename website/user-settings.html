@@ -342,7 +342,7 @@
 
               new Toast(banner_error_a);
             } else {
-              fetch('{{ manager_address }}/profile/delete', {method: 'POST'}).then(response => {
+              fetch('{{ manager_address }}/profile/delete', {method: 'POST', credentials: 'include'}).then(response => {
                 location.reload();
               })
             }
@@ -406,7 +406,8 @@
         try {
           const response = await fetch(url, {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'include'
           });
           if (response.status === 202) {
             console.log('Код ответа равен 202!');
@@ -484,7 +485,8 @@
         try {
           const response = await fetch(url, {
             method: 'POST',
-            body: formData
+            body: formData,
+            credentials: 'include'
           });
           if (response.status === 202) {
             console.log('Код ответа равен 202!');

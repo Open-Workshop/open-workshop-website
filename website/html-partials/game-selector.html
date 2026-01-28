@@ -163,7 +163,10 @@
                     }
 
                     // делаем запрос к серверу
-                    response = await fetch('{{ manager_address }}/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {method: 'GET'})
+                    response = await fetch('{{ manager_address }}/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {
+                        method: 'GET',
+                        credentials: 'include'
+                    })
                     const data = await response.json()
 
                     console.log(data.results)

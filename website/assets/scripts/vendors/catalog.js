@@ -66,7 +66,7 @@ window.Catalog = {
         const url = managerUrl + (settings.get('sgame', 'yes') == 'yes' ? 'list/games/' : 'list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
-        let response = await fetch(url, {method: 'GET', redirect: 'follow'})
+        let response = await fetch(url, {method: 'GET', redirect: 'follow', credentials: 'include'})
         let data = await response.json();
 
         if (response.status == 200) {

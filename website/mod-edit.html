@@ -510,7 +510,8 @@
           try {
             const response = await fetch(url, {
               method: 'POST',
-              body: formData
+              body: formData,
+              credentials: 'include'
             });
             const data = await response.json();
             console.log('Success:', data);
@@ -547,7 +548,7 @@
                 formData.append('resource_url', logo.url)
                 formData.append('resource_owner_id', modID)
 
-                const response = await fetch(urlAdd, {method: 'POST', body: formData});
+                const response = await fetch(urlAdd, {method: 'POST', body: formData, credentials: 'include'});
                 const data = await response.json();
 
                 // 202 - ожидание
@@ -582,7 +583,7 @@
                 if (logo.hasOwnProperty('type')) {formData.append('resource_type', logo.type)}
                 if (logo.hasOwnProperty('url')) {formData.append('resource_url', logo.url)}
 
-                const response = await fetch(urlEdit+logo.id, {method: 'POST', body: formData});
+                const response = await fetch(urlEdit+logo.id, {method: 'POST', body: formData, credentials: 'include'});
                 const data = await response.json();
 
                 // 202 - ожидание
@@ -612,7 +613,7 @@
               const logo = logos.deleted[logoID]
 
               try {
-                const response = await fetch(urlDelete+logo, {method: 'POST'});
+                const response = await fetch(urlDelete+logo, {method: 'POST', credentials: 'include'});
                 const data = await response.json();
 
                 // 202 - ожидание
@@ -643,7 +644,7 @@
           async function editRemoteTag(mode, tag) {
             try {
               console.log(url+'&mode='+mode+'&tag_id='+tag)
-              const response = await fetch(url+'&mode='+mode+'&tag_id='+tag, {method: 'POST'});
+              const response = await fetch(url+'&mode='+mode+'&tag_id='+tag, {method: 'POST', credentials: 'include'});
 
               // 202 - ожидание
               if (response.status != 202) {
@@ -679,7 +680,7 @@
           async function editRemoteDependecie(mode, dependence) {
             try {
               console.log(url+'&mode='+mode+'&dependencie='+dependence)
-              const response = await fetch(url+'&mode='+mode+'&dependencie='+dependence, {method: 'POST'});
+              const response = await fetch(url+'&mode='+mode+'&dependencie='+dependence, {method: 'POST', credentials: 'include'});
 
               // 202 - ожидание
               if (response.status != 202) {

@@ -11,7 +11,8 @@ function cookiesOkPress() {
 async function logon() {
     const managerUrl = document.body.dataset.managerUrl;
     const response = await fetch(`${managerUrl}/session/logout`, {
-      method: "POST"
+        method: "POST",
+        credentials: 'include'
     });
   
     location.reload();

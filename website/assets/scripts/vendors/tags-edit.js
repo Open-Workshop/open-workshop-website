@@ -11,7 +11,9 @@ window.TagsSelector = {
         searchContainer.addClass('hiden');
 
         const managerUrl = document.body.dataset.managerUrl;
-        const ref = await fetch(`${managerUrl}/list/tags?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val());
+        const ref = await fetch(`${managerUrl}/list/tags?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val(), {
+            credentials: 'include'
+        });
 
         const data = await ref.json();
         searchContainer.html(searchContainer.find('p')[0]);
@@ -80,7 +82,9 @@ window.TagsSelector = {
         const managerUrl = document.body.dataset.managerUrl;
         const url = `${managerUrl}/list/tags?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
         
-        const ref = await fetch(url);
+        const ref = await fetch(url, {
+            credentials: 'include'
+        });
         const data = await ref.json();
 
         data.results.forEach(t => {

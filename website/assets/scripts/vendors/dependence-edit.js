@@ -54,7 +54,9 @@ async function searchRequestDependenceUpdate() {
     searchedDependencies.addClass('hiden');
 
     const managerUrl = document.body.dataset.managerUrl;
-    const ref = await fetch(`${managerUrl}/list/mods/?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val());
+    const ref = await fetch(`${managerUrl}/list/mods/?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val(), {
+        credentials: 'include'
+    });
     const data = await ref.json();
 
     let ids = []
@@ -91,7 +93,9 @@ async function searchRequestDependenceUpdate() {
         searchedDependencies.append($dependenceSelected);
     })
     
-    const refImgs = await fetch(`${managerUrl}/list/resources_mods/[${ids}]?types_resources=["logo"]`);
+    const refImgs = await fetch(`${managerUrl}/list/resources_mods/[${ids}]?types_resources=["logo"]`, {
+        credentials: 'include'
+    });
     const dataImgs = await refImgs.json();
 
     console.log(dataImgs)

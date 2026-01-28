@@ -140,7 +140,9 @@ window.Cards = {
         console.log('setterImgs', ids)
 
         const managerUrl = document.body.dataset.managerUrl;
-        const response = await fetch(`${managerUrl}/list/resources/${owner_type}/[${ids}]?page_size=50&types_resources=["logo"]`);
+        const response = await fetch(`${managerUrl}/list/resources/${owner_type}/[${ids}]?page_size=50&types_resources=["logo"]`, {
+            credentials: 'include'
+        });
         const data = await response.json();
 
         function changeImage(img, pic) {
