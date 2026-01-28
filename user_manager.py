@@ -98,7 +98,7 @@ class UserHandler:
         access["mute_users"] = ((not self.profile["mute"] and self.rights["mute_users"]) or self.rights["admin"]) and not access["my"]
         access["any"] = access["my"] or access["mute_users"] or access["grade"] or access["change_username"] or access["change_about"] or access["change_avatar"]
 
-        print(access)
+        print(access, flush=True)
 
         return access
 
