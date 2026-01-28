@@ -51,13 +51,12 @@
 
 
     {% if catalog %}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/masonry-layout@4/dist/masonry.pkgd.min.css">
     <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
 
     <link rel="preload" as="image" href="/assets/images/loading.webp"/>
     <link rel="prefetch" as="image" href="/assets/images/image-not-found.webp"/>
-    <link rel="preconnect" href="openworkshop.su" />
-    <link rel="canonical" href="https://openworkshop.su">
+    <link rel="preconnect" href="{{ {{ manager_address }} }}" />
+    <link rel="canonical" href="https://openworkshop.miskler.ru">
     {% endif %}
     
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml"/>
