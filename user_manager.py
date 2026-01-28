@@ -1,7 +1,6 @@
 from aiohttp import ClientSession
 from flask import request, make_response, render_template
 import ow_config as config
-import asyncio
 
 
 class UserHandler:
@@ -45,7 +44,7 @@ class UserHandler:
             if not avatar_url:
                 result['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
             elif avatar_url.startswith("local"):
-                result['general']['avatar_url'] = f"/api/manager/profile/avatar/{uid}"
+                result['general']['avatar_url'] = f"{ config.MANAGER_ADDRESS }/profile/avatar/{uid}"
             
             self.id = uid
             self.profile = result.get('general', False)
