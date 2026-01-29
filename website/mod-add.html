@@ -158,6 +158,7 @@
       };
 
       xhr.open('POST', "{{ manager_address }}/add/mod", true);
+      xhr.withCredentials = true;
       xhr.send(formData)
     }
   </script>
