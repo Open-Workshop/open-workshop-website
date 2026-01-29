@@ -361,397 +361,182 @@
     </script>
 
     <script>
-      const modID = {{ info['result']['id'] }}
-    
-      async function saveChanges() {
-        // Подготовка данных
-        function getChangesModName() {
-          const $title = $('input.title-mod')
+    const modID = {{ info['result']['id'] }}
 
-          return {val: $title.val(), changes: $title.val() != $title.attr('startdata')}
-        }
+    /* =========================
+      helpers
+    ========================= */
 
-        function getChangesFullDesc() {
-          const $descElement = $('div[limit=10000]#desc-edit').find('textarea.editing')
-
-          let result = {startdata: $descElement.attr('startdata')}
-          if ($descElement.hasAttr('tutorial')) {
-            result.val = $descElement.attr('tutorial')
-          } else {
-            result.val = $descElement.val()
-          }
-          result.changes = result.val != result.startdata
-          return result
-        }
-        
-        function getChangesShortDesc() {
-          const $descElement = $('div[limit=256]').find('textarea.editing')
-
-          let result = {startdata: $descElement.attr('startdata'), val: $descElement.val()}
-          result.changes = result.val != result.startdata
-
-          return result
-        }
-
-        function getChangesPublic() {
-          const $publicButton = $('button.public-mod-toggle')
-          return {val: $publicButton.attr('public-mode'), changes: $publicButton.attr('public-mode') != $publicButton.attr('startdata')}
-        }
-
-        // Retrieves the logos of changes made in the screenshot container and organizes them into new, changed, and deleted categories.
-        function getChangesLogos() {
-          const $screenshotContainer = $('ul.js__slider__images.slider__images')
-
-          let result = {new: [], changed: [], deleted: []};
-
-          $screenshotContainer.find('a').each(function() {
-            const $this = $(this)
-
-            if ($this.attr('idimg').startsWith('new-screenshot-')) {
-              result.new.push({
-                type: $this.attr('typecontent'),
-                url: $this.attr('href')
-              })
-            } else if ($this.hasClass('deleted-user-screenshot')) {
-              result.deleted.push($this.attr('idimg'))
-            } else if ($this.attr('starthref') != $this.attr('href') || $this.attr('starttypecontent') != $this.attr('typecontent')) {
-              let changedScreenshot = {id: $this.attr('idimg')}
-
-              if ($this.attr('starthref') != $this.attr('href')) {
-                changedScreenshot.url = $this.attr('href')
-              }
-              if ($this.attr('starttypecontent') != $this.attr('typecontent')) {
-                changedScreenshot.type = $this.attr('typecontent')
-              }
-
-              const attributesToCheck = [['url', 'href'], ['type', 'typecontent']];
-
-              attributesToCheck.forEach(attribute => {
-                if ($this.attr('start' + attribute[1]) !== $this.attr(attribute[1])) {
-                  changedScreenshot[attribute[0]] = $this.attr(attribute[1]);
-                }
-              });
-
-              result.changed.push(changedScreenshot)
-            }
-          })
-          
-          return result
-        }
-        
-        function getChangesTags() {
-          const $tagsContainer = $('div#tags-edit-selected-tags')
-
-          let result = {new: [], deleted: []};
-          
-          $tagsContainer.find('div').each(function() {
-            const $this = $(this)
-            if ($this.hasAttr('saved')) {
-              if ($this.hasClass('none-display')) {
-                result.deleted.push($this.attr('tagid'))
-              }
-            } else {
-              result.new.push($this.attr('tagid'))
-            }
-          })
-
-          return result
-        }
-
-        function getChangesDependence() {
-          const $depencContainer = $('#mod-dependence-selected')
-
-          let result = {
-            new: [],
-            deleted: []
-          }
-
-          $depencContainer.find('div.mod-dependence').each(function() {
-            const $this = $(this)
-            if ($this.hasAttr('saved')) {
-              if ($this.hasClass('none-display')) {
-                result.deleted.push($this.attr('modid'))
-              }
-            } else {
-              result.new.push($this.attr('modid'))
-            }
-          })
-
-          return result
-        }
-
-
-        // Проверка есть ли разница
-        function haveDifference(title, fullDesc, shortDesc, public, logos, tags, dependence) {
-          let result = {
-            modBase: title.changes || fullDesc.changes || shortDesc.changes || public.changes,
-            modLogos: logos.new.length > 0 || logos.changed.length > 0 || logos.deleted.length > 0,
-            modTags: tags.new.length > 0 || tags.deleted.length > 0,
-            modDependence: dependence.new.length > 0 || dependence.deleted.length > 0
-          }
-          result.all = result.modBase || result.modLogos || result.modTags || result.modDependence
-
-          return result
-        }
-
-
-        // Исполнитель базового изменения
-        async function modUpdate(titleMod, fullDesc, shortDesc, publicMode) {
-          const url = '{{ manager_address }}/edit/mod?mod_id='+modID
-
-          // Отправляем все данные в боди, выполняя функцию ассинхронно, POST запрос
-          var formData = new FormData();
-
-          if (titleMod.changes) {formData.append('mod_name', titleMod.val)}
-          if (fullDesc.changes) {formData.append('mod_description', fullDesc.val)}
-          if (shortDesc.changes) {formData.append('mod_short_description', shortDesc.val)}
-          if (publicMode.changes) {formData.append('mod_public', publicMode.val)}
-
-          try {
-            const response = await fetch(url, {
-              method: 'POST',
-              body: formData,
-              credentials: 'include'
-            });
-            const data = await response.json();
-            console.log('Success:', data);
-
-            // 202 - ожидание
-            if (response.status != 202) {
-              new Toast({
-                title: 'Ошибка',
-                text: data,
-                theme: 'warning',
-              })
-            }
-          } catch (error) {
-            console.error('Error:', error);
-            new Toast({
-              title: 'Сетевая ошибка',
-              text: error,
-              theme: 'danger',
-            })
-          }
-        }
-
-        // Исполнитель изменения логотипов
-        async function modUpdateLogos(logos) {
-          // Все изменения POST и происходят внутри body
-          if (logos.new.length > 0) {
-            const urlAdd = '{{ manager_address }}/add/resource' 
-
-            for (const logo of logos.new) {
-              try {
-                var formData = new FormData();
-
-                formData.append('resource_type_name', logo.type)
-                formData.append('resource_url', logo.url)
-                formData.append('resource_owner_id', modID)
-
-                const response = await fetch(urlAdd, {method: 'POST', body: formData, credentials: 'include'});
-                const data = await response.json();
-
-                // 202 - ожидание
-                if (response.status != 202) {
-                  console.log('Success add logo:', data);
-                  new Toast({
-                    title: 'Добавление лого',
-                    text: data,
-                    theme: 'warning',
-                  })
-                }
-              } catch (error) {
-                console.error('Error edit logo:', error);
-                new Toast({
-                  title: 'Сетевая ошибка',
-                  text: error,
-                  theme: 'danger',
-                })
-              }
-            }
-          }
-
-          if (logos.changed.length > 0) {
-            const urlEdit = '{{ manager_address }}/edit/resource?resource_id='
-
-            for (const logoID in logos.changed) {
-              const logo = logos.changed[logoID]
-              
-              try {
-                var formData = new FormData();
-
-                if (logo.hasOwnProperty('type')) {formData.append('resource_type', logo.type)}
-                if (logo.hasOwnProperty('url')) {formData.append('resource_url', logo.url)}
-
-                const response = await fetch(urlEdit+logo.id, {method: 'POST', body: formData, credentials: 'include'});
-                const data = await response.json();
-
-                // 202 - ожидание
-                if (response.status != 202) {
-                  console.log('Success edit logo:', data);
-                  new Toast({
-                    title: 'Редактирование лого',
-                    text: data,
-                    theme: 'warning',
-                  })
-                }
-              } catch (error) {
-                console.error('Error edit logo:', error);
-                new Toast({
-                  title: 'Сетевая ошибка',
-                  text: error,
-                  theme: 'danger',
-                })
-              }
-            }
-          }
-          
-          if (logos.deleted.length > 0) {
-            const urlDelete = '{{ manager_address }}/delete/resource?resource_id='
-
-            for (const logoID in logos.deleted) {
-              const logo = logos.deleted[logoID]
-
-              try {
-                const response = await fetch(urlDelete+logo, {method: 'POST', credentials: 'include'});
-                const data = await response.json();
-
-                // 202 - ожидание
-                if (response.status != 202) {
-                  console.log('Success delete logo:', data);
-                  new Toast({
-                    title: 'Удаление лого',
-                    text: data,
-                    theme: 'warning',
-                  })
-                }
-              } catch (error) {
-                console.error('Error delete logo:', error);
-                new Toast({
-                  title: 'Сетевая ошибка',
-                  text: error,
-                  theme: 'danger',
-                })
-              }
-            }
-          }
-        }
-
-        async function modUpdateTags(tags) {
-          console.log(tags)
-          const url = '{{ manager_address }}/association/mod/tag?mod_id='+modID
-
-          async function editRemoteTag(mode, tag) {
-            try {
-              console.log(url+'&mode='+mode+'&tag_id='+tag)
-              const response = await fetch(url+'&mode='+mode+'&tag_id='+tag, {method: 'POST', credentials: 'include'});
-
-              // 202 - ожидание
-              if (response.status != 202) {
-                new Toast({
-                  title: 'Ошибка',
-                  text: data,
-                  theme: 'warning',
-                })
-              } else {
-                console.log('Success:', await response.json());
-              }
-            } catch (error) {
-              console.error('Error:', error);
-              new Toast({
-                title: 'Сетевая ошибка',
-                text: error,
-                theme: 'danger',
-              })
-            }
-          }
-
-          for (const tag of tags.new) {
-            await editRemoteTag(true, tag);
-          }
-          for (const tag of tags.deleted) {
-            await editRemoteTag(false, tag);
-          }
-        }
-
-        async function modUpdateDependecie(depends) {
-          const url = '{{ manager_address }}/association/mod/dependencie?mod_id='+modID
-
-          async function editRemoteDependecie(mode, dependence) {
-            try {
-              console.log(url+'&mode='+mode+'&dependencie='+dependence)
-              const response = await fetch(url+'&mode='+mode+'&dependencie='+dependence, {method: 'POST', credentials: 'include'});
-
-              // 202 - ожидание
-              if (response.status != 202) {
-                new Toast({
-                  title: 'Ошибка',
-                  text: data,
-                  theme: 'warning',
-                })
-              } else {
-                console.log('Success:', await response.json());
-              }
-            } catch (error) {
-              console.error('Error:', error);
-              new Toast({
-                title: 'Сетевая ошибка',
-                text: error,
-                theme: 'danger',
-              })
-            }
-          }
-
-          for (const dependence of depends.new) {
-            await editRemoteDependecie(true, dependence);
-          }
-          for (const dependence of depends.deleted) {
-            await editRemoteDependecie(false, dependence);
-          }
-        }
-
-
-        // Проверяем, подтверждаем изменения
-        const titleVal = getChangesModName()
-        const fullDescVal = getChangesFullDesc()
-        const shortDescVal = getChangesShortDesc()
-        const publicVal = getChangesPublic()
-        const changesLogosVal = getChangesLogos()
-        const changesTagsVal = getChangesTags()
-        const changesDependenceVal = getChangesDependence()
-
-        console.log(shortDescVal)
-
-        const haveChanges = haveDifference(titleVal, fullDescVal, shortDescVal, publicVal, changesLogosVal, changesTagsVal, changesDependenceVal)
-
-        // Если нет изменений, предупреждаем пользователя
-        if (!haveChanges.all) {
-          new Toast({
-            title: 'Нечего сохранять',
-            text: 'Вы должны сделать изменения чтобы их можно было сохранить',
-            theme: 'info',
-          });
-
-          return
-        }
-
-
-        // Исполняем сохранение
-        if (haveChanges.modBase) {await modUpdate(titleVal, fullDescVal, shortDescVal, publicVal)}
-        if (haveChanges.modLogos) {await modUpdateLogos(changesLogosVal)}
-        if (haveChanges.modTags) {await modUpdateTags(changesTagsVal)}
-        if (haveChanges.modDependence) {await modUpdateDependecie(changesDependenceVal)}
-
-
-        // Сообщаем пользователю об успешном сохранении
-        new Toast({
-          title: 'Изменения сохранены',
-          text: 'Изменения были успешно сохранены',
-          theme: 'success',
+    async function post(url, body = null) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          body,
+          credentials: 'include'
         })
-        location.reload()
+
+        const data = await res.json().catch(() => null)
+
+        if (res.status !== 202) {
+          throw data || 'Ошибка запроса'
+        }
+        return data
+      } catch (e) {
+        new Toast({
+          title: 'Ошибка',
+          text: e,
+          theme: 'danger',
+        })
+        throw e
       }
+    }
+
+    function diff(value, start) {
+      return { val: value, changed: value != start }
+    }
+
+    /* =========================
+      collect base mod changes
+    ========================= */
+
+    function collectModChanges() {
+      const title = $('input.title-mod')
+      const shortDesc = $('div[limit=256] textarea.editing')
+      const fullDesc = $('div[limit=10000] textarea.editing')
+      const pub = $('button.public-mod-toggle')
+
+      return {
+        mod_name: diff(title.val(), title.attr('startdata')),
+        mod_short_description: diff(shortDesc.val(), shortDesc.attr('startdata')),
+        mod_description: diff(
+          fullDesc.hasAttr('tutorial') ? fullDesc.attr('tutorial') : fullDesc.val(),
+          fullDesc.attr('startdata')
+        ),
+        mod_public: diff(pub.attr('public-mode'), pub.attr('startdata'))
+      }
+    }
+
+    function buildFormData(changes) {
+      const fd = new FormData()
+      fd.append('mod_id', modID)
+
+      for (const [key, field] of Object.entries(changes)) {
+        if (field.changed) fd.append(key, field.val)
+      }
+      return fd
+    }
+
+    /* =========================
+      update base mod
+    ========================= */
+
+    async function updateMod(changes) {
+      if (!Object.values(changes).some(f => f.changed)) return
+      await post('{{ manager_address }}/edit/mod', buildFormData(changes))
+    }
+
+    /* =========================
+      logos
+    ========================= */
+
+    async function modUpdateLogos(logos) {
+      const addUrl = '{{ manager_address }}/add/resource'
+      const editUrl = '{{ manager_address }}/edit/resource?resource_id='
+      const delUrl = '{{ manager_address }}/delete/resource?resource_id='
+
+      for (const l of logos.new) {
+        const fd = new FormData()
+        fd.append('resource_type_name', l.type)
+        fd.append('resource_url', l.url)
+        fd.append('resource_owner_id', modID)
+        await post(addUrl, fd)
+      }
+
+      for (const l of logos.changed) {
+        const fd = new FormData()
+        if (l.type) fd.append('resource_type', l.type)
+        if (l.url) fd.append('resource_url', l.url)
+        await post(editUrl + l.id, fd)
+      }
+
+      for (const id of logos.deleted) {
+        await post(delUrl + id)
+      }
+    }
+
+    /* =========================
+      tags
+    ========================= */
+
+    async function modUpdateTags(tags) {
+      const base = '{{ manager_address }}/association/mod/tag?mod_id=' + modID
+
+      for (const id of tags.new)
+        await post(`${base}&mode=true&tag_id=${id}`)
+
+      for (const id of tags.deleted)
+        await post(`${base}&mode=false&tag_id=${id}`)
+    }
+
+    /* =========================
+      dependencies
+    ========================= */
+
+    async function modUpdateDependecie(dep) {
+      const base = '{{ manager_address }}/association/mod/dependencie?mod_id=' + modID
+
+      for (const id of dep.new)
+        await post(`${base}&mode=true&dependencie=${id}`)
+
+      for (const id of dep.deleted)
+        await post(`${base}&mode=false&dependencie=${id}`)
+    }
+
+    /* =========================
+      main save
+    ========================= */
+
+    async function saveChanges() {
+      const modChanges = collectModChanges()
+      const logos = getChangesLogos()
+      const tags = getChangesTags()
+      const deps = getChangesDependence()
+
+      const hasChanges =
+        Object.values(modChanges).some(v => v.changed) ||
+        logos.new.length || logos.changed.length || logos.deleted.length ||
+        tags.new.length || tags.deleted.length ||
+        deps.new.length || deps.deleted.length
+
+      if (!hasChanges) {
+        new Toast({
+          title: 'Нечего сохранять',
+          text: 'Вы не внесли изменений',
+          theme: 'info',
+        })
+        return
+      }
+
+      await updateMod(modChanges)
+      if (logos.new.length || logos.changed.length || logos.deleted.length)
+        await modUpdateLogos(logos)
+
+      if (tags.new.length || tags.deleted.length)
+        await modUpdateTags(tags)
+
+      if (deps.new.length || deps.deleted.length)
+        await modUpdateDependecie(deps)
+
+      new Toast({
+        title: 'Готово',
+        text: 'Изменения сохранены',
+        theme: 'success',
+      })
+
+      location.reload()
+    }
     </script>
+
 {% endblock %}
 
 {% block title %}
