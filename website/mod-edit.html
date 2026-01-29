@@ -363,41 +363,30 @@
     <script>
     const modID = {{ info['result']['id'] }}
 
-    /* =========================
-      helpers
-    ========================= */
+    /* ================= helpers ================= */
 
     async function post(url, body = null) {
-      try {
-        const res = await fetch(url, {
-          method: 'POST',
-          body,
-          credentials: 'include'
-        })
+      const res = await fetch(url, {
+        method: 'POST',
+        body,
+        credentials: 'include'
+      })
 
-        const data = await res.json().catch(() => null)
+      const data = await res.json().catch(() => null)
 
-        if (res.status !== 202) {
-          throw data || 'Ошибка запроса'
-        }
-        return data
-      } catch (e) {
-        new Toast({
-          title: 'Ошибка',
-          text: e,
-          theme: 'danger',
-        })
-        throw e
+      if (res.status !== 202) {
+        new Toast({ title: 'Ошибка', text: data, theme: 'danger' })
+        throw data
       }
+
+      return data
     }
 
     function diff(value, start) {
       return { val: value, changed: value != start }
     }
 
-    /* =========================
-      collect base mod changes
-    ========================= */
+    /* ================= base mod ================= */
 
     function collectModChanges() {
       const title = $('input.title-mod')
@@ -419,105 +408,106 @@
     function buildFormData(changes) {
       const fd = new FormData()
       fd.append('mod_id', modID)
-
-      for (const [key, field] of Object.entries(changes)) {
-        if (field.changed) fd.append(key, field.val)
-      }
+      for (const [k, v] of Object.entries(changes))
+        if (v.changed) fd.append(k, v.val)
       return fd
     }
 
-    /* =========================
-      update base mod
-    ========================= */
-
     async function updateMod(changes) {
-      if (!Object.values(changes).some(f => f.changed)) return
+      if (!Object.values(changes).some(v => v.changed)) return
       await post('{{ manager_address }}/edit/mod', buildFormData(changes))
     }
 
-    /* =========================
-      logos
-    ========================= */
+    /* ================= logos ================= */
 
-    async function modUpdateLogos(logos) {
-      const addUrl = '{{ manager_address }}/add/resource'
-      const editUrl = '{{ manager_address }}/edit/resource?resource_id='
-      const delUrl = '{{ manager_address }}/delete/resource?resource_id='
+    function getChangesLogos() {
+      const box = $('ul.js__slider__images.slider__images')
+      const res = { new: [], changed: [], deleted: [] }
 
-      for (const l of logos.new) {
-        const fd = new FormData()
-        fd.append('resource_type_name', l.type)
-        fd.append('resource_url', l.url)
-        fd.append('resource_owner_id', modID)
-        await post(addUrl, fd)
-      }
+      box.find('a').each(function () {
+        const el = $(this)
 
-      for (const l of logos.changed) {
-        const fd = new FormData()
-        if (l.type) fd.append('resource_type', l.type)
-        if (l.url) fd.append('resource_url', l.url)
-        await post(editUrl + l.id, fd)
-      }
+        if (el.attr('idimg')?.startsWith('new-screenshot-')) {
+          res.new.push({ type: el.attr('typecontent'), url: el.attr('href') })
+          return
+        }
 
-      for (const id of logos.deleted) {
-        await post(delUrl + id)
-      }
+        if (el.hasClass('deleted-user-screenshot')) {
+          res.deleted.push(el.attr('idimg'))
+          return
+        }
+
+        if (
+          el.attr('starthref') != el.attr('href') ||
+          el.attr('starttypecontent') != el.attr('typecontent')
+        ) {
+          const c = { id: el.attr('idimg') }
+          if (el.attr('starthref') != el.attr('href')) c.url = el.attr('href')
+          if (el.attr('starttypecontent') != el.attr('typecontent')) c.type = el.attr('typecontent')
+          res.changed.push(c)
+        }
+      })
+
+      return res
     }
 
-    /* =========================
-      tags
-    ========================= */
+    /* ================= tags ================= */
 
-    async function modUpdateTags(tags) {
-      const base = '{{ manager_address }}/association/mod/tag?mod_id=' + modID
+    function getChangesTags() {
+      const box = $('div#tags-edit-selected-tags')
+      const res = { new: [], deleted: [] }
 
-      for (const id of tags.new)
-        await post(`${base}&mode=true&tag_id=${id}`)
+      box.find('div').each(function () {
+        const el = $(this)
+        if (el.hasAttr('saved')) {
+          if (el.hasClass('none-display')) res.deleted.push(el.attr('tagid'))
+        } else {
+          res.new.push(el.attr('tagid'))
+        }
+      })
 
-      for (const id of tags.deleted)
-        await post(`${base}&mode=false&tag_id=${id}`)
+      return res
     }
 
-    /* =========================
-      dependencies
-    ========================= */
+    /* ================= dependence ================= */
 
-    async function modUpdateDependecie(dep) {
-      const base = '{{ manager_address }}/association/mod/dependencie?mod_id=' + modID
+    function getChangesDependence() {
+      const box = $('#mod-dependence-selected')
+      const res = { new: [], deleted: [] }
 
-      for (const id of dep.new)
-        await post(`${base}&mode=true&dependencie=${id}`)
+      box.find('div.mod-dependence').each(function () {
+        const el = $(this)
+        if (el.hasAttr('saved')) {
+          if (el.hasClass('none-display')) res.deleted.push(el.attr('modid'))
+        } else {
+          res.new.push(el.attr('modid'))
+        }
+      })
 
-      for (const id of dep.deleted)
-        await post(`${base}&mode=false&dependencie=${id}`)
+      return res
     }
 
-    /* =========================
-      main save
-    ========================= */
+    /* ================= save ================= */
 
     async function saveChanges() {
-      const modChanges = collectModChanges()
+      const base = collectModChanges()
       const logos = getChangesLogos()
       const tags = getChangesTags()
       const deps = getChangesDependence()
 
-      const hasChanges =
-        Object.values(modChanges).some(v => v.changed) ||
+      const has =
+        Object.values(base).some(v => v.changed) ||
         logos.new.length || logos.changed.length || logos.deleted.length ||
         tags.new.length || tags.deleted.length ||
         deps.new.length || deps.deleted.length
 
-      if (!hasChanges) {
-        new Toast({
-          title: 'Нечего сохранять',
-          text: 'Вы не внесли изменений',
-          theme: 'info',
-        })
+      if (!has) {
+        new Toast({ title: 'Нечего сохранять', text: 'Нет изменений', theme: 'info' })
         return
       }
 
-      await updateMod(modChanges)
+      await updateMod(base)
+
       if (logos.new.length || logos.changed.length || logos.deleted.length)
         await modUpdateLogos(logos)
 
@@ -527,15 +517,11 @@
       if (deps.new.length || deps.deleted.length)
         await modUpdateDependecie(deps)
 
-      new Toast({
-        title: 'Готово',
-        text: 'Изменения сохранены',
-        theme: 'success',
-      })
-
+      new Toast({ title: 'Готово', text: 'Изменения сохранены', theme: 'success' })
       location.reload()
     }
     </script>
+
 
 {% endblock %}
 
