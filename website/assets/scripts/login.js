@@ -66,9 +66,11 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 }
 
 function serviceDisconnect(service) {
-  const managerUrl = document.body.getAttribute('manager-url');
-  fetch(`${managerUrl}/session/${service}/disconnect`, {
-    method: 'POST'
+  const managerUrl = (window.OW && window.OW.api && window.OW.api.base) || document.body.getAttribute('manager-url');
+  const disconnectEndpoint = window.OW.api.paths.oauth.disconnect;
+  const url = `${managerUrl}${disconnectEndpoint.path.replace('{service}', service)}`;
+  fetch(url, {
+    method: disconnectEndpoint.method
   }).then(response => {
     if (response.status === 200) {
       console.log('Код ответа равен 200!');

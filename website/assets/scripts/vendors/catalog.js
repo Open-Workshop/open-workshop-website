@@ -14,6 +14,10 @@ const masonrySettings = {
 // Ресайз карточек при изменении размера окна браузера (обязательно кратен ширине карточки)
 var msnry = new Masonry('#cards', {...{itemSelector: '.card:not([fixed])'}, ...masonrySettings})
 
+const owConfig = window.OW || {}
+const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
+const apiPaths = (owConfig.api && owConfig.api.paths) || {}
+
 window.addEventListener('resize', function(event) {
     Catalog.masonry()
 })
@@ -62,8 +66,9 @@ window.Catalog = {
         }
 
         // Запрос
-        const managerUrl = document.body.getAttribute('manager-url');
-        const url = managerUrl + (settings.get('sgame', 'yes') == 'yes' ? '/list/games/' : '/list/mods/') + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
+        const gamesPath = apiPaths.game.list.path
+        const modsPath = apiPaths.mod.list.path
+        const url = managerUrl + (settings.get('sgame', 'yes') == 'yes' ? gamesPath : modsPath) + URLManager.genString(settings, new Dictionary({'size': 'page_size'}))
         console.log(url)
 
         let response = await fetch(url, {method: 'GET', redirect: 'follow', credentials: 'include'})

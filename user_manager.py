@@ -2,6 +2,7 @@ from aiohttp import ClientSession
 from flask import request, make_response, render_template
 import copy
 import ow_config as config
+import app_config
 
 
 class UserHandler:
@@ -42,7 +43,8 @@ class UserHandler:
             self.profile = False
             return
         
-        code, result = await self.fetch(f"/profile/info/{uid}?general=true&rights=true")
+        profile_info_path = app_config.api_path("profile", "info").format(user_id=uid)
+        code, result = await self.fetch(f"{profile_info_path}?include=general,rights")
         self.response = result
         self.response_code = code
         
@@ -51,7 +53,8 @@ class UserHandler:
             if not avatar_url:
                 result['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
             elif avatar_url.startswith("local"):
-                result['general']['avatar_url'] = f"{ config.MANAGER_ADDRESS }/profile/avatar/{uid}"
+                avatar_path = app_config.api_path("profile", "avatar").format(user_id=uid)
+                result['general']['avatar_url'] = f"{ config.MANAGER_ADDRESS }{avatar_path}"
             
             self.id = uid
             self.profile = result.get('general', False)
@@ -158,7 +161,14 @@ class UserHandler:
             return response.status, content
 
     def render(self, filename: str, **kwargs) -> str:
-        return render_template(filename, manager_address=config.MANAGER_ADDRESS, user_profile=self.profile, **kwargs)
+        return render_template(
+            filename,
+            manager_address=config.MANAGER_ADDRESS,
+            storage_address=config.STORAGE_ADDRESS,
+            user_profile=self.profile,
+            ow=app_config.PUBLIC_CONFIG,
+            **kwargs,
+        )
 
     def finish(self, page: str) -> make_response:
         """

@@ -4,6 +4,10 @@ let outOfCards = false
 
 let warns = [false, false, false]
 
+const owConfig = window.OW || {}
+const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
+const apiPaths = (owConfig.api && owConfig.api.paths) || {}
+
 
 
 $(document).ready(async function() {
@@ -28,10 +32,12 @@ $(document).ready(async function() {
 
 
     if (params.get('game', '') != '') {
-        const managerUrl = document.body.getAttribute('manager-url');
+        const gameListPath = apiPaths.game.list.path
+        const resourcesPath = apiPaths.resource.list.path
+        const gameIds = '[' + params.get('game', '') + ']'
         const [gameResponse, logoResponse] = await Promise.all([
-            fetch(`${managerUrl}/list/games/?allowed_ids=['+params.get('game', '')+']`),
-            fetch(`${managerUrl}/list/resources/games/['+params.get('game', '')+']?types_resources=["logo"]&only_urls=true`)
+            fetch(`${managerUrl}${gameListPath}?allowed_ids=${gameIds}`),
+            fetch(`${managerUrl}${resourcesPath}?owner_type=games&owner_ids=${gameIds}&types_resources=[\"logo\"]&only_urls=true`)
         ]);
 
         if (gameResponse.ok && logoResponse.ok) {

@@ -1,6 +1,10 @@
 
 const containerTags = $('div#tags-edit-selected-tags');
 const searchContainer = $("#tags-edit-search-tags");
+const owConfig = window.OW || {}
+const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
+const apiPaths = (owConfig.api && owConfig.api.paths) || {}
+const tagsPath = apiPaths.tag.list.path
 
 window.TagsSelector = {
     async searchRequestTagUpdate() {
@@ -10,8 +14,7 @@ window.TagsSelector = {
         pNoInList.addClass('hiden');
         searchContainer.addClass('hiden');
 
-        const managerUrl = document.body.getAttribute('manager-url');
-        const ref = await fetch(`${managerUrl}/list/tags?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val(), {
+        const ref = await fetch(`${managerUrl}${tagsPath}?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val(), {
             credentials: 'include'
         });
 
@@ -79,8 +82,7 @@ window.TagsSelector = {
     async setDefaultSelectedTags(tags) {
         if (tags.length == 0) return;
 
-        const managerUrl = document.body.getAttribute('manager-url');
-        const url = `${managerUrl}/list/tags?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
+        const url = `${managerUrl}${tagsPath}?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
         
         const ref = await fetch(url, {
             credentials: 'include'

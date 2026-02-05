@@ -1,0 +1,14 @@
+<div id="page-rights" style="flex-direction: column;" class="user-container-settings rights-cont">
+  {% for group in ow.rights.groups %}
+    {% for right_id in group %}
+    <div>
+      <input type="checkbox"
+        id="checkbox-rights-edit-{{ right_id }}"
+        {% if user_data.rights[right_id] %}startdata checked{% endif %}
+        {% if right_id == 'admin' %}disabled{% elif not user_access.admin %}disabled{% endif %} />
+      <p>{{ rights_labels[right_id] }}</p>
+    </div>
+    {% endfor %}
+    {% if not loop.last %}<hr>{% endif %}
+  {% endfor %}
+</div>

@@ -1,6 +1,11 @@
 
 const containerDependencies = $('#mod-dependence-selected');
 const searchedDependencies = $('#dependence-edit-search-dependence');
+const owConfig = window.OW || {}
+const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
+const apiPaths = (owConfig.api && owConfig.api.paths) || {}
+const modsPath = apiPaths.mod.list.path
+const resourcesPath = apiPaths.resource.list.path
 
 function editModDependence(dependenc) {
     dependenc = $(dependenc);
@@ -53,8 +58,7 @@ async function searchRequestDependenceUpdate() {
     pNoInList.addClass('hiden');
     searchedDependencies.addClass('hiden');
 
-    const managerUrl = document.body.getAttribute('manager-url');
-    const ref = await fetch(`${managerUrl}/list/mods/?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val(), {
+    const ref = await fetch(`${managerUrl}${modsPath}?page_size=5&game=`+searchInput.attr('gameid')+'&name=' + searchInput.val(), {
         credentials: 'include'
     });
     const data = await ref.json();
@@ -93,7 +97,7 @@ async function searchRequestDependenceUpdate() {
         searchedDependencies.append($dependenceSelected);
     })
     
-    const refImgs = await fetch(`${managerUrl}/list/resources_mods/[${ids}]?types_resources=["logo"]`, {
+    const refImgs = await fetch(`${managerUrl}${resourcesPath}?owner_type=mods&owner_ids=[${ids}]&types_resources=[\"logo\"]`, {
         credentials: 'include'
     });
     const dataImgs = await refImgs.json();

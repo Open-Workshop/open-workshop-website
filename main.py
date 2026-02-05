@@ -8,6 +8,7 @@ import os
 import sitemapper as sitemapper
 from user_manager import UserHandler
 import ow_config
+import app_config
 
 
 app = Flask(__name__, template_folder='website')
@@ -20,48 +21,29 @@ SHORT_WORDS = [
 js_datetime = "%Y-%m-%d %H:%M:%S"
 
 
-@app.route('/')
-@app.route('/index')
-@app.route('/index.html')
-@app.route('/about')
-@app.route('/about.html')
-@app.route('/apis')
-@app.route('/apis.html')
-@app.route('/legal/cookies')
-@app.route('/legal/cookies.html')
-@app.route('/legal/license')
-@app.route('/legal/license.html')
-@app.route('/legal/site-rules')
-@app.route('/legal/site-rules.html')
-@app.route('/legal/copyright')
-@app.route('/legal/copyright.html')
-@app.route('/legal/privacy-policy')
-@app.route('/legal/privacy-policy.html')
 async def unified_route():
     url = request.path
     if url == '/': url = '/index'
     if not url.endswith('.html'): url += '.html'
 
     async with UserHandler() as handler:
-        page_html = handler.render(url[1:],
-                                   catalog=(url=='/index.html'),
-                                   storage_address=ow_config.STORAGE_ADDRESS)
+        page_html = handler.render(url[1:], catalog=(url=='/index.html'))
         return handler.finish(page_html)
 
 
-@app.route('/mod/<int:mod_id>')
-@app.route('/mod/<int:mod_id>.html')
-@app.route('/mod/<int:mod_id>/edit')
-@app.route('/mod/<int:mod_id>/edit.html')
 async def mod_view_and_edit(mod_id):
     launge = "ru"
 
     async with UserHandler() as handler:
         # Определяем запросы
+        info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
+        resources_path = app_config.api_path("mod", "resources").format(mod_id=mod_id)
+        tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
+
         api_urls = {
-            "info": f"/info/mod/{mod_id}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
-            "resources": f"/list/resources/mods/[{mod_id}]?page_size=30",
-            "tags": f"/list/tags/mods/[{mod_id}]"
+            "info": f"{info_path}?include=dependencies,description,short_description,dates,general,game,authors",
+            "resources": f"{resources_path}?page_size=30",
+            "tags": f"{tags_path}"
         }
 
         # Запрашиваем
@@ -89,8 +71,9 @@ async def mod_view_and_edit(mod_id):
 
         authors = []
         if len(info['authors']) > 0:
+            profile_info_path = app_config.api_path("profile", "info")
             authors_info = await asyncio.gather(
-                *[handler.fetch(f'/profile/info/{author}') for author in info['authors']])
+                *[handler.fetch(profile_info_path.format(user_id=author)) for author in info['authors']])
 
             for status_code, author in authors_info:
                 author_to_add = author['general']
@@ -143,9 +126,11 @@ async def mod_view_and_edit(mod_id):
         dependencies = {}
         if info['dependencies_count'] > 0: # Чекаем, есть ли зависимости
             # Формируем запрос на получение зависимостей
+            mods_list_path = app_config.api_path("mod", "list")
+            dependencies_resources_path = app_config.api_path("resource", "list")
             dependencies_urls = [
-                f'/list/mods/?page_size=50&allowed_ids={info["dependencies"]}',
-                f'/list/resources/mods/{info["dependencies"]}?page_size=30'
+                f'{mods_list_path}?page_size=50&allowed_ids={info["dependencies"]}',
+                f'{dependencies_resources_path}?page_size=30&owner_type=mods&owner_ids={info["dependencies"]}'
             ]
             
             # Запрашиваем
@@ -179,8 +164,6 @@ async def mod_view_and_edit(mod_id):
 
         return handler.finish(page_html)
 
-@app.route('/mod/add')
-@app.route('/mod/add.html')
 async def add_mod():
     async with UserHandler() as handler:
         access = handler.access_to_mod()
@@ -199,15 +182,15 @@ async def add_mod():
 
         return handler.finish(page)
 
-@app.route('/user/<int:user_id>')
-@app.route('/user/<int:user_id>.html')
 async def user(user_id):
     launge = "ru"
 
     async with UserHandler() as handler:
+        profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
+        mods_list_path = app_config.api_path("mod", "list")
         profile_info, user_mods = await asyncio.gather(
-            handler.fetch(f"/profile/info/{user_id}"),
-            handler.fetch(f"/list/mods/?user={user_id}&page_size=4")
+            handler.fetch(profile_info_path),
+            handler.fetch(f"{mods_list_path}?user={user_id}&page_size=4")
         )
 
         profile_info_code, profile_info = profile_info
@@ -239,10 +222,14 @@ async def user(user_id):
         if profile_info['general']['avatar_url'] is None or len(profile_info['general']['avatar_url']) <= 0:
             profile_info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
         elif profile_info['general']['avatar_url'].startswith("local"):
-            profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }/profile/avatar/{user_id}"
+            avatar_path = app_config.api_path("profile", "avatar").format(user_id=user_id)
+            profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }{avatar_path}"
 
         if len(user_mods['results']) > 0:
-            resources_mods_code, resources_mods = await handler.fetch(f'/list/resources/mods/{[i["id"] for i in user_mods["results"]]}?page_size=10&page=0&types_resources=["logo"]')
+            resources_mods_path = app_config.api_path("resource", "list")
+            resources_mods_code, resources_mods = await handler.fetch(
+                f'{resources_mods_path}?page_size=10&page=0&types_resources=["logo"]&owner_type=mods&owner_ids={[i["id"] for i in user_mods["results"]]}'
+            )
 
             mods_data = [
                 {
@@ -270,8 +257,6 @@ async def user(user_id):
 
         return handler.finish(page)
 
-@app.route('/user/<int:user_id>/settings')
-@app.route('/user/<int:user_id>/settings.html')
 async def user_settings(user_id):
     launge = "ru"
 
@@ -285,8 +270,12 @@ async def user_settings(user_id):
             info_profile_code = handler.response_code
             info_profile = handler.response
         else:
+            profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
+            include = "general"
+            if editable["admin"] or editable["my"]:
+                include = "general,rights,private"
             info_profile_code, info_profile = await handler.fetch(
-                f"/profile/info/{user_id}?general=true"+("&rights=true&private=true" if editable["admin"] or editable['my'] else "")
+                f"{profile_info_path}?include={include}"
             )
 
         if info_profile_code != 200:
@@ -314,19 +303,38 @@ async def user_settings(user_id):
         if info_profile['general']['avatar_url'] is None or len(info_profile['general']['avatar_url']) <= 0:
             info_profile['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
         elif info_profile['general']['avatar_url'].startswith("local"):
-            info_profile['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }/profile/avatar/{user_id}"
+            avatar_path = app_config.api_path("profile", "avatar").format(user_id=user_id)
+            info_profile['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }{avatar_path}"
 
         info_profile['delete_user'] = info_profile['general']['username'] is None
 
         return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable))
 
-@app.route('/user/<int:user_id>/mods')
-@app.route('/user/<int:user_id>/mods.html')
 async def user_mods(user_id):
     return await tool.error_page(
         error_title='Зайдите попозже...',
         error_body=f'Эта страница вскоре будет доступна! ({user_id})'
     )
+
+
+def register_routes() -> None:
+    for route in app_config.ROUTES["unified_pages"]:
+        app.add_url_rule(route, view_func=unified_route)
+
+    for route in app_config.ROUTES["mod"]["view"]:
+        app.add_url_rule(route, view_func=mod_view_and_edit)
+    for route in app_config.ROUTES["mod"]["add"]:
+        app.add_url_rule(route, view_func=add_mod)
+
+    for route in app_config.ROUTES["user"]["view"]:
+        app.add_url_rule(route, view_func=user)
+    for route in app_config.ROUTES["user"]["settings"]:
+        app.add_url_rule(route, view_func=user_settings)
+    for route in app_config.ROUTES["user"]["mods"]:
+        app.add_url_rule(route, view_func=user_mods)
+
+
+register_routes()
 
 
 @app.route('/api/login-popup')

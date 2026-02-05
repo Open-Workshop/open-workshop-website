@@ -1,0 +1,18 @@
+<pager variants="profile, delete-account, rights, integrate">
+  <label>Навигация</label>
+  {% if not user_data.delete_user %}
+  <button id="page-profile-button" active-in-variant="page-save-button" variant="profile" onclick="Pager.change(this)">Профиль</button>
+  {% endif %}
+  {% if user_access.my or user_access.admin %}
+  {% if not user_data.delete_user %}
+  <button id="page-integrate-button" disabled-in-variant="page-save-button" variant="integrate" onclick="Pager.change(this)">Интеграция</button>
+  {% endif %}
+  <button id="page-rights-button" active-in-variant="page-save-button" variant="rights" onclick="Pager.change(this)">Права</button>
+  {% endif %}
+
+  {% if user_access.my %}
+  <button id="page-delete-account-button" disabled-in-variant="page-save-button" variant="delete-account" onclick="Pager.change(this)">Удалить аккаунт</button>
+  {% endif %}
+
+  <button id="page-save-button" onclick="saveProfile()">Сохранить</button>
+</pager>

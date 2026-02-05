@@ -107,8 +107,9 @@
         */
         function renderNewSelectedGame() {
             $buttonGameName.attr('disabled', '');
+            const gameInfoPath = "{{ ow.api.paths.game.info.path }}";
             // Make a GET request to the API endpoint
-            fetch("{{ manager_address }}/info/game/"+$inputGameID.val(), {method: 'GET'}).then(response => {
+            fetch("{{ ow.api.base }}"+gameInfoPath.replace('{game_id}', $inputGameID.val()), {method: 'GET'}).then(response => {
                 // Parse the JSON response
                 response.json().then(json => {
                     // Update the UI based on the JSON data
@@ -163,7 +164,8 @@
                     }
 
                     // делаем запрос к серверу
-                    response = await fetch('{{ manager_address }}/list/games/?page_size=1&sort=iNAME&name='+$inputGameName.val(), {
+                    const listPath = "{{ ow.api.paths.game.list.path }}";
+                    response = await fetch('{{ ow.api.base }}'+listPath+'?page_size=1&sort=iNAME&name='+$inputGameName.val(), {
                         method: 'GET',
                         credentials: 'include'
                     })

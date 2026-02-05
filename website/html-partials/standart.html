@@ -55,7 +55,7 @@
 
     <link rel="preload" as="image" href="/assets/images/loading.webp"/>
     <link rel="prefetch" as="image" href="/assets/images/image-not-found.webp"/>
-    <link rel="preconnect" href="{{ manager_address }}" />
+    <link rel="preconnect" href="{{ ow.api.base }}" />
     <link rel="canonical" href="https://openworkshop.miskler.ru">
     {% endif %}
     
@@ -67,8 +67,11 @@
     <meta name="msvalidate.01" content="93E9A08A2C90737FB01BF7BE50B2433F" />
     <link href="/assets/styles/vendors/toast.min.css" rel="stylesheet"/>
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
+    <script>
+      window.OW = {{ ow | tojson }};
+    </script>
   </head>
-  <body manager-url="{{ manager_address }}">
+  <body manager-url="{{ ow.api.base }}">
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
         (function(m,e,t,r,i,k,a){

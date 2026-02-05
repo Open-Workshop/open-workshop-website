@@ -1,0 +1,120 @@
+#page-in-mod-page,
+#page-in-catalog-view,
+#page-params-mod,
+#main-mod-edit {
+  transition: opacity 0.1s;
+}
+
+#main-mod-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+}
+
+.mod-edit-article {
+  background-color: var(--main-panel-on-page-background);
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+  padding: 0;
+  position: relative;
+  width: 900pt;
+}
+
+.mod-edit-nav {
+  background: #34374500;
+  display: flex;
+  padding: 3pt;
+  position: absolute;
+}
+
+.mod-edit-article div.navigation {
+  display: flex;
+}
+
+.mod-edit-nav .navigation button {
+  border-radius: 10px;
+  background-color: #d9d9d9;
+  border: none;
+  width: 35pt;
+  height: 35pt;
+  margin: 1pt;
+  transition: all 0.1s;
+}
+
+.mod-edit-nav .navigation button:hover {
+  background-color: #c5c5c5;
+}
+
+.mod-edit-nav .navigation button:active {
+  background-color: #b3b3b3;
+}
+
+.mod-edit-nav .navigation button.toggle {
+  background-color: #9899ac;
+}
+
+.mod-edit-nav .navigation button.toggle:hover {
+  background-color: #7e7f8f;
+}
+
+.mod-edit-nav .navigation button.toggle:active {
+  background-color: #6c6d7a;
+}
+
+.mod-edit-nav .standart-panel {
+  background-color: var(--panel-on-page-background);
+  border-radius: 5pt;
+  padding: 3pt;
+  margin-bottom: 3pt;
+}
+
+input.title-mod {
+  border-radius: 0pt;
+  border-top-left-radius: 10pt;
+  background: #302e3f;
+  border: solid #939393;
+  color: white;
+  max-width: calc(66% - 105pt);
+  height: 100%;
+  font-size: 20pt;
+  transition: border background 0.1s;
+}
+
+input.title-mod:hover {
+  border: solid #7e7e7e;
+  background: #2b2938;
+}
+
+input.title-mod:focus {
+  border: solid #6b6b6b;
+  background: #252330;
+}
+
+button.public-mod-toggle {
+  border-bottom-right-radius: 5pt;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  background: #212029;
+  border: solid #777777;
+}
+
+button.public-mod-toggle > img {
+  color: #d9d9d9;
+  width: 70%;
+}
+
+button.public-mod-toggle:hover {
+  background: #1d1c24;
+  border: solid #6e6e6e;
+}
+
+button.public-mod-toggle:active {
+  background: #19181f;
+  border: solid #646464;
+}
+
+#page-in-catalog-view {
+  width: 100%;
+}

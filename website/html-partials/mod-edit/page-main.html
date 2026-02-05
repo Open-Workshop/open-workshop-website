@@ -1,0 +1,46 @@
+<div style="width: 100%; display: flex; margin: 3.5pt;" id="page-in-mod-page">
+  <div style="width: 70%;">
+    <div style="display: flex; margin-left: -4pt; margin-top: -4pt; height: 57px;">
+      <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ info['result']['name'] }}" value="{{ info['result']['name'] }}">
+      <button onclick="toggleNextPublic()" class="public-mod-toggle anime-scale" startdata="{{ info['result']['public'] }}" public-mode="{{ info['result']['public'] }}">
+        <img src="" alt="Иконка режима публичности">
+      </button>
+    </div>
+      
+    <div style="margin: 5pt;">
+      <div style="display: flex; justify-content: space-between; padding: 5pt;">
+        <div class="navigation">
+          <button onclick="fullEditView(false)">
+            <img src="/assets/images/edit-ico.svg" alt="Иконка 'редактирование'">
+          </button>
+          
+          <button onclick="fullEditView(true)">
+            <img src="/assets/images/eye-ico.svg" alt="Иконка 'предпросмотр'">
+          </button>
+        </div>
+
+        <div class="navigation">
+          <button onclick="toggleHelpMode($(this))">
+            <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
+          </button>
+        </div>
+      </div>
+
+      {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=info['result']['description'] %}
+        {% include 'html-partials/desc-edit.html' %}
+      {% endwith %} 
+      
+      <article id="mod-description" style="display: none;"></article>
+    </div>
+  </div>
+
+  <div style="width: 30%;">
+    {% include 'html-partials/screenshots-edit.html' %}
+    
+    {% with game=info["result"]["game"]["id"] %}
+      {% include 'html-partials/tags-edit.html' %}
+    {% endwith %}
+
+    {% include 'html-partials/mod-dependence-edit.html' %}
+  </div>
+</div>

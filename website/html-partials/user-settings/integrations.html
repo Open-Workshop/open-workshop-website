@@ -1,0 +1,20 @@
+<div id="page-integrate" class="user-container-settings">
+  {% for provider in ow.site.auth_providers %}
+  <button class="service"
+    {% if not user_access.my %}disabled{% endif %}
+    {% if user_access.my and not user_data.private[provider.id] %}onclick="serviceConnect('{{ ow.api.base }}{{ provider.path }}')"{% endif %}
+    {% if user_access.my and user_data.private[provider.id] %}onclick="serviceDisconnect('{{ provider.id }}')"{% endif %}>
+    <img src="{{ provider.icon }}" alt="{{ provider.label }} logo" onerror="handlerImgErrorLoad(this)">
+    <p>
+      {% if user_access.my %}
+        {% if user_data.private[provider.id] %}Отвязать{% endif %}
+        {% if not user_data.private[provider.id] %}Привязать{% endif %}
+      {% endif %}
+      {% if not user_access.my %}
+        {% if not user_data.private[provider.id] %}Не подключен{% endif %}
+        {% if user_data.private[provider.id] %}Подключен{% endif %}
+      {% endif %}
+    </p>
+  </button>
+  {% endfor %}
+</div>

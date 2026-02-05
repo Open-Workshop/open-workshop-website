@@ -13,86 +13,6 @@
             <div id="all-games-search-results"></div>
             
             <p id="show-more-count">И ещё 10 шт...</p>
-
-            <script>
-                searchUpdateInput();
-                
-                async function searchUpdateInput() {
-                    $('div.popup-game-select').addClass('reset');
-
-                    const ref = await fetch('{{ manager_address }}/list/games/?page_size=5&name=' + $('input#search-update-input').val(), {
-                        credentials: 'include'
-                    });
-                    const data = await ref.json()
-
-                    clearSearchResults();
-                    noInList(data.database_size-data.results.length)
-                    
-                    data.results.forEach(t => {
-                        addNewGameResult(t.name, t.id, t.logo);
-                    })
-
-                    console.log(data)
-
-                    $('div.popup-game-select').removeClass('reset');
-                }
-
-                function clearSearchResults() {
-                    $('div#all-games-search-results').empty();
-                }
-
-                function noInList(number) {
-                    const pNoInList = $('p#show-more-count');
-                    pNoInList.text("И ещё " + number + " шт...");
-
-                    if (number <= 0) {
-                        pNoInList.attr('hidden', '')
-                    } else {
-                        pNoInList.removeAttr('hidden');
-                    }
-                }
-
-                function addNewGameResult(gameName, gameID, gameLogo) {
-                    // Создание элемента div с классом "in-popup-game-card" и "test-two"
-                    var newDiv = $('<div/>', {
-                        class: 'in-popup-game-card',
-                        gameid: gameID,
-                        style: '--logo-game: url("'+gameLogo+'");',
-                        onclick: "gameSelected($(this))",
-                        title: gameName
-                    });
-
-                    // Создание элемента img с атрибутами src и alt
-                    var newImg = $('<img/>', {
-                        src: gameLogo,
-                        alt: 'Лого игры',
-                        onerror: 'handlerImgErrorLoad(this)',
-                    });
-
-                    // Создание элемента p с текстом "VoxelEngine"
-                    var newP = $('<p/>', {
-                        text: gameName
-                    });
-
-                    // Добавление img и p внутрь div
-                    newDiv.append(newImg, newP);
-
-                    // Добавление div на страницу
-                    $('div#all-games-search-results').append(newDiv);
-                }
-            
-                function gameSelected(element) {
-                    const gameSelectCard = $('div.select-game-menu');
-
-                    gameSelectCard.children('p').text(element.children('p').text());
-                    $('img.game-select-logo').attr('src', element.children('img').attr('src'));
-                    gameSelectCard.attr('gameid', element.attr('gameid'));
-
-                    ['div.select-game-menu', 'div.popup-game-select'].forEach(elementSearchToken => {
-                        document.querySelector(elementSearchToken).classList.remove('active');
-                    });
-                }
-            </script>
         </div>
     </div>
 
@@ -237,24 +157,9 @@
             width: 100%;
             height: 100%;
             backdrop-filter: blur(5px);
-            background-color: rgb(33 33 33 / 63%); /* замените на ваш цвет и прозрачность */
+            background-color: rgb(33 33 33 / 63%);
             z-index: -1;
             border-radius: 5pt;
         }
     </style>
-
-    <script>
-        function stateMachineGameSelect() {
-            const select = document.querySelector('div.select-game-menu');
-            const popup = document.querySelector('div.popup-game-select');
-
-            if (select.classList.contains('active')) {
-                select.classList.remove('active');
-                popup.classList.remove('active');
-            } else {
-                select.classList.add('active');
-                popup.classList.add('active');
-            }
-        }
-    </script>
 </div>
