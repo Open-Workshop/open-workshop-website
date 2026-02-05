@@ -44,7 +44,7 @@ class UserHandler:
             return
         
         profile_info_path = app_config.api_path("profile", "info").format(user_id=uid)
-        code, result = await self.fetch(f"{profile_info_path}?include=general,rights")
+        code, result = await self.fetch(f"{profile_info_path}?general=true&rights=true")
         self.response = result
         self.response_code = code
         

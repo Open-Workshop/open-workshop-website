@@ -36,7 +36,7 @@ window.Catalog = {
         settings.set('statistics', true)
 
         // Заменяем кастомные ключи на стандартные
-        const keys = [['depen', 'dependencies']]
+        const keys = [['depen', 'independents']]
         keys.forEach(key => {
             if (settings.get(key[0]) != undefined) {
                 console.log(key[0], key[1], settings.get(key[0]))
@@ -46,7 +46,7 @@ window.Catalog = {
         })
         // Заменяем кастомные значения на стандартные
         const values = new Dictionary({
-            'dependencies': {'yes': 'true', 'no': 'false'}, 
+            'independents': {'yes': 'true', 'no': 'false'}, 
             'sort': {
                 'DOWNLOADS': 'MOD_DOWNLOADS', 'iDOWNLOADS': 'iMOD_DOWNLOADS',
                 'CREATION': 'CREATION_DATE', 'iCREATION': 'iCREATION_DATE',

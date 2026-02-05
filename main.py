@@ -41,7 +41,7 @@ async def mod_view_and_edit(mod_id):
         tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
 
         api_urls = {
-            "info": f"{info_path}?include=dependencies,description,short_description,dates,general,game,authors",
+            "info": f"{info_path}?dependencies=true&description=true&short_description=true&dates=true&general=true&game=true&authors=true",
             "resources": f"{resources_path}?page_size=30",
             "tags": f"{tags_path}"
         }
@@ -271,11 +271,14 @@ async def user_settings(user_id):
             info_profile = handler.response
         else:
             profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
-            include = "general"
-            if editable["admin"] or editable["my"]:
-                include = "general,rights,private"
+            include_general = True
+            include_rights = editable["admin"] or editable["my"]
+            include_private = editable["admin"] or editable["my"]
+            query = f"?general={'true' if include_general else 'false'}"
+            query += f"&rights={'true' if include_rights else 'false'}"
+            query += f"&private={'true' if include_private else 'false'}"
             info_profile_code, info_profile = await handler.fetch(
-                f"{profile_info_path}?include={include}"
+                f"{profile_info_path}{query}"
             )
 
         if info_profile_code != 200:

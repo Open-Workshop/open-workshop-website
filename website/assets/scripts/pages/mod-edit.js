@@ -218,7 +218,8 @@
 
     for (const l of logos.new) {
       const fd = new FormData();
-      fd.append('resource_type_name', l.type);
+      fd.append('owner_type', 'mods');
+      fd.append('resource_type', l.type);
       fd.append('resource_url', l.url);
       fd.append('resource_owner_id', modID);
       await send(apiUrl(addEndpoint.path), addEndpoint.method, fd);
