@@ -2,6 +2,7 @@ from flask import Flask, render_template, send_from_directory, request, make_res
 from pathlib import Path
 from babel import dates
 import datetime
+from zoneinfo import ZoneInfo
 import asyncio
 import tool
 import os
@@ -19,6 +20,26 @@ SHORT_WORDS = [
 
 
 js_datetime = "%Y-%m-%d %H:%M:%S"
+
+
+def _get_local_tz() -> datetime.tzinfo:
+    tz_name = getattr(ow_config, "TIMEZONE", None)
+    if tz_name:
+        try:
+            return ZoneInfo(tz_name)
+        except Exception:
+            pass
+    return datetime.datetime.now().astimezone().tzinfo
+
+
+LOCAL_TZ = _get_local_tz()
+
+
+def parse_api_datetime(value: str) -> datetime.datetime:
+    dt = datetime.datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return dt.astimezone(LOCAL_TZ)
 
 
 async def unified_route():
@@ -127,7 +148,7 @@ async def mod_view_and_edit(mod_id):
         info["no_many_screenshots"] = len(resources["results"]) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
-            input_date = datetime.datetime.fromisoformat(info['result'][key])
+            input_date = parse_api_datetime(info['result'][key])
             info['result'][f'{key}_js'] = input_date.strftime(js_datetime)
             info['result'][key] = dates.format_date(input_date, locale=launge)
 
@@ -215,11 +236,11 @@ async def user(user_id):
             return handler.finish(handler.render("error.html", error="Профиль удален", error_title="Этот профиль удален!")), 404
 
         if profile_info["general"]["mute"]:
-            input_date = datetime.datetime.fromisoformat(profile_info["general"]["mute"])
-            profile_info["general"]["mute_js"] = profile_info["general"]["mute"]
+            input_date = parse_api_datetime(profile_info["general"]["mute"])
+            profile_info["general"]["mute_js"] = input_date.strftime(js_datetime)
             profile_info["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
-        input_date = datetime.datetime.fromisoformat(profile_info['general']['registration_date'])
+        input_date = parse_api_datetime(profile_info['general']['registration_date'])
         profile_info['general']['registration_date_js'] = input_date.strftime(js_datetime)
         profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
@@ -299,8 +320,8 @@ async def user_settings(user_id):
             ), info_profile_code
 
         if info_profile["general"]["mute"]:
-            input_date = datetime.datetime.fromisoformat(info_profile["general"]["mute"])
-            info_profile["general"]["mute_js"] = info_profile["general"]["mute"]
+            input_date = parse_api_datetime(info_profile["general"]["mute"])
+            info_profile["general"]["mute_js"] = input_date.strftime(js_datetime)
             info_profile["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
         if info_profile['general']['about'] is None or len(info_profile['general']['about']) <= 0:
@@ -309,7 +330,7 @@ async def user_settings(user_id):
         else:
             info_profile['general']['about_enable'] = True
 
-        input_date = datetime.datetime.fromisoformat(info_profile['general']['registration_date'])
+        input_date = parse_api_datetime(info_profile['general']['registration_date'])
         info_profile['general']['registration_date_js'] = input_date.strftime(js_datetime)
         info_profile['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
