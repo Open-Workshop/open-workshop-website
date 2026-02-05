@@ -64,7 +64,17 @@ async def mod_view_and_edit(mod_id):
             return handler.finish(handler.render("error.html", error=info, error_title='Ошибка')), info_code
         else:
             # Вторичная (косметическая на самом деле) распаковка
-            tags = tags[str(mod_id)]
+            if isinstance(tags, dict):
+                if str(mod_id) in tags:
+                    tags = tags[str(mod_id)]
+                elif "results" in tags:
+                    tags = tags["results"]
+                elif "tags" in tags:
+                    tags = tags["tags"]
+                else:
+                    tags = []
+            elif tags is None:
+                tags = []
 
         user_is_author = False
         user_is_owner = False
