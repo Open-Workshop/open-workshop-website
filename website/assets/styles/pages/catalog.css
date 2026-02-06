@@ -19,6 +19,39 @@ div#settings-catalog > div#settings-menu {
     top: 75px;
 }
 
+.catalog-filter {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    background: var(--panel-on-page-background);
+    border: 1px solid var(--border-color);
+}
+
+.catalog-filter__label {
+    font-size: 0.95rem;
+    color: #ffffff;
+}
+
+.catalog-filter__clear {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    border-radius: 999px;
+    background: #2a2d3a;
+    border: 1px solid var(--border-color-strong);
+    font-size: 18px;
+    line-height: 1;
+}
+
+.catalog-filter__clear:hover {
+    background: #34374a;
+}
+
 div#settings-catalog > div#settings-menu > hr, div#settings-catalog > div#settings-menu > setting {
     width: 100%;
     max-width: 400px;

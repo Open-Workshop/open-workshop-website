@@ -10,6 +10,13 @@
     </balloon>
 
     <div id="settings-menu">
+      {% if catalog_user %}
+      <div class="catalog-filter" id="catalog-user-filter" data-user-id="{{ catalog_user.id }}" data-user-name="{{ catalog_user.username }}">
+        <span class="catalog-filter__label">Моды {{ catalog_user.username }}</span>
+        <button class="catalog-filter__clear" type="button" onclick="clearUserFilter()" title="Сбросить фильтр">×</button>
+      </div>
+      {% endif %}
+
       <setting class="in-full with-events">
         <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
       </setting>
@@ -104,5 +111,9 @@
 {% endblock %}
 
 {% block title %}
-Open Workshop: Catalog
+{% if catalog_user %}Моды {{ catalog_user.username }} - Open Workshop{% else %}Open Workshop: Catalog{% endif %}
+{% endblock %}
+
+{% block description %}
+{% if catalog_user %}Каталог модов пользователя {{ catalog_user.username }}{% else %}Каталог модов Open Workshop{% endif %}
 {% endblock %}

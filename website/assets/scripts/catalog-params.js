@@ -109,6 +109,16 @@
     resetCatalog();
   };
 
+  window.clearUserFilter = function clearUserFilter() {
+    URLManager.updateParams([
+      new Dictionary({ key: 'user', value: '', default: '' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+    const filterEl = document.getElementById('catalog-user-filter');
+    if (filterEl) filterEl.remove();
+    resetCatalog();
+  };
+
   async function render(params) {
     const res = await Catalog.addPage(params);
     try {
@@ -141,6 +151,21 @@
 
   $(document).ready(async function () {
     const params = URLManager.getParams();
+    const filterEl = document.getElementById('catalog-user-filter');
+    if (filterEl) {
+      const userId = filterEl.getAttribute('data-user-id');
+      const currentUser = params.get('user', '');
+      const currentSGame = params.get('sgame', 'yes');
+      if (currentUser !== String(userId) || currentSGame !== 'no') {
+        URLManager.updateParams([
+          new Dictionary({ key: 'user', value: String(userId), default: '' }),
+          new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
+          new Dictionary({ key: 'page', value: 0 }),
+        ]);
+        params.set('user', String(userId));
+        params.set('sgame', 'no');
+      }
+    }
     const sgame = params.get('sgame', 'yes') == 'yes';
 
     $('setting#depen').find('input').attr('checked', params.depen == 'yes');

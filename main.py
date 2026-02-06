@@ -139,7 +139,7 @@ async def mod_view_and_edit(mod_id):
         for image in resources["results"]: # Ищем логотип мода
             if image and image["type"] == "logo":
                 info["result"]["logo"] = image["url"] # Фиксируем, что нашли его
-                if len(resources["results"]) > 1: # Если по мимо него есть скриншоты - выбиваем из окна скриншотов (по принципу либо это(лого), либо того(скриншоты))
+                if not edit_page and len(resources["results"]) > 1: # На странице просмотра исключаем логотип из списка скриншотов
                     resources["results"].remove(image)
                 break
         else:
@@ -270,10 +270,13 @@ async def user(user_id):
                 }
                 for i in user_mods['results']
             ]
+            mods_by_id = {item["id"]: item for item in mods_data}
 
             print(resources_mods)
-            for resource in resources_mods['results']:
-                mods_data[resource['owner_id']]['img'] = resource['url']
+            for resource in resources_mods.get('results', []):
+                mod_entry = mods_by_id.get(int(resource.get('owner_id', -1)))
+                if mod_entry:
+                    mod_entry['img'] = resource.get('url', '')
 
             user_mods = {
                 'not_show_all': len(user_mods['results']) > 3,
@@ -345,10 +348,25 @@ async def user_settings(user_id):
         return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable))
 
 async def user_mods(user_id):
-    return await tool.error_page(
-        error_title='Зайдите попозже...',
-        error_body=f'Эта страница вскоре будет доступна! ({user_id})'
-    )
+    async with UserHandler() as handler:
+        profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
+        profile_code, profile_info = await handler.fetch(profile_info_path)
+
+        if profile_code != 200:
+            return handler.finish(handler.render(
+                "error.html",
+                error=profile_info,
+                error_title=f'Ошибка ({profile_code})')
+            ), profile_code
+
+        username = profile_info.get("general", {}).get("username") or f"Пользователь {user_id}"
+        catalog_user = {
+            "id": user_id,
+            "username": username
+        }
+
+        page = handler.render("index.html", catalog=True, catalog_user=catalog_user)
+        return handler.finish(page)
 
 
 def register_routes() -> None:
@@ -374,7 +392,6 @@ register_routes()
 @app.route('/api/login-popup')
 async def login_popup():
     return render_template("login-popup.html", link=request.args.get('f'), russia=not bool(request.cookies.get('fromRussia')))
-
 
 @app.route('/<path:filename>')
 async def serve_static(filename):

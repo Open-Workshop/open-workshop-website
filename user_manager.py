@@ -144,8 +144,14 @@ class UserHandler:
                 self.cookies[key] = cookie.value
                 self.changed_cookies[key] = cookie
                 # Обновляем параметры куки, если они есть
+                max_age = cookie.get('max-age')
+                if max_age is not None and not isinstance(max_age, int):
+                    try:
+                        max_age = int(float(max_age))
+                    except (ValueError, TypeError):
+                        max_age = None
                 self.cookie_params[key] = {
-                    'max_age': cookie.get('max-age'),
+                    'max_age': max_age,
                     'secure': cookie.get('secure'),
                     'httponly': cookie.get('httponly'),
                     'path': cookie.get('path', '/'),
