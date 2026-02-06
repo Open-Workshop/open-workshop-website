@@ -57,6 +57,7 @@
     initCatalogPreview();
     initPublicToggle();
     fullEditView(false);
+    initDeleteModControl();
   });
 
   function initCatalogPreview() {
@@ -363,6 +364,17 @@
     $fullModDescView.html(Formating.syntax2HTML($fullModDescEdit.find('textarea.editing').val()));
   };
 
+  function initDeleteModControl() {
+    const confirmInput = document.getElementById('delete-mod-confirm');
+    const deleteButton = document.getElementById('delete-mod-button');
+    if (!confirmInput || !deleteButton) return;
+    const sync = () => {
+      deleteButton.disabled = !confirmInput.checked;
+    };
+    confirmInput.addEventListener('change', sync);
+    sync();
+  }
+
   async function send(url, method, body = null) {
     try {
       const res = await fetch(url, { method, body, credentials: 'include' });
@@ -477,6 +489,34 @@
       await send(url, delEndpoint.method);
     }
   }
+
+  window.uploadModVersion = async function uploadModVersion() {
+    const input = document.getElementById('mod-file-input');
+    if (!input || !input.files || !input.files[0]) {
+      new Toast({ title: 'Файл не выбран', text: 'Выберите архив мода', theme: 'info' });
+      return;
+    }
+    const file = input.files[0];
+    const endpoint = apiPaths.mod.edit;
+    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
+    const fd = new FormData();
+    fd.append('mod_file', file);
+    await send(url, endpoint.method, fd);
+    new Toast({ title: 'Готово', text: 'Новая версия загружена', theme: 'success' });
+    location.reload();
+  };
+
+  window.deleteMod = async function deleteMod() {
+    const confirmInput = document.getElementById('delete-mod-confirm');
+    if (confirmInput && !confirmInput.checked) return;
+    if (!confirm('Удалить мод без возможности восстановления?')) return;
+    const endpoint = apiPaths.mod.delete;
+    const url = window.OWCore.apiUrl(endpoint.path);
+    const body = new URLSearchParams({ mod_id: String(modID) });
+    await send(url, endpoint.method, body);
+    new Toast({ title: 'Удалено', text: 'Мод удален', theme: 'success' });
+    location.href = '/';
+  };
 
   function getChangesTags() {
     const box = $('div#tags-edit-selected-tags');

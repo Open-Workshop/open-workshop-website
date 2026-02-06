@@ -265,6 +265,56 @@ button.public-mod-toggle:active {
   margin-top: 24px;
 }
 
+.mod-edit__params {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mod-edit__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.mod-edit__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mod-edit__file {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
+.mod-edit__confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.mod-edit__panel--danger {
+  border: 1px solid #4a2020;
+  background: #1a1012;
+}
+
+.mod-edit__panel--danger .button-style {
+  background-color: #7a1f1f;
+}
+
+.mod-edit__panel--danger .button-style:hover {
+  background-color: #8c2424;
+}
+
+.mod-edit__panel--danger .button-style:active {
+  background-color: #6a1a1a;
+}
+
 @media screen and (max-width: 980px) {
   .mod-edit__split {
     grid-template-columns: 1fr;

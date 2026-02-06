@@ -69,6 +69,7 @@ PUBLIC_CONFIG: dict = {
                 "edit": {"method": "PATCH", "path": "/mods/{mod_id}"},
                 "info": {"method": "GET", "path": "/mods/{mod_id}"},
                 "download": {"method": "GET", "path": "/mods/{mod_id}/download"},
+                "delete": {"method": "DELETE", "path": "/delete/mod"},
                 "resources": {"method": "GET", "path": "/mods/{mod_id}/resources"},
                 "tags": {"method": "GET", "path": "/mods/{mod_id}/tags"},
                 "dependencies": {"method": "GET", "path": "/mods/{mod_id}/dependencies"},

@@ -1,5 +1,22 @@
 <div id="page-params-mod" class="mod-edit__page">
   <div class="mod-edit__params">
-    Страница всяких настроек
+    <div class="standart-panel mod-edit__panel">
+      <h3>Новая версия мода</h3>
+      <p class="ow-muted">Загрузите новый архив. Лимит 800 МБ.</p>
+      <div class="mod-edit__row">
+        <input id="mod-file-input" type="file" class="mod-edit__file" />
+        <button class="button-style" type="button" onclick="uploadModVersion()">Загрузить</button>
+      </div>
+    </div>
+
+    <div class="standart-panel mod-edit__panel mod-edit__panel--danger">
+      <h3>Удаление мода</h3>
+      <p class="ow-muted">Действие необратимо. Мод и ресурсы будут удалены.</p>
+      <label class="mod-edit__confirm">
+        <input id="delete-mod-confirm" type="checkbox">
+        Подтверждаю удаление
+      </label>
+      <button id="delete-mod-button" class="button-style" type="button" onclick="deleteMod()" disabled>Удалить мод</button>
+    </div>
   </div>
 </div>

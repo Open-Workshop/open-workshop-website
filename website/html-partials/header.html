@@ -32,7 +32,11 @@
                     <a class="header__profile-link" href="/user/{{ user_profile.id }}"></a>
                     <ul>
                         {% for item in ow.site.profile_menu %}
-                        <a href="{{ item.href.format(id=user_profile.id) }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>
+                        {% set href = item.href.format(id=user_profile.id) %}
+                        {% if item.id == 'my_mods' %}
+                        {% set href = href + '?show_not_public=true' %}
+                        {% endif %}
+                        <a href="{{ href }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>
                         {% endfor %}
                         <a onclick="logon()">Выйти</a>
                     </ul>

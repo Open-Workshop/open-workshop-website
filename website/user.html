@@ -21,11 +21,16 @@
         <div>
           {{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %} 
         </div>
-        {% if user_data.general.editable.any %}
-        <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
-          <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
-        </a>
-        {% endif %}
+        <div class="user-profile__actions">
+          {% if user_data.general.editable.admin %}
+          <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true" class="button-style button-style-small user-admin-mods">Моды пользователя</a>
+          {% endif %}
+          {% if user_data.general.editable.any %}
+          <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
+            <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
+          </a>
+          {% endif %}
+        </div>
       </h1>
       <h4 id="mod-tags-title">
           <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
@@ -112,4 +117,3 @@
 {% block metaimage %}
 {{ user_data.general.avatar_url }}
 {% endblock %}
-
