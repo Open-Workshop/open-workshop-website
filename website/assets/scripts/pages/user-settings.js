@@ -3,6 +3,7 @@
   if (!root) return;
 
   const apiPaths = window.OWCore.getApiPaths();
+  const ow = window.OWCore.getConfig ? window.OWCore.getConfig() : (window.OW || {});
   const rightsList = (ow.rights && ow.rights.list) || [];
   const userId = root.dataset.userId;
 

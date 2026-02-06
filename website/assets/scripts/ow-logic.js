@@ -199,7 +199,7 @@ function inputDynamLen(element) {
     const elem = $(element);
     if ((!elem.hasAttr('empty-width')) || (elem.val().length > 0 && elem.hasAttr('empty-width'))) {
         elem.css('width', 0);
-        elem.css('width', elem[0].scrollWidth + 8 + "px");
+        elem.css('width', elem[0].scrollWidth + 15 + "px");
     } else {
         elem.css('width', elem.attr('empty-width'))
     }
