@@ -310,8 +310,8 @@
   const $fullModDescView = $('article#mod-description');
   const $fullModDescEdit = $('div[limit=10000]#desc-edit');
   const $fullModDescEditArea = $fullModDescEdit.find('textarea.editing');
-  const $editViewButton = $('#edit-view-button');
-  const $previewViewButton = $('#preview-view-button');
+  const viewToggle = document.getElementById('mod-view-toggle');
+  const viewToggleWrap = document.querySelector('.mod-edit__view-toggle');
 
   const publicButton = $('button.public-mod-toggle');
   const publicIcon = publicButton.find('img');
@@ -325,20 +325,28 @@
     publicButton.attr('title', publicTitles[mode]);
   };
 
+  function setViewToggle(mode) {
+    if (viewToggle) viewToggle.checked = !!mode;
+    if (viewToggleWrap) viewToggleWrap.dataset.mode = mode ? 'preview' : 'edit';
+  }
+
   window.fullEditView = function fullEditView(mode) {
+    setViewToggle(mode);
     if (mode) {
       $fullModDescEdit.hide();
       $fullModDescView.show();
       $fullModDescView.html(Formating.syntax2HTML($fullModDescEditArea.val()));
-      $editViewButton.removeClass('is-active').attr('aria-pressed', 'false');
-      $previewViewButton.addClass('is-active').attr('aria-pressed', 'true');
     } else {
       $fullModDescEdit.show();
       $fullModDescView.hide();
-      $editViewButton.addClass('is-active').attr('aria-pressed', 'true');
-      $previewViewButton.removeClass('is-active').attr('aria-pressed', 'false');
     }
   };
+
+  if (viewToggle) {
+    viewToggle.addEventListener('change', function () {
+      fullEditView(viewToggle.checked);
+    });
+  }
 
   window.toggleHelpMode = function toggleHelpMode(button) {
     if ($fullModDescEditArea.hasAttr('tutorial')) {
