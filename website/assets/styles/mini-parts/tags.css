@@ -7,15 +7,13 @@
 
     transition : background-color 0.1s;
     
-    border-radius: 4pt;
+    border-radius: var(--radius-sm);
     
-    padding: 1pt;
-    padding-left: 3pt;
-    padding-right: 3pt;
+    padding: 2px 6px;
     
     margin: 2px;
     
-    font-size: large;
+    font-size: medium;
     font-style: normal;
     text-decoration: inherit;
 }

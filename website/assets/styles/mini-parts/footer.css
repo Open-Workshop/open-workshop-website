@@ -75,7 +75,7 @@ button.phone-navigator {
     align-items: center;
     
     width: 100%;
-    background: var(--main-panel-on-page-background);
+    background: var(--surface-background);
     padding-bottom: 15px;
     bottom: 0;
     z-index: 105;
@@ -112,6 +112,15 @@ button.phone-navigator {
     justify-content: center;
 }
 
+.phone-menu .footer__username {
+    width: auto;
+    margin-left: 5pt;
+}
+
+.phone-menu .footer__badge {
+    margin-left: 3pt;
+}
+
 
 .user-avatar-mini {
     border-radius: 100%;
@@ -145,7 +154,7 @@ button.phone-navigator {
     flex: 1 1 30%;
     padding: 5px;
     margin: 5px;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     text-align: center;
 }
 

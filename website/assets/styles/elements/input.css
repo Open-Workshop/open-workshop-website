@@ -4,14 +4,14 @@
 input {
   font-size: medium;
 
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   border: solid 1px var(--interactive-input);
   box-shadow: 0 0 0px var(--interactive-input);
 
   background-color: var(--panel-on-page-background);
 
-  padding: 10px;
-  margin: 10px;
+  padding: var(--space-3);
+  margin: var(--space-3);
 
   transition: all 0.3s;
 }
@@ -38,13 +38,13 @@ input[type=checkbox] {
   background-color: var(--panel-on-page-background);
   box-shadow: 0 0 0px var(--interactive-input);
   
-  border-radius: 72px;
+  border-radius: 999px;
   border-style: none;
   
   flex-shrink: 0;
   width: 45px;
   height: 30px;
-  margin: 3px;
+  margin: var(--space-1);
 
   position: relative;
   cursor: pointer;

@@ -11,6 +11,15 @@ header {
     width: 100%;
 }
 
+header .header__inner {
+    max-width: 1500px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--space-4);
+}
+
 header #logo {
     float: left;
     padding: 13.5px;
@@ -81,12 +90,12 @@ header nav li.dropdown > ul {
     padding-left: 2pt;
     padding-right: 2pt;
 
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
 }
 header nav li.dropdown img {
     width: 50px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     cursor: pointer;
 }
 header nav li.dropdown:hover > ul {
@@ -99,7 +108,11 @@ header #profile-pc {
 }
 header #profile-pc > img {
     width: 40px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
+}
+
+header #profile-pc .header__profile-link {
+    cursor: pointer;
 }
 
 

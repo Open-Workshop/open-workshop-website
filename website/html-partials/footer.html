@@ -10,9 +10,9 @@
         {% if user_profile %}
         <a class="profile-mobile" href="/user/{{ user_profile.id }}">
         <img class="user-avatar-mini" src="{{ user_profile.avatar_url }}">
-        <p style="width: auto; margin-left: 5pt;">{{ user_profile.username }}</p>
+        <p class="footer__username">{{ user_profile.username }}</p>
         {% if user_profile.mute %}
-        <a style="margin-left: 3pt;" title="Вы временно лишены голоса" class="tag-link-red" translate="no">MUTED</a>
+        <a title="Вы временно лишены голоса" class="tag-link-red footer__badge" translate="no">MUTED</a>
         {% endif %}
         </a>
         {% endif %}

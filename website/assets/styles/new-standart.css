@@ -39,6 +39,28 @@
     --icon-footer: #0096a1;
     --icon-footer-hover: #0ebac7;
     --medium-icon: 35px;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 10px;
+    --space-4: 15px;
+    --space-5: 20px;
+
+    --border-color: #2a2c36;
+    --border-color-strong: #343647;
+    --panel-border: 1px solid var(--border-color);
+    --surface-border: 1px solid #242632;
+
+    --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.28);
+    --shadow-strong: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+    --panel-background: var(--panel-on-page-background);
+    --surface-background: var(--main-panel-on-page-background);
 }
 
 html {
@@ -115,6 +137,10 @@ i {
 }
 b {
     font-weight: bold;
+}
+
+li {
+    margin-left: 25px;
 }
 
 

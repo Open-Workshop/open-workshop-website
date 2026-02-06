@@ -7,12 +7,14 @@
 
 
 main {
-    background-color: var(--main-panel-on-page-background);
+    background-color: var(--surface-background);
+    border: var(--surface-border);
+    box-shadow: var(--shadow-soft);
 
-    border-radius: 10px;
-    padding: 3px;
-    margin: 10px;
-    margin-bottom: 3px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    margin: var(--space-3);
+    margin-bottom: var(--space-1);
 
     height: fit-content;
     max-width: var(--standart-main-width);
@@ -20,26 +22,10 @@ main {
     z-index: 0;
 }
 
-main.about {
-    padding: 0;
-    text-align: left;
-    max-width: var(--about-main-width);
-}
-main.about h1 {
-    margin-left: 30px;
-}
-main.about h2 {
-    margin-left: 15px;
-}
-main.about h3 {
-    margin-left: 10px;
-}
-main.about h4 {
-    margin-left: 5px;
-}
-
 main.catalog {
     background: none;
+    border: 0;
+    box-shadow: none;
 
     width: var(--catalog-main-width);
     max-width: var(--catalog-main-width);
@@ -53,8 +39,8 @@ main.catalog {
 main.mod {
     margin-left: auto;
     margin-right: auto;
-    border-radius: 10pt;
-    padding: 5pt;
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
     margin: 1;
     display: flex;
 }
@@ -76,6 +62,8 @@ main.login-popup {
     align-items: center;
 
     background: none;
+    border: 0;
+    box-shadow: none;
 
     width: 100%;
     max-width: none;
@@ -90,6 +78,8 @@ main.error {
     top: 40%;
     
     background: none;
+    border: 0;
+    box-shadow: none;
 }
 
 
@@ -102,6 +92,8 @@ main.error {
     main {
         margin: 0;
         border-radius: 0;
+        border-left: 0;
+        border-right: 0;
     }
     main.mod {
         flex-direction: column;

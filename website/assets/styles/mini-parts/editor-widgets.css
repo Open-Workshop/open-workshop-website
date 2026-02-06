@@ -1,0 +1,362 @@
+.desc-edit,
+#desc-edit {
+  height: 200px;
+  width: 100%;
+  position: relative;
+  margin-top: -4px;
+  margin-left: -4px;
+  padding: 8px;
+}
+
+.tags-edit {
+  width: 100%;
+  padding-top: 0;
+}
+
+.tags-edit__selected {
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tags-edit .all-mod-tags {
+  transition: all 0.15s ease;
+  padding: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+}
+
+.tags-edit .all-mod-tags > div {
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  font-size: 0.95rem;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.tags-edit .all-mod-tags > div:not(.selected-tag) {
+  background: #2b2d38;
+}
+
+.tags-edit .all-mod-tags > div:not(.selected-tag):hover {
+  background: #34374a;
+}
+
+.tags-edit .all-mod-tags > div:not(.selected-tag):active {
+  background: #2f3242;
+}
+
+.tags-edit .selected-tag {
+  background: var(--interactive-element-background);
+}
+
+.tags-edit .selected-tag:hover {
+  background: var(--interactive-element-background-hover);
+}
+
+.tags-edit .selected-tag:active {
+  background: var(--interactive-element-background-active);
+}
+
+.tags-edit__add {
+  align-self: flex-start;
+}
+
+.dependence-edit {
+  padding-top: 0;
+}
+
+.dependence-edit .element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  background: #2b2d38;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.dependence-edit .element > img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.dependence-edit .element > e {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: calc(100% - 70px);
+  gap: 6px;
+}
+
+.dependence-edit .element > e > h3 {
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.dependence-edit .element > e > img {
+  width: 22px;
+}
+
+#mod-dependence-selected {
+  margin-bottom: 4px;
+  min-height: 56px;
+}
+
+.dependence-edit .all-mod-dependence {
+  padding: 4px;
+  margin-top: -4px;
+}
+
+.dependence-edit .alls > .element {
+  padding: 4px;
+}
+
+.dependence-edit .all-mod-dependence > .element > e > h3 {
+  max-width: 100%;
+}
+
+.dependence-edit .dependence-selected {
+  background: var(--interactive-element-background);
+}
+
+.dependence-edit .dependence-selected:hover {
+  background: var(--interactive-element-background-hover);
+}
+
+.dependence-edit .dependence-selected:active {
+  background: var(--interactive-element-background-active);
+}
+
+.screenshots-edit {
+  padding: 0;
+  overflow: hidden;
+}
+
+.screenshots-edit__wrapper {
+  width: 100%;
+}
+
+.screenshots-edit__slider {
+  padding-bottom: 6px;
+  border-radius: var(--radius-md);
+  background: #1b1c27;
+  overflow: hidden;
+}
+
+.screenshots-edit .slider__images-item {
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  min-width: 100%;
+  overflow: hidden;
+}
+
+#no-screenshots-error {
+  display: flex;
+  width: 100%;
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  aspect-ratio: 10 / 7;
+}
+
+.screenshots-edit__controls {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: #1a1b26;
+  border-top: 1px solid #2a2c36;
+}
+
+.screenshots-edit__controls-main {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.screenshots-edit__menu {
+  display: flex;
+  gap: 6px;
+}
+
+.screenshots-edit__select,
+.screenshots-edit__input {
+  margin: 0;
+  height: 36px;
+  border-radius: var(--radius-sm);
+}
+
+.screenshots-edit__select {
+  width: 110px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  text-align: center;
+}
+
+.screenshots-edit__input {
+  flex: 1;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.screenshots-edit__pagers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-top: 2px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.screenshots-edit__pagers ol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+#no-screenshots-edit {
+  display: none;
+  align-items: center;
+}
+
+.screenshots-edit__actions {
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.screenshots-edit__button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #343647;
+  background: #232433;
+}
+
+.screenshots-edit__button--delete {
+  background: #1d1e28;
+}
+
+.screenshots-edit__button--add {
+  background: transparent;
+}
+
+.game-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.game-selector__title {
+  width: 100%;
+  text-align: center;
+}
+
+.game-selector__row {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.game-selector__logo {
+  width: 80px;
+  border-radius: var(--radius-md);
+}
+
+.game-selector__info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.game-selector__name-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.game-selector__name {
+  position: relative;
+  min-height: 28px;
+}
+
+.edit-mod-game-name-set {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-strong);
+  background: #2a2c36;
+}
+
+.edit-mod-game-name-set img {
+  width: 100%;
+  height: 100%;
+}
+
+.edit-mod-game-input-name {
+  font-size: 14pt;
+  padding: 0;
+  background: none;
+  color: white;
+  position: absolute;
+  margin-top: -18.5pt;
+  border-radius: var(--radius-sm);
+  min-width: 155px;
+  max-width: 175px;
+  text-transform: uppercase;
+  outline: none;
+}
+
+.edit-mod-game-input-name::placeholder {
+  text-transform: none;
+}
+
+#name-game-select {
+  font-size: 14pt;
+  color: darkgray;
+  height: 28px;
+  text-transform: uppercase;
+  pointer-events: none;
+  cursor: auto;
+}
+
+.enable-edit-game-mod {
+  width: 90pt;
+  cursor: pointer;
+  color: white;
+  background: darkcyan;
+  margin-top: var(--space-2);
+  height: 30pt;
+  border-radius: var(--radius-sm);
+}
+
+.edit-mod-game-input {
+  border-radius: var(--radius-sm);
+  padding: 6pt;
+}
+
+.edit-mod-game-input:disabled {
+  color: white;
+}

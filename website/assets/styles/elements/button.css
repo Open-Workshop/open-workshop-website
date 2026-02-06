@@ -5,7 +5,7 @@ button, .button-style {
 
     border: none;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     transition: all 200ms ease;
 }
 button:hover, .button-style:hover {
@@ -37,17 +37,17 @@ button.toggled:active, .button-style.button-style-toggled:active {
 button, .button-style {
     min-width: 50px;
     min-height: 50px;
-    padding: 15px;
+    padding: var(--space-4);
     font-size: large;
 }
 button.small, .button-style.button-style-small {
     min-width: 40px;
     min-height: 40px;
-    padding: 10px;
+    padding: var(--space-3);
     font-size: medium;
 }
 button.small-padding, .button-style.button-style-small-padding {
-    padding: 5px;
+    padding: var(--space-1);
 }
 
 

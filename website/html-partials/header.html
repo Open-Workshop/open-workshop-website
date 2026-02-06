@@ -1,5 +1,5 @@
 <header>
-    <div style="max-width: 1500px; width: 100%; display: flex; justify-content: space-between;">
+    <div class="header__inner">
         <a class="no-recolor" id="logo" href="/" translate="no">Open Workshop</a>
 
         {% if catalog %}
@@ -29,7 +29,7 @@
                 {% if user_profile %}
                 <li id="profile-pc" class="dropdown">
                     <img src="{{ user_profile.avatar_url }}" alt="Аватар пользователя">
-                    <a href="/user/{{ user_profile.id }}" style="cursor: pointer;"></a>
+                    <a class="header__profile-link" href="/user/{{ user_profile.id }}"></a>
                     <ul>
                         {% for item in ow.site.profile_menu %}
                         <a href="{{ item.href.format(id=user_profile.id) }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>

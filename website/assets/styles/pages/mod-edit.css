@@ -2,35 +2,27 @@
 #page-in-catalog-view,
 #page-params-mod,
 #main-mod-edit {
-  transition: opacity 0.1s;
+  transition: opacity 0.15s ease;
 }
 
 #main-mod-edit {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  justify-content: center;
+  width: 100%;
   opacity: 0;
+  padding: 8px 10px 20px;
 }
 
 main.mod-edit {
-  z-index: 0;
-  background-color: var(--main-panel-on-page-background);
+  width: min(1200px, 100%);
   display: flex;
-  justify-content: center;
-  max-width: 100%;
-  padding: 0;
-  position: relative;
-  width: 900pt;
-}
-
-.mod-edit-nav {
-  background: #34374500;
-  display: flex;
-  padding: 3pt;
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 2;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--surface-background);
+  border: var(--surface-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-strong);
 }
 
 main.mod-edit div.navigation {
@@ -38,87 +30,225 @@ main.mod-edit div.navigation {
 }
 
 main.mod-edit .navigation > button {
-  border-radius: 10px;
-  background-color: #d9d9d9;
-  border: none;
-  width: 35pt;
-  height: 35pt;
-  margin: 1pt;
-  transition: all 0.1s;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background-color: #2d2f3d;
+  border: 1px solid var(--border-color-strong);
+  transition: all 0.15s ease;
+}
+
+main.mod-edit .navigation > button img {
+  width: 70%;
 }
 
 main.mod-edit .navigation > button:hover {
-  background-color: #c5c5c5;
+  background-color: #35384a;
 }
 
 main.mod-edit .navigation > button:active {
-  background-color: #b3b3b3;
+  background-color: #2a2d3a;
 }
 
 main.mod-edit .navigation > button.toggle {
-  background-color: #9899ac;
+  background-color: var(--interactive-element-background);
+  border-color: #3c3f61;
 }
 
 main.mod-edit .navigation > button.toggle:hover {
-  background-color: #7e7f8f;
+  background-color: var(--interactive-element-background-hover);
 }
 
 main.mod-edit .navigation > button.toggle:active {
-  background-color: #6c6d7a;
+  background-color: var(--interactive-element-background-active);
 }
 
-main.mod-edit .standart-panel {
-  background-color: var(--panel-on-page-background);
-  border-radius: 5pt;
-  padding: 3pt;
-  margin-bottom: 3pt;
+main.mod-edit .mod-edit-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: var(--space-2);
+  background: var(--panel-background);
+  border: var(--panel-border);
+  border-radius: var(--radius-md);
+}
+
+main.mod-edit .mod-edit-nav__group {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: #1a1b26;
+  border: var(--panel-border);
+  border-radius: var(--radius-md);
+}
+
+main.mod-edit .mod-edit-nav__save {
+  background: #f0e7b8;
+  border: 1px solid #b8aa67;
+}
+
+main.mod-edit .mod-edit-nav__save:hover {
+  background: #e6dca8;
+}
+
+main.mod-edit .mod-edit-nav__save:active {
+  background: #dbcf96;
+}
+
+.mod-edit__page {
+  width: 100%;
+}
+
+.mod-edit__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+.mod-edit__main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mod-edit__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mod-edit__titlebar {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
 }
 
 input.title-mod {
-  border-radius: 0pt;
-  border-top-left-radius: 10pt;
-  background: #302e3f;
-  border: solid #939393;
-  color: white;
-  max-width: calc(66% - 105pt);
-  height: 100%;
-  font-size: 20pt;
-  transition: border background 0.1s;
+  flex: 1;
+  min-width: 200px;
+  margin: 0;
+  height: 48px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border: 1px solid var(--border-color-strong);
+  background: #2a2b3a;
+  color: #f2f2f2;
+  padding: 0 12px;
+  font-size: 18px;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 input.title-mod:hover {
-  border: solid #7e7e7e;
-  background: #2b2938;
+  border-color: #60647c;
+  background: #262837;
 }
 
 input.title-mod:focus {
-  border: solid #6b6b6b;
-  background: #252330;
+  border-color: #6f7393;
+  background: #222433;
 }
 
 button.public-mod-toggle {
-  border-bottom-right-radius: 5pt;
-  height: 100%;
-  aspect-ratio: 1 / 1;
-  background: #212029;
-  border: solid #777777;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: #1f2130;
+  border: 1px solid var(--border-color-strong);
 }
 
 button.public-mod-toggle > img {
-  color: #d9d9d9;
   width: 70%;
 }
 
 button.public-mod-toggle:hover {
-  background: #1d1c24;
-  border: solid #6e6e6e;
+  background: #1a1c28;
+  border-color: #60647c;
 }
 
 button.public-mod-toggle:active {
-  background: #19181f;
-  border: solid #646464;
+  background: #171924;
+  border-color: #6f7393;
 }
 
-#page-in-catalog-view {
-  width: 100%;
+.mod-edit__content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mod-edit__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mod-edit__preview {
+  display: none;
+  min-height: 200px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: #1b1c27;
+  border: var(--panel-border);
+}
+
+.mod-edit__catalog {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.mod-edit__catalog-cards {
+  width: auto;
+}
+
+.mod-edit__catalog-desc {
+  min-width: 0;
+}
+
+.mod-edit__params {
+  margin-top: 24px;
+}
+
+@media screen and (max-width: 980px) {
+  .mod-edit__split {
+    grid-template-columns: 1fr;
+  }
+
+  .mod-edit__catalog {
+    grid-template-columns: 1fr;
+  }
+
+  .mod-edit__catalog-cards {
+    justify-self: center;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  #main-mod-edit {
+    padding: 6px 6px 16px;
+  }
+
+  main.mod-edit {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .mod-edit__titlebar {
+    flex-direction: column;
+  }
+
+  input.title-mod {
+    border-radius: var(--radius-md);
+  }
+
+  button.public-mod-toggle {
+    border-radius: var(--radius-md);
+    align-self: flex-start;
+  }
 }

@@ -1,15 +1,15 @@
-<div style="width: 100%; display: flex; margin: 3.5pt;" id="page-in-mod-page">
-  <div style="width: 70%;">
-    <div style="display: flex; margin-left: -4pt; margin-top: -4pt; height: 57px;">
-      <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod" startdata="{{ info['result']['name'] }}" value="{{ info['result']['name'] }}">
-      <button onclick="toggleNextPublic()" class="public-mod-toggle anime-scale" startdata="{{ info['result']['public'] }}" public-mode="{{ info['result']['public'] }}">
+<div id="page-in-mod-page" class="mod-edit__page mod-edit__split">
+  <section class="mod-edit__main">
+    <div class="mod-edit__titlebar">
+      <input dynamlen empty-width="160pt" placeholder="Название игры" type="text" class="title-mod mod-edit__title-input" startdata="{{ info['result']['name'] }}" value="{{ info['result']['name'] }}">
+      <button onclick="toggleNextPublic()" class="public-mod-toggle mod-edit__public-toggle anime-scale" startdata="{{ info['result']['public'] }}" public-mode="{{ info['result']['public'] }}">
         <img src="" alt="Иконка режима публичности">
       </button>
     </div>
       
-    <div style="margin: 5pt;">
-      <div style="display: flex; justify-content: space-between; padding: 5pt;">
-        <div class="navigation">
+    <div class="mod-edit__content">
+      <div class="mod-edit__toolbar standart-panel">
+        <div class="navigation mod-edit__toolbar-group">
           <button onclick="fullEditView(false)">
             <img src="/assets/images/edit-ico.svg" alt="Иконка 'редактирование'">
           </button>
@@ -19,7 +19,7 @@
           </button>
         </div>
 
-        <div class="navigation">
+        <div class="navigation mod-edit__toolbar-group">
           <button onclick="toggleHelpMode($(this))">
             <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
           </button>
@@ -30,11 +30,11 @@
         {% include 'html-partials/desc-edit.html' %}
       {% endwith %} 
       
-      <article id="mod-description" style="display: none;"></article>
+      <article id="mod-description" class="mod-edit__preview"></article>
     </div>
-  </div>
+  </section>
 
-  <div style="width: 30%;">
+  <aside class="mod-edit__sidebar">
     {% include 'html-partials/screenshots-edit.html' %}
     
     {% with game=info["result"]["game"]["id"] %}
@@ -42,5 +42,5 @@
     {% endwith %}
 
     {% include 'html-partials/mod-dependence-edit.html' %}
-  </div>
+  </aside>
 </div>

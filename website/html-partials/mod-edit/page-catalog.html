@@ -1,6 +1,6 @@
-<div id="page-in-catalog-view">
-  <div class="" style="display: flex; margin-top: 50pt;">
-    <div class="cards" style="width: auto;">
+<div id="page-in-catalog-view" class="mod-edit__page">
+  <div class="mod-edit__catalog">
+    <div class="cards mod-edit__catalog-cards">
       <div class="card" id="{{ info['result']['id'] }}">
         <div class="card-click">
           <div class="card__image-holder">
@@ -27,8 +27,10 @@
       </div>
     </div>
 
-    {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
-      {% include 'html-partials/desc-edit.html' %}
-    {% endwith %} 
+    <div class="mod-edit__catalog-desc">
+      {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
+        {% include 'html-partials/desc-edit.html' %}
+      {% endwith %} 
+    </div>
   </div>
 </div>

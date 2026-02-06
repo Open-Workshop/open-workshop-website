@@ -1,0 +1,65 @@
+.ow-surface {
+    background: var(--surface-background);
+    border: var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-strong);
+    padding: var(--space-3);
+}
+
+.ow-panel,
+.standart-panel,
+.mini-cont {
+    background: var(--panel-background);
+    border: var(--panel-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+}
+
+.ow-panel--tight {
+    padding: var(--space-2);
+}
+
+.ow-panel--flat {
+    border: 0;
+    box-shadow: none;
+    background: var(--panel-background);
+}
+
+.ow-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.ow-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ow-row--between {
+    justify-content: space-between;
+}
+
+.ow-wrap {
+    flex-wrap: wrap;
+}
+
+.ow-center {
+    align-items: center;
+    justify-content: center;
+}
+
+.ow-muted {
+    color: #b6b9c9;
+}
+
+.ow-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    background: #2b2d38;
+    font-size: 0.85rem;
+}

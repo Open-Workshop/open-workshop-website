@@ -1,9 +1,9 @@
 
 .outline-container {
-    border: solid 1px var(--panel-on-page-background);
-    margin-top: 4pt;
-    border-radius: 10px;
-    padding: 5pt;
+    border: var(--panel-border);
+    margin-top: var(--space-1);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
     width: 100%;
     display: flex;
     flex-wrap: wrap;
@@ -15,10 +15,10 @@
 
 
 .outline-container > .element {
-    margin-top: 5pt;
+    margin-top: var(--space-2);
     cursor: pointer;
-    border-radius: 5pt;
-    padding: 5pt;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
     width: 100%;
     display: flex;
     align-items: center;
@@ -32,8 +32,8 @@
     background-color: rgba(15, 15, 15, 0.9);
 }
 .outline-container > .element img {
-    border-radius: 5pt;
-    margin-right: 5pt;
+    border-radius: var(--radius-sm);
+    margin-right: var(--space-2);
     max-width: 50pt;
     height: 30pt;
 }

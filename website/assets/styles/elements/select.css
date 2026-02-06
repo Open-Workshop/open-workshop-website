@@ -9,9 +9,9 @@ select {
 
     transition: all 0.3s;
 
-    border-radius: 10px;
-    padding: 10px;
-    margin: 10px;
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    margin: var(--space-3);
     
     height: var(--interactive-select-height);
     font-size: medium;
@@ -30,7 +30,7 @@ select:active {
 
 div.with-button {
     display: flex;
-    margin: 10px;
+    margin: var(--space-3);
     height: var(--interactive-select-height);
 }
 div.with-button button {
@@ -40,7 +40,7 @@ div.with-button button {
     min-width: var(--interactive-select-height);
     min-height: var(--interactive-select-height);
 
-    border-radius: 0 10px 10px 0;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     height: 100%;
 
     transition: all 0.3s;
@@ -50,7 +50,7 @@ div.with-button button * {
     aspect-ratio: 1 / 1;
 }
 div.with-button select {
-    border-radius: 10px 0 0 10px;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
     margin: 0;
     height: 100%;
 }

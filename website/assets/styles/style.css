@@ -317,10 +317,10 @@ blockquote > .light {
 }
 
 .popup-menu-select {
-  background: rgba(0, 0, 0, 0.9);
+  background: var(--panel-background);
   position: sticky;
   margin-top: 3pt;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   transition: all 0.2s;
   display: flex;
@@ -328,6 +328,8 @@ blockquote > .light {
   z-index: 999;
   display: flex;
   align-items: center;
+  border: var(--panel-border);
+  box-shadow: var(--shadow-soft);
 }
 .popup-menu-select:not(.popup-nonvisible) {
   max-height: 500pt;

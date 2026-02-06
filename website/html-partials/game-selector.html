@@ -1,11 +1,11 @@
-<div class="mini-cont" style="display: flex; flex-direction: column; align-items: flex-end; background: rgba(0, 0, 0, 0.5); padding: 3pt; border-radius: 5pt;">
-    <h2 style="width: 100%; text-align: center;">Игра-владелец</h2>
-    <div style="display: flex;">
-        <img id="logo-game-select" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" style="width: 80pt; border-radius: 5pt;" alt="Логотип игры">
-        <div style="margin-left: 4pt;">
-            <div style="display: flex;">
+<div class="mini-cont ow-stack game-selector">
+    <h2 class="game-selector__title">Игра-владелец</h2>
+    <div class="game-selector__row">
+        <img id="logo-game-select" class="game-selector__logo" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" alt="Логотип игры">
+        <div class="game-selector__info">
+            <div class="game-selector__name-row">
                 <button class="edit-mod-game-name-set" onclick="gameNameSelect()"><img src="/assets/images/check-mini.svg" alt="Изображение кнопки"></button>
-                <div>
+                <div class="game-selector__name">
                     <p id="name-game-select">Загрузка...</p>
                     <input dynamlen type="text" oninput="SelectGameInputEvent()" onfocus="SelectGameInputFocus()" onblur="SelectGameInputFocusAboard()" placeholder="Найти по имени..." class="edit-mod-game-input-name">
                 </div>
@@ -14,70 +14,6 @@
             <input type="number" placeholder="ID игры-владельца" startdata="{{ init_id | default('') }}" onchange="renderNewSelectedGame()" value="{{ init_id | default('') }}" class="edit-mod-game-input" {% if init_id %}disabled{% endif %}>
         </div>
     </div>
-    <style>
-        button.edit-mod-game-name-set {
-            width: 25px;
-            height: 25px;
-            margin: 1pt;
-            border-radius: 5pt;
-            border: none;
-        }
-        button.edit-mod-game-name-set img {
-            width: 100%;
-            height: 100%;
-        }
-
-        input.edit-mod-game-input-name {
-            font-size: 14pt;
-            padding: 0;
-            background: none;
-            color: white;
-            position: absolute;
-            margin-top: -18.5pt;
-            border-radius: 1pt;
-            min-width: 155px;
-            max-width: 175px;
-            text-transform: uppercase;
-            outline: none;
-        }
-
-        ::-webkit-input-placeholder { /* WebKit browsers */
-            text-transform: none;
-        }
-        ::-moz-placeholder { /* Mozilla Firefox 19+ */
-            text-transform: none;
-        }
-        ::placeholder { /* Recent browsers */
-            text-transform: none;
-        }
-
-        #name-game-select {
-            font-size: 14pt;
-            color: darkgray;
-            height: 28px;
-            text-transform: uppercase;
-            pointer-events: none;
-            cursor: auto;
-        }
-
-        button.enable-edit-game-mod {
-            width: 90pt; 
-            cursor: pointer; 
-            color: white; 
-            background: darkcyan; 
-            margin-top: 3pt;
-            height: 30pt;
-            border-radius: 5pt;
-        }
-        
-        input.edit-mod-game-input {
-            border-radius: 4pt;
-            padding: 6pt;
-        }
-        input.edit-mod-game-input:disabled {
-            color: white;
-        }
-    </style>
 
     {% if init_id %}
     <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
