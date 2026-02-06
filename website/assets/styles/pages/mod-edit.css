@@ -165,7 +165,20 @@ button.public-mod-toggle:active {
 .mod-edit__content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+}
+
+.mod-edit__content article#mod-description {
+  margin: 0px;
+  padding: 10px;
+  border-radius: 0px 0px 10px 10px;
+  border: var(--panel-border);
+  border-top: none;
+}
+
+.mod-edit__content #highlighting {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
 }
 
 .mod-edit__toolbar {
@@ -174,6 +187,8 @@ button.public-mod-toggle:active {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .mod-edit__view-toggle {

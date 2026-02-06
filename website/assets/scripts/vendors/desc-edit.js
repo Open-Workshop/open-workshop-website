@@ -1,23 +1,77 @@
-$(document).ready(function() {
-    $("textarea.editing").each(function() {
-        $(this).attr('startdata', $(this).val());
-        fullDescUpdate($(this));
-    });
-    
-    setInterval(function() {
+let descResizeRaf = 0;
+
+function normalizeTextarea(textareaDesc) {
+    if (!textareaDesc) return null;
+    if (textareaDesc.jquery) return textareaDesc;
+    return $(textareaDesc);
+}
+
+function scheduleDescResize() {
+    if (descResizeRaf) return;
+    descResizeRaf = requestAnimationFrame(function () {
+        descResizeRaf = 0;
         $("textarea.editing").each(function() {
             descOnHeight($(this).parent(), $(this));
         });
-    }, 100)
+    });
+}
+
+function initDescTextarea(textarea) {
+    const $textarea = normalizeTextarea(textarea);
+    if (!$textarea || !$textarea.length) return;
+    if ($textarea.attr('data-desc-init')) return;
+    $textarea.attr('data-desc-init', '1');
+    $textarea.attr('startdata', $textarea.val());
+    fullDescUpdate($textarea);
+}
+
+function observeDescEditor() {
+    const observer = new MutationObserver(function (mutations) {
+        let found = false;
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (!(node instanceof Element)) return;
+                if (node.matches && node.matches('textarea.editing')) {
+                    initDescTextarea(node);
+                    found = true;
+                } else if (node.querySelectorAll) {
+                    node.querySelectorAll('textarea.editing').forEach(function (textarea) {
+                        initDescTextarea(textarea);
+                        found = true;
+                    });
+                }
+            });
+        });
+        if (found) scheduleDescResize();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+$(document).ready(function() {
+    $("textarea.editing").each(function() {
+        initDescTextarea(this);
+    });
+
+    $(document).on('input', 'textarea.editing', function() {
+        fullDescUpdate(this);
+    });
+
+    scheduleDescResize();
+    observeDescEditor();
+});
+
+$(window).on('resize', function() {
+    scheduleDescResize();
 });
 
 
 function fullDescUpdate(textareaDesc) {
-    const element = textareaDesc.parent();
-    console.log(element, textareaDesc, textareaDesc.val())
-    descUpdate(element, textareaDesc.val());
-    descOnHeight(element, textareaDesc);
-    limitRenderUpdate(element, textareaDesc);
+    const textarea = normalizeTextarea(textareaDesc);
+    if (!textarea || !textarea.length) return;
+    const element = textarea.parent();
+    descUpdate(element, textarea.val());
+    descOnHeight(element, textarea);
+    limitRenderUpdate(element, textarea);
 }
 
 
@@ -35,12 +89,12 @@ function limitRenderUpdate(root, editing) {
 
 function descOnHeight(root, element) {
     element.css('height', 0);
-    var heightCurr = (element[0].scrollHeight + 10);
+    var heightCurr = (element[0].scrollHeight);
 
-    root.css('height', heightCurr + 15 + "px");
+    root.css('height', heightCurr + "px");
     element.css('height', heightCurr + "px");
     root.find("#highlighting").css('height', heightCurr + "px");
-    root.find("#desc-edit").css('height', heightCurr + 20 + "px");
+    root.find("#desc-edit").css('height', heightCurr + "px");
 }
 
 function descUpdate(root, text) {
@@ -61,7 +115,8 @@ function descUpdate(root, text) {
     } else {
         result_element.removeClass("invisible-highlighting")
         root.find('textarea.editing').removeClass("invisible-highlighting")
-        console.log("Prism.highlightElement(result_element[0])", result_element[0])
-        Prism.highlightElement(result_element[0]);
+        if (window.Prism && typeof Prism.highlightElement === 'function') {
+            Prism.highlightElement(result_element[0]);
+        }
     }
 }

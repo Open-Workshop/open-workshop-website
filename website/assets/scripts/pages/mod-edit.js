@@ -17,6 +17,29 @@
     2: 'Доступен только владельцам',
   };
 
+  const mediaManagerState = {
+    deleted: new Set(),
+  };
+
+  function getLogoUrlFromMedia() {
+    const items = document.querySelectorAll('.media-item');
+    for (const item of items) {
+      const typeSelect = item.querySelector('.media-item__type');
+      const type = typeSelect ? typeSelect.value : item.dataset.startType;
+      if (type !== 'logo') continue;
+      const link = item.querySelector('.media-item__preview');
+      if (link && link.getAttribute('href')) return link.getAttribute('href');
+      const img = item.querySelector('img');
+      if (img && img.src) return img.src;
+    }
+    return null;
+  }
+
+  function updateCatalogLogo() {
+    const logoHref = getLogoUrlFromMedia();
+    if (logoHref) $('img.card__image').attr('src', logoHref);
+  }
+
   $(document).ready(function () {
     setTimeout(function () {
       $('#main-mod-edit').css('opacity', 1);
@@ -30,6 +53,7 @@
       });
     }
 
+    initMediaManager();
     initCatalogPreview();
     initPublicToggle();
     fullEditView(false);
@@ -39,10 +63,7 @@
     const $cardDescD = $('div.card-description');
     const $shortDescD = $('div[limit=256]').find('textarea.editing');
 
-    const logoHref = $('a.slider__images-item[typecontent="logo"]').attr('href');
-    if (logoHref) {
-      $('img.card__image').attr('src', logoHref);
-    }
+    updateCatalogLogo();
 
     $cardDescD.attr('cashData', $shortDescD.val());
     $cardDescD.html(Formating.syntax2HTML($shortDescD.val()));
@@ -84,6 +105,198 @@
       $('#card-flap' + id).css('z-index', zindex + 1);
       $('div.panel').css({ zIndex: zindex + 1 });
     });
+  }
+
+  function initMediaManager() {
+    const manager = document.getElementById('media-manager');
+    if (!manager) return;
+
+    const list = manager.querySelector('.media-manager__list');
+    const empty = manager.querySelector('[data-media-empty]');
+    const countEl = manager.querySelector('[data-media-count]');
+    const modeButtons = manager.querySelectorAll('[data-media-mode]');
+    const urlRow = manager.querySelector('[data-media-row="url"]');
+    const fileRow = manager.querySelector('[data-media-row="file"]');
+    const urlInput = manager.querySelector('[data-media-input="url"]');
+    const fileInput = manager.querySelector('[data-media-input="file"]');
+    const typeInput = manager.querySelector('[data-media-input="type"]');
+    const typeFileInput = manager.querySelector('[data-media-input="type-file"]');
+    const addUrlButton = manager.querySelector('[data-media-action="add"]');
+    const addFileButton = manager.querySelector('[data-media-action="add-file"]');
+
+    if (!list) return;
+
+    let mode = 'url';
+
+    function updateCount() {
+      const count = list.querySelectorAll('.media-item').length;
+      if (countEl) countEl.textContent = count;
+      if (empty) empty.style.display = count ? 'none' : 'flex';
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      modeButtons.forEach((btn) => {
+        btn.classList.toggle('is-active', btn.dataset.mediaMode === mode);
+      });
+      if (urlRow) urlRow.hidden = mode !== 'url';
+      if (fileRow) fileRow.hidden = mode !== 'file';
+    }
+
+    function updateBadge(item, type) {
+      const badge = item.querySelector('[data-media-badge]');
+      if (!badge) return;
+      badge.textContent = type === 'logo' ? 'Логотип' : 'Скриншот';
+    }
+
+    function enforceSingleLogo(activeSelect) {
+      const selects = list.querySelectorAll('.media-item__type');
+      selects.forEach((select) => {
+        if (select !== activeSelect && select.value === 'logo') {
+          select.value = 'screenshot';
+          updateBadge(select.closest('.media-item'), 'screenshot');
+        }
+      });
+    }
+
+    function createItem({ url, type, source, file }) {
+      const id = `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const previewUrl = url || '/assets/images/image-not-found.webp';
+      const item = document.createElement('div');
+      item.className = 'media-item';
+      item.dataset.id = id;
+      item.dataset.startUrl = url || '';
+      item.dataset.startType = type;
+      item.dataset.source = source;
+      item.dataset.new = '1';
+      if (source === 'file') item._file = file;
+
+      item.innerHTML = `
+        <a href="${previewUrl}" class="media-item__preview without-caption image-link" target="_blank">
+          <img src="${previewUrl}" alt="Изображение мода" onerror="this.src='/assets/images/image-not-found.webp'">
+          <span class="media-item__badge" data-media-badge></span>
+        </a>
+        <div class="media-item__meta">
+          <div class="media-item__controls">
+            <select class="media-item__type">
+              <option value="logo">Логотип</option>
+              <option value="screenshot">Скриншот</option>
+            </select>
+            <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение">Удалить</button>
+          </div>
+          <input type="url" class="media-item__url" placeholder="URL изображения">
+          <div class="media-item__source ow-muted"></div>
+        </div>
+      `;
+
+      const typeSelect = item.querySelector('.media-item__type');
+      const urlField = item.querySelector('.media-item__url');
+      const sourceField = item.querySelector('.media-item__source');
+      typeSelect.value = type;
+      updateBadge(item, type);
+
+      if (source === 'file') {
+        urlField.value = '';
+        urlField.placeholder = 'Файл загружен';
+        urlField.disabled = true;
+        if (sourceField) sourceField.textContent = `Файл: ${file ? file.name : ''}`;
+        if (file) {
+          const objectUrl = previewUrl;
+          item.dataset.objectUrl = objectUrl;
+        }
+      } else {
+        urlField.value = url;
+        urlField.disabled = false;
+        if (sourceField) sourceField.textContent = 'URL';
+      }
+
+      return item;
+    }
+
+    modeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => setMode(btn.dataset.mediaMode));
+    });
+
+    list.addEventListener('change', (event) => {
+      const target = event.target;
+      if (target.classList.contains('media-item__type')) {
+        if (target.value === 'logo') enforceSingleLogo(target);
+        updateBadge(target.closest('.media-item'), target.value);
+        updateCatalogLogo();
+      }
+    });
+
+    list.addEventListener('input', (event) => {
+      const target = event.target;
+      if (target.classList.contains('media-item__url')) {
+        const url = target.value.trim();
+        const item = target.closest('.media-item');
+        const preview = item.querySelector('.media-item__preview');
+        const img = item.querySelector('img');
+        if (url) {
+          if (preview) preview.setAttribute('href', url);
+          if (img) img.setAttribute('src', url);
+        }
+        const typeSelect = item.querySelector('.media-item__type');
+        if (typeSelect && typeSelect.value === 'logo') updateCatalogLogo();
+      }
+    });
+
+    list.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-media-action="delete"]');
+      if (!button) return;
+      const item = button.closest('.media-item');
+      if (!item) return;
+
+      if (item.dataset.objectUrl) {
+        URL.revokeObjectURL(item.dataset.objectUrl);
+      }
+
+      if (item.dataset.new === '1') {
+        item.remove();
+      } else {
+        mediaManagerState.deleted.add(item.dataset.id);
+        item.remove();
+      }
+      updateCount();
+      updateCatalogLogo();
+    });
+
+    if (addUrlButton) {
+      addUrlButton.addEventListener('click', () => {
+        const url = urlInput ? urlInput.value.trim() : '';
+        if (!url) {
+          new Toast({ title: 'Нужна ссылка', text: 'Введите URL изображения', theme: 'info' });
+          return;
+        }
+        const type = typeInput ? typeInput.value : 'screenshot';
+        const item = createItem({ url, type, source: 'url' });
+        list.prepend(item);
+        if (urlInput) urlInput.value = '';
+        updateCount();
+        updateCatalogLogo();
+      });
+    }
+
+    if (addFileButton) {
+      addFileButton.addEventListener('click', () => {
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        if (!file) {
+          new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
+          return;
+        }
+        const type = typeFileInput ? typeFileInput.value : 'screenshot';
+        const objectUrl = URL.createObjectURL(file);
+        const item = createItem({ url: objectUrl, type, source: 'file', file });
+        list.prepend(item);
+        if (fileInput) fileInput.value = '';
+        updateCount();
+        updateCatalogLogo();
+      });
+    }
+
+    updateCount();
+    setMode(mode);
   }
 
   window.cardCancel = function cardCancel(id) {
@@ -186,23 +399,38 @@
   }
 
   function getChangesLogos() {
-    const box = $('ul.js__slider__images.slider__images');
-    const res = { new: [], changed: [], deleted: [] };
+    const list = document.querySelector('#media-manager .media-manager__list');
+    const res = { new: [], changed: [], deleted: Array.from(mediaManagerState.deleted) };
+    if (!list) return res;
 
-    box.find('a').each(function () {
-      const el = $(this);
-      if (el.attr('idimg')?.startsWith('new-screenshot-')) {
-        res.new.push({ type: el.attr('typecontent'), url: el.attr('href') });
+    list.querySelectorAll('.media-item').forEach((item) => {
+      const isNew = item.dataset.new === '1';
+      const typeSelect = item.querySelector('.media-item__type');
+      const type = typeSelect ? typeSelect.value : item.dataset.startType;
+
+      if (isNew) {
+        if (item.dataset.source === 'file') {
+          if (item._file) res.new.push({ type, file: item._file });
+        } else {
+          const urlInput = item.querySelector('.media-item__url');
+          const url = urlInput ? urlInput.value.trim() : item.dataset.startUrl;
+          if (url) res.new.push({ type, url });
+        }
         return;
       }
-      if (el.hasClass('deleted-user-screenshot')) {
-        res.deleted.push(el.attr('idimg'));
-        return;
-      }
-      if (el.attr('starthref') != el.attr('href') || el.attr('starttypecontent') != el.attr('typecontent')) {
-        const c = { id: el.attr('idimg') };
-        if (el.attr('starthref') != el.attr('href')) c.url = el.attr('href');
-        if (el.attr('starttypecontent') != el.attr('typecontent')) c.type = el.attr('typecontent');
+
+      const startType = item.dataset.startType;
+      const startUrl = item.dataset.startUrl;
+      const urlInput = item.querySelector('.media-item__url');
+      const currentUrl = urlInput ? urlInput.value.trim() : startUrl;
+      const resolvedUrl = currentUrl || startUrl;
+      const typeChanged = type && startType && type !== startType;
+      const urlChanged = resolvedUrl && startUrl && resolvedUrl !== startUrl;
+
+      if (typeChanged || urlChanged) {
+        const c = { id: item.dataset.id };
+        if (typeChanged) c.type = type;
+        if (urlChanged) c.url = resolvedUrl;
         res.changed.push(c);
       }
     });
@@ -218,8 +446,9 @@
       const fd = new FormData();
       fd.append('owner_type', 'mods');
       fd.append('resource_type', l.type);
-      fd.append('resource_url', l.url);
       fd.append('resource_owner_id', modID);
+      if (l.url) fd.append('resource_url', l.url);
+      if (l.file) fd.append('resource_file', l.file);
       await send(window.OWCore.apiUrl(addEndpoint.path), addEndpoint.method, fd);
     }
 

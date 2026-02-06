@@ -57,51 +57,146 @@ function handlerImgErrorLoad(element) {
 
 // Триггерим логику при инициализации
 
+const importHeightMap = new Map();
+let importHeightObserver = null;
+let importHeightRaf = 0;
+
+function scheduleImportHeightUpdate() {
+    if (importHeightRaf) return;
+    importHeightRaf = requestAnimationFrame(function () {
+        importHeightRaf = 0;
+        if (importHeightMap.size) {
+            importHeightMap.forEach(function (_, target) {
+                updateImportHeightForTarget(target);
+            });
+        } else {
+            checkElementsImportHeight();
+        }
+    });
+}
+
+function ensureImportHeightObserver() {
+    if (importHeightObserver || !window.ResizeObserver) return;
+    importHeightObserver = new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+            updateImportHeightForTarget(entry.target);
+        });
+    });
+}
+
+function updateImportHeightForTarget(target) {
+    const linked = importHeightMap.get(target);
+    if (!linked) return;
+    const height = target.getBoundingClientRect().height;
+    linked.forEach(function (element) {
+        element.style.height = height + 'px';
+    });
+}
+
+function registerImportHeightElement(element) {
+    if (!element || element.dataset.owImportBound) return;
+    const selector = element.getAttribute('import-height');
+    if (!selector) return;
+    const target = document.querySelector(selector);
+    if (!target) {
+        console.warn('Элемент, соответствующий фильтру "' + selector + '", не найден.');
+        return;
+    }
+    element.dataset.owImportBound = '1';
+    ensureImportHeightObserver();
+    if (!importHeightMap.has(target)) {
+        importHeightMap.set(target, new Set());
+        if (importHeightObserver) importHeightObserver.observe(target);
+    }
+    importHeightMap.get(target).add(element);
+    updateImportHeightForTarget(target);
+}
+
+function bindDynamicInputs(root) {
+    root.querySelectorAll('input[dynamlen]').forEach(function (input) {
+        if (input.dataset.owDynamLenBound) return;
+        input.dataset.owDynamLenBound = '1';
+        input.addEventListener('input', function () { inputDynamLen(input); });
+        input.addEventListener('change', function () { inputDynamLen(input); });
+        inputDynamLen(input);
+    });
+
+    root.querySelectorAll('input[displaylimit]').forEach(function (input) {
+        if (input.dataset.owDisplayLimitBound) return;
+        input.dataset.owDisplayLimitBound = '1';
+        input.addEventListener('input', function () { inputDisplayLimit(input); });
+        input.addEventListener('change', function () { inputDisplayLimit(input); });
+        inputDisplayLimit(input);
+    });
+}
+
+function bindImportHeight(root) {
+    root.querySelectorAll('[import-height]').forEach(function (element) {
+        registerImportHeightElement(element);
+    });
+}
+
+function observeDomChanges() {
+    const observer = new MutationObserver(function (mutations) {
+        let found = false;
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (!(node instanceof Element)) return;
+                if (node.matches && node.matches('input[dynamlen], input[displaylimit], [import-height]')) {
+                    found = true;
+                } else if (node.querySelector) {
+                    if (node.querySelector('input[dynamlen], input[displaylimit], [import-height]')) {
+                        found = true;
+                    }
+                }
+            });
+        });
+
+        if (!found) return;
+        bindDynamicInputs(document);
+        bindImportHeight(document);
+        scheduleImportHeightUpdate();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
 $(document).ready(function() {
     // Дополняем jquery логику
     $.fn.hasAttr = function(name) {  
         return this.attr(name) !== undefined;
     };
 
-    const $body = $('body');
-    // Обработчик ошибок картинок
-    $('img').on('error', function() {
-        handlerImgErrorLoad(this);
-    });
+    // Глобальный обработчик ошибок картинок (ловит и динамические изображения)
+    document.addEventListener('error', function (event) {
+        const target = event.target;
+        if (target && target.tagName === 'IMG') {
+            handlerImgErrorLoad(target);
+        }
+    }, true);
 
     // Функция динамической подсветки input элементов
-    $body.on('input', 'input[displaylimit]', function() {
-        inputDisplayLimit.call(this);
-    });
-    $('input[displaylimit]').on('event-height', function() {
-        inputDisplayLimit.call(this);
+    $(document).on('event-height', 'input[displaylimit]', function() {
+        inputDisplayLimit(this);
     });
 
     // Функция динамической длины input элементов
-    $body.on('input', 'input[dynamlen]', function() {
-        inputDynamLen.call(this);
-    });
-    $('input[dynamlen]').on('event-height', function() {
-        inputDynamLen.call(this);
+    $(document).on('event-height', 'input[dynamlen]', function() {
+        inputDynamLen(this);
     });
     
-    $body.on('event-height', '[import-height]', function() {
-        checkElementsImportHeight();
+    $(document).on('event-height', '[import-height]', function() {
+        scheduleImportHeightUpdate();
     });
-    
-    checkElementsImportHeight();
 
-    $('input').trigger('input');
+    bindDynamicInputs(document);
+    bindImportHeight(document);
+    scheduleImportHeightUpdate();
+    observeDomChanges();
 });
 
-
-setInterval(function() {
-    $('input').trigger('event-height');
-}, 100)
-
 // Сами логические функции
-function inputDynamLen() {
-    const elem = $(this);
+function inputDynamLen(element) {
+    const elem = $(element);
     if ((!elem.hasAttr('empty-width')) || (elem.val().length > 0 && elem.hasAttr('empty-width'))) {
         elem.css('width', 0);
         elem.css('width', elem[0].scrollWidth + 8 + "px");
@@ -110,15 +205,16 @@ function inputDynamLen() {
     }
 };
 
-function inputDisplayLimit() {
-    const myText = $(this).val();
-    const maxLength = $(this).attr('maxlength');
-    const minLength = $(this).attr('minlength');
+function inputDisplayLimit(element) {
+    const elem = $(element);
+    const myText = elem.val();
+    const maxLength = elem.attr('maxlength');
+    const minLength = elem.attr('minlength');
 
     if ((maxLength && myText.length > maxLength) || (minLength && myText.length < minLength)) {
-        $(this).addClass('limit');
+        elem.addClass('limit');
     } else {
-        $(this).removeClass('limit');
+        elem.removeClass('limit');
     }
 }
 
@@ -127,21 +223,14 @@ function inputDisplayLimit() {
 
 function checkElementsImportHeight() {
     $('[import-height]').each(function() {
-        var filter = $(this).attr('import-height');
-        var foundElement = $(filter);
-        if (foundElement.length) {
-            var height = foundElement.outerHeight();
-            $(this).css('height', height + 'px');
-        } else {
-            console.warn('Элемент, соответствующий фильтру \"' + filter + '\", не найден.');
-        }
+        registerImportHeightElement(this);
     });
 }
 
 $(window).on('resize', function() {
-    checkElementsImportHeight();
+    scheduleImportHeightUpdate();
 });
 
 $(window).on('load', function(){
-    checkElementsImportHeight();
+    scheduleImportHeightUpdate();
 });

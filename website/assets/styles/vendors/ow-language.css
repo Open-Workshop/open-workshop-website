@@ -2,10 +2,10 @@
 
 .editing, #highlighting {
     /* Both elements need the same text and space styling so they are directly on top of each other */
-    margin: 10px;
     padding: 10px;
+    margin: 0;
     border: 0;
-    width: calc(100% - 15px);
+    width: 100%;
     height: 150px;
     overflow: hidden;
     position: absolute;
@@ -45,6 +45,7 @@
     z-index: 0;
     border-radius: 10pt;
     text-indent: -33.5pt;
+    border: var(--panel-border);
 }
 code.invisible-highlighting {
     opacity: 0;

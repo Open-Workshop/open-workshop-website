@@ -1,38 +1,67 @@
 <div class="standart-panel screenshots-edit">
-    <div class="wrapper screenshots-edit__wrapper">
-        <div class="slider screenshots-edit__slider{% if resources['no_many_screenshots'] %} one_slider{% endif %}">
-            <ul class="js__slider__images slider__images">
-                {% for item in resources['results'] %}
-                <a starthref="{{ item['url'] }}" idimg="{{ item['id'] }}" href="{{ item['url'] }}" starttypecontent="{{ item['type'] }}" typecontent="{{ item['type'] }}" class="slider__images-item screenshots-edit__item without-caption image-link">
-                    <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />
+    <div class="media-manager" id="media-manager">
+        <div class="media-manager__header">
+            <div class="media-manager__title">
+                <h3>Изображения</h3>
+                <p class="ow-muted">Логотип и скриншоты мода</p>
+            </div>
+            <span class="ow-badge" data-media-count>0</span>
+        </div>
+
+        <div class="media-manager__list" id="media-list">
+            {% for item in resources['results'] %}
+            {% if item['type'] in ['logo', 'screenshot'] %}
+            <div class="media-item" data-id="{{ item['id'] }}" data-start-url="{{ item['url'] }}" data-start-type="{{ item['type'] }}" data-source="url">
+                <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
+                    <img src="{{ item['url'] }}" alt="Изображение мода" onerror="this.src='/assets/images/image-not-found.webp'"/>
+                    <span class="media-item__badge" data-media-badge>
+                        {% if item['type'] == 'logo' %}Логотип{% else %}Скриншот{% endif %}
+                    </span>
                 </a>
-                {% endfor %}
-            </ul>
-
-            <img id="no-screenshots-error" src="/assets/images/image-not-found.webp" alt="Скриншот мода" />
-
-            <div class="edit-logos screenshots-edit__controls">
-                <div class="slider__controls screenshots-edit__controls-main">
-                    <div id="screenshot-edit-menu-{{ uid | default('1') }}" class="screenshots-edit__menu">
-                        <select id="type-select-screenshot" onchange="setTypeScreenshotSelect()" name="Выбор типа" class="screenshots-edit__select">
-                            <option value="logo">Логотип</option>
-                            <option value="screenshot">Скриншот</option>
+                <div class="media-item__meta">
+                    <div class="media-item__controls">
+                        <select class="media-item__type">
+                            <option value="logo" {% if item['type'] == 'logo' %}selected{% endif %}>Логотип</option>
+                            <option value="screenshot" {% if item['type'] == 'screenshot' %}selected{% endif %}>Скриншот</option>
                         </select>
-                        <input id="url-select-screenshot" onchange="setUrlScreenshotSelect()" type="url" placeholder="Ссылка на изображение" class="screenshots-edit__input">
+                        <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение">Удалить</button>
                     </div>
-                    <div class="screenshots-edit__pagers">
-                        <ol class="js__slider__pagers slider__pagers"></ol>
-                        <p id="no-screenshots-edit">Скриншотов нет</p>
-                    </div>
+                    <input type="url" class="media-item__url" value="{{ item['url'] }}" placeholder="URL изображения">
+                    <div class="media-item__source ow-muted">URL</div>
                 </div>
-                <div class="images-buttons screenshots-edit__actions">
-                    <button class="anime-scale screenshots-edit__button screenshots-edit__button--delete" onclick="deleteScreenshotSelect()" import-height="div#screenshot-edit-menu-{{ uid | default('1') }}">
-                        <img src="/assets/images/delete-image.svg" alt="Иконка удаления изображения">
-                    </button>
-                    <button class="anime-scale screenshots-edit__button screenshots-edit__button--add" onclick="addScreenshotSelect()">
-                        <img src="/assets/images/add-element.svg" alt="Иконка добавления нового изображения">
-                    </button>
-                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            <div class="media-manager__empty ow-muted" data-media-empty>Изображений пока нет</div>
+        </div>
+
+        <div class="media-manager__add">
+            <div class="media-manager__mode" role="group" aria-label="Способ добавления">
+                <button class="media-manager__mode-btn is-active" type="button" data-media-mode="url">URL</button>
+                <button class="media-manager__mode-btn" type="button" data-media-mode="file">Файл</button>
+            </div>
+
+            <div class="media-manager__row" data-media-row="url">
+                <select class="media-manager__type-input" data-media-input="type">
+                    <option value="logo">Логотип</option>
+                    <option value="screenshot" selected>Скриншот</option>
+                </select>
+                <input type="url" class="media-manager__input" data-media-input="url" placeholder="Ссылка на изображение">
+                <button class="button-style media-manager__add-btn" type="button" data-media-action="add">Добавить</button>
+            </div>
+
+            <div class="media-manager__row media-manager__row--file" data-media-row="file" hidden>
+                <select class="media-manager__type-input" data-media-input="type-file">
+                    <option value="logo">Логотип</option>
+                    <option value="screenshot" selected>Скриншот</option>
+                </select>
+                <input type="file" class="media-manager__file" data-media-input="file" accept="image/*">
+                <button class="button-style media-manager__add-btn" type="button" data-media-action="add-file">Добавить</button>
+            </div>
+
+            <div class="media-manager__hint ow-muted">
+                Если нужно заменить файл — удалите картинку и добавьте заново.
             </div>
         </div>
     </div>
