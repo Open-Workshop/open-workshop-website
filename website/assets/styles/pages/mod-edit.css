@@ -12,7 +12,8 @@
   opacity: 0;
 }
 
-.mod-edit-article {
+main.mod-edit {
+  z-index: 0;
   background-color: var(--main-panel-on-page-background);
   display: flex;
   justify-content: center;
@@ -27,13 +28,16 @@
   display: flex;
   padding: 3pt;
   position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
 }
 
-.mod-edit-article div.navigation {
+main.mod-edit div.navigation {
   display: flex;
 }
 
-.mod-edit-nav .navigation button {
+main.mod-edit .navigation > button {
   border-radius: 10px;
   background-color: #d9d9d9;
   border: none;
@@ -43,27 +47,27 @@
   transition: all 0.1s;
 }
 
-.mod-edit-nav .navigation button:hover {
+main.mod-edit .navigation > button:hover {
   background-color: #c5c5c5;
 }
 
-.mod-edit-nav .navigation button:active {
+main.mod-edit .navigation > button:active {
   background-color: #b3b3b3;
 }
 
-.mod-edit-nav .navigation button.toggle {
+main.mod-edit .navigation > button.toggle {
   background-color: #9899ac;
 }
 
-.mod-edit-nav .navigation button.toggle:hover {
+main.mod-edit .navigation > button.toggle:hover {
   background-color: #7e7f8f;
 }
 
-.mod-edit-nav .navigation button.toggle:active {
+main.mod-edit .navigation > button.toggle:active {
   background-color: #6c6d7a;
 }
 
-.mod-edit-nav .standart-panel {
+main.mod-edit .standart-panel {
   background-color: var(--panel-on-page-background);
   border-radius: 5pt;
   padding: 3pt;
