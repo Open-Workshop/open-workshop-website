@@ -6,7 +6,7 @@
     
     --header-background: black;
     --header-height: 66px;
-    
+
     --main-panel-on-page-background: #171718;
     --panel-on-page-background: #212225;
 
@@ -14,6 +14,11 @@
     --interactive-element-background-hover: rgb(35, 35, 118);
     --interactive-element-background-active: rgb(35, 35, 108);
     --interactive-element-background-disabled: rgb(35, 35, 98);
+
+    --interactive-element-dark-background: #2a2b3a;
+    --interactive-element-dark-background-hover: #37394c;
+    --interactive-element-dark-background-active: #3d3f5e;
+    --interactive-element-dark-background-disabled: #202128;
 
     --interactive-element-text: white;
     --interactive-element-text-hover: white;

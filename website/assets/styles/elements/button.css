@@ -23,6 +23,19 @@ button:disabled, .button-style.disabled {
     cursor: default;
 }
 
+button.dark {
+    background-color: var(--interactive-element-dark-background);
+}
+button.dark:hover {
+    background-color: var(--interactive-element-dark-background-hover);
+}
+button.dark:active {
+    background-color: var(--interactive-element-dark-background-active);
+}
+button.dark:disabled {
+    background-color: var(--interactive-element-dark-background-disabled);
+}
+
 button.toggled, .button-style.button-style-toggled {
     filter: brightness(80%);
 }

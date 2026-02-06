@@ -1,18 +1,17 @@
 <div class="standart-panel mod-edit-nav">
   <div class="navigation mod-edit-nav__group" variants="in-mod-page, in-catalog-view, params-mod">
-    <button id="start-page-button" variant="in-mod-page" onclick="Pager.change(this)">
+    <button id="start-page-button" class="dark" variant="in-mod-page" onclick="Pager.change(this)">
       <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
     </button>
-    <button variant="in-catalog-view" onclick="Pager.change(this)">
+    <button variant="in-catalog-view" class="dark" onclick="Pager.change(this)">
       <img src="/assets/images/image-ico.svg" alt="Иконка 'каталог'">
     </button>
-    <button variant="params-mod" onclick="Pager.change(this)">
+    <button variant="params-mod" class="dark" onclick="Pager.change(this)">
       <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
     </button>
   </div>
-  <div class="navigation mod-edit-nav__group mod-edit-nav__group--actions">
-    <button class="mod-edit-nav__save" onclick="saveChanges()">
-      <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
-    </button>
-  </div>
+
+  <button class="mod-edit-nav__save" onclick="saveChanges()">
+    <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
+  </button>
 </div>

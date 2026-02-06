@@ -9,12 +9,12 @@
       
     <div class="mod-edit__content">
       <div class="mod-edit__toolbar standart-panel">
-        <div class="navigation mod-edit__toolbar-group">
-          <button onclick="fullEditView(false)">
+        <div class="mod-edit__view-toggle" role="group" aria-label="Режим описания">
+          <button id="edit-view-button" class="mod-edit__toggle-btn is-active" onclick="fullEditView(false)" title="Редактирование" aria-pressed="true">
             <img src="/assets/images/edit-ico.svg" alt="Иконка 'редактирование'">
           </button>
           
-          <button onclick="fullEditView(true)">
+          <button id="preview-view-button" class="mod-edit__toggle-btn" onclick="fullEditView(true)" title="Предпросмотр" aria-pressed="false">
             <img src="/assets/images/eye-ico.svg" alt="Иконка 'предпросмотр'">
           </button>
         </div>
@@ -30,7 +30,7 @@
         {% include 'html-partials/desc-edit.html' %}
       {% endwith %} 
       
-      <article id="mod-description" class="mod-edit__preview"></article>
+      <article id="mod-description"></article>
     </div>
   </section>
 

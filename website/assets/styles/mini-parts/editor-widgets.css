@@ -1,11 +1,10 @@
 .desc-edit,
 #desc-edit {
   height: 200px;
-  width: 100%;
+  width: calc(100% + 20px);
   position: relative;
-  margin-top: -4px;
-  margin-left: -4px;
   padding: 8px;
+  margin: -12px;
 }
 
 .tags-edit {
@@ -118,9 +117,16 @@
   min-height: 56px;
 }
 
+#mod-dependence-selected > div.element, #dependence-edit-search-dependence > div.element {
+  cursor: pointer;
+}
+
+.dependence-edit__header {
+  padding: 5px;
+}
+
 .dependence-edit .all-mod-dependence {
   padding: 4px;
-  margin-top: -4px;
 }
 
 .dependence-edit .alls > .element {

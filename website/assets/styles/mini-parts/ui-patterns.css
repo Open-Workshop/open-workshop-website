@@ -12,7 +12,6 @@
     background: var(--panel-background);
     border: var(--panel-border);
     border-radius: var(--radius-md);
-    padding: var(--space-3);
 }
 
 .ow-panel--tight {
