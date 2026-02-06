@@ -1,40 +1,6 @@
-<div class="upload-file center" onclick="$('#input-mod-file-upload').click()">
+<div class="upload-file" onclick="$('#input-mod-file-upload').click()">
     <img src="/assets/images/add-file.svg" alt="Иконка добавления изображения">
-    <p id="input-mod-file-upload-text" style="color: rgb(255 255 255 / 70%); text-align: center;">выберите файл</p>
-
-    <style>
-        div.center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        div.upload-file {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 5pt;
-            padding: 5pt;
-            margin-top: 5pt;
-            border: 2px dashed white;
-            width: 97%;
-            height: 140px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        div.upload-file img {
-            transition: all 0.2s;
-        }
-        div.upload-file:hover img {
-            rotate: 5deg;
-        }
-
-        div.dragover {
-            background: rgba(0, 0, 0, 0.7);
-        }
-        div.dragover img {
-            scale: 1.1;
-        }
-    </style>
+    <p id="input-mod-file-upload-text" class="upload-file__text">выберите файл</p>
 
     <script>
         let $fileInput;

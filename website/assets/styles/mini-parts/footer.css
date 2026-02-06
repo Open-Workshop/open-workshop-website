@@ -1,5 +1,6 @@
 
 footer {
+    opacity: 0;
     display: flex;
     justify-content: center;
 
@@ -159,16 +160,12 @@ button.phone-navigator {
 }
 
 
-
-@media only screen and (min-width: 780px) {
+@media screen and (min-width: 780px) {
+    footer {
+        opacity: 1;
+    }
     button.phone-navigator {
         opacity: 0;
         pointer-events: none;
-    }
-}
-
-@media screen and (max-width: 781px) {
-    footer {
-        opacity: 0;
     }
 }
