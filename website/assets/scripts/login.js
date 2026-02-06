@@ -66,9 +66,10 @@ function authWindow(serviceUrl, bannerCloseWindow) {
 }
 
 function serviceDisconnect(service) {
-  const managerUrl = (window.OW && window.OW.api && window.OW.api.base) || document.body.getAttribute('manager-url');
-  const disconnectEndpoint = window.OW.api.paths.oauth.disconnect;
-  const url = `${managerUrl}${disconnectEndpoint.path.replace('{service}', service)}`;
+  const apiPaths = window.OWCore.getApiPaths();
+  const apiBase = window.OWCore.getApiBase();
+  const disconnectEndpoint = apiPaths.oauth.disconnect;
+  const url = `${apiBase}${disconnectEndpoint.path.replace('{service}', service)}`;
   fetch(url, {
     method: disconnectEndpoint.method
   }).then(response => {

@@ -9,9 +9,10 @@ function cookiesOkPress() {
 
 
 async function logon() {
-    const managerUrl = (window.OW && window.OW.api && window.OW.api.base) || document.body.getAttribute('manager-url');
-    const sessionEndpoint = window.OW.api.paths.session.logout;
-    const response = await fetch(`${managerUrl}${sessionEndpoint.path}`, {
+    const apiPaths = window.OWCore.getApiPaths();
+    const apiBase = window.OWCore.getApiBase();
+    const sessionEndpoint = apiPaths.session.logout;
+    const response = await fetch(`${apiBase}${sessionEndpoint.path}`, {
         method: sessionEndpoint.method,
         credentials: 'include'
     });

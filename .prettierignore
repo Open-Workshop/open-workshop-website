@@ -1,0 +1,3 @@
+website/assets/scripts/vendors/*.min.js
+website/assets/scripts/vendors/*.map
+website/assets/styles/vendors/*.map

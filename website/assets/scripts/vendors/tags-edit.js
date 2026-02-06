@@ -1,113 +1,121 @@
+/* eslint-env browser */
 
-const containerTags = $('div#tags-edit-selected-tags');
-const searchContainer = $("#tags-edit-search-tags");
-const owConfig = window.OW || {}
-const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
-const apiPaths = (owConfig.api && owConfig.api.paths) || {}
-const tagsPath = apiPaths.tag.list.path
+(function () {
+  const { getApiPaths, apiUrl } = window.OWCore;
+  const apiPaths = getApiPaths();
+  const tagsPath = apiPaths.tag.list.path;
 
-window.TagsSelector = {
+  const containerTags = $('div#tags-edit-selected-tags');
+  const searchContainer = $('#tags-edit-search-tags');
+
+  window.TagsSelector = {
     async searchRequestTagUpdate() {
-        const searchInput = $("#search-update-input-tags");
-        const pNoInList = $('p#show-more-count-tags');
+      const searchInput = $('#search-update-input-tags');
+      const pNoInList = $('p#show-more-count-tags');
 
-        pNoInList.addClass('hiden');
-        searchContainer.addClass('hiden');
+      pNoInList.addClass('hiden');
+      searchContainer.addClass('hiden');
 
-        const ref = await fetch(`${managerUrl}${tagsPath}?game_id=`+searchInput.attr('gameid')+'&page_size=30&name=' + searchInput.val(), {
-            credentials: 'include'
-        });
+      const ref = await fetch(
+        `${apiUrl(tagsPath)}?game_id=${searchInput.attr('gameid')}&page_size=30&name=${searchInput.val()}`,
+        { credentials: 'include' },
+      );
 
-        const data = await ref.json();
-        searchContainer.html(searchContainer.find('p')[0]);
+      const data = await ref.json();
+      searchContainer.html(searchContainer.find('p')[0]);
 
-        data.results.forEach(t => {
-            const newtag = searchContainer.append('<div onclick="TagsSelector.editTag(this)" tagid="' + t.id + '">' + t.name + '</div>').find('div:last');
+      data.results.forEach((t) => {
+        const newtag = searchContainer
+          .append('<div onclick="TagsSelector.editTag(this)" tagid="' + t.id + '">' + t.name + '</div>')
+          .find('div:last');
 
-            const inCont = containerTags.find('[tagid="' + t.id + '"]');
-            if (inCont.length > 0 && !inCont.hasClass('none-display')) {
-                newtag.addClass('selected-tag');
-            }
-        })
-
-        function notInList(number) {
-            pNoInList.text("И ещё " + number + " шт...");
-
-            if (number <= 0) {
-                pNoInList.attr('hidden', '')
-            } else {
-                pNoInList.removeAttr('hidden');
-            }
+        const inCont = containerTags.find('[tagid="' + t.id + '"]');
+        if (inCont.length > 0 && !inCont.hasClass('none-display')) {
+          newtag.addClass('selected-tag');
         }
+      });
 
-        notInList(data.database_size - data.results.length);
+      function notInList(number) {
+        pNoInList.text('И ещё ' + number + ' шт...');
+        if (number <= 0) {
+          pNoInList.attr('hidden', '');
+        } else {
+          pNoInList.removeAttr('hidden');
+        }
+      }
 
-        pNoInList.removeClass('hiden');
-        searchContainer.removeClass('hiden');
+      notInList(data.database_size - data.results.length);
+
+      pNoInList.removeClass('hiden');
+      searchContainer.removeClass('hiden');
     },
     editTag(tag) {
-        tag = $(tag);
+      tag = $(tag);
 
-        const tagName = tag.html(); // имя тега
-        const searchedTag = searchContainer.find('[tagid="' + tag.attr('tagid') + '"]'); // найденный тег в списке
+      const tagName = tag.html();
+      const searchedTag = searchContainer.find('[tagid="' + tag.attr('tagid') + '"]');
 
-        if (tag.hasClass('selected-tag') || tag.parent().attr('id') == 'tags-edit-selected-tags') { // тег уже выбран
-            searchedTag.removeClass('selected-tag'); // удаляем выделение
+      if (tag.hasClass('selected-tag') || tag.parent().attr('id') == 'tags-edit-selected-tags') {
+        searchedTag.removeClass('selected-tag');
 
-            const inCont = containerTags.find('[tagid="' + tag.attr('tagid') + '"]'); // найденный тег в списке выбранных
-            if (inCont.hasAttr('saved')) { // тег сохранен
-                inCont.addClass('none-display'); // скрываем его
-            } else {
-                inCont.remove(); // удаляем его
-            }
-        } else { // тег не выбран
-            searchedTag.addClass('selected-tag'); // выделяем
-
-            if (containerTags.find('[tagid="' + tag.attr('tagid') + '"]').length == 0) { // если такого тега еще нет в списке выбранных
-                containerTags.append('<div tagid="' + tag.attr('tagid') + '" onclick="TagsSelector.editTag(this)">' + tagName + '</div>'); // добавляем его
-            } else {
-                containerTags.find('[tagid="' + tag.attr('tagid') + '"]').removeClass('none-display'); // если уже есть, то отображаем
-            }
+        const inCont = containerTags.find('[tagid="' + tag.attr('tagid') + '"]');
+        if (inCont.hasAttr('saved')) {
+          inCont.addClass('none-display');
+        } else {
+          inCont.remove();
         }
+      } else {
+        searchedTag.addClass('selected-tag');
 
-        containerTags.parent().parent().trigger('event-height'); // обновляем высоту контейнера
+        if (containerTags.find('[tagid="' + tag.attr('tagid') + '"]').length == 0) {
+          containerTags.append(
+            '<div tagid="' + tag.attr('tagid') + '" onclick="TagsSelector.editTag(this)">' + tagName + '</div>',
+          );
+        } else {
+          containerTags.find('[tagid="' + tag.attr('tagid') + '"]').removeClass('none-display');
+        }
+      }
+
+      containerTags.parent().parent().trigger('event-height');
     },
     unselectAllTags() {
-        const allTag = Array.from(containerTags.find('[tagid]'));
-
-        allTag.forEach(t => {
-            TagsSelector.editTag(t);
-        })
+      const allTag = Array.from(containerTags.find('[tagid]'));
+      allTag.forEach((t) => {
+        TagsSelector.editTag(t);
+      });
     },
     async setDefaultSelectedTags(tags) {
-        if (tags.length == 0) return;
+      if (tags.length == 0) return;
 
-        const url = `${managerUrl}${tagsPath}?game_id=` + $('input#search-update-input-tags').attr('gameid') + '&tags_ids=[' + tags + ']';
-        
-        const ref = await fetch(url, {
-            credentials: 'include'
-        });
-        const data = await ref.json();
+      const url =
+        `${apiUrl(tagsPath)}?game_id=` +
+        $('input#search-update-input-tags').attr('gameid') +
+        '&tags_ids=[' +
+        tags +
+        ']';
 
-        data.results.forEach(t => {
-            // создаем новый тег
-            containerTags.append('<div tagid="' + t.id + '" saved onclick="TagsSelector.editTag(this)">' + t.name + '</div>');
-        })
+      const ref = await fetch(url, { credentials: 'include' });
+      const data = await ref.json();
 
-        containerTags.parent().parent().trigger('event-height'); // обновляем высоту контейнера
+      data.results.forEach((t) => {
+        containerTags.append('<div tagid="' + t.id + '" saved onclick="TagsSelector.editTag(this)">' + t.name + '</div>');
+      });
+
+      containerTags.parent().parent().trigger('event-height');
     },
     returnSelectedTags() {
-        const allTags = Array.from(containerTags.find('[tagid]'));
+      const allTags = Array.from(containerTags.find('[tagid]'));
 
-        const standardTags = allTags.filter(t => Number($(t).attr('saved')));
-        const notStandardTags = allTags.filter(t => !Number($(t).attr('saved')));
+      const standardTags = allTags.filter((t) => Number($(t).attr('saved')));
+      const notStandardTags = allTags.filter((t) => !Number($(t).attr('saved')));
 
-        return {
-            standard: standardTags.map(t => Number($(t).attr('tagid'))), // изначальные стандартные
-            standardSelected: standardTags.filter(t => !$(t).hasClass('none-display')).map(t => Number($(t).attr('tagid'))), // стандартные которые сейчас выбраны
-            standardNotSelected: standardTags.filter(t => $(t).hasClass('none-display')).map(t => Number($(t).attr('tagid'))), // стандартные которые сейчас не выбраны
-            notStandardSelected: notStandardTags.map(t => Number($(t).attr('tagid'))), // не стандартные которые сейчас выбраны
-            selected: allTags.filter(t => !$(t).hasClass('none-display')).map(t => Number($(t).attr('tagid'))), // просто те которые выбраны
-        };
-    }
-}
+      return {
+        standard: standardTags.map((t) => Number($(t).attr('tagid'))),
+        standardSelected: standardTags.filter((t) => !$(t).hasClass('none-display')).map((t) => Number($(t).attr('tagid'))),
+        standardNotSelected: standardTags.filter((t) => $(t).hasClass('none-display')).map((t) => Number($(t).attr('tagid'))),
+        notStandardSelected: notStandardTags.map((t) => Number($(t).attr('tagid'))),
+        selected: allTags.filter((t) => !$(t).hasClass('none-display')).map((t) => Number($(t).attr('tagid'))),
+      };
+    },
+  };
+})();

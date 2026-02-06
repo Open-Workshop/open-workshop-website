@@ -139,12 +139,11 @@ window.Cards = {
         let ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
         console.log('setterImgs', ids)
 
-        const owConfig = window.OW || {}
-        const managerUrl = (owConfig.api && owConfig.api.base) || document.body.getAttribute('manager-url')
-        const apiPaths = (owConfig.api && owConfig.api.paths) || {}
-        const resourcesPath = apiPaths.resource.list.path
+        const { getApiPaths, apiUrl } = window.OWCore;
+        const apiPaths = getApiPaths();
+        const resourcesPath = apiPaths.resource.list.path;
         const ownerType = owner_type === 'games' ? 'games' : 'mods'
-        const response = await fetch(`${managerUrl}${resourcesPath}?owner_type=${ownerType}&owner_ids=[${ids}]&page_size=50&types_resources=[\"logo\"]`, {
+        const response = await fetch(`${apiUrl(resourcesPath)}?owner_type=${ownerType}&owner_ids=[${ids}]&page_size=50&types_resources=[\"logo\"]`, {
             credentials: 'include'
         });
         const data = await response.json();

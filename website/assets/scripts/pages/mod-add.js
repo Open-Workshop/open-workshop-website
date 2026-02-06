@@ -2,9 +2,8 @@
   const root = document.getElementById('main-container');
   if (!root) return;
 
-  const ow = window.OW || {};
-  const apiBase = (ow.api && ow.api.base) || document.body.getAttribute('manager-url') || '';
-  const apiPaths = (ow.api && ow.api.paths) || {};
+  const apiBase = window.OWCore.getApiBase();
+  const apiPaths = window.OWCore.getApiPaths();
   const addModEndpoint = apiPaths.mod.add;
 
   const titleMod = $('input#mod-name-title');

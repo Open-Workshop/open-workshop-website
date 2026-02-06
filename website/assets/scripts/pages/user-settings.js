@@ -2,19 +2,9 @@
   const root = document.querySelector('main.user.settings');
   if (!root) return;
 
-  const ow = window.OW || {};
-  const apiBase = (ow.api && ow.api.base) || document.body.getAttribute('manager-url') || '';
-  const apiPaths = (ow.api && ow.api.paths) || {};
+  const apiPaths = window.OWCore.getApiPaths();
   const rightsList = (ow.rights && ow.rights.list) || [];
   const userId = root.dataset.userId;
-
-  function apiUrl(path) {
-    return `${apiBase}${path}`;
-  }
-
-  function formatPath(path, params) {
-    return path.replace(/\{(\w+)\}/g, (match, key) => (params[key] !== undefined ? params[key] : match));
-  }
 
   const pageProfileButton = document.querySelector('#page-profile-button');
   if (pageProfileButton && window.Pager) {
@@ -113,7 +103,9 @@
     }
 
     const endpoint = apiPaths.profile.delete;
-    const url = apiUrl(formatPath(endpoint.path, { user_id: userId }));
+    const url = window.OWCore.apiUrl(
+      window.OWCore.formatPath(endpoint.path, { user_id: userId }),
+    );
     fetch(url, { method: endpoint.method, credentials: 'include' }).then(function () {
       location.reload();
     });
@@ -126,7 +118,9 @@
   window.saveProfile = async function saveProfile() {
     let tofetch = false;
     const editEndpoint = apiPaths.profile.edit;
-    let url = apiUrl(formatPath(editEndpoint.path, { user_id: userId })) + '?';
+    let url =
+      window.OWCore.apiUrl(window.OWCore.formatPath(editEndpoint.path, { user_id: userId })) +
+      '?';
     let formData = new FormData();
 
     const $username = $('#username');
@@ -166,6 +160,7 @@
       tofetch = true;
     }
 
+    let profileSaved = !tofetch;
     if (tofetch) {
       try {
         const response = await fetch(url, {
@@ -182,6 +177,9 @@
             autohide: true,
             interval: 6000,
           });
+          profileSaved = false;
+        } else {
+          profileSaved = true;
         }
       } catch (error) {
         new Toast({
@@ -191,6 +189,7 @@
           autohide: true,
           interval: 6000,
         });
+        profileSaved = false;
       }
     }
 
@@ -198,7 +197,9 @@
     formData = new FormData();
 
     const editRightsEndpoint = apiPaths.profile.edit_rights;
-    url = apiUrl(formatPath(editRightsEndpoint.path, { user_id: userId }));
+    url = window.OWCore.apiUrl(
+      window.OWCore.formatPath(editRightsEndpoint.path, { user_id: userId }),
+    );
 
     function addRight(nameCheckbox) {
       const checkbox = document.getElementById('checkbox-rights-edit-' + nameCheckbox);
@@ -212,6 +213,7 @@
       addRight(rightsList[i]);
     }
 
+    let rightsSaved = !tofetchTWO;
     if (tofetchTWO) {
       try {
         const response = await fetch(url, {
@@ -228,6 +230,9 @@
             autohide: true,
             interval: 6000,
           });
+          rightsSaved = false;
+        } else {
+          rightsSaved = true;
         }
       } catch (error) {
         new Toast({
@@ -237,11 +242,14 @@
           autohide: true,
           interval: 6000,
         });
+        rightsSaved = false;
       }
     }
 
     if (tofetch || tofetchTWO) {
-      // saved
+      if (profileSaved && rightsSaved) {
+        location.reload();
+      }
     } else {
       new Toast({
         title: 'Сохранение',

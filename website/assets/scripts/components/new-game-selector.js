@@ -1,19 +1,13 @@
 (function () {
-  const ow = window.OW || {};
-  const apiBase = (ow.api && ow.api.base) || document.body.getAttribute('manager-url') || '';
-  const apiPaths = (ow.api && ow.api.paths) || {};
+  const apiPaths = window.OWCore.getApiPaths();
   const listPath = apiPaths.game.list.path;
-
-  function apiUrl(path) {
-    return `${apiBase}${path}`;
-  }
 
   window.searchUpdateInput = async function searchUpdateInput() {
     const $popup = $('div.popup-game-select');
     $popup.addClass('reset');
 
     const query = $('input#search-update-input').val();
-    const ref = await fetch(`${apiUrl(listPath)}?page_size=5&name=${query}`, {
+    const ref = await fetch(`${window.OWCore.apiUrl(listPath)}?page_size=5&name=${query}`, {
       credentials: 'include',
     });
     const data = await ref.json();

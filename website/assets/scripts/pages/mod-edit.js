@@ -4,8 +4,7 @@
 
   const modID = parseInt(root.dataset.modId, 10);
   const ow = window.OW || {};
-  const apiBase = (ow.api && ow.api.base) || document.body.getAttribute('manager-url') || '';
-  const apiPaths = (ow.api && ow.api.paths) || {};
+  const apiPaths = window.OWCore.getApiPaths();
   const publicIcons = (ow.assets && ow.assets.icons && ow.assets.icons.public) || {
     0: '/assets/images/svg/white/eye.svg',
     1: '/assets/images/svg/white/link.svg',
@@ -17,14 +16,6 @@
     1: 'Доступен по ссылке',
     2: 'Доступен только владельцам',
   };
-
-  function apiUrl(path) {
-    return `${apiBase}${path}`;
-  }
-
-  function formatPath(path, params) {
-    return path.replace(/\{(\w+)\}/g, (match, key) => (params[key] !== undefined ? params[key] : match));
-  }
 
   $(document).ready(function () {
     setTimeout(function () {
@@ -183,7 +174,7 @@
   async function updateMod(changes) {
     if (!Object.values(changes).some((v) => v.changed)) return;
     const endpoint = apiPaths.mod.edit;
-    const url = apiUrl(formatPath(endpoint.path, { mod_id: modID }));
+    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
     await send(url, endpoint.method, buildFormData(changes));
   }
 
@@ -222,19 +213,23 @@
       fd.append('resource_type', l.type);
       fd.append('resource_url', l.url);
       fd.append('resource_owner_id', modID);
-      await send(apiUrl(addEndpoint.path), addEndpoint.method, fd);
+      await send(window.OWCore.apiUrl(addEndpoint.path), addEndpoint.method, fd);
     }
 
     for (const l of logos.changed) {
       const fd = new FormData();
       if (l.type) fd.append('resource_type', l.type);
       if (l.url) fd.append('resource_url', l.url);
-      const url = apiUrl(formatPath(editEndpoint.path, { resource_id: l.id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(editEndpoint.path, { resource_id: l.id }),
+      );
       await send(url, editEndpoint.method, fd);
     }
 
     for (const id of logos.deleted) {
-      const url = apiUrl(formatPath(delEndpoint.path, { resource_id: id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(delEndpoint.path, { resource_id: id }),
+      );
       await send(url, delEndpoint.method);
     }
   }
@@ -258,11 +253,15 @@
     const addEndpoint = apiPaths.mod.tags_add;
     const delEndpoint = apiPaths.mod.tags_delete;
     for (const id of tags.new) {
-      const url = apiUrl(formatPath(addEndpoint.path, { mod_id: modID, tag_id: id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(addEndpoint.path, { mod_id: modID, tag_id: id }),
+      );
       await send(url, addEndpoint.method);
     }
     for (const id of tags.deleted) {
-      const url = apiUrl(formatPath(delEndpoint.path, { mod_id: modID, tag_id: id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(delEndpoint.path, { mod_id: modID, tag_id: id }),
+      );
       await send(url, delEndpoint.method);
     }
   }
@@ -286,11 +285,15 @@
     const addEndpoint = apiPaths.mod.dependencies_add;
     const delEndpoint = apiPaths.mod.dependencies_delete;
     for (const id of dep.new) {
-      const url = apiUrl(formatPath(addEndpoint.path, { mod_id: modID, dependencie_id: id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(addEndpoint.path, { mod_id: modID, dependencie_id: id }),
+      );
       await send(url, addEndpoint.method);
     }
     for (const id of dep.deleted) {
-      const url = apiUrl(formatPath(delEndpoint.path, { mod_id: modID, dependencie_id: id }));
+      const url = window.OWCore.apiUrl(
+        window.OWCore.formatPath(delEndpoint.path, { mod_id: modID, dependencie_id: id }),
+      );
       await send(url, delEndpoint.method);
     }
   }
