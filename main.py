@@ -136,14 +136,18 @@ async def mod_view_and_edit(mod_id):
 
         info['result']['size'] = await tool.size_format(info['result']['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
 
+        logo_item = None
         for image in resources["results"]: # Ищем логотип мода
             if image and image["type"] == "logo":
                 info["result"]["logo"] = image["url"] # Фиксируем, что нашли его
-                if not edit_page and len(resources["results"]) > 1: # На странице просмотра исключаем логотип из списка скриншотов
-                    resources["results"].remove(image)
+                logo_item = image
                 break
         else:
             info["result"]["logo"] = ''
+
+        # На странице просмотра держим логотип в списке и выводим его первым
+        if logo_item and not edit_page:
+            resources["results"] = [logo_item] + [item for item in resources["results"] if item is not logo_item]
 
         info["no_many_screenshots"] = len(resources["results"]) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 

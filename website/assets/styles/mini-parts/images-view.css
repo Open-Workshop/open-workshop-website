@@ -36,6 +36,8 @@
 }
 
 .slider__images-item {
+    display: flex;
+    justify-content: center;
     aspect-ratio: 10 / 7;
     overflow: hidden;
     min-width: 100%;
