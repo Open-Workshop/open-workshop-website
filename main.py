@@ -19,9 +19,6 @@ SHORT_WORDS = [
 ]
 
 
-js_datetime = "%Y-%m-%d %H:%M:%S"
-
-
 def _get_local_tz() -> datetime.tzinfo:
     tz_name = getattr(ow_config, "TIMEZONE", None)
     if tz_name:
@@ -40,6 +37,13 @@ def parse_api_datetime(value: str) -> datetime.datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=datetime.timezone.utc)
     return dt.astimezone(LOCAL_TZ)
+
+
+def format_js_datetime(value: datetime.datetime) -> str:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=datetime.timezone.utc)
+    # ISO 8601 with timezone offset for correct client-side parsing
+    return value.astimezone(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
 async def unified_route():
@@ -153,7 +157,7 @@ async def mod_view_and_edit(mod_id):
 
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
             input_date = parse_api_datetime(info['result'][key])
-            info['result'][f'{key}_js'] = input_date.strftime(js_datetime)
+            info['result'][f'{key}_js'] = format_js_datetime(input_date)
             info['result'][key] = dates.format_date(input_date, locale=launge)
 
         info['result']['id'] = mod_id # Фиксируем для рендера шаблона id мода
@@ -241,11 +245,11 @@ async def user(user_id):
 
         if profile_info["general"]["mute"]:
             input_date = parse_api_datetime(profile_info["general"]["mute"])
-            profile_info["general"]["mute_js"] = input_date.strftime(js_datetime)
+            profile_info["general"]["mute_js"] = format_js_datetime(input_date)
             profile_info["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
         input_date = parse_api_datetime(profile_info['general']['registration_date'])
-        profile_info['general']['registration_date_js'] = input_date.strftime(js_datetime)
+        profile_info['general']['registration_date_js'] = format_js_datetime(input_date)
         profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
         if profile_info['general']['about'] is None or len(profile_info['general']['about']) <= 0:
@@ -328,7 +332,7 @@ async def user_settings(user_id):
 
         if info_profile["general"]["mute"]:
             input_date = parse_api_datetime(info_profile["general"]["mute"])
-            info_profile["general"]["mute_js"] = input_date.strftime(js_datetime)
+            info_profile["general"]["mute_js"] = format_js_datetime(input_date)
             info_profile["general"]["mute"] = dates.format_datetime(input_date, format="short", locale=launge)
 
         if info_profile['general']['about'] is None or len(info_profile['general']['about']) <= 0:
@@ -338,7 +342,7 @@ async def user_settings(user_id):
             info_profile['general']['about_enable'] = True
 
         input_date = parse_api_datetime(info_profile['general']['registration_date'])
-        info_profile['general']['registration_date_js'] = input_date.strftime(js_datetime)
+        info_profile['general']['registration_date_js'] = format_js_datetime(input_date)
         info_profile['general']['registration_date'] = dates.format_date(input_date, locale=launge)
 
         if info_profile['general']['avatar_url'] is None or len(info_profile['general']['avatar_url']) <= 0:

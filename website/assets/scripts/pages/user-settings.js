@@ -156,7 +156,6 @@
     if ($mute.length && $mute.val() > 0) {
       const $unitSize = $('#mute-delta-unit');
       const dateResult = new Date(Date.now() + $mute.val() * $unitSize.val() * 1000);
-      dateResult.setHours(dateResult.getHours() + 3);
       formData.append('mute', dateResult.toISOString().slice(0, 19));
       tofetch = true;
     }
