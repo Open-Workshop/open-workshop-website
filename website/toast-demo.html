@@ -1,0 +1,74 @@
+{% extends 'html-partials/standart.html' %}
+
+{% block content %}
+<main class="about">
+    <article>
+        <h1>Демо уведомлений</h1>
+        <p>Эта страница показывает обновленный стиль toast-уведомлений.</p>
+        <button class="small" type="button" onclick="showToastDemo()">Показать еще раз</button>
+    </article>
+</main>
+
+<script>
+    const toastSamples = [
+        {
+            title: 'Успех',
+            text: 'Данные сохранены и готовы к использованию.',
+            theme: 'success',
+            autohide: true,
+            interval: 6500
+        },
+        {
+            title: 'Информация',
+            text: 'Доступно новое обновление интерфейса.',
+            theme: 'info',
+            autohide: true,
+            interval: 6500
+        },
+        {
+            title: 'Предупреждение',
+            text: 'Некоторые поля еще не заполнены.',
+            theme: 'warning',
+            autohide: true,
+            interval: 7000
+        },
+        {
+            title: 'Ошибка',
+            text: 'Не удалось загрузить данные. Попробуйте позже.',
+            theme: 'danger',
+            autohide: true,
+            interval: 8000
+        },
+        {
+            title: 'Действие',
+            text: 'Перейти к документации проекта.',
+            theme: 'dark',
+            autohide: true,
+            interval: 9000,
+            link: 'https://openworkshop.miskler.ru'
+        },
+        {
+            title: 'Без таймера',
+            text: 'Этот toast не скрывается автоматически.',
+            theme: 'secondary',
+            autohide: false
+        }
+    ];
+
+    function showToastDemo() {
+        toastSamples.forEach((sample, index) => {
+            window.setTimeout(() => new Toast(sample), index * 380);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showToastDemo);
+    } else {
+        showToastDemo();
+    }
+</script>
+{% endblock %}
+
+{% block title %}
+Open Workshop: Toast Demo
+{% endblock %}

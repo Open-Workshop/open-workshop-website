@@ -162,6 +162,8 @@ ROUTES: dict = {
         "/",
         "/index",
         "/index.html",
+        "/toast-demo",
+        "/toast-demo.html",
         "/about",
         "/about.html",
         "/apis",
