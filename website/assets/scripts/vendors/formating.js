@@ -56,7 +56,8 @@ window.Formating = {
         text = text.replace(/\[i\](.*?)\[\/i\]/gms, '<i>$1</i>');
         text = text.replace(/\[strike\](.*?)\[\/strike\]/gs, '<strike>$1</strike>');
         text = text.replace(/\[spoiler\](.*?)\[\/spoiler\]/gs, '<span class="spoiler">$1</span>');
-        text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr></hr>');
+        text = text.replace(/\[hr\](.*?)\[\/hr\]/gs, '<hr>');
+        text = text.replace(/\[hr\s*\/?\]/gi, '<hr>');
 
 
         text = text.replace(/\[list\]((?:.|\n)*?)\[\/list\]/gmi, '<list>$1</list>');
