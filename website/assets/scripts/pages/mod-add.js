@@ -135,6 +135,7 @@
       }
 
       const parsedUpload = new URL(uploadUrl);
+      const fileToUpload = fileMod.prop('files')[0];
       const token = parsedUpload.searchParams.get('token');
       const tokenPayload = token ? parseJwt(token) : null;
       const modId = transfer.mod_id || (tokenPayload ? tokenPayload.mod_id : null);
@@ -142,9 +143,10 @@
       const wsUrl =
         transfer.ws_url ||
         (jobId && token ? getWebSocketUrl(parsedUpload.origin, `/transfer/ws/${jobId}`, token) : null);
-
-      const uploadData = new FormData();
-      uploadData.append('file', fileMod.prop('files')[0]);
+      if (fileToUpload && fileToUpload.name) {
+        parsedUpload.searchParams.set('filename', fileToUpload.name);
+      }
+      const finalUploadUrl = parsedUpload.toString();
 
       let finalizeStarted = false;
       const finalizeStart = Date.now();
@@ -192,9 +194,12 @@
         poll();
       }
 
-      fetch(uploadUrl, {
+      fetch(finalUploadUrl, {
         method: 'POST',
-        body: uploadData,
+        body: fileToUpload,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
         credentials: 'omit',
       })
         .then(async (resp) => {

@@ -618,6 +618,9 @@
     }
 
     const parsedUpload = new URL(uploadUrl);
+    if (file && file.name) {
+      parsedUpload.searchParams.set('filename', file.name);
+    }
     const token = parsedUpload.searchParams.get('token');
     const tokenPayload = token ? parseJwt(token) : null;
     const jobId = transfer.job_id || (tokenPayload ? tokenPayload.job_id : null);
@@ -695,13 +698,13 @@
       }
     }
 
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
     try {
-      const resp = await fetch(uploadUrl, {
+      const resp = await fetch(parsedUpload.toString(), {
         method: 'POST',
-        body: uploadData,
+        body: file,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
         credentials: 'omit',
       });
       if (!resp.ok) {
