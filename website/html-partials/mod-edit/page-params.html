@@ -7,6 +7,10 @@
         <input id="mod-file-input" type="file" class="mod-edit__file" />
         <button class="button-style" type="button" onclick="uploadModVersion()">Загрузить</button>
       </div>
+      <div id="mod-upload-progress-wrap" class="mod-edit__progress" hidden>
+        <progress id="mod-upload-progress" max="100" value="0"></progress>
+        <p id="mod-upload-status" class="ow-muted"></p>
+      </div>
     </div>
 
     <div class="standart-panel mod-edit__panel mod-edit__panel--danger">

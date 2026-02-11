@@ -291,6 +291,17 @@ button.public-mod-toggle:active {
   min-width: 220px;
 }
 
+.mod-edit__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mod-edit__progress progress {
+  width: 100%;
+  height: 10px;
+}
+
 .mod-edit__confirm {
   display: flex;
   align-items: center;

@@ -27,17 +27,6 @@
   margin-top: 5pt;
 }
 
-@media screen and (min-width: 459px) {
-  .mod-add {
-    scale: 1.1;
-    margin-top: 30pt;
-  }
-}
-
-.desc-edit {
-  margin: 0;
-}
-
 .upload-file {
   background: rgba(0, 0, 0, 0.5);
   border-radius: 5pt;
@@ -73,6 +62,17 @@
 .upload-file__text {
   color: rgb(255 255 255 / 70%);
   text-align: center;
+}
+
+@media screen and (min-width: 459px) {
+  .mod-add {
+    scale: 1.1;
+    margin-top: 30pt;
+  }
+}
+
+.desc-edit {
+  margin: 0;
 }
 
 .main-body-game-selector {

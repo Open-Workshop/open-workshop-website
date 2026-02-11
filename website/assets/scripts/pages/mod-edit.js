@@ -10,6 +10,14 @@
     1: '/assets/images/svg/white/link.svg',
     2: '/assets/images/svg/white/lock.svg',
   };
+  const stageLabels = {
+    uploading: 'Загрузка файла...',
+    uploaded: 'Файл загружен',
+    repacking: 'Перепаковка файла...',
+    packed: 'Ожидание сохранения...',
+    downloading: 'Скачивание файла...',
+    downloaded: 'Файл скачан',
+  };
 
   const publicTitles = {
     0: 'Доступен всем',
@@ -20,6 +28,90 @@
   const mediaManagerState = {
     deleted: new Set(),
   };
+
+  function showUploadProgress() {
+    const wrap = document.getElementById('mod-upload-progress-wrap');
+    if (wrap) wrap.hidden = false;
+  }
+
+  function setUploadStatus(text) {
+    const el = document.getElementById('mod-upload-status');
+    if (el) el.textContent = text || '';
+  }
+
+  function setUploadProgress(percent) {
+    const el = document.getElementById('mod-upload-progress');
+    if (el) el.value = percent || 0;
+  }
+
+  function updateStage(stage) {
+    if (!stage) return;
+    const label = stageLabels[stage] || stage;
+    setUploadStatus(label);
+  }
+
+  function parseJwt(token) {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padding = payload.length % 4;
+    if (padding) {
+      payload += '='.repeat(4 - padding);
+    }
+    try {
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function getWebSocketUrl(baseUrl, path, token) {
+    const wsBase = baseUrl.replace(/^http/, 'ws');
+    const url = new URL(path, wsBase);
+    url.searchParams.set('token', token);
+    return url.toString();
+  }
+
+  async function fetchModInfo() {
+    const url = window.OWCore.apiUrl(window.OWCore.formatPath(apiPaths.mod.info.path, { mod_id: modID }));
+    const resp = await fetch(url, { credentials: 'include' }).catch(() => null);
+    if (!resp || !resp.ok) return null;
+    return resp.json().catch(() => null);
+  }
+
+  async function startUpdateTransfer(formData) {
+    const endpoint = apiPaths.mod.file;
+    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
+    const managerResp = await fetch(url, {
+      method: endpoint.method,
+      body: formData,
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        Accept: 'application/json',
+      },
+    });
+
+    if (managerResp.ok) {
+      const payload = await managerResp.json().catch(() => ({}));
+      if (payload && payload.transfer_url) {
+        return payload;
+      }
+      throw new Error('Ответ менеджера некорректен');
+    }
+
+    if (managerResp.status === 307 || managerResp.status === 302) {
+      const redirectUrl = managerResp.headers.get('Location');
+      if (!redirectUrl) {
+        throw new Error('Redirect URL не получен');
+      }
+      return { transfer_url: redirectUrl };
+    }
+
+    const text = await managerResp.text();
+    throw new Error(text || `Ошибка (${managerResp.status})`);
+  }
 
   function getLogoUrlFromMedia() {
     const items = document.querySelectorAll('.media-item');
@@ -497,13 +589,130 @@
       return;
     }
     const file = input.files[0];
-    const endpoint = apiPaths.mod.edit;
-    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
-    const fd = new FormData();
-    fd.append('mod_file', file);
-    await send(url, endpoint.method, fd);
-    new Toast({ title: 'Готово', text: 'Новая версия загружена', theme: 'success' });
-    location.reload();
+
+    showUploadProgress();
+    setUploadProgress(0);
+    updateStage('uploading');
+
+    const prevInfo = await fetchModInfo();
+    const prevDate = prevInfo && prevInfo.result ? prevInfo.result.date_update_file : null;
+
+    const formData = new FormData();
+    formData.append('pack_format', 'zip');
+    formData.append('pack_level', '3');
+
+    let transfer;
+    try {
+      transfer = await startUpdateTransfer(formData);
+    } catch (err) {
+      new Toast({ title: 'Ошибка', text: err.message || err, theme: 'danger' });
+      setUploadStatus('Ошибка получения ссылки');
+      return;
+    }
+
+    const uploadUrl = transfer.transfer_url;
+    if (!uploadUrl) {
+      new Toast({ title: 'Ошибка', text: 'Не удалось получить ссылку загрузки', theme: 'danger' });
+      setUploadStatus('Ошибка получения ссылки');
+      return;
+    }
+
+    const parsedUpload = new URL(uploadUrl);
+    const token = parsedUpload.searchParams.get('token');
+    const tokenPayload = token ? parseJwt(token) : null;
+    const jobId = transfer.job_id || (tokenPayload ? tokenPayload.job_id : null);
+    const rawWsUrl =
+      transfer.ws_url ||
+      (jobId && token ? getWebSocketUrl(parsedUpload.origin, `/transfer/ws/${jobId}`, token) : null);
+    const wsUrl = rawWsUrl ? rawWsUrl.replace(/^http/, 'ws') : null;
+
+    let finalizeStarted = false;
+    const finalizeStart = Date.now();
+    const maxFinalizeMs = 20 * 60 * 1000;
+
+    function startFinalizePoll() {
+      if (finalizeStarted) return;
+      finalizeStarted = true;
+      setUploadProgress(100);
+      updateStage('packed');
+
+      const poll = async () => {
+        if (Date.now() - finalizeStart > maxFinalizeMs) {
+          setUploadStatus('Обработка занимает слишком долго');
+          new Toast({
+            title: 'Обработка занимает слишком долго',
+            text: 'Попробуйте обновить страницу через несколько минут.',
+            theme: 'warning',
+            autohide: true,
+            interval: 6000,
+          });
+          return;
+        }
+        const info = await fetchModInfo();
+        const nextDate = info && info.result ? info.result.date_update_file : null;
+        if (nextDate && nextDate !== prevDate) {
+          setUploadStatus('Новая версия сохранена');
+          new Toast({ title: 'Готово', text: 'Новая версия загружена', theme: 'success' });
+          location.reload();
+          return;
+        }
+        setTimeout(poll, 3000);
+      };
+
+      poll();
+    }
+
+    if (wsUrl) {
+      try {
+        const ws = new WebSocket(wsUrl);
+        ws.onmessage = (event) => {
+          let data = null;
+          try {
+            data = JSON.parse(event.data);
+          } catch (e) {
+            return;
+          }
+          if (data.event === 'stage') {
+            updateStage(data.stage);
+          }
+          if (data.event === 'progress') {
+            if (data.total) {
+              const percent = Math.min(100, Math.round((data.bytes / data.total) * 100));
+              setUploadProgress(percent);
+            }
+            if (data.stage) updateStage(data.stage);
+          }
+          if (data.event === 'complete') {
+            startFinalizePoll();
+          }
+          if (data.event === 'error') {
+            setUploadStatus('Ошибка загрузки');
+            new Toast({ title: 'Ошибка', text: data.message || 'Ошибка загрузки', theme: 'danger' });
+          }
+        };
+      } catch (e) {
+        // WS is optional
+      }
+    }
+
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+
+    try {
+      const resp = await fetch(uploadUrl, {
+        method: 'POST',
+        body: uploadData,
+        credentials: 'omit',
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `Ошибка (${resp.status})`);
+      }
+      startFinalizePoll();
+    } catch (err) {
+      new Toast({ title: 'Ошибка', text: err.message || err, theme: 'danger' });
+      setUploadStatus('Ошибка загрузки');
+    }
   };
 
   window.deleteMod = async function deleteMod() {
