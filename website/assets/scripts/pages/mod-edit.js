@@ -74,8 +74,12 @@
   }
 
   async function fetchModInfo() {
-    const url = window.OWCore.apiUrl(window.OWCore.formatPath(apiPaths.mod.info.path, { mod_id: modID }));
-    const resp = await fetch(url, { credentials: 'include' }).catch(() => null);
+    const baseUrl = window.OWCore.apiUrl(
+      window.OWCore.formatPath(apiPaths.mod.info.path, { mod_id: modID }),
+    );
+    const url = new URL(baseUrl, window.location.origin);
+    url.searchParams.set('dates', 'true');
+    const resp = await fetch(url.toString(), { credentials: 'include' }).catch(() => null);
     if (!resp || !resp.ok) return null;
     return resp.json().catch(() => null);
   }
