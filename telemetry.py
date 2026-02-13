@@ -63,21 +63,59 @@ def _dsn_to_otlp_grpc_endpoint(dsn: str) -> str:
 
 
 def _enrich_current_request_span(trace_module: object) -> None:
-    """Add route details to the current request span."""
+    """Backward-compatible helper for response_hook-based enrichment."""
     try:
         span = trace_module.get_current_span()  # type: ignore[attr-defined]
+        _flask_response_hook(span, "", [])
+    except Exception:
+        _LOG.exception("Failed to enrich request span.")
+
+
+def _flask_response_hook(span: object, _status: str, _response_headers: object) -> None:
+    """Add route details to Flask server spans."""
+    try:
         if not span or not span.is_recording():
             return
 
         route_rule = request.url_rule.rule if request.url_rule else None
         span_route = route_rule or request.path
+        method = (request.method or "HTTP").upper()
+        target = request.full_path.rstrip("?")
 
-        span.set_name(f"{request.method} {span_route}")
+        span.set_name(f"{method} {span_route}")
         span.set_attribute("http.route", span_route)
-        span.set_attribute("http.target", request.full_path.rstrip("?"))
+        span.set_attribute("http.target", target)
         span.set_attribute("flask.endpoint", request.endpoint or "unknown")
     except Exception:
-        _LOG.exception("Failed to enrich request span.")
+        _LOG.exception("Failed to enrich Flask request span.")
+
+
+def _aiohttp_span_name(params: object) -> str:
+    try:
+        method = str(getattr(params, "method", "HTTP")).upper()
+        url = getattr(params, "url", None)
+        path = getattr(url, "path", "") or "/"
+        return f"{method} {path}"
+    except Exception:
+        return "HTTP"
+
+
+def _aiohttp_request_hook(span: object, params: object) -> None:
+    """Add route-like attributes for outbound aiohttp spans."""
+    try:
+        if not span or not span.is_recording():
+            return
+
+        method = str(getattr(params, "method", "HTTP")).upper()
+        url = getattr(params, "url", None)
+        path = getattr(url, "path", "") or "/"
+        query_string = getattr(url, "query_string", "")
+
+        span.set_name(f"{method} {path}")
+        span.set_attribute("http.route", path)
+        span.set_attribute("http.target", f"{path}?{query_string}" if query_string else path)
+    except Exception:
+        _LOG.exception("Failed to enrich aiohttp client span.")
 
 
 def setup_uptrace_telemetry(app: Flask) -> bool:
@@ -145,14 +183,21 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
 
-        FlaskInstrumentor().instrument_app(app, excluded_urls=flask_excluded_urls)
-        AioHttpClientInstrumentor().instrument()
+        FlaskInstrumentor().instrument_app(
+            app,
+            excluded_urls=flask_excluded_urls,
+            response_hook=_flask_response_hook,
+        )
+        aiohttp_instrumentor = AioHttpClientInstrumentor()
+        try:
+            aiohttp_instrumentor.instrument(
+                span_name=_aiohttp_span_name,
+                request_hook=_aiohttp_request_hook,
+            )
+        except TypeError:
+            # Compatibility with older instrumentation versions.
+            aiohttp_instrumentor.instrument(span_name=_aiohttp_span_name)
         atexit.register(_shutdown_provider, provider)
-
-        @app.after_request
-        def _uptrace_after_request(response):
-            _enrich_current_request_span(trace)
-            return response
 
         _INSTRUMENTED = True
         setattr(app, "_uptrace_telemetry_enabled", True)
