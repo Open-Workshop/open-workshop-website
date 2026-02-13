@@ -4,3 +4,7 @@ SQLAlchemy
 babel
 mysqlclient
 waitress
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
+opentelemetry-instrumentation-flask
+opentelemetry-instrumentation-aiohttp-client

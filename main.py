@@ -10,9 +10,11 @@ import sitemapper as sitemapper
 from user_manager import UserHandler
 import ow_config
 import app_config
+from telemetry import setup_uptrace_telemetry
 
 
 app = Flask(__name__, template_folder='website')
+setup_uptrace_telemetry(app)
 
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
