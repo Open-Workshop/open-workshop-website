@@ -6,11 +6,12 @@ import logging
 import os
 from urllib.parse import parse_qs, urlparse
 
-from flask import Flask
+from flask import Flask, request
 
 
 _LOG = logging.getLogger(__name__)
 _INSTRUMENTED = False
+_DEFAULT_FLASK_EXCLUDED_URLS = r"^/assets/.*,^/favicon\.ico$,^/robots\.txt$"
 
 
 def _parse_dsn(dsn: str):
@@ -61,6 +62,24 @@ def _dsn_to_otlp_grpc_endpoint(dsn: str) -> str:
     return f"{parsed.scheme}://{host}"
 
 
+def _enrich_current_request_span(trace_module: object) -> None:
+    """Add route details to the current request span."""
+    try:
+        span = trace_module.get_current_span()  # type: ignore[attr-defined]
+        if not span or not span.is_recording():
+            return
+
+        route_rule = request.url_rule.rule if request.url_rule else None
+        span_route = route_rule or request.path
+
+        span.set_name(f"{request.method} {span_route}")
+        span.set_attribute("http.route", span_route)
+        span.set_attribute("http.target", request.full_path.rstrip("?"))
+        span.set_attribute("flask.endpoint", request.endpoint or "unknown")
+    except Exception:
+        _LOG.exception("Failed to enrich request span.")
+
+
 def setup_uptrace_telemetry(app: Flask) -> bool:
     """Initialize OpenTelemetry + Uptrace integration.
 
@@ -82,6 +101,7 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
     traces_endpoint = _read_setting("UPTRACE_OTLP_TRACES_URL")
     grpc_endpoint = _read_setting("UPTRACE_OTLP_GRPC_URL")
     protocol = (_read_setting("UPTRACE_OTLP_PROTOCOL") or "").lower().strip()
+    flask_excluded_urls = _read_setting("UPTRACE_FLASK_EXCLUDED_URLS", _DEFAULT_FLASK_EXCLUDED_URLS)
 
     try:
         from opentelemetry import trace
@@ -125,9 +145,14 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
 
-        FlaskInstrumentor().instrument_app(app)
+        FlaskInstrumentor().instrument_app(app, excluded_urls=flask_excluded_urls)
         AioHttpClientInstrumentor().instrument()
         atexit.register(_shutdown_provider, provider)
+
+        @app.after_request
+        def _uptrace_after_request(response):
+            _enrich_current_request_span(trace)
+            return response
 
         _INSTRUMENTED = True
         setattr(app, "_uptrace_telemetry_enabled", True)
