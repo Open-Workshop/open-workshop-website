@@ -65,15 +65,6 @@ def _dsn_to_otlp_grpc_endpoint(dsn: str) -> str:
     return f"{parsed.scheme}://{host}"
 
 
-def _enrich_current_request_span(trace_module: object) -> None:
-    """Backward-compatible helper for response_hook-based enrichment."""
-    try:
-        span = trace_module.get_current_span()  # type: ignore[attr-defined]
-        _flask_response_hook(span, "", [])
-    except Exception:
-        _LOG.exception("Failed to enrich request span.")
-
-
 def _flask_response_hook(span: object, _status: str, _response_headers: object) -> None:
     """Add route details to Flask server spans."""
     try:
