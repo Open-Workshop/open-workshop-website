@@ -17,6 +17,7 @@ export UPTRACE_DSN="https://<token>@api.uptrace.dev/<project_id>"
 export OTEL_SERVICE_NAME="open-workshop-website"
 export OTEL_SERVICE_VERSION="1.0.0"
 export OTEL_DEPLOYMENT_ENVIRONMENT="production"
+# export UPTRACE_OTLP_PROTOCOL="grpc"   # or "http"
 python3 main.py
 ```
 
@@ -24,4 +25,5 @@ python3 main.py
 
 ```bash
 export UPTRACE_OTLP_TRACES_URL="https://api.uptrace.dev/v1/traces"
+# export UPTRACE_OTLP_GRPC_URL="https://api.uptrace.dev:4317"
 ```
