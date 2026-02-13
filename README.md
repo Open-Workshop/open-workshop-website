@@ -18,7 +18,7 @@ export OTEL_SERVICE_NAME="open-workshop-website"
 export OTEL_SERVICE_VERSION="1.0.0"
 export OTEL_DEPLOYMENT_ENVIRONMENT="production"
 # export UPTRACE_OTLP_PROTOCOL="grpc"   # or "http"
-# export UPTRACE_FLASK_EXCLUDED_URLS="^/assets/.*,^/favicon\\.ico$,^/robots\\.txt$"
+# export UPTRACE_FLASK_EXCLUDED_URLS="^https?://[^/]+/assets/.*,^https?://[^/]+/favicon\\.ico$,^https?://[^/]+/robots\\.txt$"
 python3 main.py
 ```
 
@@ -29,5 +29,6 @@ export UPTRACE_OTLP_TRACES_URL="https://api.uptrace.dev/v1/traces"
 # export UPTRACE_OTLP_GRPC_URL="https://api.uptrace.dev:4317"
 ```
 
-По умолчанию статические URL (`/assets/*`, `favicon`, `robots.txt`) исключаются из трейсинга,
+По умолчанию статические URL (`/assets/*`, `favicon`, `robots.txt`) исключаются из трейсинга
+(в формате полного URL, как его проверяет Flask-инструментатор),
 чтобы не забивать список спанов служебным шумом.

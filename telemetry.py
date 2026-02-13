@@ -11,7 +11,10 @@ from flask import Flask, request
 
 _LOG = logging.getLogger(__name__)
 _INSTRUMENTED = False
-_DEFAULT_FLASK_EXCLUDED_URLS = r"^/assets/.*,^/favicon\.ico$,^/robots\.txt$"
+_DEFAULT_FLASK_EXCLUDED_URLS = (
+    r"^/assets/.*,^/favicon\.ico$,^/robots\.txt$,"
+    r"^https?://[^/]+/assets/.*,^https?://[^/]+/favicon\.ico$,^https?://[^/]+/robots\.txt$"
+)
 
 
 def _parse_dsn(dsn: str):
@@ -78,7 +81,11 @@ def _flask_response_hook(span: object, _status: str, _response_headers: object) 
             return
 
         route_rule = request.url_rule.rule if request.url_rule else None
-        span_route = route_rule or request.path
+        # For catch-all static route, use the real requested path so Uptrace has useful grouping.
+        if request.endpoint == "serve_static" and route_rule == "/<path:filename>":
+            span_route = request.path
+        else:
+            span_route = route_rule or request.path
         method = (request.method or "HTTP").upper()
         target = request.full_path.rstrip("?")
 
