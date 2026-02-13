@@ -4,6 +4,8 @@ from __future__ import annotations
 import atexit
 import logging
 import os
+import re
+from functools import lru_cache
 from urllib.parse import parse_qs, urlparse
 
 from flask import Flask, request
@@ -89,12 +91,80 @@ def _flask_response_hook(span: object, _status: str, _response_headers: object) 
         _LOG.exception("Failed to enrich Flask request span.")
 
 
+_PATH_PARAM_RE = re.compile(r"\{[^{}]+\}")
+_SEGMENT_INT_RE = re.compile(r"^\d+$")
+_SEGMENT_UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+)
+_SEGMENT_HEX_RE = re.compile(r"^[0-9a-fA-F]{16,}$")
+
+
+def _template_to_regex(path_template: str) -> re.Pattern[str]:
+    chunks: list[str] = []
+    cursor = 0
+    for match in _PATH_PARAM_RE.finditer(path_template):
+        static_part = path_template[cursor:match.start()]
+        if static_part:
+            chunks.append(re.escape(static_part))
+        chunks.append(r"[^/]+")
+        cursor = match.end()
+
+    tail = path_template[cursor:]
+    if tail:
+        chunks.append(re.escape(tail))
+
+    return re.compile(rf"^{''.join(chunks)}$")
+
+
+@lru_cache(maxsize=1)
+def _api_path_templates() -> tuple[tuple[re.Pattern[str], str], ...]:
+    try:
+        import app_config
+
+        templates: list[tuple[re.Pattern[str], str]] = []
+        paths = app_config.PUBLIC_CONFIG.get("api", {}).get("paths", {})
+        for category in paths.values():
+            if not isinstance(category, dict):
+                continue
+            for entry in category.values():
+                if not isinstance(entry, dict):
+                    continue
+                path_template = entry.get("path")
+                if isinstance(path_template, str) and path_template.startswith("/"):
+                    templates.append((_template_to_regex(path_template), path_template))
+
+        # More specific templates first.
+        templates.sort(key=lambda item: len(item[1]), reverse=True)
+        return tuple(templates)
+    except Exception:
+        return ()
+
+
+def _normalize_client_path(path: str) -> str:
+    if not path:
+        return "/"
+
+    for pattern, path_template in _api_path_templates():
+        if pattern.match(path):
+            return path_template
+
+    segments = path.split("/")
+    for idx, segment in enumerate(segments):
+        if not segment:
+            continue
+        if _SEGMENT_INT_RE.match(segment) or _SEGMENT_UUID_RE.match(segment) or _SEGMENT_HEX_RE.match(segment):
+            segments[idx] = "{id}"
+
+    normalized = "/".join(segments)
+    return normalized or "/"
+
+
 def _aiohttp_span_name(params: object) -> str:
     try:
         method = str(getattr(params, "method", "HTTP")).upper()
         url = getattr(params, "url", None)
         path = getattr(url, "path", "") or "/"
-        return f"{method} {path}"
+        return f"{method} {_normalize_client_path(path)}"
     except Exception:
         return "HTTP"
 
@@ -108,11 +178,12 @@ def _aiohttp_request_hook(span: object, params: object) -> None:
         method = str(getattr(params, "method", "HTTP")).upper()
         url = getattr(params, "url", None)
         path = getattr(url, "path", "") or "/"
+        route_path = _normalize_client_path(path)
         query_string = getattr(url, "query_string", "")
 
-        span.update_name(f"{method} {path}")
-        span.set_attribute("http.route", path)
-        span.set_attribute("http_route", path)
+        span.update_name(f"{method} {route_path}")
+        span.set_attribute("http.route", route_path)
+        span.set_attribute("http_route", route_path)
         span.set_attribute("http.target", f"{path}?{query_string}" if query_string else path)
     except Exception:
         _LOG.exception("Failed to enrich aiohttp client span.")
