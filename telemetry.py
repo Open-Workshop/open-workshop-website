@@ -89,8 +89,9 @@ def _flask_response_hook(span: object, _status: str, _response_headers: object) 
         method = (request.method or "HTTP").upper()
         target = request.full_path.rstrip("?")
 
-        span.set_name(f"{method} {span_route}")
+        span.update_name(f"{method} {span_route}")
         span.set_attribute("http.route", span_route)
+        span.set_attribute("http_route", span_route)
         span.set_attribute("http.target", target)
         span.set_attribute("flask.endpoint", request.endpoint or "unknown")
     except Exception:
@@ -118,8 +119,9 @@ def _aiohttp_request_hook(span: object, params: object) -> None:
         path = getattr(url, "path", "") or "/"
         query_string = getattr(url, "query_string", "")
 
-        span.set_name(f"{method} {path}")
+        span.update_name(f"{method} {path}")
         span.set_attribute("http.route", path)
+        span.set_attribute("http_route", path)
         span.set_attribute("http.target", f"{path}?{query_string}" if query_string else path)
     except Exception:
         _LOG.exception("Failed to enrich aiohttp client span.")
