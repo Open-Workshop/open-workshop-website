@@ -1,4 +1,5 @@
 let descResizeRaf = 0;
+let descElementResizeObserver = null;
 
 function normalizeTextarea(textareaDesc) {
     if (!textareaDesc) return null;
@@ -16,12 +17,35 @@ function scheduleDescResize() {
     });
 }
 
+function ensureDescElementResizeObserver() {
+    if (descElementResizeObserver || !window.ResizeObserver) return;
+    descElementResizeObserver = new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+            const textarea = $(entry.target);
+            if (!textarea.length) return;
+            descOnHeight(textarea.parent(), textarea);
+        });
+    });
+}
+
+function isMeasurableTextarea(element) {
+    if (!element || !element.length || !element[0]) return false;
+    const node = element[0];
+    if (!node.isConnected) return false;
+    if (node.getClientRects().length === 0) return false;
+    return node.clientWidth > 0;
+}
+
 function initDescTextarea(textarea) {
     const $textarea = normalizeTextarea(textarea);
     if (!$textarea || !$textarea.length) return;
     if ($textarea.attr('data-desc-init')) return;
     $textarea.attr('data-desc-init', '1');
     $textarea.attr('startdata', $textarea.val());
+    ensureDescElementResizeObserver();
+    if (descElementResizeObserver) {
+        descElementResizeObserver.observe($textarea[0]);
+    }
     fullDescUpdate($textarea);
 }
 
@@ -57,6 +81,8 @@ $(document).ready(function() {
     });
 
     scheduleDescResize();
+    setTimeout(scheduleDescResize, 100);
+    setTimeout(scheduleDescResize, 350);
     observeDescEditor();
 });
 
@@ -88,13 +114,19 @@ function limitRenderUpdate(root, editing) {
 }
 
 function descOnHeight(root, element) {
-    element.css('height', 0);
-    var heightCurr = (element[0].scrollHeight);
+    if (!isMeasurableTextarea(element)) return;
 
-    root.css('height', heightCurr + "px");
-    element.css('height', heightCurr + "px");
-    root.find("#highlighting").css('height', heightCurr + "px");
-    root.find("#desc-edit").css('height', heightCurr + "px");
+    const rawNode = element[0];
+    rawNode.style.height = "auto";
+    let heightCurr = rawNode.scrollHeight;
+    const minHeight = parseFloat(window.getComputedStyle(rawNode).minHeight) || 0;
+    if (!Number.isFinite(heightCurr) || heightCurr <= 0) return;
+    heightCurr = Math.max(heightCurr, minHeight);
+
+    const nextHeight = heightCurr + "px";
+    root.css('height', nextHeight);
+    element.css('height', nextHeight);
+    root.find("#highlighting").css('height', nextHeight);
 }
 
 function descUpdate(root, text) {
