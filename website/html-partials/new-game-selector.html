@@ -1,18 +1,16 @@
 <div class="main-body-game-selector">
     <img errorcap src="/assets/images/choose-man.webp" alt="Иконка игры" class="game-select-logo">
     
-    <div class="game-selector__body">
-        <div class="select-game-menu" onclick="stateMachineGameSelect()">
-            <p>Игра не выбрана</p>
-            <img src="/assets/images/drop-down-list.svg" alt="Иконка выпадающего меню">
-        </div>
+    <div class="select-game-menu">
+        <p>Игра не выбрана</p>
+        <img src="/assets/images/drop-down-list.svg" alt="Иконка выпадающего меню">
+    </div>
 
-        <div class="popup-game-select">
-            <input id="search-update-input" type="text" placeholder="Поиск..." oninput="searchUpdateInput()">
-            
-            <div id="all-games-search-results"></div>
-            
-            <p id="show-more-count">И ещё 10 шт...</p>
-        </div>
+    <div class="popup-game-select">
+        <input id="search-update-input" type="text" placeholder="Поиск..." oninput="searchUpdateInput()">
+        
+        <div id="all-games-search-results"></div>
+        
+        <p id="show-more-count">И ещё 10 шт...</p>
     </div>
 </div>

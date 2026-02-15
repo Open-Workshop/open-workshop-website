@@ -405,22 +405,15 @@
     window.toggleNextPublic(false);
   }
 
-  const descriptionHelpText = '[h1]Гайд По Форматированию![/h1]\n\nФорматирование работает как в [b]полном[/b] описании мода, так и в [i]коротком[/i].\n\nФорматирование поддерживает заголовки от 1 до 6 (от большего к меньшему).\nФорматирование в виде добавления ссылок как вида https://openworkshop.su , так и [url=https://openworkshop.su]текста с гиперссылкой[/url]\n\nТак же можно вставлять ссылки на изображения:\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\nА ещё можно создать список:\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]\n\n[h5]Удачи в разработке![/h5]';
-  const guideEditWarningText = 'Вы редактируете текст гайда. Эти правки не сохраняются для описания мода.';
-
   function initDescriptionModules() {
     if (!window.OWDescriptionModules) return;
     window.OWDescriptionModules.init({
       moduleKey: 'full',
       limit: 10000,
-      helpText: descriptionHelpText,
-      warningText: guideEditWarningText,
     });
     window.OWDescriptionModules.init({
       moduleKey: 'catalog',
       limit: 256,
-      helpText: descriptionHelpText,
-      warningText: guideEditWarningText,
     });
     window.OWDescriptionModules.setView('full', false);
     window.OWDescriptionModules.setView('catalog', false);
