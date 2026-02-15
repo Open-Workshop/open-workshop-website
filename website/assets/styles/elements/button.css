@@ -23,16 +23,16 @@ button:disabled, .button-style.disabled {
     cursor: default;
 }
 
-button.dark {
+button.dark, .button-style.dark {
     background-color: var(--interactive-element-dark-background);
 }
-button.dark:hover {
+button.dark:hover, .button-style.dark:hover {
     background-color: var(--interactive-element-dark-background-hover);
 }
-button.dark:active {
+button.dark:active, .button-style.dark:active {
     background-color: var(--interactive-element-dark-background-active);
 }
-button.dark:disabled {
+button.dark:disabled, .button-style.dark:disabled {
     background-color: var(--interactive-element-dark-background-disabled);
 }
 

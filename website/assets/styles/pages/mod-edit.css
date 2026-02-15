@@ -166,10 +166,6 @@ button.public-mod-toggle:active {
 }
 
 .mod-edit__params {
-  margin-top: 24px;
-}
-
-.mod-edit__params {
   display: flex;
   flex-direction: column;
   gap: 12px;
