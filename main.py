@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request, make_response, redirect
+from flask import Flask, render_template, send_from_directory, request, make_response
 from pathlib import Path
 from babel import dates
 import datetime
@@ -126,7 +126,7 @@ async def mod_view_and_edit(mod_id):
         right_edit_mod = handler.access_to_mod(my_mod=user_is_author, owner_mod=user_is_owner)
 
         edit_page = '/edit' in request.path
-        if False and edit_page and not right_edit_mod['edit']:
+        if edit_page and not right_edit_mod['edit']:
             if not handler.profile:
                 page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
             elif right_edit_mod['in_mute']:
