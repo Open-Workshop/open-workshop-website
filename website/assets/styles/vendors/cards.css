@@ -80,6 +80,7 @@ div.flap-buttons {
 div.flap-buttons button, div.flap-buttons a {
     aspect-ratio: 1 / 1;
     margin: 2.5px;
+    padding: 5px;
 }
 
 div.flap-buttons img {

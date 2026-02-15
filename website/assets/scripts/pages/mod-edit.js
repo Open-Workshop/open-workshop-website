@@ -133,7 +133,63 @@
 
   function updateCatalogLogo() {
     const logoHref = getLogoUrlFromMedia();
-    if (logoHref) $('img.card__image').attr('src', logoHref);
+    if (!logoHref) return;
+    $(`img#preview-logo-card-${modID}`).attr('src', logoHref);
+  }
+
+  function ensureCatalogPreviewApi() {
+    if (window.Catalog) return;
+
+    window.Catalog = {
+      masonry: function () {},
+      cardShow: function (cardClick) {
+        const $cards = $(cardClick).closest('div.cards');
+        if (!$cards.length) return;
+        $cards.addClass('showing');
+        $cards.find('.card').removeClass('show');
+        $(cardClick).closest('.card').addClass('show');
+      },
+      cardsCancel: function () {
+        const $cards = $('div.mod-edit__catalog-cards');
+        if (!$cards.length) return;
+        $cards.removeClass('showing');
+        $cards.find('.card').removeClass('show');
+      },
+    };
+  }
+
+  function buildCatalogPreviewCard(shortDescription, titleValue) {
+    const cardsContainer = document.querySelector('div.mod-edit__catalog-cards');
+    if (!cardsContainer || !window.Cards || typeof window.Cards.create !== 'function') return null;
+
+    ensureCatalogPreviewApi();
+
+    const sizeText = cardsContainer.dataset.modSize || '';
+    const gameId = cardsContainer.dataset.gameId || '';
+    const doplink = gameId ? `?sgame=no&game=${encodeURIComponent(gameId)}` : '';
+    const logoHref = getLogoUrlFromMedia() || '/assets/images/loading.webp';
+    const tags = sizeText
+      ? [{ text: '📦', description: 'Размер мода', value: sizeText }]
+      : [];
+
+    const card = window.Cards.create(
+      {
+        id: modID,
+        name: titleValue || '',
+        short_description: shortDescription || '',
+        logo: logoHref,
+        doplink,
+      },
+      0,
+      true,
+      '',
+      false,
+      tags,
+    );
+
+    cardsContainer.innerHTML = '';
+    cardsContainer.appendChild(card);
+    return card;
   }
 
   $(document).ready(function () {
@@ -157,14 +213,23 @@
   });
 
   function initCatalogPreview() {
-    const $cardDescD = $('div.card-description');
     const $shortDescD = $('.mod-edit__content[data-desc-module="catalog"] div[limit=256] textarea.editing').first();
+    const $titleInput = $('input.title-mod');
     if (!$shortDescD.length) return;
 
-    updateCatalogLogo();
+    const initialShortDesc = $shortDescD.val();
+    const initialTitle = $titleInput.length ? $titleInput.val() : '';
+    const card = buildCatalogPreviewCard(initialShortDesc, initialTitle);
+    if (!card) return;
 
-    $cardDescD.attr('cashData', $shortDescD.val());
-    $cardDescD.html(Formating.syntax2HTML($shortDescD.val()));
+    const $cardDescD = $(card).find('article').first();
+    const $cardTitle = $(card).find(`#titlename${modID}`).first();
+
+    $cardDescD.attr('cashData', initialShortDesc);
+    $cardDescD.html(Formating.syntax2HTML(initialShortDesc));
+    $cardTitle.attr('cashData', initialTitle);
+    $cardTitle.attr('title', initialTitle);
+    $cardTitle.text(initialTitle);
 
     setInterval(function () {
       const dataText = $shortDescD.val();
@@ -172,37 +237,16 @@
         $cardDescD.attr('cashData', dataText);
         $cardDescD.html(Formating.syntax2HTML(dataText));
       }
+
+      const nextTitle = $titleInput.length ? $titleInput.val() : '';
+      if ($cardTitle.attr('cashData') != nextTitle) {
+        $cardTitle.attr('cashData', nextTitle);
+        $cardTitle.attr('title', nextTitle);
+        $cardTitle.text(nextTitle);
+      }
     }, 300);
 
-    let zindex = 1;
-    $('div.card-click').on('click', function (e) {
-      e.preventDefault();
-
-      let isShowing = false;
-      if ($(this).parent().hasClass('show')) {
-        isShowing = true;
-      }
-
-      if ($('div.cards').hasClass('showing')) {
-        $('div.card.show').removeClass('show');
-
-        if (isShowing) {
-          $('div.cards').removeClass('showing');
-        } else {
-          $(this).parent().css({ zIndex: zindex }).addClass('show');
-        }
-
-        zindex = zindex + 2;
-      } else {
-        $('div.cards').addClass('showing');
-        $(this).parent().css({ zIndex: zindex }).addClass('show');
-        zindex = zindex + 2;
-      }
-
-      const id = $(this).parent()[0].id;
-      $('#card-flap' + id).css('z-index', zindex + 1);
-      $('div.panel').css({ zIndex: zindex + 1 });
-    });
+    updateCatalogLogo();
   }
 
   function initMediaManager() {
@@ -396,10 +440,6 @@
     updateCount();
     setMode(mode);
   }
-
-  window.cardCancel = function cardCancel(id) {
-    document.getElementById(id).classList.remove('show');
-  };
 
   function initPublicToggle() {
     window.toggleNextPublic(false);

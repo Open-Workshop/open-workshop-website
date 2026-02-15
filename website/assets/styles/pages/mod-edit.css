@@ -252,18 +252,14 @@ button.public-mod-toggle:active {
   main.mod-edit {
     padding: 10px;
     border-radius: 12px;
-  }
-
-  .mod-edit__titlebar {
     flex-direction: column;
   }
-
-  input.title-mod {
-    border-radius: var(--radius-md);
+  
+  main.mod-edit > .mod-edit-nav {
+    flex-direction: row;
   }
 
-  button.public-mod-toggle {
-    border-radius: var(--radius-md);
-    align-self: flex-start;
+  main.mod-edit > .mod-edit-nav > .navigation {
+    flex-direction: row-reverse;
   }
 }

@@ -1,31 +1,11 @@
 <div id="page-in-catalog-view" class="mod-edit__page">
   <div class="mod-edit__catalog">
-    <div class="cards mod-edit__catalog-cards">
-      <div class="card" id="{{ info['result']['id'] }}">
-        <div class="card-click">
-          <div class="card__image-holder">
-            <img class="card__image title-card-img" alt="Здесь должен быть логотип мода" id="preview-logo-card-{{ info['result']['id'] }}" onerror="this.src='/assets/images/image-not-found.webp'">
-          </div>
-          <div class="card-params-list">
-            <a class="tag-link card-params-list-tag" title="Размер мода">📦{{ info['result']['size'] }}</a>
-          </div>
-          <div class="card-title">
-            <h2 id="titlename{{ info['result']['id'] }}" title="{{ info['result']['name'] }}">{{ info['result']['name'] }}</h2>
-          </div>
-        </div>
-        <div class="card-flap flap1" id="card-flap{{ info['result']['id'] }}">
-          <div class="card-description">{{ info['result']['short_description'] }}</div>
-          <div class="flap-buttons">
-            <a id="tomodlink{{ info['result']['id'] }}" class="button-card button-flap">
-              <img src="/assets/images/svg/black/arrow.svg" class="img-to-mod">
-            </a>
-            <button id="togamelink{{ info['result']['id'] }}" onclick="cardCancel({{ info['result']['id'] }})" class="button-cancel button-flap" title="Завернуть карточку">
-              <img src="/assets/images/svg/black/cancel.svg" class="img-to-mod">
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div
+      class="cards mod-edit__catalog-cards"
+      data-mod-id="{{ info['result']['id'] }}"
+      data-mod-size="{{ info['result']['size'] }}"
+      data-game-id="{{ info['result']['game']['id'] }}"
+    ></div>
 
     <div class="mod-edit__catalog-desc">
       {% with module_key='catalog', aria_label='Режим короткого описания', limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
