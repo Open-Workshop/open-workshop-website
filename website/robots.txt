@@ -20,4 +20,4 @@ Disallow: /mod/*/edit
 Allow: /user/*
 Disallow: /user/*/settings
 
-Sitemap: https://openworkshop.su/sitemap.xml
+Sitemap: https://{{ site_host }}/sitemap.xml

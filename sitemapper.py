@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from flask import render_template
 from pathlib import Path
 import ow_config as config
+import tempfile
+import os
 import time
 
 
@@ -22,7 +24,7 @@ class Mod(base): # Таблица "моды"
     date_update_file = Column(DateTime)
 
 
-async def generate(file_path:str) -> str:
+async def generate(file_path: str, site_host: str) -> str:
     """
     Asynchronously generates a sitemap based on the provided file path.
 
@@ -32,24 +34,40 @@ async def generate(file_path:str) -> str:
     Returns:
     str: The generated sitemap page.
     """
-    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(file_path, "w", encoding="utf-8") as file:
-        start = time.time()
+    target_path = Path(file_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Создание сессии
-        session = sessionmaker(bind=engine)()
+    start = time.time()
 
+    # Создание сессии
+    session = sessionmaker(bind=engine)()
+    try:
         # Выполнение запроса
         query = session.query(Mod).filter(Mod.condition == 0, Mod.public == 0)
-        result = [obj.__dict__ for obj in query.limit(49000).all()]
-
+        result = [{"id": obj.id, "date_update_file": obj.date_update_file} for obj in query.limit(49000).all()]
+    finally:
         session.close()
 
-        print("SITEMAP RENDER START FROM: " + str(time.time() - start))
+    print("SITEMAP RENDER START FROM: " + str(time.time() - start))
 
-        start = time.time()
-        page = render_template("html-partials/standart_sitemap.xml", data=result, www="www." in file_path)
+    start = time.time()
+    page = render_template("html-partials/standart_sitemap.xml", data=result, site_host=site_host)
 
-        file.write(page)
-        print("SITEMAP RENDER FINISH: " + str(time.time() - start))
-        return page
+    # Пишем в временный файл и атомарно подменяем кеш, чтобы не оставлять пустой sitemap при ошибке.
+    fd, temp_path = tempfile.mkstemp(
+        dir=str(target_path.parent),
+        prefix=f"{target_path.name}.",
+        suffix=".tmp",
+        text=True
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as file:
+            file.write(page)
+        os.replace(temp_path, target_path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
+
+    print("SITEMAP RENDER FINISH: " + str(time.time() - start))
+    return page

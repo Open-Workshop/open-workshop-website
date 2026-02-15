@@ -403,6 +403,14 @@ register_routes()
 async def login_popup():
     return render_template("login-popup.html", link=request.args.get('f'), russia=not bool(request.cookies.get('fromRussia')))
 
+@app.route('/robots.txt')
+async def robots():
+    site_host = request.host.split(":", 1)[0].lower()
+    page = render_template("robots.txt", site_host=site_host)
+    page_ret = make_response(page)
+    page_ret.mimetype = "text/plain"
+    return page_ret
+
 @app.route('/<path:filename>')
 async def serve_static(filename):
     if filename.startswith("/html-partials/") or filename.startswith("html-partials/"):
@@ -429,23 +437,28 @@ async def internal_server_error(_error = -1):
 
 @app.route('/sitemap.xml')
 async def sitemap():
-    file_path = "website/sitemaps/"
-    if "www." in request.url_root:
-        file_path += "www."
-    file_path += "sitemap.xml"
+    site_host = request.host.split(":", 1)[0].lower()
+    safe_site_host = "".join(ch if (ch.isalnum() or ch in ".-") else "_" for ch in site_host)
+    file_path = f"website/sitemaps/{safe_site_host}.sitemap.xml"
 
     now = datetime.datetime.now()
+    should_regenerate = True
 
     if Path(file_path).exists():
-        created_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+        file_stat = os.stat(file_path)
+        created_time = datetime.datetime.fromtimestamp(file_stat.st_mtime)
         diff = now - created_time
 
-        if diff > datetime.timedelta(hours=5):
+        # Регенерируем не только по возрасту, но и если кэш-файл оказался пустым.
+        if diff > datetime.timedelta(hours=5) or file_stat.st_size == 0:
             print("sitemap.xml regenerate")
-            page = await sitemapper.generate(file_path)
-    else:
+            page = await sitemapper.generate(file_path, site_host=site_host)
+        else:
+            should_regenerate = False
+
+    if should_regenerate and "page" not in locals():
         print("sitemap.xml generate")
-        page = await sitemapper.generate(file_path)
+        page = await sitemapper.generate(file_path, site_host=site_host)
 
     if "page" not in locals():
         print("sitemap.xml relevant")
