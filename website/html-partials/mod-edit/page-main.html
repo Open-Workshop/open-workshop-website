@@ -7,27 +7,9 @@
       </button>
     </div>
       
-    <div class="mod-edit__content">
-      <div class="mod-edit__toolbar standart-panel">
-        <div class="mod-edit__view-toggle" role="group" aria-label="Режим описания" data-mode="edit">
-          <span class="mod-edit__toggle-label" data-mode="edit">Edit</span>
-          <input type="checkbox" name="" id="mod-view-toggle">
-          <span class="mod-edit__toggle-label" data-mode="preview">View</span>
-        </div>
-
-        <div class="navigation mod-edit__toolbar-group">
-          <button onclick="toggleHelpMode($(this))" class="dark">
-            <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
-          </button>
-        </div>
-      </div>
-
-      {% with limit=10000, placeholder='Описание не может быть пустым!(', init_text=info['result']['description'] %}
-        {% include 'html-partials/desc-edit.html' %}
-      {% endwith %} 
-      
-      <article id="mod-description"></article>
-    </div>
+    {% with module_key='full', aria_label='Режим полного описания', limit=10000, placeholder='Описание не может быть пустым!(', init_text=info['result']['description'] %}
+      {% include 'html-partials/mod-edit/description-module.html' %}
+    {% endwith %}
   </section>
 
   <aside class="mod-edit__sidebar">

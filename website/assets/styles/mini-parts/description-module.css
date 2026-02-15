@@ -1,0 +1,65 @@
+.mod-edit__content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mod-edit__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.mod-edit__view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: #07070a;
+  border: var(--panel-border);
+  border-radius: 999px;
+  margin-left: 10px;
+}
+
+.mod-edit__view-toggle-input {
+  margin: 0;
+}
+
+.mod-edit__toggle-label {
+  font-size: 1rem;
+  padding: 0 6px;
+  color: #b6b9c9;
+  white-space: nowrap;
+}
+
+.mod-edit__toolbar .navigation > button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  border-radius: 0;
+  border-top-right-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.mod-edit__toolbar .navigation > button img {
+  width: 100%;
+}
+
+.mod-edit__content #highlighting {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: none;
+}
+
+.mod-edit__content .mod-edit__description-view {
+  margin: 0;
+  padding: 10px;
+  border-radius: 0 0 10px 10px;
+  border: var(--panel-border);
+  border-top: none;
+  display: none;
+}

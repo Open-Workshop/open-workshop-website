@@ -28,8 +28,8 @@
     </div>
 
     <div class="mod-edit__catalog-desc">
-      {% with limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
-        {% include 'html-partials/desc-edit.html' %}
+      {% with module_key='catalog', aria_label='Режим короткого описания', limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
+        {% include 'html-partials/mod-edit/description-module.html' %}
       {% endwith %} 
     </div>
   </div>

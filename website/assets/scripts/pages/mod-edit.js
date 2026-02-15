@@ -150,15 +150,16 @@
     }
 
     initMediaManager();
+    initDescriptionModules();
     initCatalogPreview();
     initPublicToggle();
-    fullEditView(false);
     initDeleteModControl();
   });
 
   function initCatalogPreview() {
     const $cardDescD = $('div.card-description');
-    const $shortDescD = $('div[limit=256]').find('textarea.editing');
+    const $shortDescD = $('.mod-edit__content[data-desc-module="catalog"] div[limit=256] textarea.editing').first();
+    if (!$shortDescD.length) return;
 
     updateCatalogLogo();
 
@@ -404,11 +405,26 @@
     window.toggleNextPublic(false);
   }
 
-  const $fullModDescView = $('article#mod-description');
-  const $fullModDescEdit = $('div[limit=10000]#desc-edit');
-  const $fullModDescEditArea = $fullModDescEdit.find('textarea.editing');
-  const viewToggle = document.getElementById('mod-view-toggle');
-  const viewToggleWrap = document.querySelector('.mod-edit__view-toggle');
+  const descriptionHelpText = '[h1]Гайд По Форматированию![/h1]\n\nФорматирование работает как в [b]полном[/b] описании мода, так и в [i]коротком[/i].\n\nФорматирование поддерживает заголовки от 1 до 6 (от большего к меньшему).\nФорматирование в виде добавления ссылок как вида https://openworkshop.su , так и [url=https://openworkshop.su]текста с гиперссылкой[/url]\n\nТак же можно вставлять ссылки на изображения:\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\nА ещё можно создать список:\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]\n\n[h5]Удачи в разработке![/h5]';
+  const guideEditWarningText = 'Вы редактируете текст гайда. Эти правки не сохраняются для описания мода.';
+
+  function initDescriptionModules() {
+    if (!window.OWDescriptionModules) return;
+    window.OWDescriptionModules.init({
+      moduleKey: 'full',
+      limit: 10000,
+      helpText: descriptionHelpText,
+      warningText: guideEditWarningText,
+    });
+    window.OWDescriptionModules.init({
+      moduleKey: 'catalog',
+      limit: 256,
+      helpText: descriptionHelpText,
+      warningText: guideEditWarningText,
+    });
+    window.OWDescriptionModules.setView('full', false);
+    window.OWDescriptionModules.setView('catalog', false);
+  }
 
   const publicButton = $('button.public-mod-toggle');
   const publicIcon = publicButton.find('img');
@@ -422,42 +438,9 @@
     publicButton.attr('title', publicTitles[mode]);
   };
 
-  function setViewToggle(mode) {
-    if (viewToggle) viewToggle.checked = !!mode;
-    if (viewToggleWrap) viewToggleWrap.dataset.mode = mode ? 'preview' : 'edit';
-  }
-
   window.fullEditView = function fullEditView(mode) {
-    setViewToggle(mode);
-    if (mode) {
-      $fullModDescEdit.hide();
-      $fullModDescView.show();
-      $fullModDescView.html(Formating.syntax2HTML($fullModDescEditArea.val()));
-    } else {
-      $fullModDescEdit.show();
-      $fullModDescView.hide();
-    }
-  };
-
-  if (viewToggle) {
-    viewToggle.addEventListener('change', function () {
-      fullEditView(viewToggle.checked);
-    });
-  }
-
-  window.toggleHelpMode = function toggleHelpMode(button) {
-    if ($fullModDescEditArea.hasAttr('tutorial')) {
-      button.removeClass('toggle');
-      $fullModDescEditArea.val($fullModDescEditArea.attr('tutorial'));
-      $fullModDescEditArea.removeAttr('tutorial');
-    } else {
-      button.addClass('toggle');
-      $fullModDescEditArea.attr('tutorial', $fullModDescEditArea.val());
-      $fullModDescEditArea.val('[h1]Гайд По Форматированию![/h1]\n\nФорматирование работает как в [b]полном[/b] описании мода, так и в [i]коротком[/i].\n\nФорматирование поддерживает заголовки от 1 до 6 (от большего к меньшему).\nФорматирование в виде добавления ссылок как вида https://openworkshop.su , так и [url=https://openworkshop.su]текста с гиперссылкой[/url]\n\nТак же можно вставлять ссылки на изображения:\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\nА ещё можно создать список:\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]\n\n[h5]Удачи в разработке![/h5]');
-    }
-
-    fullDescUpdate($fullModDescEditArea);
-    $fullModDescView.html(Formating.syntax2HTML($fullModDescEdit.find('textarea.editing').val()));
+    if (!window.OWDescriptionModules) return;
+    window.OWDescriptionModules.setView('full', mode);
   };
 
   function initDeleteModControl() {
@@ -489,14 +472,20 @@
 
   function collectModChanges() {
     const title = $('input.title-mod');
-    const shortDesc = $('div[limit=256] textarea.editing');
-    const fullDesc = $('div[limit=10000] textarea.editing');
+    const shortDesc = $('.mod-edit__content[data-desc-module="catalog"] div[limit=256] textarea.editing').first();
+    const fullDesc = $('.mod-edit__content[data-desc-module="full"] div[limit=10000] textarea.editing').first();
     const pub = $('button.public-mod-toggle');
+    const shortDescValue = window.OWDescriptionModules
+      ? window.OWDescriptionModules.getValue('catalog', true)
+      : (shortDesc.length ? shortDesc.val() : '');
+    const fullDescValue = window.OWDescriptionModules
+      ? window.OWDescriptionModules.getValue('full', true)
+      : (fullDesc.length ? fullDesc.val() : '');
 
     return {
       mod_name: diff(title.val(), title.attr('startdata')),
-      mod_short_description: diff(shortDesc.val(), shortDesc.attr('startdata')),
-      mod_description: diff(fullDesc.hasAttr('tutorial') ? fullDesc.attr('tutorial') : fullDesc.val(), fullDesc.attr('startdata')),
+      mod_short_description: diff(shortDescValue, shortDesc.attr('startdata')),
+      mod_description: diff(fullDescValue, fullDesc.attr('startdata')),
       mod_public: diff(pub.attr('public-mode'), pub.attr('startdata')),
     };
   }

@@ -7,9 +7,12 @@
   const addModEndpoint = apiPaths.mod.add;
 
   const titleMod = $('input#mod-name-title');
-  const descMod = $('textarea.editing');
+  const descMod = $('.mod-edit__content[data-desc-module="add"] div[limit=256] textarea.editing').first();
   const fileMod = $('input#input-mod-file-upload');
   const gameOwnerMod = $('div.select-game-menu');
+  const descriptionHelpText =
+    '[h1]Гайд По Форматированию![/h1]\n\nФорматирование поддерживает заголовки от 1 до 6.\nМожно использовать [b]жирный[/b], [i]курсив[/i], ссылки и изображения.\n\nПримеры:\n[url=https://openworkshop.su]Ссылка[/url]\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]';
+  const guideEditWarningText = 'Вы редактируете текст гайда. Эти правки не сохраняются для описания мода.';
   const stageLabels = {
     uploading: 'Загрузка файла...',
     uploaded: 'Файл загружен',
@@ -18,6 +21,19 @@
     downloading: 'Скачивание файла...',
     downloaded: 'Файл скачан',
   };
+
+  function initDescriptionModule() {
+    if (!window.OWDescriptionModules) return;
+    window.OWDescriptionModules.init({
+      moduleKey: 'add',
+      limit: 256,
+      helpText: descriptionHelpText,
+      warningText: guideEditWarningText,
+    });
+    window.OWDescriptionModules.setView('add', false);
+  }
+
+  initDescriptionModule();
 
   function updateStage(stage) {
     if (!stage) return;
@@ -95,7 +111,9 @@
       return;
     }
 
-    const textDesc = descMod.val();
+    const textDesc = window.OWDescriptionModules
+      ? window.OWDescriptionModules.getValue('add', true)
+      : (descMod.length ? descMod.val() : '');
     if (textDesc.length <= 0) {
       printError('Описание мода не указано!');
       return;
@@ -120,8 +138,8 @@
     formData.append('mod_source', 'local');
     formData.append('mod_game', gameOwnerMod.attr('gameid'));
     formData.append('mod_name', titleMod.val());
-    formData.append('mod_short_description', descMod.val());
-    formData.append('mod_description', descMod.val());
+    formData.append('mod_short_description', textDesc);
+    formData.append('mod_description', textDesc);
     formData.append('mod_public', '2');
     formData.append('pack_format', 'zip');
     formData.append('pack_level', '3');

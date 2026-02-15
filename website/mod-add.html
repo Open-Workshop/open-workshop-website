@@ -7,7 +7,9 @@
       
       <input displaylimit class="edit-username mod-add__name" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" id="mod-name-title" name="mod-name-title">
 
-      {% include 'html-partials/desc-edit.html' %}
+      {% with module_key='add', aria_label='Режим описания', limit=256, placeholder='Описание не может быть пустым!(', init_text='' %}
+        {% include 'html-partials/mod-edit/description-module.html' %}
+      {% endwith %}
 
       {% include "html-partials/new-game-selector.html" %}
 
