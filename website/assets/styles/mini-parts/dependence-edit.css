@@ -44,6 +44,9 @@
 #mod-dependence-selected {
   margin-bottom: 4px;
   min-height: 56px;
+  gap: 3px;
+  display: flex;
+  flex-direction: column;
 }
 
 #mod-dependence-selected > div.element,
@@ -57,6 +60,9 @@
 
 .dependence-edit .all-mod-dependence {
   padding: 4px;
+  gap: 5px;
+  display: flex;
+  flex-direction: column;
 }
 
 .dependence-edit .alls > .element {
