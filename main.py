@@ -473,6 +473,8 @@ async def sitemap():
 
 
 if __name__ == '__main__':
-    app.run(port=6660)
-    #from waitress import serve
-    #serve(app, host="0.0.0.0", port=6660, threads=100)
+    #app.run(host="0.0.0.0",
+    #        port=443,
+    #        ssl_context=("fakesite.openworkshop.miskler.ru.pem", "fakesite.openworkshop.miskler.ru-key.pem"))
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=6660, threads=100)
