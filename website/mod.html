@@ -86,6 +86,32 @@
         {% endfor %}
         </div>
         {% endif %}
+
+        {% if plugins | length > 0 %}
+        <div class="outline-container mod-plugins-container">
+        <div class="mod-plugins-header">
+            <h2>Плагины</h2>
+            {% if plugins_more_count > 0 %}
+            <a
+                class="mod-plugins-link"
+                href="/?sgame=no&dependencies={{ info['result']['id'] }}"
+                title="Открыть плагины в каталоге"
+            >
+                <img src="/assets/images/svg/white/arrow-to.svg" alt="Перейти в каталог плагинов">
+            </a>
+            {% endif %}
+        </div>
+        {% for item in plugins.values() %}
+            <a class="element{% if loop.index == 2 %} mod-plugins-second-item{% endif %}" href="/mod/{{ item.id }}">
+                <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                <h3 translate="no">{{ item.name }}</h3>
+            </a>
+        {% endfor %}
+            {% if plugins_more_count > 0 %}
+            <p class="mod-plugins-more">Еще {{ plugins_more_count }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
         
         {% if info['result']['public'] != 2 %}
         <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['result']['id']) }}">Загрузить</a>

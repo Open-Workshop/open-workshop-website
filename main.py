@@ -164,34 +164,89 @@ async def mod_view_and_edit(mod_id):
 
         info['result']['id'] = mod_id # Фиксируем для рендера шаблона id мода
 
+        mods_list_path = app_config.api_path("mod", "list")
+        resources_list_path = app_config.api_path("resource", "list")
+
         dependencies = {}
         if info['dependencies_count'] > 0: # Чекаем, есть ли зависимости
-            # Формируем запрос на получение зависимостей
-            mods_list_path = app_config.api_path("mod", "list")
-            dependencies_resources_path = app_config.api_path("resource", "list")
             dependencies_urls = [
                 f'{mods_list_path}?page_size=50&allowed_ids={info["dependencies"]}',
-                f'{dependencies_resources_path}?page_size=30&owner_type=mods&owner_ids={info["dependencies"]}'
+                f'{resources_list_path}?page_size=30&owner_type=mods&owner_ids={info["dependencies"]}&types_resources=["logo"]'
             ]
-            
+
             # Запрашиваем
             dependencies_info, dependencies_resources = await asyncio.gather(*[handler.fetch(url) for url in dependencies_urls])
 
             # Распаковка данных
-            dependencies_info_code, dependencies_info = dependencies_info
-            dependencies_resources_code, dependencies_resources = dependencies_resources
+            _, dependencies_info = dependencies_info
+            _, dependencies_resources = dependencies_resources
 
             # Добавляем зависимости
-            for dependency in dependencies_info['results']:
-                dependencies[dependency['id']] = {
-                    'id': dependency['id'],
-                    'img': '',
-                    'name': dependency['name']
-                }
+            if isinstance(dependencies_info, dict):
+                for dependency in dependencies_info.get('results', []):
+                    if not isinstance(dependency, dict):
+                        continue
+
+                    dependency_id = dependency.get('id')
+                    if dependency_id is None:
+                        continue
+
+                    dependencies[dependency_id] = {
+                        'id': dependency_id,
+                        'img': '',
+                        'name': dependency.get('name', '')
+                    }
 
             # Добавляем логотипы зависимостям
-            for resource in dependencies_resources['results']:
-                dependencies[resource['owner_id']]['img'] = resource['url']
+            if isinstance(dependencies_resources, dict):
+                for resource in dependencies_resources.get('results', []):
+                    if not isinstance(resource, dict):
+                        continue
+
+                    owner_id = resource.get('owner_id')
+                    if owner_id not in dependencies or not resource.get('url'):
+                        continue
+                    dependencies[owner_id]['img'] = resource['url']
+
+        plugins = {}
+        plugins_database_size = 0
+        _, plugins_info = await handler.fetch(f'{mods_list_path}?page_size=2&dependencies=[{mod_id}]')
+        if isinstance(plugins_info, dict):
+            plugins_results = plugins_info.get('results', [])
+            plugins_database_size = max(int(plugins_info.get('database_size', len(plugins_results)) or 0), 0)
+
+            plugin_ids = []
+            for plugin in plugins_results:
+                if not isinstance(plugin, dict):
+                    continue
+
+                plugin_id = plugin.get('id')
+                if plugin_id is None or str(plugin_id) == str(mod_id):
+                    continue
+
+                plugin_key = str(plugin_id)
+                plugin_ids.append(plugin_id)
+                plugins[plugin_key] = {
+                    'id': plugin_id,
+                    'img': '',
+                    'name': plugin.get('name', '')
+                }
+
+            if len(plugin_ids) > 0:
+                plugin_ids_text = '[' + ','.join([str(plugin_id) for plugin_id in plugin_ids]) + ']'
+                _, plugins_resources = await handler.fetch(
+                    f'{resources_list_path}?page_size=30&owner_type=mods&owner_ids={plugin_ids_text}&types_resources=["logo"]'
+                )
+                if isinstance(plugins_resources, dict):
+                    for resource in plugins_resources.get('results', []):
+                        if not isinstance(resource, dict):
+                            continue
+
+                        plugin_key = str(resource.get('owner_id'))
+                        if plugin_key in plugins and resource.get('url'):
+                            plugins[plugin_key]['img'] = resource['url']
+
+        plugins_more_count = max(plugins_database_size - len(plugins), 0)
 
         page_html = handler.render(
             "mod-edit.html" if edit_page else "mod.html",
@@ -199,6 +254,8 @@ async def mod_view_and_edit(mod_id):
             tags=tags,
             resources=resources,
             dependencies=dependencies,
+            plugins=plugins,
+            plugins_more_count=plugins_more_count,
             right_edit=right_edit_mod,
             authors=authors
         )

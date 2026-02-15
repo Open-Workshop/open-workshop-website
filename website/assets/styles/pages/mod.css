@@ -48,6 +48,56 @@ a#mod-setting-gear:hover * {
     rotate: 90deg;
 }
 
+.mod-plugins-container {
+    position: relative;
+}
+
+.mod-plugins-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mod-plugins-header > h2 {
+    margin: 0;
+}
+
+.mod-plugins-link {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: background-color 120ms ease;
+}
+
+.mod-plugins-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.mod-plugins-link > img {
+    width: 18px;
+    height: 18px;
+}
+
+.mod-plugins-second-item {
+    max-height: 26px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 55%);
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 1) 55%);
+}
+
+.mod-plugins-more {
+    width: 100%;
+    margin-top: var(--space-1);
+    margin-bottom: 0;
+    text-align: right;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.75));
+    font-size: 18px;
+}
+
 
 @media screen and (max-width: 700px) {
     main.mod > div {
