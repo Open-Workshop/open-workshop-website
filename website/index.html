@@ -17,11 +17,31 @@
       </div>
       {% endif %}
 
-      <setting class="in-full with-events">
+      <setting class="in-full with-events catalog-search-line">
         <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
+        <button type="button" class="small catalog-search-refresh" title="Обновить каталог" onclick="refreshCatalog(document.getElementById('search-in-catalog-menu'))">↻</button>
       </setting>
 
       <hr class="in-full">
+
+      <setting class="with-events catalog-sort-setting">
+        <div class="with-button catalog-sort-controls">
+          <select id="sort-select" title="Сортировка" onchange="sortSelect(this)">
+            <option class="game" value="MODS" selected>Сортировка по количеству модов</option>
+            <option class="mod" value="SIZE">Сортировка по размеру</option>
+            <option class="mod" value="UPDATE">Сортировка по дате обновления</option>
+            <option value="DOWNLOADS">Сортировка по загрузкам</option>
+            <option value="CREATION">Сортировка по дате создания</option>
+            <option value="NAME">Сортировка по алфавиту</option>
+          </select>
+          <button id="sort-select-invert" class="invert" title="Инверсия сортировки" onclick="$(this).toggleClass('toggled'); invertSort(this)">
+            <img src="/assets/images/svg/white/sort.svg" alt="Инверсия сортировки">
+          </button>
+          <input class="input-checkbox" id="sort-checkboxmode" type="checkbox" hidden>
+        </div>
+      </setting>
+
+      <hr>
 
       <setting id="game-select" onclick="stateMachineGameSelect.call(this)">
         <input type="checkbox" hidden>
@@ -37,6 +57,14 @@
       </setting>
 
       <hr>
+      
+      <setting class="with-events catalog-dependencies-setting">
+        {% with dependencies={}, game=0, dependence_button_text='Плагины для модов' %}
+          {% include 'html-partials/mod-dependence-edit.html' %}
+        {% endwith %}
+      </setting>
+
+      <hr>
 
       <setting class="with-events">
         {% with tags={} %}
@@ -49,23 +77,6 @@
   </div>
 
   <div id="cards-container" class="cards">
-      <div id="selectors-catalog">
-          <div class="with-button" style="margin-left: 0;">
-              <select id="sort-select" title="Сортировка" onchange="sortSelect(this)">
-                  <option class="game" value="MODS" selected>Сортировка по количеству модов</option>
-                  <option class="mod" value="SIZE">Сортировка по размеру</option>
-                  <option class="mod" value="UPDATE">Сортировка по дате обновления</option>
-                  <option value="DOWNLOADS">Сортировка по загрузкам</option>
-                  <option value="CREATION">Сортировка по дате создания</option>
-                  <option value="NAME">Сортировка по алфавиту</option>
-              </select>
-              <button id="sort-select-invert" class="invert" title="Инверсия сортировки" onclick="$(this).toggleClass('toggled'); invertSort(this)">
-                  <img src="/assets/images/svg/white/sort.svg" alt="Инверсия сортировки">
-              </button>
-              <input class="input-checkbox" id="sort-checkboxmode" type="checkbox" hidden>
-          </div>
-      </div>
-
       <div id="cards">
         <!-- Тута карточки -->  
       </div>
@@ -76,6 +87,7 @@
   <script src='//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
   <script src='https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'></script>
   
+  <script src="/assets/scripts/vendors/dependence-edit.js"></script>
   <script src="/assets/scripts/vendors/catalog.js"></script>
   <script src="/assets/scripts/catalog-params.js"></script>
 </main>

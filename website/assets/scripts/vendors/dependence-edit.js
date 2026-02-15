@@ -9,6 +9,16 @@
   const containerDependencies = $('#mod-dependence-selected');
   const searchedDependencies = $('#dependence-edit-search-dependence');
 
+  function getSelectedDependencyIds() {
+    return containerDependencies
+      .find('div.element:not(.none-display)')
+      .map(function () {
+        return String($(this).attr('modid'));
+      })
+      .get()
+      .filter((id) => id.length > 0);
+  }
+
   window.editModDependence = function editModDependence(dependenc) {
     dependenc = $(dependenc);
 
@@ -54,6 +64,11 @@
     }
 
     containerDependencies.parent().parent().trigger('event-height');
+    window.dispatchEvent(
+      new CustomEvent('ow:dependencies-changed', {
+        detail: { ids: getSelectedDependencyIds() },
+      }),
+    );
   };
 
   window.searchRequestDependenceUpdate = async function searchRequestDependenceUpdate() {
@@ -63,10 +78,18 @@
     pNoInList.addClass('hiden');
     searchedDependencies.addClass('hiden');
 
-    const ref = await fetch(
-      `${apiUrl(modsPath)}?page_size=5&game=${searchInput.attr('gameid')}&name=${searchInput.val()}`,
-      { credentials: 'include' },
-    );
+    const searchParams = new URLSearchParams({
+      page_size: '5',
+      name: String(searchInput.val() || ''),
+    });
+    const gameId = String(searchInput.attr('gameid') || '').trim();
+    if (gameId.length > 0 && gameId !== '0') {
+      searchParams.set('game', gameId);
+    }
+
+    const ref = await fetch(`${apiUrl(modsPath)}?${searchParams.toString()}`, {
+      credentials: 'include',
+    });
     const data = await ref.json();
 
     const ids = [];

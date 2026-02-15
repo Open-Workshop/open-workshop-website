@@ -12,16 +12,164 @@
     $('select#sort-select').toggleClass('game', !mode).toggleClass('mod', mode);
   }
 
+  function parseDependenciesParam(value) {
+    return String(value || '')
+      .replaceAll('[', '')
+      .replaceAll(']', '')
+      .replaceAll('_', ',')
+      .split(',')
+      .map((id) => String(id).trim())
+      .filter((id) => /^\d+$/.test(id));
+  }
+
+  function getSelectedDependencyIds() {
+    return $('#mod-dependence-selected')
+      .find('div.element:not(.none-display)')
+      .map(function () {
+        return String($(this).attr('modid'));
+      })
+      .get()
+      .filter((id) => id.length > 0);
+  }
+
+  function clearSelectedDependencies() {
+    const $container = $('#mod-dependence-selected');
+    if (!$container.length) return;
+    $container.find('div.element').addClass('none-display');
+    $container.parent().parent().trigger('event-height');
+  }
+
+  function syncDependenceSearchGame(gameID) {
+    const $dependenceSearchInput = $('#search-update-input-dependence');
+    if (!$dependenceSearchInput.length) return;
+    $dependenceSearchInput.attr('gameid', gameID ? String(gameID) : '');
+  }
+
+  function syncDependenciesUrlFromSelected(selectedIds, triggerReset) {
+    const params = URLManager.getParams();
+    const dependenciesValue = selectedIds.join('_');
+    const currentDependenciesValue = parseDependenciesParam(params.get('dependencies', '')).join('_');
+
+    if (dependenciesValue === currentDependenciesValue) return false;
+
+    const updates = [
+      new Dictionary({ key: 'dependencies', value: dependenciesValue, default: '' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ];
+
+    if (selectedIds.length > 0) {
+      updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
+      updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
+      $('setting#depen').find('input').prop('checked', false);
+      $('setting#game-select').find('input').prop('checked', false);
+      sortOptionsList(false);
+    }
+
+    URLManager.updateParams(updates);
+    if (triggerReset) {
+      resetCatalog();
+    }
+    return true;
+  }
+
+  function appendSelectedDependency(modName, modID, modLogo) {
+    const $container = $('#mod-dependence-selected');
+    if (!$container.length) return;
+
+    const id = String(modID);
+    const $exists = $container.find(`div.element[modid="${id}"]`).first();
+    if ($exists.length) {
+      $exists.removeClass('none-display');
+      return;
+    }
+
+    const $item = $('<div/>', {
+      class: 'element',
+      modid: id,
+      onclick: 'editModDependence(this)',
+      saved: true,
+    });
+    const $logo = $('<img/>', {
+      src: modLogo || '/assets/images/image-not-found.webp',
+      alt: 'Логотип мода',
+      onerror: 'handlerImgErrorLoad(this)',
+    });
+    const $meta = $('<e/>');
+    const $title = $('<h3/>', {
+      translate: 'no',
+      title: modName,
+      text: modName,
+    });
+    const $remove = $('<img/>', {
+      src: '/assets/images/removal-triangle.svg',
+      alt: 'Кнопка удаления зависимости',
+    });
+
+    $meta.append($title, $remove);
+    $item.append($logo, $meta);
+    $container.append($item);
+  }
+
+  async function hydrateDependenciesFilter(ids) {
+    if (!ids.length || !$('#mod-dependence-selected').length) return;
+
+    const modsPath = apiPaths.mod.list.path;
+    const resourcesPath = apiPaths.resource.list.path;
+    const idsAsList = '[' + ids.join(',') + ']';
+
+    const [modsResponse, logosResponse] = await Promise.all([
+      fetch(`${apiUrl(modsPath)}?allowed_ids=${idsAsList}&page_size=50`, { credentials: 'include' }),
+      fetch(`${apiUrl(resourcesPath)}?owner_type=mods&owner_ids=${idsAsList}&types_resources=["logo"]`, {
+        credentials: 'include',
+      }),
+    ]);
+
+    if (!modsResponse.ok) return;
+
+    const [modsData, logosData] = await Promise.all([
+      modsResponse.json().catch(() => ({ results: [] })),
+      logosResponse.ok ? logosResponse.json().catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
+    ]);
+
+    const logosById = {};
+    (logosData.results || []).forEach((logo) => {
+      if (!logo || logo.owner_id === undefined || !logo.url) return;
+      logosById[String(logo.owner_id)] = logo.url;
+    });
+
+    const modsById = {};
+    (modsData.results || []).forEach((mod) => {
+      if (!mod || mod.id === undefined) return;
+      modsById[String(mod.id)] = mod;
+    });
+
+    ids.forEach((id) => {
+      const mod = modsById[String(id)];
+      if (!mod) return;
+      appendSelectedDependency(mod.name, mod.id, logosById[String(mod.id)]);
+    });
+
+    $('#mod-dependence-selected').parent().parent().trigger('event-height');
+  }
+
   window.undependencyMod = function undependencyMod() {
     const $this = $(this);
     const $input = $this.find('input');
 
     const checked = !$input.prop('checked');
     $input.prop('checked', checked);
-    URLManager.updateParams([
+    const updates = [
       new Dictionary({ key: 'depen', value: checked ? 'yes' : 'no', default: 'no' }),
       new Dictionary({ key: 'page', value: 0 }),
-    ]);
+    ];
+
+    // API conflicts on independents=true with dependencies filter.
+    if (checked && getSelectedDependencyIds().length > 0) {
+      clearSelectedDependencies();
+      updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+    }
+
+    URLManager.updateParams(updates);
     resetCatalog();
   };
 
@@ -31,15 +179,25 @@
 
     const params = URLManager.getParams();
     const checked = !$input.prop('checked');
-    if (!checked && params.get('game', '') == '') {
+    const hasDependencies =
+      getSelectedDependencyIds().length > 0 || parseDependenciesParam(params.get('dependencies', '')).length > 0;
+
+    if (!checked && params.get('game', '') == '' && !hasDependencies) {
       $this.find('label').text('Выберете игру!');
     } else {
       $input.prop('checked', checked);
       sortOptionsList(checked);
-      URLManager.updateParams([
+      const updates = [
         new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
         new Dictionary({ key: 'page', value: 0 }),
-      ]);
+      ];
+      if (checked) {
+        // В режиме игр фильтр по модам не применяется.
+        clearSelectedDependencies();
+        updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+      }
+      URLManager.updateParams(updates);
+      syncDependenceSearchGame(checked ? '' : params.get('game', ''));
       $('#settings-catalog').removeClass('full-screen');
       resetCatalog();
     }
@@ -58,6 +216,7 @@
       .attr('src', $('img#preview-logo-card-' + gameID).attr('src'));
     $('setting#game-select').find('label').text($('h2#titlename' + gameID).text());
     $('#search-update-input-tags').attr('gameid', gameID);
+    syncDependenceSearchGame(gameID);
     TagsSelector.unselectAllTags();
 
     resetCatalog();
@@ -74,6 +233,20 @@
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
+    resetCatalog();
+  };
+
+  window.refreshCatalog = function refreshCatalog(input) {
+    const menuInput = document.getElementById('search-in-catalog-menu');
+    const headerInput = document.getElementById('search-in-catalog-header');
+    const searchInput = input || menuInput || headerInput;
+
+    if (searchInput) {
+      window.nameSearch(searchInput);
+      return;
+    }
+
+    URLManager.updateParam('page', 0);
     resetCatalog();
   };
 
@@ -150,7 +323,7 @@
   }
 
   $(document).ready(async function () {
-    const params = URLManager.getParams();
+    let params = URLManager.getParams();
     const filterEl = document.getElementById('catalog-user-filter');
     if (filterEl) {
       const userId = filterEl.getAttribute('data-user-id');
@@ -166,16 +339,39 @@
         params.set('sgame', 'no');
       }
     }
+
+    const dependencyIds = parseDependenciesParam(params.get('dependencies', ''));
+    const dependencyUpdates = [];
+    const normalizedDependenciesValue = dependencyIds.join('_');
+    if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
+      dependencyUpdates.push(
+        new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }),
+      );
+    }
+    if (dependencyIds.length > 0 && params.get('sgame', 'yes') !== 'no') {
+      dependencyUpdates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
+    }
+    if (dependencyIds.length > 0 && params.get('depen', 'no') === 'yes') {
+      dependencyUpdates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
+    }
+    if (dependencyUpdates.length > 0) {
+      dependencyUpdates.push(new Dictionary({ key: 'page', value: 0 }));
+      URLManager.updateParams(dependencyUpdates);
+      params = URLManager.getParams();
+    }
+
     const sgame = params.get('sgame', 'yes') == 'yes';
 
-    $('setting#depen').find('input').attr('checked', params.depen == 'yes');
-    $('setting#game-select').find('input').attr('checked', sgame);
+    $('setting#depen').find('input').prop('checked', params.get('depen', 'no') == 'yes');
+    $('setting#game-select').find('input').prop('checked', sgame);
     $('input#search-in-catalog-header').val(params.get('name', ''));
     $('input#search-in-catalog-menu').val(params.get('name', ''));
     $('#search-update-input-tags').attr('gameid', params.get('game', ''));
+    syncDependenceSearchGame(params.get('game', ''));
 
-    URLManager.updateParam('page', Number(URLManager.getParams().get('page', 0)));
-    resetCatalog();
+    await hydrateDependenciesFilter(parseDependenciesParam(params.get('dependencies', '')));
+
+    URLManager.updateParam('page', Number(params.get('page', 0)));
 
     sortOptionsList(sgame);
     TagsSelector.setDefaultSelectedTags(params.get('tags', '').replaceAll('_', ','));
@@ -201,6 +397,12 @@
         $('setting#game-select').find('label').text(data.results[0].name);
       }
     }
+
+    resetCatalog();
+  });
+
+  window.addEventListener('ow:dependencies-changed', function () {
+    syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
   });
 
   setInterval(function () {

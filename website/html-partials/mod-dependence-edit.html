@@ -1,8 +1,12 @@
+{% set dependence_items = dependencies.values() if dependencies is defined else [] %}
+{% set dependence_game_id = game if game is defined else info["result"]["game"]["id"] %}
+{% set dependence_button_text = dependence_button_text if dependence_button_text is defined else 'Добавить зависимость' %}
+
 <div class="standart-panel dependence-edit" import-height="div#mod-dependence-header">
     <div id="mod-dependence-header" class="dependence-edit__header">
         <div id="mod-dependence-selected" class="alls">
             <br>
-            {% for item in dependencies.values() %}
+            {% for item in dependence_items %}
             <div class="element" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
                 <img src="{{ item.img }}" alt="Логотип мода" errorcap>
                 <e>
@@ -14,11 +18,11 @@
             <p>Модов не выбрано</p>
         </div>
 
-        <button onclick="$('div.popup-dependence-select').toggleClass('popup-nonvisible')" class="small">Добавить зависимость</button>
+        <button onclick="$('div.popup-dependence-select').toggleClass('popup-nonvisible')" class="small">{{ dependence_button_text }}</button>
     </div>
 
     <div class="popup-dependence-select popup-menu-select popup-nonvisible">
-        <input id="search-update-input-dependence" gameid='{{ info["result"]["game"]["id"] }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
+        <input id="search-update-input-dependence" gameid='{{ dependence_game_id }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
         
         <div class="alls all-mod-dependence" id="dependence-edit-search-dependence">
             <p>Не найдено</p>

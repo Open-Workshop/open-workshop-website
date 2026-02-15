@@ -1,7 +1,26 @@
 
-header input[type="search"] {
+header .header-catalog-search {
     width: calc(100% - 600px);
     max-width: 600px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 var(--space-3);
+}
+header .header-catalog-search > input[type="search"] {
+    width: 100%;
+    margin: 0;
+}
+header .header-catalog-search > .header-catalog-search__refresh {
+    margin: 0;
+    min-width: 40px;
+    min-height: 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+    line-height: 1;
 }
 
 
@@ -67,6 +86,58 @@ div#settings-catalog > div#settings-menu > setting > input[type="search"] {
     width: 100%;
     pointer-events: all;
 }
+div#settings-catalog > div#settings-menu > setting.catalog-search-line {
+    gap: 8px;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-search-line > input[type="search"] {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+}
+.catalog-search-refresh {
+    margin: 5px 0;
+    min-width: var(--interactive-select-height);
+    min-height: var(--interactive-select-height);
+    width: var(--interactive-select-height);
+    height: var(--interactive-select-height);
+    padding: 0;
+    border-radius: var(--radius-md);
+    line-height: 1;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-sort-setting {
+    padding: 2px 0;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls {
+    width: 100%;
+    margin: 5px 0;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls > select {
+    width: 100%;
+    min-width: 0;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls > button {
+    flex-shrink: 0;
+}
+div#settings-catalog > div#settings-menu > .catalog-dependencies-title {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 0 6px;
+    padding: 0 2px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting {
+    display: block;
+    padding: 0;
+    font-size: initial;
+    cursor: default;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting > .dependence-edit {
+    width: 100%;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting .popup-dependence-select {
+    margin-top: 6px;
+}
 div#settings-catalog > div#settings-menu > setting, div#settings-catalog > div#settings-menu > setting:not(.with-events) * {
     cursor: pointer;
     font-size: large;
@@ -78,15 +149,6 @@ div#settings-catalog > div#settings-menu > setting > img {
     height: 45px;
     padding: 3px;
     border-radius: 10px;
-}
-
-
-div#selectors-catalog {
-    display: flex;
-    flex-direction: row;
-    
-    margin-left: 10px;
-    width: 100%;
 }
 
 div#settings-catalog.full-screen > div#settings-menu {
@@ -137,7 +199,7 @@ label#end-of-cards {
 
 
 @media screen and (max-width: 810px) {
-    header input[type="search"] {
+    header .header-catalog-search {
         display: none;
     }
     div#settings-catalog:not(.full-screen) > div#settings-menu {

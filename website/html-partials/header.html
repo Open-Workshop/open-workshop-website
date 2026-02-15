@@ -3,7 +3,10 @@
         <a class="no-recolor" id="logo" href="/" translate="no">Open Workshop</a>
 
         {% if catalog %}
-        <input type="search" placeholder="Поиск..." id="search-in-catalog-header" autocomplete="off" onchange="nameSearch(this)">
+        <div class="header-catalog-search">
+            <input type="search" placeholder="Поиск..." id="search-in-catalog-header" autocomplete="off" onchange="nameSearch(this)">
+            <button type="button" class="small header-catalog-search__refresh" title="Обновить каталог" onclick="refreshCatalog(document.getElementById('search-in-catalog-header'))">↻</button>
+        </div>
         {% endif %}
 
         <nav>

@@ -47,6 +47,21 @@
         }
       });
 
+      const dependencies = String(settings.get('dependencies', '') || '')
+        .replaceAll('_', ',')
+        .replaceAll('[', '')
+        .replaceAll(']', '')
+        .split(',')
+        .map((id) => String(id).trim())
+        .filter((id) => /^\d+$/.test(id));
+      if (dependencies.length > 0) {
+        settings.set('dependencies', '[' + dependencies.join(',') + ']');
+        settings.set('sgame', 'no');
+        settings.set('independents', 'no');
+      } else {
+        settings.pop('dependencies');
+      }
+
       const values = new Dictionary({
         independents: { yes: 'true', no: 'false' },
         sort: {
