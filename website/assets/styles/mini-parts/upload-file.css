@@ -1,0 +1,36 @@
+.upload-file {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 5pt;
+  padding: 5pt;
+  margin-top: 5pt;
+  border: 2px dashed white;
+  width: 100%;
+  height: 140px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.upload-file img {
+  transition: all 0.2s;
+}
+
+.upload-file:hover img {
+  rotate: 5deg;
+}
+
+.upload-file.dragover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.upload-file.dragover img {
+  scale: 1.1;
+}
+
+.upload-file__text {
+  color: rgb(255 255 255 / 70%);
+  text-align: center;
+}

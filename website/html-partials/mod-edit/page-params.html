@@ -2,15 +2,12 @@
   <div class="mod-edit__params">
     <div class="standart-panel mod-edit__panel">
       <h3>Новая версия мода</h3>
-      <p class="ow-muted">Загрузите новый архив. Лимит 800 МБ.</p>
+      <p class="ow-muted">Загрузите новый архив. Лимит 10 GB.</p>
+      {% include "html-partials/upload-file.html" %}
       <div class="mod-edit__row">
-        <input id="mod-file-input" type="file" class="mod-edit__file" />
         <button class="button-style" type="button" onclick="uploadModVersion()">Загрузить</button>
       </div>
-      <div id="mod-upload-progress-wrap" class="mod-edit__progress" hidden>
-        <progress id="mod-upload-progress" max="100" value="0"></progress>
-        <p id="mod-upload-status" class="ow-muted"></p>
-      </div>
+      {% include "html-partials/green-bar.html" %}
     </div>
 
     <div class="standart-panel mod-edit__panel mod-edit__panel--danger">

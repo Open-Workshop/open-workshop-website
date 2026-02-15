@@ -30,18 +30,36 @@
   };
 
   function showUploadProgress() {
+    if (typeof uploadStart === 'function') {
+      uploadStart();
+      return;
+    }
+
     const wrap = document.getElementById('mod-upload-progress-wrap');
     if (wrap) wrap.hidden = false;
   }
 
   function setUploadStatus(text) {
+    const value = text || '';
+    const greenBarText = document.getElementById('greenBarText');
+    if (greenBarText) {
+      greenBarText.textContent = value;
+      return;
+    }
+
     const el = document.getElementById('mod-upload-status');
-    if (el) el.textContent = text || '';
+    if (el) el.textContent = value;
   }
 
   function setUploadProgress(percent) {
+    const value = Number.isFinite(percent) ? percent : 0;
+    if (typeof progressUpdate === 'function') {
+      progressUpdate(value);
+      return;
+    }
+
     const el = document.getElementById('mod-upload-progress');
-    if (el) el.value = percent || 0;
+    if (el) el.value = value;
   }
 
   function updateStage(stage) {
@@ -609,7 +627,7 @@
   }
 
   window.uploadModVersion = async function uploadModVersion() {
-    const input = document.getElementById('mod-file-input');
+    const input = document.getElementById('input-mod-file-upload') || document.getElementById('mod-file-input');
     if (!input || !input.files || !input.files[0]) {
       new Toast({ title: 'Файл не выбран', text: 'Выберите архив мода', theme: 'info' });
       return;
