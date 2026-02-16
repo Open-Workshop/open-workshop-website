@@ -142,20 +142,31 @@ async def mod_view_and_edit(mod_id):
 
         info['result']['size'] = await tool.size_format(info['result']['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
 
+        resources_results = resources.get("results", []) if isinstance(resources, dict) else []
+
         logo_item = None
-        for image in resources["results"]: # Ищем логотип мода
-            if image and image["type"] == "logo":
-                info["result"]["logo"] = image["url"] # Фиксируем, что нашли его
+        logo_url = str(info.get("result", {}).get("logo", "") or "")
+        for image in resources_results: # Ищем логотип мода
+            if isinstance(image, dict) and image.get("type") == "logo" and image.get("url"):
+                logo_url = image["url"] # Фиксируем, что нашли его
                 logo_item = image
                 break
-        else:
-            info["result"]["logo"] = ''
+
+        # Если отдельный logo-ресурс не найден, используем первое доступное изображение
+        # как fallback для OG-превью.
+        if not logo_url:
+            for image in resources_results:
+                if isinstance(image, dict) and image.get("url"):
+                    logo_url = image["url"]
+                    break
+
+        info["result"]["logo"] = logo_url
 
         # На странице просмотра держим логотип в списке и выводим его первым
         if logo_item and not edit_page:
-            resources["results"] = [logo_item] + [item for item in resources["results"] if item is not logo_item]
+            resources["results"] = [logo_item] + [item for item in resources_results if item is not logo_item]
 
-        info["no_many_screenshots"] = len(resources["results"]) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
+        info["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
             input_date = parse_api_datetime(info['result'][key])
@@ -257,7 +268,9 @@ async def mod_view_and_edit(mod_id):
             plugins=plugins,
             plugins_more_count=plugins_more_count,
             right_edit=right_edit_mod,
-            authors=authors
+            authors=authors,
+            is_mod_data=not edit_page,
+            data=[info],
         )
 
         return handler.finish(page_html)
