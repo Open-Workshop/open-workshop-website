@@ -1,6 +1,6 @@
 
 window.Cards = {
-    create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = []) {
+    create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false) {
         // Создаем карточку
         const card = document.createElement('div');
         card.setAttribute('pageOwner', page);
@@ -92,12 +92,29 @@ window.Cards = {
             to.classList.add('button-style-small-padding')
 
             const to_img = document.createElement('img');
-            to_img.src = "/assets/images/svg/black/arrow.svg";
+            to_img.src = "/assets/images/svg/white/arrow.svg";
             to.appendChild(to_img);
 
             to.classList.add('button-card');
             to.classList.add('button-flap');
             flapButtons.appendChild(to);
+        }
+        if (showEditButton && toLink && !isGame) {
+            const toEdit = document.createElement('a');
+            toEdit.href = "/mod/"+cardData.id+"/edit";
+            toEdit.id = "toeditlink"+cardData.id;
+            toEdit.classList.add('button-style');
+            toEdit.classList.add('button-style-small');
+            toEdit.classList.add('button-style-small-padding');
+
+            const toEditImg = document.createElement('img');
+            toEditImg.src = "/assets/images/edit-ico.svg";
+            toEdit.appendChild(toEditImg);
+
+            toEdit.classList.add('button-card');
+            toEdit.classList.add('button-flap');
+            toEdit.title = "Редактировать мод";
+            flapButtons.appendChild(toEdit);
         }
         if (isGame) {
             const tog = document.createElement('button');
@@ -119,7 +136,7 @@ window.Cards = {
         tog.onclick = function() { Catalog.cardsCancel() }
 
         const to_img = document.createElement('img');
-        to_img.src = "/assets/images/svg/black/cancel.svg";
+        to_img.src = "/assets/images/svg/white/cancel.svg";
         tog.appendChild(to_img);
 
         tog.classList.add('small');

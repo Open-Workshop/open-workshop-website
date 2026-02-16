@@ -153,7 +153,8 @@
      * @param {Dictionary} settings
      */
     addPage: async function (settings) {
-      const doplink = URLManager.genString(settings.duplicate().pop('page'));
+      const editTrigger = String(settings.get('trigger', '')).toLowerCase() === 'edit';
+      const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', 'iDOWNLOADS'));
 
       settings.set('description', true);
@@ -161,6 +162,7 @@
       settings.set('page_size', 30);
       settings.set('statistics', true);
       settings.set('dates', true);
+      settings.pop('trigger');
 
       const keys = [['depen', 'independents']];
       keys.forEach((key) => {
@@ -241,6 +243,7 @@
                 settings.get('name', ''),
                 isGameMode,
                 tags,
+                editTrigger && !isGameMode,
               ),
             );
             msnry.appended(element);

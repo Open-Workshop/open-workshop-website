@@ -23,7 +23,7 @@
         </div>
         <div class="user-profile__actions">
           {% if user_data.general.editable.admin %}
-          <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true" class="button-style button-style-small user-admin-mods">Моды пользователя</a>
+          <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true&trigger=edit" class="button-style button-style-small user-admin-mods">Моды пользователя</a>
           {% endif %}
           {% if user_data.general.editable.any %}
           <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
