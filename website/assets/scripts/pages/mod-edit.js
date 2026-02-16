@@ -274,9 +274,11 @@
     const list = manager.querySelector('.media-manager__list');
     const empty = manager.querySelector('[data-media-empty]');
     const countEl = manager.querySelector('[data-media-count]');
+    const logoStateEl = manager.querySelector('[data-media-logo-state]');
     const modeButtons = manager.querySelectorAll('[data-media-mode]');
     const urlRow = manager.querySelector('[data-media-row="url"]');
     const fileRow = manager.querySelector('[data-media-row="file"]');
+    const dropzone = manager.querySelector('[data-media-dropzone]');
     const urlInput = manager.querySelector('[data-media-input="url"]');
     const fileInput = manager.querySelector('[data-media-input="file"]');
     const typeInput = manager.querySelector('[data-media-input="type"]');
@@ -287,26 +289,80 @@
     if (!list) return;
 
     let mode = 'url';
+    let storageHost = '';
+
+    if (manager.dataset.storageOrigin) {
+      try {
+        storageHost = new URL(manager.dataset.storageOrigin).hostname;
+      } catch (err) {
+        storageHost = '';
+      }
+    }
+
+    function isHttpUrl(value) {
+      if (!value) return false;
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function isStorageUrl(value) {
+      if (!value || !storageHost) return false;
+      try {
+        const parsed = new URL(value, window.location.origin);
+        return parsed.hostname === storageHost;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function getTypeLabel(type) {
+      return type === 'logo' ? 'Логотип' : 'Скриншот';
+    }
+
+    function updateLogoState() {
+      if (!logoStateEl) return;
+
+      const logoExists = Array.from(list.querySelectorAll('.media-item')).some((item) => {
+        const typeSelect = item.querySelector('.media-item__type');
+        const type = typeSelect ? typeSelect.value : item.dataset.startType;
+        return type === 'logo';
+      });
+
+      if (logoExists) {
+        logoStateEl.textContent = 'Логотип выбран';
+        logoStateEl.classList.add('has-logo');
+      } else {
+        logoStateEl.textContent = 'Логотип не выбран';
+        logoStateEl.classList.remove('has-logo');
+      }
+    }
 
     function updateCount() {
       const count = list.querySelectorAll('.media-item').length;
       if (countEl) countEl.textContent = count;
       if (empty) empty.style.display = count ? 'none' : 'flex';
+      updateLogoState();
     }
 
     function setMode(nextMode) {
-      mode = nextMode;
+      mode = nextMode === 'file' ? 'file' : 'url';
+      manager.dataset.mode = mode;
       modeButtons.forEach((btn) => {
         btn.classList.toggle('is-active', btn.dataset.mediaMode === mode);
       });
       if (urlRow) urlRow.hidden = mode !== 'url';
       if (fileRow) fileRow.hidden = mode !== 'file';
+      if (dropzone) dropzone.hidden = mode !== 'file';
     }
 
     function updateBadge(item, type) {
       const badge = item.querySelector('[data-media-badge]');
       if (!badge) return;
-      badge.textContent = type === 'logo' ? 'Логотип' : 'Скриншот';
+      badge.textContent = getTypeLabel(type);
     }
 
     function enforceSingleLogo(activeSelect) {
@@ -317,19 +373,27 @@
           updateBadge(select.closest('.media-item'), 'screenshot');
         }
       });
+      updateLogoState();
     }
 
     function createItem({ url, type, source, file }) {
       const id = `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const previewUrl = url || '/assets/images/image-not-found.webp';
+      const isStorageItem = source === 'url' && isStorageUrl(url);
       const item = document.createElement('div');
       item.className = 'media-item';
       item.dataset.id = id;
       item.dataset.startUrl = url || '';
       item.dataset.startType = type;
       item.dataset.source = source;
+      item.dataset.urlEditable = source === 'url' && !isStorageItem ? '1' : '0';
       item.dataset.new = '1';
       if (source === 'file') item._file = file;
+
+      const urlFieldHtml =
+        source === 'url' && !isStorageItem
+          ? '<input type="url" class="media-item__url" placeholder="URL изображения">'
+          : '';
 
       item.innerHTML = `
         <a href="${previewUrl}" class="media-item__preview without-caption image-link" target="_blank">
@@ -344,7 +408,7 @@
             </select>
             <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение">Удалить</button>
           </div>
-          <input type="url" class="media-item__url" placeholder="URL изображения">
+          ${urlFieldHtml}
           <div class="media-item__source ow-muted"></div>
         </div>
       `;
@@ -356,32 +420,142 @@
       updateBadge(item, type);
 
       if (source === 'file') {
-        urlField.value = '';
-        urlField.placeholder = 'Файл загружен';
-        urlField.disabled = true;
-        if (sourceField) sourceField.textContent = `Файл: ${file ? file.name : ''}`;
-        if (file) {
-          const objectUrl = previewUrl;
-          item.dataset.objectUrl = objectUrl;
+        if (urlField) {
+          urlField.value = '';
+          urlField.placeholder = 'Файл загружен';
+          urlField.disabled = true;
         }
+        if (sourceField) sourceField.textContent = `Файл: ${file ? file.name : ''}`;
+        if (file) item.dataset.objectUrl = previewUrl;
       } else {
-        urlField.value = url;
-        urlField.disabled = false;
-        if (sourceField) sourceField.textContent = 'URL';
+        if (urlField) {
+          urlField.value = url;
+          urlField.disabled = false;
+        }
+        if (sourceField) sourceField.textContent = isStorageItem ? 'Storage' : 'URL';
       }
 
       return item;
+    }
+
+    function prependItem(item) {
+      list.prepend(item);
+      const typeSelect = item.querySelector('.media-item__type');
+      if (typeSelect && typeSelect.value === 'logo') {
+        enforceSingleLogo(typeSelect);
+      }
+      updateCount();
+      updateCatalogLogo();
+    }
+
+    function addUrlItem() {
+      const rawUrl = urlInput ? urlInput.value.trim() : '';
+      if (!rawUrl) {
+        new Toast({ title: 'Нужна ссылка', text: 'Введите URL изображения', theme: 'info' });
+        return;
+      }
+      if (!isHttpUrl(rawUrl)) {
+        if (urlInput) urlInput.classList.add('is-invalid');
+        new Toast({ title: 'Некорректный URL', text: 'Разрешены только http/https ссылки', theme: 'warning' });
+        return;
+      }
+
+      const type = typeInput ? typeInput.value : 'screenshot';
+      const item = createItem({ url: rawUrl, type, source: 'url' });
+      prependItem(item);
+
+      if (urlInput) {
+        urlInput.value = '';
+        urlInput.classList.remove('is-invalid');
+      }
+    }
+
+    function addFileItem(file) {
+      if (!file) {
+        new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
+        return;
+      }
+      if (!String(file.type || '').startsWith('image/')) {
+        new Toast({ title: 'Неверный формат', text: 'Можно загружать только изображения', theme: 'warning' });
+        return;
+      }
+
+      const type = typeFileInput ? typeFileInput.value : 'screenshot';
+      const objectUrl = URL.createObjectURL(file);
+      const item = createItem({ url: objectUrl, type, source: 'file', file });
+      prependItem(item);
+    }
+
+    function addFileFromInput() {
+      const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+      if (!file) {
+        new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
+        return;
+      }
+      addFileItem(file);
+      if (fileInput) fileInput.value = '';
     }
 
     modeButtons.forEach((btn) => {
       btn.addEventListener('click', () => setMode(btn.dataset.mediaMode));
     });
 
+    if (addUrlButton) {
+      addUrlButton.addEventListener('click', addUrlItem);
+    }
+
+    if (urlInput) {
+      urlInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          addUrlItem();
+        }
+      });
+      urlInput.addEventListener('input', () => {
+        if (!urlInput.value.trim() || isHttpUrl(urlInput.value.trim())) {
+          urlInput.classList.remove('is-invalid');
+        }
+      });
+    }
+
+    if (addFileButton && fileInput) {
+      addFileButton.addEventListener('click', () => fileInput.click());
+    }
+
+    if (dropzone && fileInput) {
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          fileInput.click();
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add('is-dragover');
+        });
+      });
+      ['dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove('is-dragover');
+        });
+      });
+      dropzone.addEventListener('drop', (event) => {
+        const files = event.dataTransfer ? event.dataTransfer.files : null;
+        const file = files && files.length > 0 ? files[0] : null;
+        if (file) addFileItem(file);
+      });
+    }
+
     list.addEventListener('change', (event) => {
       const target = event.target;
       if (target.classList.contains('media-item__type')) {
         if (target.value === 'logo') enforceSingleLogo(target);
         updateBadge(target.closest('.media-item'), target.value);
+        updateLogoState();
         updateCatalogLogo();
       }
     });
@@ -393,9 +567,14 @@
         const item = target.closest('.media-item');
         const preview = item.querySelector('.media-item__preview');
         const img = item.querySelector('img');
-        if (url) {
-          if (preview) preview.setAttribute('href', url);
-          if (img) img.setAttribute('src', url);
+        const fallbackUrl = item.dataset.startUrl || '/assets/images/image-not-found.webp';
+        const valid = url.length === 0 || isHttpUrl(url);
+
+        target.classList.toggle('is-invalid', !valid);
+        if (valid) {
+          const next = url || fallbackUrl;
+          if (preview) preview.setAttribute('href', next);
+          if (img) img.setAttribute('src', next);
         }
         const typeSelect = item.querySelector('.media-item__type');
         if (typeSelect && typeSelect.value === 'logo') updateCatalogLogo();
@@ -422,36 +601,12 @@
       updateCatalogLogo();
     });
 
-    if (addUrlButton) {
-      addUrlButton.addEventListener('click', () => {
-        const url = urlInput ? urlInput.value.trim() : '';
-        if (!url) {
-          new Toast({ title: 'Нужна ссылка', text: 'Введите URL изображения', theme: 'info' });
-          return;
-        }
-        const type = typeInput ? typeInput.value : 'screenshot';
-        const item = createItem({ url, type, source: 'url' });
-        list.prepend(item);
-        if (urlInput) urlInput.value = '';
-        updateCount();
-        updateCatalogLogo();
-      });
-    }
-
-    if (addFileButton) {
-      addFileButton.addEventListener('click', () => {
-        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-        if (!file) {
-          new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
-          return;
-        }
-        const type = typeFileInput ? typeFileInput.value : 'screenshot';
-        const objectUrl = URL.createObjectURL(file);
-        const item = createItem({ url: objectUrl, type, source: 'file', file });
-        list.prepend(item);
-        if (fileInput) fileInput.value = '';
-        updateCount();
-        updateCatalogLogo();
+    if (fileInput) {
+      fileInput.addEventListener('change', () => {
+        if (mode !== 'file') return;
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        addFileFromInput();
       });
     }
 
