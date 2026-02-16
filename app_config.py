@@ -41,8 +41,8 @@ PUBLIC_CONFIG: dict = {
             },
         ],
         "socials": [
-            {"id": "telegram", "href": "https://t.me/miskler_dev"},
-            {"id": "discord", "href": "https://discord.gg/em7ag3EGgs"},
+            {"id": "telegram", "href": "https://link.miskler.ru/telegram"},
+            {"id": "discord", "href": "https://link.miskler.ru/discord"},
             {"id": "github", "href": "https://github.com/Open-Workshop"},
         ],
     },
