@@ -7,6 +7,28 @@
 
   const containerTags = $('div#tags-edit-selected-tags');
   const searchContainer = $('#tags-edit-search-tags');
+  const noGameValues = new Set(['', '0', 'none', 'null', 'undefined']);
+
+  function getNormalizedGameId() {
+    const rawGameId = String($('#search-update-input-tags').attr('gameid') || '').trim();
+    return noGameValues.has(rawGameId.toLowerCase()) ? '' : rawGameId;
+  }
+
+  function buildTagsUrl(params = {}) {
+    const query = new URLSearchParams();
+    const gameId = getNormalizedGameId();
+
+    if (gameId != '') {
+      query.set('game_id', gameId);
+    }
+
+    Object.entries(params).forEach(([key, value]) => {
+      query.set(key, String(value ?? ''));
+    });
+
+    const queryString = query.toString();
+    return queryString == '' ? apiUrl(tagsPath) : `${apiUrl(tagsPath)}?${queryString}`;
+  }
 
   window.TagsSelector = {
     async searchRequestTagUpdate() {
@@ -16,15 +38,14 @@
       pNoInList.addClass('hiden');
       searchContainer.addClass('hiden');
 
-      const ref = await fetch(
-        `${apiUrl(tagsPath)}?game_id=${searchInput.attr('gameid')}&page_size=30&name=${searchInput.val()}`,
-        { credentials: 'include' },
-      );
+      const ref = await fetch(buildTagsUrl({ page_size: 30, name: searchInput.val() }), { credentials: 'include' });
 
-      const data = await ref.json();
+      const data = await ref.json().catch(() => ({}));
+      const results = Array.isArray(data.results) ? data.results : [];
+      const databaseSize = Number(data.database_size);
       searchContainer.html(searchContainer.find('p')[0]);
 
-      data.results.forEach((t) => {
+      results.forEach((t) => {
         const newtag = searchContainer
           .append('<div onclick="TagsSelector.editTag(this)" tagid="' + t.id + '">' + t.name + '</div>')
           .find('div:last');
@@ -44,7 +65,7 @@
         }
       }
 
-      notInList(data.database_size - data.results.length);
+      notInList((Number.isFinite(databaseSize) ? databaseSize : results.length) - results.length);
 
       pNoInList.removeClass('hiden');
       searchContainer.removeClass('hiden');
@@ -87,17 +108,11 @@
     async setDefaultSelectedTags(tags) {
       if (tags.length == 0) return;
 
-      const url =
-        `${apiUrl(tagsPath)}?game_id=` +
-        $('input#search-update-input-tags').attr('gameid') +
-        '&tags_ids=[' +
-        tags +
-        ']';
+      const ref = await fetch(buildTagsUrl({ tags_ids: '[' + tags + ']' }), { credentials: 'include' });
+      const data = await ref.json().catch(() => ({}));
+      const results = Array.isArray(data.results) ? data.results : [];
 
-      const ref = await fetch(url, { credentials: 'include' });
-      const data = await ref.json();
-
-      data.results.forEach((t) => {
+      results.forEach((t) => {
         containerTags.append('<div tagid="' + t.id + '" saved onclick="TagsSelector.editTag(this)">' + t.name + '</div>');
       });
 
