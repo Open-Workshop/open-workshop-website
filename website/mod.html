@@ -16,7 +16,7 @@
 
         <div id="mod-tags-title">
             <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ info['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ info['result']['game']['name'] }}</a>
-            <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ info['result']['size'] }}</a>
+            <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ info['result']['size_unpacked'] }}</a>
             <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ info['result']['downloads'] }}</a>
 
             {% if info['result']['date_update_file_js'] != info['result']['date_creation_js'] %}
@@ -114,7 +114,7 @@
         {% endif %}
         
         {% if info['result']['public'] != 2 %}
-        <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['result']['id']) }}">Загрузить</a>
+        <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['result']['id']) }}">Загрузить {{ info['result']['size'] }}</a>
         {% endif %}
     </div>
 </main>

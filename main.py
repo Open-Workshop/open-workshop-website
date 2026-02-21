@@ -141,6 +141,7 @@ async def mod_view_and_edit(mod_id):
             return handler.finish(page), 403
 
         info['result']['size'] = await tool.size_format(info['result']['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
+        info['result']['size_unpacked'] = await tool.size_format(info['result']['size_unpacked'])
 
         resources_results = resources.get("results", []) if isinstance(resources, dict) else []
 

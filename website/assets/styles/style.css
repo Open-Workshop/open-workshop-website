@@ -169,7 +169,7 @@ blockquote > .light {
   font-size: 15pt;
   font-variant: normal;
   text-align: center;
-  max-width: 100pt;
+  max-width: 100%;
   padding: 10pt;
   justify-content: center;
   align-items: center;
