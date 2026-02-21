@@ -135,6 +135,68 @@
     throw new Error(text || `Ошибка (${managerResp.status})`);
   }
 
+  async function startResourceTransfer(formData, resourceId = null) {
+    const endpoint = resourceId ? apiPaths.resource.upload_init_edit : apiPaths.resource.upload_init;
+    const endpointPath = resourceId
+      ? window.OWCore.formatPath(endpoint.path, { resource_id: resourceId })
+      : endpoint.path;
+    const url = window.OWCore.apiUrl(endpointPath);
+    const managerResp = await fetch(url, {
+      method: endpoint.method,
+      body: formData,
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        Accept: 'application/json',
+      },
+    });
+
+    if (managerResp.ok) {
+      const payload = await managerResp.json().catch(() => ({}));
+      if (payload && payload.transfer_url) {
+        return payload;
+      }
+      throw new Error('Ответ менеджера некорректен');
+    }
+
+    if (managerResp.status === 307 || managerResp.status === 302) {
+      const redirectUrl = managerResp.headers.get('Location');
+      if (!redirectUrl) {
+        throw new Error('Redirect URL не получен');
+      }
+      return { transfer_url: redirectUrl };
+    }
+
+    const text = await managerResp.text();
+    throw new Error(text || `Ошибка (${managerResp.status})`);
+  }
+
+  async function uploadFileToTransfer(file, transfer) {
+    const uploadUrl = transfer && transfer.transfer_url ? transfer.transfer_url : null;
+    if (!uploadUrl) {
+      throw new Error('Не удалось получить ссылку загрузки');
+    }
+    const parsedUpload = new URL(uploadUrl);
+    if (file && file.name) {
+      parsedUpload.searchParams.set('filename', file.name);
+    }
+    if (file && Number.isFinite(file.size) && file.size >= 0) {
+      parsedUpload.searchParams.set('size', String(file.size));
+    }
+    const resp = await fetch(parsedUpload.toString(), {
+      method: 'POST',
+      body: file,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
+      credentials: 'omit',
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(text || `Ошибка (${resp.status})`);
+    }
+  }
+
   function getLogoUrlFromMedia() {
     const items = document.querySelectorAll('.media-item');
     for (const item of items) {
@@ -754,13 +816,21 @@
     const delEndpoint = apiPaths.resource.delete;
 
     for (const l of logos.new) {
-      const fd = new FormData();
-      fd.append('owner_type', 'mods');
-      fd.append('resource_type', l.type);
-      fd.append('resource_owner_id', modID);
-      if (l.url) fd.append('resource_url', l.url);
-      if (l.file) fd.append('resource_file', l.file);
-      await send(window.OWCore.apiUrl(addEndpoint.path), addEndpoint.method, fd);
+      if (l.file) {
+        const transferData = new FormData();
+        transferData.append('owner_type', 'mods');
+        transferData.append('resource_type', l.type);
+        transferData.append('resource_owner_id', modID);
+        const transfer = await startResourceTransfer(transferData);
+        await uploadFileToTransfer(l.file, transfer);
+      } else {
+        const fd = new FormData();
+        fd.append('owner_type', 'mods');
+        fd.append('resource_type', l.type);
+        fd.append('resource_owner_id', modID);
+        if (l.url) fd.append('resource_url', l.url);
+        await send(window.OWCore.apiUrl(addEndpoint.path), addEndpoint.method, fd);
+      }
     }
 
     for (const l of logos.changed) {
@@ -922,9 +992,8 @@
     if (confirmInput && !confirmInput.checked) return;
     if (!confirm('Удалить мод без возможности восстановления?')) return;
     const endpoint = apiPaths.mod.delete;
-    const url = window.OWCore.apiUrl(endpoint.path);
-    const body = new URLSearchParams({ mod_id: String(modID) });
-    await send(url, endpoint.method, body);
+    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
+    await send(url, endpoint.method);
     new Toast({ title: 'Удалено', text: 'Мод удален', theme: 'success' });
     location.href = '/';
   };

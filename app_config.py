@@ -84,6 +84,8 @@ PUBLIC_CONFIG: dict = {
                 "add": {"method": "POST", "path": "/resources"},
                 "edit": {"method": "PATCH", "path": "/resources/{resource_id}"},
                 "delete": {"method": "DELETE", "path": "/resources/{resource_id}"},
+                "upload_init": {"method": "POST", "path": "/resources/upload-init"},
+                "upload_init_edit": {"method": "POST", "path": "/resources/{resource_id}/upload-init"},
             },
             "game": {
                 "info": {"method": "GET", "path": "/games/{game_id}"},
