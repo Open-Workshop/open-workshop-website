@@ -42,20 +42,12 @@ if (condition1) {
     // Array of banners with title, text, theme, autohide, interval, and link
     const banners = [
         {
-            title: 'Попробуй Discord бота!',
-            text: 'Перейти на наш сервер ✅',
+            title: 'Партнерский сервер',
+            text: 'Перейти на сервер ✅',
             theme: 'dark',
             autohide: true,
             interval: 18000,
-            link: 'https://discord.gg/em7ag3EGgs'
-        },
-        {
-            title: 'Браузерное расширение',
-            text: 'Установить 🤩',
-            theme: 'dark',
-            autohide: true,
-            interval: 18000,
-            link: 'https://github.com/Open-Workshop/open-workshop-browser-extension/releases/tag/v1.0.0'
+            link: 'https://discord.gg/tqdw6wS6nX'
         }
     ];
 
