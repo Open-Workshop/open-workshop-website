@@ -42,8 +42,8 @@ if (condition1) {
     // Array of banners with title, text, theme, autohide, interval, and link
     const banners = [
         {
-            title: 'Партнерский сервер',
-            text: 'Перейти на сервер ✅',
+            title: 'Партнерский сервер по Хойке (РМК)',
+            text: 'Перейти в Discord ✅',
             theme: 'dark',
             autohide: true,
             interval: 18000,
