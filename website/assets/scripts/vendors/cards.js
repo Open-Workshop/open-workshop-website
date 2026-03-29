@@ -66,8 +66,25 @@ window.Cards = {
         cardClick.appendChild(paramsList);
 
         cardClick.appendChild(title);
+
+        const hoverOutline = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        hoverOutline.classList.add('card-hover-outline');
+        hoverOutline.setAttribute('viewBox', '0 0 100 100');
+        hoverOutline.setAttribute('preserveAspectRatio', 'none');
+        hoverOutline.setAttribute('aria-hidden', 'true');
+
+        const hoverOutlineRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        hoverOutlineRect.setAttribute('x', '1.5');
+        hoverOutlineRect.setAttribute('y', '1.5');
+        hoverOutlineRect.setAttribute('width', '97');
+        hoverOutlineRect.setAttribute('height', '97');
+        hoverOutlineRect.setAttribute('rx', '4');
+        hoverOutlineRect.setAttribute('ry', '4');
+
+        hoverOutline.appendChild(hoverOutlineRect);
         
         card.appendChild(cardClick);
+        card.appendChild(hoverOutline);
 
         // Создаем всплывашку с описанием
         const flap = document.createElement('div');

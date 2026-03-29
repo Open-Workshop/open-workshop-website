@@ -10,6 +10,7 @@ div.cards {
 div.card {
     margin: 8px;
     width: 300px;
+    position: relative;
     transition: all 0.2s 0s ease-in;
 }
 
@@ -21,8 +22,35 @@ div.card {
 div.card-click {
     border-radius: 5px;
     overflow: hidden;
+    position: relative;
     cursor: pointer;
     background: rgba(0, 0, 0, 0.4);
+}
+
+svg.card-hover-outline {
+    position: absolute;
+    --outline-margin: 10px;
+    top: calc(var(--outline-margin) * -1);
+    left: calc(var(--outline-margin) * -1);
+    width: calc(100% + var(--outline-margin) * 2);
+    height: calc(100% + var(--outline-margin) * 2);
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 2;
+    overflow: visible;
+}
+
+svg.card-hover-outline rect {
+    fill: none;
+    stroke: var(--interactive-element-background);
+    stroke-width: 1px;
+    stroke-dasharray: 12 8;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    animation: card-hover-outline-dash 0.9s linear infinite;
+    animation-play-state: paused;
 }
   
 div.card-click img {
@@ -112,4 +140,22 @@ div.card.show div.card-flap {
     opacity: 1 !important;
     transition: opacity 0.3s;
     pointer-events: all;
+}
+
+#cards:not(.showing) div.card:hover {
+    z-index: 1;
+}
+
+#cards div.card:not(.show):hover svg.card-hover-outline {
+    opacity: 1;
+}
+
+#cards div.card:not(.show):hover svg.card-hover-outline rect {
+    animation-play-state: running;
+}
+
+@keyframes card-hover-outline-dash {
+    to {
+        stroke-dashoffset: -20;
+    }
 }
