@@ -8,6 +8,7 @@
 .tags-edit {
   width: 100%;
   padding-top: 0;
+  cursor: auto;
 }
 
 .tags-edit__selected {
@@ -25,6 +26,10 @@
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 6px;
+}
+.tags-edit .all-mod-tags p {
+  font-size: initial;
+  cursor: default;
 }
 
 .tags-edit .all-mod-tags > div {
