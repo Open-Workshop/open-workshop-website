@@ -4,6 +4,7 @@ from babel import dates
 import datetime
 from zoneinfo import ZoneInfo
 import asyncio
+import json
 import tool
 import os
 import sitemapper as sitemapper
@@ -19,6 +20,98 @@ setup_uptrace_telemetry(app)
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
+
+
+def _compact_json_list(values) -> str:
+    return json.dumps(list(values), separators=(",", ":"))
+
+
+def _chunked(values, chunk_size: int):
+    for index in range(0, len(values), chunk_size):
+        yield values[index:index + chunk_size]
+
+
+async def _load_mod_cards_by_ids(
+    handler: UserHandler,
+    mod_ids,
+    mods_list_path: str,
+    resources_list_path: str,
+    *,
+    batch_size: int = 20,
+) -> dict:
+    ordered_ids = []
+    seen_ids = set()
+
+    for mod_id in mod_ids:
+        try:
+            normalized_id = int(mod_id)
+        except (TypeError, ValueError):
+            continue
+
+        if normalized_id in seen_ids:
+            continue
+
+        seen_ids.add(normalized_id)
+        ordered_ids.append(normalized_id)
+
+    if len(ordered_ids) <= 0:
+        return {}
+
+    batch_requests = []
+    for batch_ids in _chunked(ordered_ids, batch_size):
+        ids_text = _compact_json_list(batch_ids)
+        batch_requests.append(
+            asyncio.gather(
+                handler.fetch(f"{mods_list_path}?page_size={len(batch_ids)}&allowed_ids={ids_text}"),
+                handler.fetch(
+                    f'{resources_list_path}?page_size=50&owner_type=mods&owner_ids={ids_text}&types_resources=["logo"]'
+                ),
+            )
+        )
+
+    batch_results = await asyncio.gather(*batch_requests)
+
+    names_by_id = {}
+    images_by_id = {}
+
+    for mods_result, resources_result in batch_results:
+        mods_status_code, mods_info = mods_result
+        if mods_status_code == 200 and isinstance(mods_info, dict):
+            for mod_info in mods_info.get("results", []):
+                if not isinstance(mod_info, dict):
+                    continue
+
+                mod_id = mod_info.get("id")
+                if mod_id is None:
+                    continue
+
+                names_by_id[int(mod_id)] = mod_info.get("name", "")
+
+        resources_status_code, resources_info = resources_result
+        if resources_status_code == 200 and isinstance(resources_info, dict):
+            for resource in resources_info.get("results", []):
+                if not isinstance(resource, dict):
+                    continue
+
+                owner_id = resource.get("owner_id")
+                resource_url = resource.get("url")
+                if owner_id is None or not resource_url or int(owner_id) in images_by_id:
+                    continue
+
+                images_by_id[int(owner_id)] = resource_url
+
+    cards = {}
+    for mod_id in ordered_ids:
+        if mod_id not in names_by_id:
+            continue
+
+        cards[mod_id] = {
+            "id": mod_id,
+            "img": images_by_id.get(mod_id, ""),
+            "name": names_by_id[mod_id],
+        }
+
+    return cards
 
 
 def _get_local_tz() -> datetime.tzinfo:
@@ -181,44 +274,12 @@ async def mod_view_and_edit(mod_id):
 
         dependencies = {}
         if info['dependencies_count'] > 0: # Чекаем, есть ли зависимости
-            dependencies_urls = [
-                f'{mods_list_path}?page_size=50&allowed_ids={info["dependencies"]}',
-                f'{resources_list_path}?page_size=30&owner_type=mods&owner_ids={info["dependencies"]}&types_resources=["logo"]'
-            ]
-
-            # Запрашиваем
-            dependencies_info, dependencies_resources = await asyncio.gather(*[handler.fetch(url) for url in dependencies_urls])
-
-            # Распаковка данных
-            _, dependencies_info = dependencies_info
-            _, dependencies_resources = dependencies_resources
-
-            # Добавляем зависимости
-            if isinstance(dependencies_info, dict):
-                for dependency in dependencies_info.get('results', []):
-                    if not isinstance(dependency, dict):
-                        continue
-
-                    dependency_id = dependency.get('id')
-                    if dependency_id is None:
-                        continue
-
-                    dependencies[dependency_id] = {
-                        'id': dependency_id,
-                        'img': '',
-                        'name': dependency.get('name', '')
-                    }
-
-            # Добавляем логотипы зависимостям
-            if isinstance(dependencies_resources, dict):
-                for resource in dependencies_resources.get('results', []):
-                    if not isinstance(resource, dict):
-                        continue
-
-                    owner_id = resource.get('owner_id')
-                    if owner_id not in dependencies or not resource.get('url'):
-                        continue
-                    dependencies[owner_id]['img'] = resource['url']
+            dependencies = await _load_mod_cards_by_ids(
+                handler,
+                info["dependencies"],
+                mods_list_path,
+                resources_list_path,
+            )
 
         plugins = {}
         plugins_database_size = 0
