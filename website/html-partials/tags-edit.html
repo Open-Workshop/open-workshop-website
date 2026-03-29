@@ -7,7 +7,13 @@
             <p>Тегов не выбрано</p>
         </div>
         
-        <button id="popup-menu-tags-toggle" onclick="$('div.popup-tags-select').toggleClass('popup-nonvisible'); if (!$('div.popup-tags-select').hasClass('popup-nonvisible')) { TagsSelector.searchRequestTagUpdate() }" class="small tags-edit__add">Добавить тег</button>
+        <button
+            id="popup-menu-tags-toggle"
+            type="button"
+            data-popup-menu-target=".popup-tags-select"
+            data-popup-menu-open-callback="TagsSelector.searchRequestTagUpdate"
+            class="small tags-edit__add"
+        >Добавить тег</button>
     </div>
 
     <div class="popup-tags-select popup-menu-select popup-nonvisible">
