@@ -96,64 +96,66 @@ main.game-edit {
 }
 
 .game-edit__genres {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  overflow: visible;
 }
 
 .game-edit__genres-head {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
+}
+
+.game-edit__genres-head > button {
+  align-self: flex-start;
 }
 
 .game-edit__selected-genres,
 .game-edit__genre-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   min-height: 34px;
-  padding: 4px;
 }
 
-.game-edit__selected-genres > .element,
-.game-edit__genre-list > .element {
+.game-edit__selected-genres > p,
+.game-edit__genre-list > p {
+  font-size: initial;
+  cursor: default;
+}
+
+.game-edit__selected-genres > .taglike-item,
+.game-edit__genre-list > .taglike-item {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
   padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  background: #2b2d38;
   cursor: pointer;
   transition: background 0.12s ease, transform 0.12s ease;
 }
 
-.game-edit__selected-genres > .element:hover,
-.game-edit__genre-list > .element:hover {
+.game-edit__selected-genres > .taglike-item:hover,
+.game-edit__genre-list > .taglike-item:hover {
   background: #34374a;
 }
 
-.game-edit__selected-genres > .element:active,
-.game-edit__genre-list > .element:active {
+.game-edit__selected-genres > .taglike-item:active,
+.game-edit__genre-list > .taglike-item:active {
   transform: translateY(1px);
 }
 
-.game-edit__selected-genres > .element > e,
-.game-edit__genre-list > .element > e {
+.game-edit__selected-genres > .taglike-item > e,
+.game-edit__genre-list > .taglike-item > e {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.game-edit__selected-genres > .element > e > h3,
-.game-edit__genre-list > .element > e > h3 {
+.game-edit__selected-genres > .taglike-item > e > h3,
+.game-edit__genre-list > .taglike-item > e > h3 {
   font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.2;
 }
 
-.game-edit__selected-genres > .element > e > img {
+.game-edit__selected-genres > .taglike-item > e > img {
   width: 18px;
   height: 18px;
 }
@@ -171,7 +173,19 @@ main.game-edit {
 }
 
 .popup-game-genres-select {
-  width: min(100%, 360px);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  align-self: auto;
+  z-index: 20;
+}
+
+.popup-game-genres-select.popup-nonvisible {
+  pointer-events: none;
 }
 
 .game-edit__field {

@@ -1,0 +1,30 @@
+<div id="page-params-game" class="mod-edit__page">
+  <div class="mod-edit__params">
+    <div class="standart-panel mod-edit__panel">
+      <h3>Параметры источника</h3>
+      <p class="ow-muted">`source` и `source_id` лучше менять парой, иначе API может отклонить обновление.</p>
+
+      <div class="mod-edit__row">
+        <label class="game-edit__field">
+          <span>Источник</span>
+          <input id="game-source" type="text" placeholder="steam / local / ..." startdata="{{ game['source'] }}" value="{{ game['source'] }}">
+        </label>
+
+        <label class="game-edit__field">
+          <span>ID в источнике</span>
+          <input id="game-source-id" type="number" placeholder="294100" startdata="{{ game['source_id'] }}" value="{{ game['source_id'] }}">
+        </label>
+      </div>
+    </div>
+
+    <div class="standart-panel mod-edit__panel mod-edit__panel--danger">
+      <h3>Удаление игры</h3>
+      <p class="ow-muted">Действие необратимо. Игра пропадет из каталога, а связанные операции останутся на стороне API.</p>
+      <label class="mod-edit__confirm">
+        <input id="delete-game-confirm" type="checkbox" onchange="toggleDeleteGameButton()">
+        Подтверждаю удаление
+      </label>
+      <button id="delete-game-button" class="button-style" type="button" onclick="deleteGame()" disabled>Удалить игру</button>
+    </div>
+  </div>
+</div>

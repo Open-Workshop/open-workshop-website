@@ -98,9 +98,11 @@ PUBLIC_CONFIG: dict = {
                 "genres": {"method": "GET", "path": "/list/genres/games/{games_ids_list}"},
             },
             "genre": {
+                "add": {"method": "POST", "path": "/add/genre"},
                 "list": {"method": "GET", "path": "/list/genres"},
             },
             "tag": {
+                "add": {"method": "POST", "path": "/add/tag"},
                 "list": {"method": "GET", "path": "/tags"},
             },
         },
@@ -274,6 +276,47 @@ ADD_PAGE_CONFIGS: dict = {
         ],
         "page_title": "OW: Add game",
         "page_description": "Добавьте игру в каталог Open Workshop!",
+    },
+}
+
+
+EDIT_PAGE_CONFIGS: dict = {
+    "mod": {
+        "kind": "mod",
+        "root_id": "main-mod-edit",
+        "main_classes": "mod-edit",
+        "styles": [
+            "/assets/styles/pages/mod-edit.css",
+        ],
+        "template_nav": "html-partials/mod-edit/nav.html",
+        "template_pages": [
+            "html-partials/mod-edit/page-main.html",
+            "html-partials/mod-edit/page-catalog.html",
+            "html-partials/mod-edit/page-params.html",
+        ],
+        "scripts": [
+            "/assets/scripts/vendors/dependence-edit.js",
+            "/assets/scripts/vendors/pager-logic.js",
+            "/assets/scripts/pages/mod-edit.js",
+        ],
+    },
+    "game": {
+        "kind": "game",
+        "root_id": "main-game-edit",
+        "main_classes": "mod-edit game-edit",
+        "styles": [
+            "/assets/styles/pages/mod-edit.css",
+            "/assets/styles/pages/game-edit.css",
+        ],
+        "template_nav": "html-partials/game-edit/nav.html",
+        "template_pages": [
+            "html-partials/game-edit/page-main.html",
+            "html-partials/game-edit/page-params.html",
+        ],
+        "scripts": [
+            "/assets/scripts/vendors/pager-logic.js",
+            "/assets/scripts/pages/game-edit.js",
+        ],
     },
 }
 

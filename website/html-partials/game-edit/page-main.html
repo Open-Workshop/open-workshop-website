@@ -1,0 +1,116 @@
+{% from 'html-partials/macros/taglike-editor.html' import render_taglike_editor, render_tags_editor %}
+
+<div id="page-main-game" class="mod-edit__page mod-edit__split">
+  <section class="mod-edit__main">
+    <div class="mod-edit__titlebar game-edit__titlebar">
+      <input
+        id="game-name"
+        dynamlen
+        empty-width="180pt"
+        placeholder="Название игры"
+        type="text"
+        class="title-mod mod-edit__title-input"
+        startdata="{{ game['name'] }}"
+        value="{{ game['name'] }}"
+      >
+      <select id="game-type" class="game-edit__type-select" startdata="{{ game['type'] }}">
+        <option value="game" {% if game['type'] == 'game' %}selected{% endif %}>Игра</option>
+        <option value="app" {% if game['type'] == 'app' %}selected{% endif %}>Приложение</option>
+      </select>
+    </div>
+
+    <div id="game-short-desc-panel" class="standart-panel mod-edit__panel">
+      <h3>Краткое описание</h3>
+      {% with limit=256, placeholder='Краткое описание игры...', init_text=game['short_description'] %}
+        {% include 'html-partials/desc-edit.html' %}
+      {% endwith %}
+    </div>
+
+    <div id="game-full-desc-panel" class="standart-panel mod-edit__panel">
+      <h3>Полное описание</h3>
+      {% with limit=10000, placeholder='Полное описание игры...', init_text=game['description'] %}
+        {% include 'html-partials/desc-edit.html' %}
+      {% endwith %}
+    </div>
+  </section>
+
+  <aside class="mod-edit__sidebar">
+    <div class="standart-panel game-edit__meta-card">
+      <img
+        class="game-edit__logo"
+        src="{{ game['logo'] if game['logo'] else '/assets/images/image-not-found.webp' }}"
+        alt="Логотип игры"
+        onerror="this.onerror=null;this.src='/assets/images/image-not-found.webp';"
+      >
+
+      <div class="game-edit__meta-grid">
+        <div class="game-edit__meta-item">
+          <span>ID</span>
+          <strong>{{ game['id'] }}</strong>
+        </div>
+        <div class="game-edit__meta-item">
+          <span>Тип</span>
+          <strong>{{ game['type'] }}</strong>
+        </div>
+        <div class="game-edit__meta-item">
+          <span>Модов</span>
+          <strong>{{ game['mods_count'] if game['mods_count'] is defined else '—' }}</strong>
+        </div>
+        <div class="game-edit__meta-item">
+          <span>Скачиваний модов</span>
+          <strong>{{ game['mods_downloads'] if game['mods_downloads'] is defined else '—' }}</strong>
+        </div>
+        <div class="game-edit__meta-item game-edit__meta-item--wide">
+          <span>Дата создания</span>
+          <strong>{{ game['date_creation'] if game['date_creation'] is defined else '—' }}</strong>
+        </div>
+      </div>
+
+      <p class="ow-muted">Логотип подтягивается из ресурсов игры и здесь отображается для контроля.</p>
+    </div>
+
+    {{ render_tags_editor(game_tags, 0, true) }}
+
+    {% call(section) render_taglike_editor(
+      panel_classes='game-edit__genres',
+      selected_wrapper_classes='game-edit__genres-head',
+      selected_list_id='game-genres-selected',
+      selected_list_classes='game-edit__selected-genres',
+      selected_empty_text='Жанры не выбраны',
+      button_text='Изменить жанры',
+      button_classes='small',
+      button_target='.popup-game-genres-select',
+      button_open_callback='GameGenres.refresh',
+      popup_classes='popup-game-genres-select',
+      search_input_id='search-update-input-genres',
+      search_input_placeholder='Поиск...',
+      search_input_oninput='GameGenres.refresh()',
+      search_list_id='game-genres-search-list',
+      search_list_classes='game-edit__genre-list',
+      search_empty_text='Не найдено'
+    ) %}
+      {% if section == 'selected' %}
+        {% for item in selected_genres %}
+          <div class="taglike-item element" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
+            <e>
+              <h3 translate="no">{{ item.name }}</h3>
+              <img src="/assets/images/removal-triangle.svg" alt="Кнопка удаления жанра">
+            </e>
+          </div>
+        {% endfor %}
+      {% elif section == 'search' %}
+        {% for item in available_genres %}
+          <div class="taglike-item element{% if item.id in selected_genre_ids %} genre-selected{% endif %}" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
+            <e>
+              <h3 translate="no">{{ item.name }}</h3>
+            </e>
+          </div>
+        {% endfor %}
+      {% elif section == 'popup_footer' %}
+        <button type="button" class="small taglike-editor__create-button" onclick="GameGenres.queueCreate()">
+          Добавить новое
+        </button>
+      {% endif %}
+    {% endcall %}
+  </aside>
+</div>

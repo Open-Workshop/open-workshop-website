@@ -1,4 +1,5 @@
 {% extends 'html-partials/standart.html' %}
+{% from 'html-partials/macros/taglike-editor.html' import render_tags_editor %}
 
 {% block content %}
 <link href="/assets/styles/pages/catalog.css" rel="stylesheet"/>
@@ -67,11 +68,7 @@
       <hr>
 
       <setting class="with-events">
-        {% with tags={} %}
-          {% with game=0 %}
-            {% include 'html-partials/tags-edit.html' %}
-          {% endwith %}
-        {% endwith %}
+        {{ render_tags_editor({}, 0) }}
       </setting>
     </div>
   </div>

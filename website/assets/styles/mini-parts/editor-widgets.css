@@ -5,20 +5,26 @@
   padding: 8px;
 }
 
+.taglike-editor,
 .tags-edit {
   width: 100%;
   padding-top: 0;
   cursor: auto;
+  overflow: visible;
 }
 
+.taglike-editor__selected,
 .tags-edit__selected {
+  position: relative;
   border-radius: var(--radius-md);
   padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: visible;
 }
 
+.taglike-editor__list,
 .tags-edit .all-mod-tags {
   transition: all 0.15s ease;
   padding: 4px;
@@ -27,30 +33,35 @@
   align-content: flex-start;
   gap: 6px;
 }
+.taglike-editor__list p,
 .tags-edit .all-mod-tags p {
   font-size: initial;
   cursor: default;
 }
 
+.taglike-editor .taglike-item,
 .tags-edit .all-mod-tags > div {
   border-radius: var(--radius-sm);
   padding: 2px 6px;
   font-size: 0.95rem;
-  height: 22px;
+  min-height: 22px;
   display: inline-flex;
   align-items: center;
   cursor: pointer;
   transition: background 0.1s ease;
 }
 
+.taglike-editor .taglike-item:not(.selected-tag):not(.genre-selected),
 .tags-edit .all-mod-tags > div:not(.selected-tag) {
   background: #2b2d38;
 }
 
+.taglike-editor .taglike-item:not(.selected-tag):not(.genre-selected):hover,
 .tags-edit .all-mod-tags > div:not(.selected-tag):hover {
   background: #34374a;
 }
 
+.taglike-editor .taglike-item:not(.selected-tag):not(.genre-selected):active,
 .tags-edit .all-mod-tags > div:not(.selected-tag):active {
   background: #2f3242;
 }
@@ -67,8 +78,34 @@
   background: var(--interactive-element-background-active);
 }
 
+.taglike-editor__button,
 .tags-edit__add {
   align-self: flex-start;
+}
+
+.taglike-editor__popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+  align-self: auto;
+  z-index: 20;
+}
+
+.taglike-editor__popup.popup-nonvisible {
+  pointer-events: none;
+}
+
+.taglike-editor__create-button {
+  align-self: flex-start;
+  margin: 0 4px 4px;
+}
+
+.taglike-editor .taglike-item[data-pending-create="true"] {
+  border: 1px dashed var(--interactive-element-background-disabled);
 }
 
 .screenshots-edit {

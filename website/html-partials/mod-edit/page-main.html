@@ -1,3 +1,5 @@
+{% from 'html-partials/macros/taglike-editor.html' import render_tags_editor %}
+
 <div id="page-in-mod-page" class="mod-edit__page mod-edit__split">
   <section class="mod-edit__main">
     <div class="mod-edit__titlebar">
@@ -15,9 +17,7 @@
   <aside class="mod-edit__sidebar">
     {% include 'html-partials/screenshots-edit.html' %}
     
-    {% with game=info["result"]["game"]["id"] %}
-      {% include 'html-partials/tags-edit.html' %}
-    {% endwith %}
+    {{ render_tags_editor(tags, info["result"]["game"]["id"]) }}
 
     {% include 'html-partials/mod-dependence-edit.html' %}
   </aside>

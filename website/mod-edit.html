@@ -1,27 +1,40 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-<link href="/assets/styles/pages/mod-edit.css" rel="stylesheet"/>
+<script>
+  window.OWEditPage = {{ edit_page | tojson }};
+</script>
+{% for style in edit_page.styles %}
+<link href="{{ style }}" rel="stylesheet"/>
+{% endfor %}
 
-<div id="main-mod-edit" data-mod-id="{{ info['result']['id'] }}">
-  <main class="mod-edit">
-    {% include 'html-partials/mod-edit/nav.html' %}
-    {% include 'html-partials/mod-edit/page-main.html' %}
-    {% include 'html-partials/mod-edit/page-catalog.html' %}
-    {% include 'html-partials/mod-edit/page-params.html' %}
+<div
+  id="{{ edit_page.root_id }}"
+  data-edit-kind="{{ edit_page.kind }}"
+  data-entity-id="{{ edit_page.entity_id }}"
+  {% if edit_page.kind == 'mod' %}
+  data-mod-id="{{ edit_page.entity_id }}"
+  {% elif edit_page.kind == 'game' %}
+  data-game-id="{{ edit_page.entity_id }}"
+  {% endif %}
+>
+  <main class="{{ edit_page.main_classes }}">
+    {% include edit_page.template_nav %}
+    {% for page_template in edit_page.template_pages %}
+      {% include page_template %}
+    {% endfor %}
   </main>
 </div>
 
-<script src="/assets/scripts/vendors/tags-edit.js"></script>
-<script src="/assets/scripts/vendors/dependence-edit.js"></script>
-<script src="/assets/scripts/vendors/pager-logic.js"></script>
-<script src="/assets/scripts/pages/mod-edit.js"></script>
+{% for script in edit_page.scripts %}
+<script src="{{ script }}"></script>
+{% endfor %}
 
 {% endblock %}
 
 {% block title %}
-{{ info['result']['name'] }} - edit Open Mod
+{{ edit_title }}
 {% endblock %}
 
 {% block description %}
-{{ info['result']['short_description'] }}
+{{ edit_description }}
 {% endblock %}

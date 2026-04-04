@@ -1,0 +1,101 @@
+{% macro render_taglike_editor(
+  panel_classes='',
+  import_height='',
+  selected_wrapper_id='',
+  selected_wrapper_classes='',
+  selected_list_id='',
+  selected_list_classes='',
+  selected_empty_text='',
+  button_id='',
+  button_type='button',
+  button_text='',
+  button_classes='',
+  button_target='',
+  button_open_callback='',
+  popup_classes='',
+  search_input_id='',
+  search_input_type='text',
+  search_input_placeholder='',
+  search_input_oninput='',
+  search_input_attrs=None,
+  search_list_id='',
+  search_list_classes='',
+  search_empty_text=''
+) -%}
+<div class="standart-panel taglike-editor{% if panel_classes %} {{ panel_classes }}{% endif %}"{% if import_height %} import-height="{{ import_height }}"{% endif %}>
+  <div{% if selected_wrapper_id %} id="{{ selected_wrapper_id }}"{% endif %} class="taglike-editor__selected{% if selected_wrapper_classes %} {{ selected_wrapper_classes }}{% endif %}">
+    <div{% if selected_list_id %} id="{{ selected_list_id }}"{% endif %} class="alls taglike-editor__list{% if selected_list_classes %} {{ selected_list_classes }}{% endif %}">
+      {{ caller('selected') }}
+      <p>{{ selected_empty_text }}</p>
+    </div>
+
+    <button
+      {% if button_id %}id="{{ button_id }}"{% endif %}
+      type="{{ button_type }}"
+      {% if button_target %}data-popup-menu-target="{{ button_target }}"{% endif %}
+      {% if button_open_callback %}data-popup-menu-open-callback="{{ button_open_callback }}"{% endif %}
+      class="taglike-editor__button{% if button_classes %} {{ button_classes }}{% endif %}"
+    >{{ button_text }}</button>
+
+    <div class="taglike-editor__popup popup-menu-select popup-nonvisible{% if popup_classes %} {{ popup_classes }}{% endif %}">
+      <input
+        {% if search_input_id %}id="{{ search_input_id }}"{% endif %}
+        type="{{ search_input_type }}"
+        placeholder="{{ search_input_placeholder }}"
+        {% if search_input_oninput %}oninput="{{ search_input_oninput }}"{% endif %}
+        {% if search_input_attrs %}
+          {% for attr_name, attr_value in search_input_attrs.items() %}
+            {{ attr_name }}="{{ attr_value }}"
+          {% endfor %}
+        {% endif %}
+      >
+
+      <div{% if search_list_id %} id="{{ search_list_id }}"{% endif %} class="alls taglike-editor__list{% if search_list_classes %} {{ search_list_classes }}{% endif %}">
+        {{ caller('search') }}
+        <p>{{ search_empty_text }}</p>
+      </div>
+
+      {{ caller('popup_footer') }}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro render_tags_editor(tags, game=0, allow_create_new=false) -%}
+{% call(section) render_taglike_editor(
+  panel_classes='tags-edit',
+  import_height='div#selected-tags',
+  selected_wrapper_id='selected-tags',
+  selected_list_id='tags-edit-selected-tags',
+  selected_list_classes='all-mod-tags tags-edit__list',
+  selected_empty_text='Тегов не выбрано',
+  button_id='popup-menu-tags-toggle',
+  button_text='Добавить тег',
+  button_classes='small tags-edit__add',
+  button_target='.popup-tags-select',
+  button_open_callback='TagsSelector.searchRequestTagUpdate',
+  popup_classes='popup-tags-select',
+  search_input_id='search-update-input-tags',
+  search_input_placeholder='Поиск...',
+  search_input_oninput='TagsSelector.searchRequestTagUpdate()',
+  search_input_attrs={'gameid': game},
+  search_list_id='tags-edit-search-tags',
+  search_list_classes='all-mod-tags tags-edit__list',
+  search_empty_text='Не найдено'
+) %}
+  {% if section == 'selected' %}
+    {% for item in tags %}
+      <div class="taglike-item" tagid="{{ item.id }}" saved onclick="TagsSelector.editTag(this)">{{ item.name }}</div>
+    {% endfor %}
+  {% elif section == 'popup_footer' %}
+    <p class="show-more" id="show-more-count-tags"></p>
+    {% if allow_create_new %}
+      <button type="button" class="small taglike-editor__create-button" onclick="TagsSelector.queueCreate()">
+        Добавить новое
+      </button>
+    {% endif %}
+  {% endif %}
+{% endcall %}
+
+<script src="/assets/scripts/vendors/tags-edit.js"></script>
+{%- endmacro %}

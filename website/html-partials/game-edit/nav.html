@@ -1,0 +1,18 @@
+<div class="standart-panel mod-edit-nav">
+  <a class="mod-edit-nav__save dark button-style" href="/?game={{ game['id'] }}&game_select=false" title="Открыть игру в каталоге">
+    <img src="/assets/images/svg/white/eye.svg" style="padding: 5px;" alt="Открыть игру в каталоге">
+  </a>
+
+  <div class="navigation mod-edit-nav__group" variants="main-game, params-game">
+    <button id="start-page-button" class="dark" variant="main-game" onclick="Pager.change(this)">
+      <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
+    </button>
+    <button variant="params-game" class="dark" onclick="Pager.change(this)">
+      <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
+    </button>
+  </div>
+
+  <button id="save-game-button" class="mod-edit-nav__save" onclick="saveGameChanges()">
+    <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
+  </button>
+</div>
