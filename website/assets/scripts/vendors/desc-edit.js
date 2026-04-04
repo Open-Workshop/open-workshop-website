@@ -4,140 +4,23 @@
   let outsideCloseBound = false;
   let observerBound = false;
 
+  function getCodec() {
+    return window.OWDescriptionCodec || null;
+  }
+
   function normalizeText(value) {
-    return String(value || '').replace(/\r\n?/g, '\n');
+    const codec = getCodec();
+    return codec ? codec.normalizeText(value) : String(value || '').replace(/\r\n?/g, '\n');
   }
 
   function normalizeUrl(value) {
-    const raw = String(value || '').trim();
-    if (raw === '') return '';
-    if (/^https?:\/\//i.test(raw)) return raw;
-    return `https://${raw.replace(/^\/+/, '')}`;
-  }
-
-  function normalizeInlineText(text) {
-    return String(text || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\ufeff/g, '');
-  }
-
-  function serializeInlineNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return normalizeInlineText(node.textContent);
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return '';
-    }
-
-    const tag = node.tagName.toUpperCase();
-
-    if (tag === 'BR') return '\n';
-    if (tag === 'STRONG' || tag === 'B') return `[b]${serializeInlineChildren(node)}[/b]`;
-    if (tag === 'EM' || tag === 'I') return `[i]${serializeInlineChildren(node)}[/i]`;
-    if (tag === 'U') return `[u]${serializeInlineChildren(node)}[/u]`;
-    if (tag === 'S' || tag === 'STRIKE') return `[strike]${serializeInlineChildren(node)}[/strike]`;
-
-    if (tag === 'A') {
-      const href = String(node.getAttribute('href') || '').trim();
-      const label = serializeInlineChildren(node).trim();
-      if (href === '') return label;
-      return label === href ? href : `[url=${href}]${label}[/url]`;
-    }
-
-    if (tag === 'IMG') {
-      const src = String(node.getAttribute('src') || '').trim();
-      return src ? `[img]${src}[/img]` : '';
-    }
-
-    return serializeInlineChildren(node);
-  }
-
-  function serializeInlineChildren(node) {
-    return Array.from(node.childNodes)
-      .map(function (child) {
-        return serializeInlineNode(child);
-      })
-      .join('');
-  }
-
-  function serializeNodes(nodes) {
-    const blocks = [];
-
-    nodes.forEach(function (node) {
-      const serialized = serializeBlockNode(node);
-      if (serialized === '') return;
-      blocks.push(serialized);
-    });
-
-    return blocks.join('\n\n');
-  }
-
-  function serializeList(node) {
-    const items = Array.from(node.children)
-      .filter(function (child) {
-        return child.tagName && child.tagName.toUpperCase() === 'LI';
-      })
-      .map(function (item) {
-        const text = serializeInlineChildren(item).trim();
-        return text ? `[*] ${text}` : '';
-      })
-      .filter(Boolean);
-
-    if (!items.length) return '';
-    return `[list]\n${items.join('\n')}\n[/list]`;
-  }
-
-  function serializeBlockNode(node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return normalizeInlineText(node.textContent).trim();
-    }
-
-    if (node.nodeType !== Node.ELEMENT_NODE) {
-      return '';
-    }
-
-    const tag = node.tagName.toUpperCase();
-
-    if (tag === 'P' || tag === 'DIV') {
-      return serializeInlineChildren(node).trim();
-    }
-
-    if (/^H[1-6]$/.test(tag)) {
-      const level = tag.slice(1);
-      return `[h${level}]${serializeInlineChildren(node).trim()}[/h${level}]`;
-    }
-
-    if (tag === 'BLOCKQUOTE') {
-      const value = serializeNodes(Array.from(node.childNodes)).trim();
-      return value ? `[quote]${value}[/quote]` : '';
-    }
-
-    if (tag === 'UL' || tag === 'OL') {
-      return serializeList(node);
-    }
-
-    if (tag === 'IMG') {
-      const src = String(node.getAttribute('src') || '').trim();
-      return src ? `[img]${src}[/img]` : '';
-    }
-
-    if (tag === 'HR') {
-      return '[hr]';
-    }
-
-    return serializeInlineChildren(node).trim();
-  }
-
-  function normalizeSerializedBbcode(text) {
-    return normalizeText(text)
-      .replace(/[ \t]+\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+    const codec = getCodec();
+    return codec ? codec.normalizeUrl(value) : '';
   }
 
   function serializeEditorRoot(root) {
-    return normalizeSerializedBbcode(serializeNodes(Array.from(root.childNodes)));
+    const codec = getCodec();
+    return codec ? codec.serializeRoot(root) : normalizeText(root ? root.textContent : '').trim();
   }
 
   function updateLimit(editor) {
@@ -176,8 +59,8 @@
   function setEditorValue(editor, value, options) {
     const normalizedValue = normalizeText(value);
     const nextOptions = options || {};
-    const html = window.Formating
-      ? window.Formating.syntax2HTML(normalizedValue)
+    const html = getCodec()
+      ? getCodec().toHtml(normalizedValue)
       : '';
 
     editor.isApplying = true;
@@ -286,8 +169,8 @@
         toolbar: {
           container: [
             [{ header: [1, 2, 3, 4, 5, 6, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            ['blockquote', 'link'],
+            ['bold', 'italic', 'underline', 'strike', 'code'],
+            ['blockquote', 'code-block', 'link'],
             [{ list: 'bullet' }],
             ['image', 'clean'],
           ],
@@ -298,7 +181,7 @@
           },
         },
       },
-      formats: ['header', 'bold', 'italic', 'underline', 'strike', 'blockquote', 'link', 'list', 'image'],
+      formats: ['header', 'bold', 'italic', 'underline', 'strike', 'code', 'code-block', 'blockquote', 'link', 'list', 'image'],
     });
 
     quill.root.classList.add('ow-description-content');

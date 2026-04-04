@@ -173,8 +173,45 @@
 }
 
 .ow-description-content code {
+  display: inline;
+  padding: 0.12em 0.38em;
+  border-radius: var(--radius-sm);
   color: white;
   background: rgba(255, 255, 255, 0.08);
+  font-family: "Cascadia Mono", "Fira Code", "JetBrains Mono", monospace;
+  font-size: 0.95em;
+}
+
+.ow-description-content pre,
+.ow-description-content .ql-code-block-container {
+  overflow-x: auto;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f5f7ff;
+  font-family: "Cascadia Mono", "Fira Code", "JetBrains Mono", monospace;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.ow-description-content pre code {
+  display: block;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.ow-description-content .ql-code-block-container .ql-code-block {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ow-description-content .ql-code-block-container .ql-code-block + .ql-code-block {
+  margin-top: 0;
 }
 
 .desc-edit .ql-bubble .ql-tooltip {
