@@ -15,7 +15,8 @@ main.user.settings > pager > label {
 
     padding: 5px;
 }
-main.user.settings > pager > button {
+main.user.settings > pager > button,
+main.user.settings > pager > .button-style {
     margin: 1px;
 }
 
