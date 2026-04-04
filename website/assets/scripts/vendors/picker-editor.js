@@ -36,9 +36,6 @@
   function requestLayout(root) {
     const target = getClosestImportHeight(root);
     target.dispatchEvent(new Event('event-height', { bubbles: true }));
-    if (window.jQuery) {
-      window.jQuery(target).trigger('event-height');
-    }
   }
 
   const registry = new Map();

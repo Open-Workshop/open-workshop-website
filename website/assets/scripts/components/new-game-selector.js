@@ -26,10 +26,13 @@
   }
 
   window.searchUpdateInput = async function searchUpdateInput() {
-    const $popup = $('div.popup-game-select');
-    $popup.addClass('reset');
+    const popup = document.querySelector('div.popup-game-select');
+    if (popup) {
+      popup.classList.add('reset');
+    }
 
-    const query = $('input#search-update-input').val();
+    const searchInput = document.getElementById('search-update-input');
+    const query = searchInput ? searchInput.value : '';
     const gamesParams = new URLSearchParams({
       page_size: '5',
       name: String(query || ''),
@@ -56,7 +59,9 @@
       addNewGameResult(t.name, t.id, logo);
     });
 
-    $popup.removeClass('reset');
+    if (popup) {
+      popup.classList.remove('reset');
+    }
   };
 
   async function fetchGameLogos(games) {
@@ -100,53 +105,70 @@
   }
 
   function clearSearchResults() {
-    $('div#all-games-search-results').empty();
+    const resultsRoot = document.getElementById('all-games-search-results');
+    if (resultsRoot) {
+      resultsRoot.innerHTML = '';
+    }
   }
 
   function noInList(number) {
-    const pNoInList = $('p#show-more-count');
-    pNoInList.text('И ещё ' + number + ' шт...');
+    const pNoInList = document.getElementById('show-more-count');
+    if (!pNoInList) return;
+    pNoInList.textContent = 'И ещё ' + number + ' шт...';
 
     if (number <= 0) {
-      pNoInList.attr('hidden', '');
+      pNoInList.setAttribute('hidden', '');
     } else {
-      pNoInList.removeAttr('hidden');
+      pNoInList.removeAttribute('hidden');
     }
   }
 
   function addNewGameResult(gameName, gameID, gameLogo) {
     const normalizedLogo = normalizeGameLogo(gameLogo);
-    const newDiv = $('<div/>', {
-      class: 'in-popup-game-card',
-      gameid: gameID,
-      style: '--logo-game: url("' + normalizedLogo + '");',
-      onclick: 'gameSelected($(this))',
-      title: gameName,
-    });
+    const newDiv = document.createElement('div');
+    newDiv.className = 'in-popup-game-card';
+    newDiv.setAttribute('gameid', String(gameID));
+    newDiv.setAttribute('style', '--logo-game: url("' + normalizedLogo + '");');
+    newDiv.setAttribute('title', gameName);
 
-    const newImg = $('<img/>', {
-      src: normalizedLogo,
-      alt: 'Лого игры',
-      onerror: 'handlerImgErrorLoad(this)',
-    });
+    const newImg = document.createElement('img');
+    newImg.setAttribute('src', normalizedLogo);
+    newImg.setAttribute('alt', 'Лого игры');
 
-    const newP = $('<p/>', {
-      text: gameName,
-    });
+    const newP = document.createElement('p');
+    newP.textContent = gameName;
 
     newDiv.append(newImg, newP);
-    $('div#all-games-search-results').append(newDiv);
+    newDiv.addEventListener('click', function () {
+      window.gameSelected(newDiv);
+    });
+
+    const resultsRoot = document.getElementById('all-games-search-results');
+    if (resultsRoot) {
+      resultsRoot.appendChild(newDiv);
+    }
   }
 
   window.gameSelected = function gameSelected(element) {
     const container = document.querySelector('div.main-body-game-selector');
-    const gameSelectCard = container ? $(container).find('div.select-game-menu').first() : $('div.select-game-menu');
+    const gameSelectCard = container ? container.querySelector('div.select-game-menu') : document.querySelector('div.select-game-menu');
+    const text = element.querySelector('p');
+    const image = element.querySelector('img');
 
-    gameSelectCard.children('p').text(element.children('p').text());
-    $('img.game-select-logo').attr('src', element.children('img').attr('src'));
-    gameSelectCard.attr('gameid', element.attr('gameid'));
+    if (gameSelectCard) {
+      const label = gameSelectCard.querySelector('p');
+      if (label && text) {
+        label.textContent = text.textContent || '';
+      }
+      gameSelectCard.setAttribute('gameid', element.getAttribute('gameid') || '');
+    }
+    document.querySelectorAll('img.game-select-logo').forEach(function (logo) {
+      if (image) {
+        logo.setAttribute('src', image.getAttribute('src') || fallbackGameLogo);
+      }
+    });
     if (container) {
-      container.setAttribute('gameid', element.attr('gameid'));
+      container.setAttribute('gameid', element.getAttribute('gameid') || '');
       container.classList.remove('active');
     }
   };
@@ -157,10 +179,20 @@
     container.classList.toggle('active');
   };
 
-  $(document).ready(function () {
+  function initNewGameSelector() {
     bindSelectorToggle();
-    if (document.getElementById('search-update-input')) {
+    const searchInput = document.getElementById('search-update-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        window.searchUpdateInput();
+      });
       window.searchUpdateInput();
     }
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNewGameSelector);
+  } else {
+    initNewGameSelector();
+  }
 })();

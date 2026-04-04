@@ -75,12 +75,14 @@
     });
   }
 
-  window.activateDeleteButton = function activateDeleteButton() {
-    const $checkboxConfirm = $('input#checkbox-delete-confirm');
-    $('#page-delete-account > div > button').prop('disabled', !$checkboxConfirm.is(':checked'));
-  };
+  function activateDeleteButton() {
+    const checkboxConfirm = document.querySelector('input#checkbox-delete-confirm');
+    const deleteButton = document.querySelector('#page-delete-account > div > button');
+    if (!checkboxConfirm || !deleteButton) return;
+    deleteButton.disabled = !checkboxConfirm.checked;
+  }
 
-  window.usernameDeleteEditEvent = function usernameDeleteEditEvent() {
+  function usernameDeleteEditEvent() {
     const usernameDeleteElement = document.getElementById('username-access-delete');
     if (!usernameDeleteElement) return;
 
@@ -90,9 +92,9 @@
     } else {
       usernameDeleteElement.classList.remove('limit');
     }
-  };
+  }
 
-  window.commitToDelete = function commitToDelete() {
+  function commitToDelete() {
     const usernameDeleteElement = document.getElementById('username-access-delete');
     if (!usernameDeleteElement) return;
 
@@ -115,13 +117,13 @@
     fetch(url, { method: endpoint.method, credentials: 'include' }).then(function () {
       location.reload();
     });
-  };
-
-  if (document.getElementById('username-access-delete')) {
-    window.usernameDeleteEditEvent();
   }
 
-  window.saveProfile = async function saveProfile() {
+  if (document.getElementById('username-access-delete')) {
+    usernameDeleteEditEvent();
+  }
+
+  async function saveProfile() {
     let tofetch = false;
     const editEndpoint = apiPaths.profile.edit;
     let url =
@@ -129,14 +131,14 @@
       '?';
     let formData = new FormData();
 
-    const $username = $('#username');
-    if ($username.val() != $username.attr('startdata')) {
-      formData.append('username', $username.val());
+    const username = document.getElementById('username');
+    if (username && username.value != username.getAttribute('startdata')) {
+      formData.append('username', username.value);
       tofetch = true;
     }
-    const $grade = $('#grade');
-    if ($grade.val() != $grade.attr('startdata')) {
-      formData.append('grade', $grade.val());
+    const grade = document.getElementById('grade');
+    if (grade && grade.value != grade.getAttribute('startdata')) {
+      formData.append('grade', grade.value);
       tofetch = true;
     }
     const aboutRoot = document.querySelector('#page-profile .desc-edit');
@@ -146,23 +148,24 @@
       formData.append('about', aboutValue);
       tofetch = true;
     }
-    const $input = $('#file-select-avatar');
-    if ($input.get(0) && $input.get(0).files.length > 0) {
-      formData.append('avatar', $input.get(0).files[0]);
+    const avatarFileInput = document.getElementById('file-select-avatar');
+    if (avatarFileInput && avatarFileInput.files.length > 0) {
+      formData.append('avatar', avatarFileInput.files[0]);
       tofetch = true;
     } else {
       formData.append('avatar', '');
     }
 
-    const $emptyAvatar = $('#reset-avatar');
-    if ($emptyAvatar.hasClass('toggled')) {
+    const emptyAvatar = document.getElementById('reset-avatar');
+    if (emptyAvatar && emptyAvatar.classList.contains('toggled')) {
       formData.append('empty_avatar', true);
       tofetch = true;
     }
-    const $mute = $('#mute-delta');
-    if ($mute.length && $mute.val() > 0) {
-      const $unitSize = $('#mute-delta-unit');
-      const dateResult = new Date(Date.now() + $mute.val() * $unitSize.val() * 1000);
+    const muteInput = document.getElementById('mute-delta');
+    if (muteInput && Number(muteInput.value) > 0) {
+      const unitSize = document.getElementById('mute-delta-unit');
+      const unitValue = unitSize ? Number(unitSize.value) : 0;
+      const dateResult = new Date(Date.now() + Number(muteInput.value) * unitValue * 1000);
       formData.append('mute', dateResult.toISOString().slice(0, 19));
       tofetch = true;
     }
@@ -266,5 +269,55 @@
         interval: 6000,
       });
     }
-  };
+  }
+
+  root.addEventListener('click', function (event) {
+    const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+    if (!actionNode) return;
+
+    const action = actionNode.dataset.action;
+
+    if (action === 'user-avatar-select') {
+      const resetAvatar = document.getElementById('reset-avatar');
+      if (resetAvatar) {
+        resetAvatar.classList.remove('toggled');
+      }
+      if (avatarInput) {
+        avatarInput.click();
+      }
+      return;
+    }
+
+    if (action === 'user-avatar-reset-toggle') {
+      actionNode.classList.toggle('toggled');
+      return;
+    }
+
+    if (action === 'user-delete-account') {
+      commitToDelete();
+      return;
+    }
+
+    if (action === 'user-save-profile') {
+      saveProfile();
+    }
+  });
+
+  root.addEventListener('input', function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="user-delete-name-input"]')) {
+      usernameDeleteEditEvent();
+    }
+  });
+
+  root.addEventListener('change', function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="user-delete-confirm-toggle"]')) {
+      activateDeleteButton();
+    }
+  });
 })();

@@ -18,61 +18,24 @@
         
         <link href="/assets/styles/pages/login-popup.css" rel="stylesheet"/>
 
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <script src="/assets/scripts/vendors/cookie-manager.js"></script>
     </head>
     <body>
         <main class="login-popup">
-            <div class="outline-container" id="legal" onclick="checkLegal()">
+            <div class="outline-container" id="legal" data-action="login-toggle-legal">
                 <input class="input-checkbox" id="legal-checkbox" type="checkbox">
-                <label>Я согласен с <a class="tag-link-blue" onclick="toLink('/legal/site-rules')" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и на <a class="tag-link-blue" onclick="toLink('/legal/privacy-policy')" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
+                <label>Я согласен с <a class="tag-link-blue" data-action="login-open-link" data-link="/legal/site-rules" title="Изучить правила сайта (прерывание входа)">правилами сайта</a> и на <a class="tag-link-blue" data-action="login-open-link" data-link="/legal/privacy-policy" title="Изучить соглашение обработки персональных данных (прерывание входа)">обработку персональных данных</a></label>
             </div>
             
             {% if russia %}
-            <div class="outline-container" id="from-russia-question" onclick="fromRussia()">
+            <div class="outline-container" id="from-russia-question" data-action="login-toggle-russia">
                 <input class="input-checkbox" id="russia-checkbox" type="checkbox">
                 <label>Вы находитесь на территории РФ?</label>
             </div>
             {% endif %}
 
-            <button id="continue-link" onclick="continueAuth()" disabled>Продолжить</button>
-            
-            <script>
-                function toLink(link) {
-                    document.cookie = "popupLink="+link+"; path=/";
-                }
-
-
-                function checkLegal() {
-                    console.log('checkLegal')
-
-                    const $legalCheckbox = $('input#legal-checkbox')
-                    $legalCheckbox.prop('checked', !$legalCheckbox.prop('checked'));
-
-                    checkContinue();
-                }
-                
-                function fromRussia() {
-                    const $ruCheckbox = $('input#russia-checkbox')
-
-                    $ruCheckbox.prop('checked', !$ruCheckbox.prop('checked'));
-                }
-
-                function continueAuth() {
-                    const $ruCheckbox = $('input#russia-checkbox').prop('checked')
-                    if ($ruCheckbox != undefined) {
-                        console.log($ruCheckbox)
-                        document.cookie = "fromRussia="+$ruCheckbox+"; expires="+new Date(Date.now() + 30*24*60*60*1000).toUTCString()+"; path=/";
-                    }
-                    
-                    window.location.href = '{{ link }}'
-                }
-
-
-                function checkContinue() {
-                    $('#continue-link').prop('disabled', !$('#legal-checkbox').prop('checked'));
-                }
-            </script>
+            <button id="continue-link" data-action="login-continue" data-link="{{ link }}" disabled>Продолжить</button>
         </main>
+        <script src="/assets/scripts/pages/login-popup.js"></script>
     </body>
 </html>

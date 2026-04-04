@@ -235,7 +235,10 @@
   function updateCatalogLogo() {
     const logoHref = getLogoUrlFromMedia();
     if (!logoHref) return;
-    $(`img#preview-logo-card-${modID}`).attr('src', logoHref);
+    const previewLogo = document.getElementById(`preview-logo-card-${modID}`);
+    if (previewLogo) {
+      previewLogo.setAttribute('src', logoHref);
+    }
   }
 
   function ensureCatalogPreviewApi() {
@@ -244,17 +247,24 @@
     window.Catalog = {
       masonry: function () {},
       cardShow: function (cardClick) {
-        const $cards = $(cardClick).closest('div.cards');
-        if (!$cards.length) return;
-        $cards.addClass('showing');
-        $cards.find('.card').removeClass('show');
-        $(cardClick).closest('.card').addClass('show');
+        const cards = cardClick instanceof Element ? cardClick.closest('div.cards') : null;
+        if (!cards) return;
+        cards.classList.add('showing');
+        cards.querySelectorAll('.card').forEach(function (card) {
+          card.classList.remove('show');
+        });
+        const currentCard = cardClick.closest('.card');
+        if (currentCard) {
+          currentCard.classList.add('show');
+        }
       },
       cardsCancel: function () {
-        const $cards = $('div.mod-edit__catalog-cards');
-        if (!$cards.length) return;
-        $cards.removeClass('showing');
-        $cards.find('.card').removeClass('show');
+        const cards = document.querySelector('div.mod-edit__catalog-cards');
+        if (!cards) return;
+        cards.classList.remove('showing');
+        cards.querySelectorAll('.card').forEach(function (card) {
+          card.classList.remove('show');
+        });
       },
     };
   }
@@ -293,9 +303,9 @@
     return card;
   }
 
-  $(document).ready(function () {
+  function initModEditPage() {
     setTimeout(function () {
-      $('#main-mod-edit').css('opacity', 1);
+      root.style.opacity = 1;
     }, 500);
 
     const startBtn = document.querySelector('#start-page-button');
@@ -311,39 +321,41 @@
     initCatalogPreview();
     initPublicToggle();
     initDeleteModControl();
-  });
+  }
 
   function initCatalogPreview() {
     const catalogDescRoot = getDescModuleRoot('catalog');
-    const $titleInput = $('input.title-mod');
+    const titleInput = document.querySelector('input.title-mod');
     if (!catalogDescRoot) return;
 
     const initialShortDesc = getDescModuleValue('catalog');
-    const initialTitle = $titleInput.length ? $titleInput.val() : '';
+    const initialTitle = titleInput ? titleInput.value : '';
     const card = buildCatalogPreviewCard(initialShortDesc, initialTitle);
     if (!card) return;
 
-    const $cardDescD = $(card).find('article').first();
-    const $cardTitle = $(card).find(`#titlename${modID}`).first();
+    const cardDesc = card.querySelector('article');
+    const cardTitle = card.querySelector(`#titlename${modID}`);
 
-    $cardDescD.attr('cashData', initialShortDesc);
-    Formating.renderInto($cardDescD.get(0), initialShortDesc);
-    $cardTitle.attr('cashData', initialTitle);
-    $cardTitle.attr('title', initialTitle);
-    $cardTitle.text(initialTitle);
+    if (!cardDesc || !cardTitle) return;
+
+    cardDesc.dataset.cashData = initialShortDesc;
+    Formating.renderInto(cardDesc, initialShortDesc);
+    cardTitle.dataset.cashData = initialTitle;
+    cardTitle.setAttribute('title', initialTitle);
+    cardTitle.textContent = initialTitle;
 
     setInterval(function () {
       const dataText = getDescModuleValue('catalog');
-      if ($cardDescD.attr('cashData') != dataText) {
-        $cardDescD.attr('cashData', dataText);
-        Formating.renderInto($cardDescD.get(0), dataText);
+      if (cardDesc.dataset.cashData != dataText) {
+        cardDesc.dataset.cashData = dataText;
+        Formating.renderInto(cardDesc, dataText);
       }
 
-      const nextTitle = $titleInput.length ? $titleInput.val() : '';
-      if ($cardTitle.attr('cashData') != nextTitle) {
-        $cardTitle.attr('cashData', nextTitle);
-        $cardTitle.attr('title', nextTitle);
-        $cardTitle.text(nextTitle);
+      const nextTitle = titleInput ? titleInput.value : '';
+      if (cardTitle.dataset.cashData != nextTitle) {
+        cardTitle.dataset.cashData = nextTitle;
+        cardTitle.setAttribute('title', nextTitle);
+        cardTitle.textContent = nextTitle;
       }
     }, 300);
 
@@ -480,7 +492,7 @@
 
       item.innerHTML = `
         <a href="${previewUrl}" class="media-item__preview without-caption image-link" target="_blank">
-          <img src="${previewUrl}" alt="Изображение мода" onerror="this.src='/assets/images/image-not-found.webp'">
+          <img src="${previewUrl}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp">
           <span class="media-item__badge" data-media-badge></span>
         </a>
         <div class="media-item__meta">
@@ -698,7 +710,7 @@
   }
 
   function initPublicToggle() {
-    window.toggleNextPublic(false);
+    toggleNextPublic(false);
   }
 
   function initDescriptionModules() {
@@ -713,17 +725,18 @@
     });
   }
 
-  const publicButton = $('button.public-mod-toggle');
-  const publicIcon = publicButton.find('img');
+  const publicButton = document.querySelector('button.public-mod-toggle');
+  const publicIcon = publicButton ? publicButton.querySelector('img') : null;
 
-  window.toggleNextPublic = function toggleNextPublic(next = true) {
+  function toggleNextPublic(next = true) {
+    if (!publicButton || !publicIcon) return;
     if (next) {
-      publicButton.attr('public-mode', (parseInt(publicButton.attr('public-mode'), 10) + 1) % 3);
+      publicButton.setAttribute('public-mode', String((parseInt(publicButton.getAttribute('public-mode'), 10) + 1) % 3));
     }
-    const mode = publicButton.attr('public-mode');
-    publicIcon.attr('src', publicIcons[mode]);
-    publicButton.attr('title', publicTitles[mode]);
-  };
+    const mode = publicButton.getAttribute('public-mode');
+    publicIcon.setAttribute('src', publicIcons[mode]);
+    publicButton.setAttribute('title', publicTitles[mode]);
+  }
 
   function initDeleteModControl() {
     const confirmInput = document.getElementById('delete-mod-confirm');
@@ -753,16 +766,16 @@
   }
 
   function collectModChanges() {
-    const title = $('input.title-mod');
-    const pub = $('button.public-mod-toggle');
+    const title = document.querySelector('input.title-mod');
+    const pub = document.querySelector('button.public-mod-toggle');
     const shortDescValue = getDescModuleValue('catalog');
     const fullDescValue = getDescModuleValue('full');
 
     return {
-      mod_name: diff(title.val(), title.attr('startdata')),
+      mod_name: diff(title ? title.value : '', title ? title.getAttribute('startdata') : ''),
       mod_short_description: diff(shortDescValue, getDescModuleStartValue('catalog')),
       mod_description: diff(fullDescValue, getDescModuleStartValue('full')),
-      mod_public: diff(pub.attr('public-mode'), pub.attr('startdata')),
+      mod_public: diff(pub ? pub.getAttribute('public-mode') : '', pub ? pub.getAttribute('startdata') : ''),
     };
   }
 
@@ -859,7 +872,7 @@
     }
   }
 
-  window.uploadModVersion = async function uploadModVersion() {
+  async function uploadModVersion() {
     const input = document.getElementById('input-mod-file-upload') || document.getElementById('mod-file-input');
     if (!input || !input.files || !input.files[0]) {
       new Toast({ title: 'Файл не выбран', text: 'Выберите архив мода', theme: 'info' });
@@ -993,9 +1006,9 @@
       new Toast({ title: 'Ошибка', text: err.message || err, theme: 'danger' });
       setUploadStatus('Ошибка загрузки');
     }
-  };
+  }
 
-  window.deleteMod = async function deleteMod() {
+  async function deleteMod() {
     const confirmInput = document.getElementById('delete-mod-confirm');
     if (confirmInput && !confirmInput.checked) return;
     if (!confirm('Удалить мод без возможности восстановления?')) return;
@@ -1004,7 +1017,7 @@
     await send(url, endpoint.method);
     new Toast({ title: 'Удалено', text: 'Мод удален', theme: 'success' });
     location.href = '/';
-  };
+  }
 
   function getPickerChanges(editorId) {
     const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
@@ -1065,7 +1078,7 @@
     }
   }
 
-  window.saveChanges = async function saveChanges() {
+  async function saveChanges() {
     const base = collectModChanges();
     const logos = getChangesLogos();
     const tags = getChangesTags();
@@ -1093,5 +1106,37 @@
 
     new Toast({ title: 'Готово', text: 'Изменения сохранены', theme: 'success' });
     location.reload();
-  };
+  }
+
+  root.addEventListener('click', function (event) {
+    const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+    if (!actionNode) return;
+
+    const action = actionNode.dataset.action;
+
+    if (action === 'mod-toggle-public') {
+      toggleNextPublic();
+      return;
+    }
+
+    if (action === 'mod-save') {
+      saveChanges();
+      return;
+    }
+
+    if (action === 'mod-upload-version') {
+      uploadModVersion();
+      return;
+    }
+
+    if (action === 'mod-delete') {
+      deleteMod();
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initModEditPage);
+  } else {
+    initModEditPage();
+  }
 })();

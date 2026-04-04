@@ -4,18 +4,18 @@
   </a>
 
   <div class="navigation mod-edit-nav__group" variants="in-mod-page, in-catalog-view, params-mod">
-    <button id="start-page-button" class="dark" variant="in-mod-page" onclick="Pager.change(this)">
+    <button id="start-page-button" class="dark" variant="in-mod-page" data-action="pager-change">
       <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
     </button>
-    <button variant="in-catalog-view" class="dark" onclick="Pager.change(this)">
+    <button variant="in-catalog-view" class="dark" data-action="pager-change">
       <img src="/assets/images/image-ico.svg" alt="Иконка 'каталог'">
     </button>
-    <button variant="params-mod" class="dark" onclick="Pager.change(this)">
+    <button variant="params-mod" class="dark" data-action="pager-change">
       <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
     </button>
   </div>
 
-  <button class="mod-edit-nav__save" onclick="saveChanges()">
+  <button class="mod-edit-nav__save" data-action="mod-save">
     <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
   </button>
 </div>

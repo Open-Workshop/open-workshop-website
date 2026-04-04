@@ -4,15 +4,15 @@
   </a>
 
   <div class="navigation mod-edit-nav__group" variants="main-game, params-game">
-    <button id="start-page-button" class="dark" variant="main-game" onclick="Pager.change(this)">
+    <button id="start-page-button" class="dark" variant="main-game" data-action="pager-change">
       <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
     </button>
-    <button variant="params-game" class="dark" onclick="Pager.change(this)">
+    <button variant="params-game" class="dark" data-action="pager-change">
       <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
     </button>
   </div>
 
-  <button id="save-game-button" class="mod-edit-nav__save" onclick="saveGameChanges()">
+  <button id="save-game-button" class="mod-edit-nav__save" data-action="game-save">
     <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
   </button>
 </div>

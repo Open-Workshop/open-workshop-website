@@ -2,9 +2,9 @@
   {% for provider in ow.site.auth_providers %}
   <button class="service"
     {% if not user_access.my %}disabled{% endif %}
-    {% if user_access.my and not user_data.private[provider.id] %}onclick="serviceConnect('{{ ow.api.base }}{{ provider.path }}')"{% endif %}
-    {% if user_access.my and user_data.private[provider.id] %}onclick="serviceDisconnect('{{ provider.id }}')"{% endif %}>
-    <img src="{{ provider.icon }}" alt="{{ provider.label }} logo" onerror="handlerImgErrorLoad(this)">
+    {% if user_access.my and not user_data.private[provider.id] %}data-action="service-connect" data-service-url="{{ ow.api.base }}{{ provider.path }}"{% endif %}
+    {% if user_access.my and user_data.private[provider.id] %}data-action="service-disconnect" data-service="{{ provider.id }}"{% endif %}>
+    <img src="{{ provider.icon }}" alt="{{ provider.label }} logo">
     <p>
       {% if user_access.my %}
         {% if user_data.private[provider.id] %}Отвязать{% endif %}

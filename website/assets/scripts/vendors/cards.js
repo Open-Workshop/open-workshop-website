@@ -11,7 +11,7 @@ window.Cards = {
         // Создаем кликабельную часть
         const cardClick = document.createElement('div');
         cardClick.classList.add('card-click');
-        cardClick.onclick = function() { Catalog.cardShow(this) };
+        cardClick.addEventListener('click', function () { Catalog.cardShow(this) });
 
         // В кликабельной части - картинка
         const image = document.createElement('img');
@@ -24,8 +24,9 @@ window.Cards = {
 
         image.alt = "Здесь должен быть логотип мода";
         image.id = "preview-logo-card-"+cardData.id
-        image.setAttribute("onerror", "handlerImgErrorLoad(this)")
-        image.setAttribute('onload', 'Catalog.masonry()');
+        image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
+        image.addEventListener('error', function () { handlerImgErrorLoad(this) });
+        image.addEventListener('load', function () { Catalog.masonry() });
 
         cardClick.appendChild(image);
 
@@ -137,7 +138,7 @@ window.Cards = {
         if (isGame) {
             const tog = document.createElement('button');
             tog.id = "togamelink"+cardData.id;
-            tog.setAttribute("onclick", "gameSelect("+cardData.id+")");
+            tog.addEventListener('click', function () { gameSelect(cardData.id) });
 
             const to_img = document.createElement('img');
             to_img.src = "/assets/images/telescope.webp";
@@ -151,7 +152,7 @@ window.Cards = {
 
         const tog = document.createElement('button');
         tog.id = "togamelink"+cardData.id;
-        tog.onclick = function() { Catalog.cardsCancel() }
+        tog.addEventListener('click', function () { Catalog.cardsCancel() });
 
         const to_img = document.createElement('img');
         to_img.src = "/assets/images/svg/white/cancel.svg";

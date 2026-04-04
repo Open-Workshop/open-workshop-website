@@ -1,10 +1,21 @@
 
-if (!CookieManager.has('cooks')) {
-    $('cookies').addClass('show');
+function getCookiesBanner() {
+    return document.querySelector('cookies');
 }
+
+function showCookiesBanner() {
+    const banner = getCookiesBanner();
+    if (banner) {
+        banner.classList.add('show');
+    }
+}
+
 function cookiesOkPress() {
-    $('cookies').removeClass('show');
-    document.cookie = "cooks=1; path=/; max-age=31536000";
+    const banner = getCookiesBanner();
+    if (banner) {
+        banner.classList.remove('show');
+    }
+    document.cookie = 'cooks=1; path=/; max-age=31536000';
 }
 
 
@@ -20,12 +31,85 @@ async function logon() {
     location.reload();
 }
 
+function openActionLink(link) {
+    if (!link) return;
+    window.setTimeout(function () {
+        window.location.replace(link);
+    }, 100);
+}
 
+function setPhoneMenuOpen(open) {
+    const menu = document.querySelector('section.phone-menu');
+    const button = document.querySelector('button.phone-navigator');
+    const backdrop = document.querySelector('.phone-full-background');
 
-if (!document.getElementsByClassName("toast-container")) {
-    const container = document.createElement('div');
-    container.classList.add('toast-container');
-    document.getElementById("main").appendChild(container);
+    if (menu) {
+        menu.hidden = !open;
+    }
+    if (button) {
+        button.hidden = open;
+    }
+    if (backdrop) {
+        backdrop.classList.toggle('active', open);
+    }
+}
+
+function initMainUi() {
+    if (!CookieManager.has('cooks')) {
+        showCookiesBanner();
+    }
+
+    if (!document.querySelector('.toast-container')) {
+        const container = document.createElement('div');
+        container.classList.add('toast-container');
+        (document.getElementById('main') || document.body).appendChild(container);
+    }
+
+    document.addEventListener('click', function (event) {
+        const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        if (action === 'cookies-accept') {
+            cookiesOkPress();
+            return;
+        }
+
+        if (action === 'logout') {
+            logon();
+            return;
+        }
+
+        if (action === 'service-auth') {
+            serviceAuthorization(target.dataset.serviceUrl || '');
+            return;
+        }
+
+        if (action === 'service-connect') {
+            serviceConnect(target.dataset.serviceUrl || '');
+            return;
+        }
+
+        if (action === 'service-disconnect') {
+            serviceDisconnect(target.dataset.service || '');
+            return;
+        }
+
+        if (action === 'open-link') {
+            openActionLink(target.dataset.link || target.getAttribute('href') || '');
+            return;
+        }
+
+        if (action === 'toggle-phone-menu') {
+            setPhoneMenuOpen(true);
+            return;
+        }
+
+        if (action === 'close-phone-menu') {
+            setPhoneMenuOpen(false);
+        }
+    });
 }
 
 // Get the current date and time
@@ -67,4 +151,10 @@ function adLink(adLink) {
     if (adLink) {
         window.location.href = adLink
     }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMainUi);
+} else {
+    initMainUi();
 }

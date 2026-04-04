@@ -5,7 +5,7 @@
     <article>
         <h1>Демо уведомлений</h1>
         <p>Эта страница показывает обновленный стиль toast-уведомлений.</p>
-        <button class="small" type="button" onclick="showToastDemo()">Показать еще раз</button>
+        <button class="small" type="button" id="toast-demo-button">Показать еще раз</button>
     </article>
 </main>
 
@@ -59,6 +59,11 @@
         toastSamples.forEach((sample, index) => {
             window.setTimeout(() => new Toast(sample), index * 380);
         });
+    }
+
+    const toastDemoButton = document.getElementById('toast-demo-button');
+    if (toastDemoButton) {
+        toastDemoButton.addEventListener('click', showToastDemo);
     }
 
     if (document.readyState === 'loading') {

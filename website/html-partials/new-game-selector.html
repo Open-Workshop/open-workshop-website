@@ -1,5 +1,5 @@
 <div class="main-body-game-selector">
-    <img errorcap src="/assets/images/choose-man.webp" alt="Иконка игры" class="game-select-logo">
+    <img errorcap src="/assets/images/choose-man.webp" alt="Иконка игры" class="game-select-logo" data-fallback-src="/assets/images/choose-man.webp">
     
     <div class="select-game-menu">
         <p>Игра не выбрана</p>
@@ -7,7 +7,7 @@
     </div>
 
     <div class="popup-game-select">
-        <input id="search-update-input" type="text" placeholder="Поиск..." oninput="searchUpdateInput()">
+        <input id="search-update-input" type="text" placeholder="Поиск..." data-game-search-input>
         
         <div id="all-games-search-results"></div>
         

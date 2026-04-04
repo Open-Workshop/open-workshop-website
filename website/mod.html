@@ -38,7 +38,7 @@
             <ul class="js__slider__images slider__images" data-photoswipe-gallery>
             {% for item in resources['results'] %}
                 <a href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
-                <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />  
+                <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" data-fallback-src="/assets/images/image-not-found.webp" />  
                 </a>
             {% endfor %}
             </ul>
@@ -49,7 +49,6 @@
             </div>
             {% endif %}
         </div>
-        <script src='//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
         <script src="/assets/scripts/images-list.js"></script>
         {% endif %}
 
@@ -68,7 +67,7 @@
         <h2>Авторы</h2>
         {% for item in authors %}
             <a class="element user-author" {% if item.owner %}title="Создатель мода" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
-                <img src="{{ ow.api.base }}{{ ow.api.paths.profile.avatar.path.format(user_id=item.id) }}" alt="Аватар пользователя" onerror="this.onerror=null;this.src='/assets/images/no-avatar.jpg';">
+                <img src="{{ ow.api.base }}{{ ow.api.paths.profile.avatar.path.format(user_id=item.id) }}" alt="Аватар пользователя" data-fallback-src="/assets/images/no-avatar.jpg">
                 <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
             </a>
         {% endfor %}
@@ -80,7 +79,7 @@
         <h2>Зависимости мода</h2>
         {% for item in dependencies.values() %}
             <a class="element" href="/mod/{{ item.id }}">
-                <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                <img src="{{ item.img }}" alt="Логотип мода" data-fallback-src="/assets/images/image-not-found.webp">
                 <h3 translate="no">{{ item.name }}</h3>
             </a>
         {% endfor %}
@@ -103,7 +102,7 @@
         </div>
         {% for item in plugins.values() %}
             <a class="element{% if loop.index == 2 %} mod-plugins-second-item{% endif %}" href="/mod/{{ item.id }}">
-                <img src="{{ item.img }}" alt="Логотип мода" onerror="this.src='/assets/images/image-not-found.webp'">
+                <img src="{{ item.img }}" alt="Логотип мода" data-fallback-src="/assets/images/image-not-found.webp">
                 <h3 translate="no">{{ item.name }}</h3>
             </a>
         {% endfor %}

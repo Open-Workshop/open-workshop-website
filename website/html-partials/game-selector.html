@@ -1,142 +1,28 @@
-<div class="mini-cont ow-stack game-selector">
+<div
+    class="mini-cont ow-stack game-selector"
+    data-api-base="{{ ow.api.base }}"
+    data-game-info-path="{{ ow.api.paths.game.info.path }}"
+    data-game-list-path="{{ ow.api.paths.game.list.path }}"
+>
     <h2 class="game-selector__title">Игра-владелец</h2>
     <div class="game-selector__row">
-        <img id="logo-game-select" class="game-selector__logo" src="/assets/images/loading.webp" onerror="this.src='/assets/images/image-not-found.webp'" alt="Логотип игры">
+        <img id="logo-game-select" class="game-selector__logo" src="/assets/images/loading.webp" data-fallback-src="/assets/images/image-not-found.webp" alt="Логотип игры">
         <div class="game-selector__info">
             <div class="game-selector__name-row">
-                <button class="edit-mod-game-name-set" onclick="gameNameSelect()"><img src="/assets/images/check-mini.svg" alt="Изображение кнопки"></button>
+                <button class="edit-mod-game-name-set" type="button" data-action="legacy-game-selector-apply"><img src="/assets/images/check-mini.svg" alt="Изображение кнопки"></button>
                 <div class="game-selector__name">
                     <p id="name-game-select">Загрузка...</p>
-                    <input dynamlen type="text" oninput="SelectGameInputEvent()" onfocus="SelectGameInputFocus()" onblur="SelectGameInputFocusAboard()" placeholder="Найти по имени..." class="edit-mod-game-input-name">
+                    <input dynamlen type="text" placeholder="Найти по имени..." class="edit-mod-game-input-name" data-role="legacy-game-selector-name">
                 </div>
             </div>
 
-            <input type="number" placeholder="ID игры-владельца" startdata="{{ init_id | default('') }}" onchange="renderNewSelectedGame()" value="{{ init_id | default('') }}" class="edit-mod-game-input" {% if init_id %}disabled{% endif %}>
+            <input type="number" placeholder="ID игры-владельца" startdata="{{ init_id | default('') }}" value="{{ init_id | default('') }}" class="edit-mod-game-input" data-role="legacy-game-selector-id" {% if init_id %}disabled{% endif %}>
         </div>
     </div>
 
     {% if init_id %}
-    <button class="enable-edit-game-mod" onclick="$('button.enable-edit-game-mod').hide(); $('input.edit-mod-game-input').removeAttr('disabled');">Разблокировать</button>
+    <button class="enable-edit-game-mod" type="button" data-action="legacy-game-selector-unlock">Разблокировать</button>
     {% endif %}
 
-    <script>
-        const $inputGameID = $('input.edit-mod-game-input')
-        const $pGameName = $('p#name-game-select')
-        const $inputGameName = $('input.edit-mod-game-input-name')
-        const $buttonGameName = $('button.edit-mod-game-name-set')
-        const $imgGameLogo = $('img#logo-game-select')
-
-        console.log($inputGameName)
-
-        $(document).ready(function() {
-            renderNewSelectedGame()
-        })
-
-        function setColor(color) {
-            $pGameName.css('color', 'dark'+color);
-            $inputGameName.css('color', color);
-        }
-        
-        /**
-         * Function to render the newly selected game.
-         * It makes a GET request to the specified API endpoint and updates the game name, logo, and ID input based on the response JSON data.
-        */
-        function renderNewSelectedGame() {
-            $buttonGameName.attr('disabled', '');
-            const gameInfoPath = "{{ ow.api.paths.game.info.path }}";
-            // Make a GET request to the API endpoint
-            fetch("{{ ow.api.base }}"+gameInfoPath.replace('{game_id}', $inputGameID.val()), {method: 'GET'}).then(response => {
-                // Parse the JSON response
-                response.json().then(json => {
-                    // Update the UI based on the JSON data
-                    if (json.result) {
-                        $pGameName.text(json.result.name).css('color', 'darkgray');
-                        $inputGameName.val(json.result.name).attr('lastval', json.result.name).css('color', 'gray');
-                        $imgGameLogo.attr('src', json.result.logo+" ")
-                        $inputGameID.attr('found', 'true');
-                    } else {
-                        $pGameName.text('').css('color', 'darkred');
-                        $inputGameName.val('').attr('lastval', '').css('color', 'red');
-                        $imgGameLogo.attr('src', "/assets/images/image-not-found.webp")
-                        $inputGameID.removeAttr('found');
-                    }
-                    // Trigger the input event for the game name input
-                    $inputGameName.trigger('input')
-                });
-            })
-        }
-
-        function SelectGameInputEvent() {
-            if ($inputGameName.val().length > 0) {
-                // Удалить стиль 
-                $inputGameName.css('min-width', '15px');
-            } else {
-                $inputGameName.css('min-width', '155px');
-            }
-        }
-        function SelectGameInputFocus() {
-            setColor('grey')
-
-            $inputGameName.attr('dynamlen', 'true')
-            $inputGameName.trigger('input')
-        }
-        function SelectGameInputFocusAboard() {
-            // удалить атрибут
-            $inputGameName.trigger('input')
-        }
-
-        function gameNameSelect() {
-            $inputGameID.val($buttonGameName.attr('gameid'))
-            renderNewSelectedGame()
-        }
-
-        setInterval(async function () {
-            if ($inputGameName.attr('lastval') != $inputGameName.val()) {
-                $inputGameName.attr('lastval', $inputGameName.val())
-
-                if ($inputGameName.val().length > 0) {
-                    if (!($pGameName.text().toUpperCase()).startsWith($inputGameName.val().toUpperCase())) {
-                        $pGameName.text(' ')
-                    }
-
-                    // делаем запрос к серверу
-                    const listPath = "{{ ow.api.paths.game.list.path }}";
-                    response = await fetch('{{ ow.api.base }}'+listPath+'?page_size=1&sort=iNAME&name='+$inputGameName.val(), {
-                        method: 'GET',
-                        credentials: 'include'
-                    })
-                    const data = await response.json()
-
-                    console.log(data.results)
-                    
-                    if (data.results.length) {
-                        setColor('grey')
-
-                        const nameGameServer = data.results[0].name.toUpperCase()
-                        const nameGameUser = $inputGameName.val().toUpperCase()
-
-                        console.log(nameGameServer, nameGameUser, nameGameServer.startsWith(nameGameUser))
-
-                        if (nameGameServer.startsWith(nameGameUser)) {
-                            $buttonGameName.removeAttr('disabled');
-                            $buttonGameName.attr('gameid', data.results[0].id)
-                            console.log('Игра найдена ', $pGameName)
-                            $pGameName.text(nameGameServer)
-                        } else {
-                            $buttonGameName.attr('disabled', '');
-                            $pGameName.text(' ')
-                        }
-                    } else {
-                        $buttonGameName.attr('disabled', '');
-                        $pGameName.text(' ')
-                        setColor('red')
-                    }
-                } else if ($inputGameName.val().length <= 0) {
-                    $buttonGameName.attr('disabled', '');
-                    $pGameName.text(' ')
-                    setColor('grey')
-                }
-            }
-        }, 500);
-    </script>
+    <script src="/assets/scripts/components/game-selector.js"></script>
 </div>

@@ -247,13 +247,13 @@
     }
   }
 
-  window.toggleDeleteGameButton = function toggleDeleteGameButton() {
+  function toggleDeleteGameButton() {
     const confirmInput = document.getElementById('delete-game-confirm');
     if (!confirmInput || !deleteButton || deleteInProgress) return;
     deleteButton.disabled = !confirmInput.checked;
-  };
+  }
 
-  window.deleteGame = async function deleteGame() {
+  async function deleteGame() {
     const confirmInput = document.getElementById('delete-game-confirm');
     if (!confirmInput || !confirmInput.checked || deleteInProgress) return;
     if (!confirm('Удалить игру без возможности восстановления?')) return;
@@ -270,11 +270,11 @@
     } catch (error) {
       showToast('Ошибка', error.message || String(error), 'danger');
       deleteInProgress = false;
-      window.toggleDeleteGameButton();
+      toggleDeleteGameButton();
     }
-  };
+  }
 
-  window.saveGameChanges = async function saveGameChanges() {
+  async function saveGameChanges() {
     if (saveInProgress) return;
 
     try {
@@ -347,7 +347,7 @@
       saveInProgress = false;
       setButtonBusy(saveButton, false);
     }
-  };
+  }
 
   window.setTimeout(function () {
     root.style.opacity = 1;
@@ -361,5 +361,28 @@
     });
   }
 
-  window.toggleDeleteGameButton();
+  root.addEventListener('click', function (event) {
+    const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+    if (!actionNode) return;
+
+    const action = actionNode.dataset.action;
+    if (action === 'game-save') {
+      saveGameChanges();
+      return;
+    }
+    if (action === 'game-delete') {
+      deleteGame();
+    }
+  });
+
+  root.addEventListener('change', function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="game-delete-toggle"]')) {
+      toggleDeleteGameButton();
+    }
+  });
+
+  toggleDeleteGameButton();
 })();

@@ -18,7 +18,38 @@
   }
 
   function sortOptionsList(mode) {
-    $('select#sort-select').toggleClass('game', !mode).toggleClass('mod', mode);
+    const select = document.querySelector('select#sort-select');
+    if (!select) return;
+    select.classList.toggle('game', !mode);
+    select.classList.toggle('mod', mode);
+  }
+
+  function getGameSetting() {
+    return document.querySelector('setting#game-select');
+  }
+
+  function getDependencySetting() {
+    return document.querySelector('setting#depen');
+  }
+
+  function setSettingChecked(setting, checked) {
+    if (!(setting instanceof Element)) return;
+    const input = setting.querySelector('input');
+    if (input) {
+      input.checked = checked;
+    }
+  }
+
+  function setCatalogSearchValues(value) {
+    document.querySelectorAll('#search-in-catalog-header, #search-in-catalog-menu').forEach(function (input) {
+      input.value = value;
+    });
+  }
+
+  function setEndOfCardsVisible(visible) {
+    const label = document.querySelector('label#end-of-cards');
+    if (!label) return;
+    label.style.display = visible ? '' : 'none';
   }
 
   function parseDependenciesParam(value) {
@@ -89,8 +120,8 @@
     if (selectedIds.length > 0) {
       updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
       updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
-      $('setting#depen').find('input').prop('checked', false);
-      $('setting#game-select').find('input').prop('checked', false);
+      setSettingChecked(getDependencySetting(), false);
+      setSettingChecked(getGameSetting(), false);
       sortOptionsList(false);
     }
 
@@ -114,11 +145,12 @@
   }
 
   window.undependencyMod = function undependencyMod() {
-    const $this = $(this);
-    const $input = $this.find('input');
-
-    const checked = !$input.prop('checked');
-    $input.prop('checked', checked);
+    const setting = this instanceof Element ? this : getDependencySetting();
+    const input = setting ? setting.querySelector('input') : null;
+    const checked = !(input && input.checked);
+    if (input) {
+      input.checked = checked;
+    }
     const updates = [
       new Dictionary({ key: 'depen', value: checked ? 'yes' : 'no', default: 'no' }),
       new Dictionary({ key: 'page', value: 0 }),
@@ -135,18 +167,23 @@
   };
 
   window.stateMachineGameSelect = function stateMachineGameSelect() {
-    const $this = $(this);
-    const $input = $this.find('input');
+    const setting = this instanceof Element ? this : getGameSetting();
+    const input = setting ? setting.querySelector('input') : null;
 
     const params = URLManager.getParams();
-    const checked = !$input.prop('checked');
+    const checked = !(input && input.checked);
     const hasDependencies =
       getSelectedDependencyIds().length > 0 || parseDependenciesParam(params.get('dependencies', '')).length > 0;
 
     if (!checked && params.get('game', '') == '' && !hasDependencies) {
-      $this.find('label').text('Выберете игру!');
+      const label = setting ? setting.querySelector('label') : null;
+      if (label) {
+        label.textContent = 'Выберете игру!';
+      }
     } else {
-      $input.prop('checked', checked);
+      if (input) {
+        input.checked = checked;
+      }
       sortOptionsList(checked);
       const updates = [
         new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
@@ -159,7 +196,10 @@
       }
       URLManager.updateParams(updates);
       syncDependenceSearchGame(checked ? '' : params.get('game', ''));
-      $('#settings-catalog').removeClass('full-screen');
+      const settingsCatalog = document.getElementById('settings-catalog');
+      if (settingsCatalog) {
+        settingsCatalog.classList.remove('full-screen');
+      }
       resetCatalog();
     }
   };
@@ -172,10 +212,19 @@
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
-    $('setting#game-select')
-      .find('img')
-      .attr('src', $('img#preview-logo-card-' + gameID).attr('src'));
-    $('setting#game-select').find('label').text($('h2#titlename' + gameID).text());
+    const gameSetting = getGameSetting();
+    const previewLogo = document.getElementById('preview-logo-card-' + gameID);
+    const previewTitle = document.getElementById('titlename' + gameID);
+    if (gameSetting) {
+      const settingImg = gameSetting.querySelector('img');
+      const settingLabel = gameSetting.querySelector('label');
+      if (settingImg && previewLogo) {
+        settingImg.setAttribute('src', previewLogo.getAttribute('src') || '');
+      }
+      if (settingLabel && previewTitle) {
+        settingLabel.textContent = previewTitle.textContent || '';
+      }
+    }
     syncTagsSearchGame(gameID);
     syncDependenceSearchGame(gameID);
     const tagsEditor = getTagsEditor();
@@ -187,13 +236,15 @@
   };
 
   window.nameSearch = function nameSearch(input) {
-    const $input = $(input);
+    const searchInput = input instanceof Element
+      ? input
+      : document.querySelector(input || '#search-in-catalog-menu');
+    if (!searchInput) return;
 
-    $('input#search-in-catalog-header').val($input.val());
-    $('input#search-in-catalog-menu').val($input.val());
+    setCatalogSearchValues(searchInput.value || '');
 
     URLManager.updateParams([
-      new Dictionary({ key: 'name', value: $input.val(), default: '' }),
+      new Dictionary({ key: 'name', value: searchInput.value || '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
@@ -215,13 +266,15 @@
   };
 
   window.sortSelect = function sortSelect(input) {
-    const $this = $(input);
+    const select = input instanceof Element ? input : document.getElementById('sort-select');
+    if (!select) return;
 
-    const invertMode = $('button#sort-select-invert').hasClass('toggled') ? 'i' : '';
+    const invertButton = document.querySelector('button#sort-select-invert');
+    const invertMode = invertButton && invertButton.classList.contains('toggled') ? 'i' : '';
     URLManager.updateParams([
       new Dictionary({
         key: 'sort',
-        value: invertMode + $this.val(),
+        value: invertMode + select.value,
         default: 'iDOWNLOADS',
       }),
       new Dictionary({ key: 'page', value: 0 }),
@@ -231,13 +284,15 @@
   };
 
   window.invertSort = function invertSort(button) {
-    const $this = $(button);
+    const toggleButton = button instanceof Element ? button : document.querySelector('button#sort-select-invert');
+    const select = document.querySelector('select#sort-select');
+    if (!toggleButton || !select) return;
 
-    const invertMode = $this.hasClass('toggled') ? 'i' : '';
+    const invertMode = toggleButton.classList.contains('toggled') ? 'i' : '';
     URLManager.updateParams([
       new Dictionary({
         key: 'sort',
-        value: invertMode + $('select#sort-select').val(),
+        value: invertMode + select.value,
         default: 'iDOWNLOADS',
       }),
       new Dictionary({ key: 'page', value: 0 }),
@@ -276,17 +331,17 @@
     outOfCards = false;
     warns = [false, false, false];
 
-    $('label#end-of-cards').fadeOut(100);
+    setEndOfCardsVisible(false);
     Catalog.removeAll();
     const renderRes = await render(URLManager.getParams());
     if (!renderRes) {
-      $('label#end-of-cards').hide();
+      setEndOfCardsVisible(false);
       outOfCards = true;
       Catalog.notFound();
     }
   }
 
-  $(document).ready(async function () {
+  async function initCatalogPage() {
     let params = URLManager.getParams();
     const filterEl = document.getElementById('catalog-user-filter');
     if (filterEl) {
@@ -326,10 +381,9 @@
 
     const sgame = params.get('sgame', 'yes') == 'yes';
 
-    $('setting#depen').find('input').prop('checked', params.get('depen', 'no') == 'yes');
-    $('setting#game-select').find('input').prop('checked', sgame);
-    $('input#search-in-catalog-header').val(params.get('name', ''));
-    $('input#search-in-catalog-menu').val(params.get('name', ''));
+    setSettingChecked(getDependencySetting(), params.get('depen', 'no') == 'yes');
+    setSettingChecked(getGameSetting(), sgame);
+    setCatalogSearchValues(params.get('name', ''));
     syncTagsSearchGame(params.get('game', ''));
     syncDependenceSearchGame(params.get('game', ''));
 
@@ -353,8 +407,14 @@
       );
     }
     const sortMode = params.get('sort', 'iDOWNLOADS');
-    $('button#sort-select-invert').toggleClass('toggled', sortMode.startsWith('i'));
-    $('select#sort-select').val(sortMode.replace('i', ''));
+    const invertButton = document.querySelector('button#sort-select-invert');
+    if (invertButton) {
+      invertButton.classList.toggle('toggled', sortMode.startsWith('i'));
+    }
+    const sortSelectInput = document.querySelector('select#sort-select');
+    if (sortSelectInput) {
+      sortSelectInput.value = sortMode.replace('i', '');
+    }
 
     if (params.get('game', '') != '') {
       const gameListPath = apiPaths.game.list.path;
@@ -370,13 +430,22 @@
 
       if (gameResponse.ok && logoResponse.ok) {
         const [data, logo] = await Promise.all([gameResponse.json(), logoResponse.json()]);
-        $('setting#game-select').find('img').attr('src', logo.results[0]);
-        $('setting#game-select').find('label').text(data.results[0].name);
+        const setting = getGameSetting();
+        if (setting) {
+          const img = setting.querySelector('img');
+          const label = setting.querySelector('label');
+          if (img && Array.isArray(logo.results) && logo.results[0]) {
+            img.setAttribute('src', logo.results[0]);
+          }
+          if (label && data.results && data.results[0]) {
+            label.textContent = data.results[0].name;
+          }
+        }
       }
     }
 
     resetCatalog();
-  });
+  }
 
   window.addEventListener('ow:dependencies-changed', function () {
     if (suppressDependencySync) return;
@@ -441,10 +510,71 @@
         }
       } else {
         outOfCards = true;
-        $('label#end-of-cards').fadeIn(100);
+        setEndOfCardsVisible(true);
       }
 
       blocking = false;
     }
   }, 2000);
+
+  document.addEventListener('click', function (event) {
+    const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+    if (!target) return;
+
+    const action = target.dataset.action;
+
+    if (action === 'catalog-toggle-fullscreen') {
+      const settings = document.getElementById('settings-catalog');
+      if (settings) {
+        settings.classList.toggle('full-screen');
+      }
+      return;
+    }
+
+    if (action === 'catalog-clear-user') {
+      window.clearUserFilter();
+      return;
+    }
+
+    if (action === 'catalog-refresh') {
+      const input = document.querySelector(target.dataset.target || '');
+      window.refreshCatalog(input);
+      return;
+    }
+
+    if (action === 'catalog-sort-invert') {
+      target.classList.toggle('toggled');
+      window.invertSort(target);
+      return;
+    }
+
+    if (action === 'catalog-toggle-game-mode') {
+      window.stateMachineGameSelect.call(target);
+      return;
+    }
+
+    if (action === 'catalog-toggle-independent') {
+      window.undependencyMod.call(target);
+    }
+  });
+
+  document.addEventListener('change', function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="catalog-search"]')) {
+      window.nameSearch(target);
+      return;
+    }
+
+    if (target.matches('[data-action="catalog-sort-select"]')) {
+      window.sortSelect(target);
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCatalogPage);
+  } else {
+    initCatalogPage();
+  }
 })();

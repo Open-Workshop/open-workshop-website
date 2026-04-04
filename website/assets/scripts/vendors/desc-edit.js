@@ -168,10 +168,6 @@
   function resolveRoot(target) {
     if (!target) return null;
 
-    if (target.jquery && target.length) {
-      return resolveRoot(target.get(0));
-    }
-
     if (editorRegistry.has(target)) {
       return target;
     }

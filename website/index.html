@@ -6,7 +6,7 @@
 
 <main class="catalog">
   <div id="settings-catalog">
-    <balloon onclick="$('div#settings-catalog').toggleClass('full-screen')" id="full-settings-menu">
+    <balloon id="full-settings-menu" data-action="catalog-toggle-fullscreen">
       <img src="/assets/images/svg/white/gear.svg" alt="Шестерёнка" class="scale">
     </balloon>
 
@@ -14,20 +14,20 @@
       {% if catalog_user %}
       <div class="catalog-filter" id="catalog-user-filter" data-user-id="{{ catalog_user.id }}" data-user-name="{{ catalog_user.username }}">
         <span class="catalog-filter__label">Моды {{ catalog_user.username }}</span>
-        <button class="catalog-filter__clear" type="button" onclick="clearUserFilter()" title="Сбросить фильтр">×</button>
+        <button class="catalog-filter__clear" type="button" data-action="catalog-clear-user" title="Сбросить фильтр">×</button>
       </div>
       {% endif %}
 
       <setting class="in-full with-events catalog-search-line">
-        <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" onchange="nameSearch(this)">
-        <button type="button" class="small catalog-search-refresh" title="Обновить каталог" onclick="refreshCatalog(document.getElementById('search-in-catalog-menu'))">↻</button>
+        <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" data-action="catalog-search">
+        <button type="button" class="small catalog-search-refresh" title="Обновить каталог" data-action="catalog-refresh" data-target="#search-in-catalog-menu">↻</button>
       </setting>
 
       <hr class="in-full">
 
       <setting class="with-events catalog-sort-setting">
         <div class="with-button catalog-sort-controls">
-          <select id="sort-select" title="Сортировка" onchange="sortSelect(this)">
+          <select id="sort-select" title="Сортировка" data-action="catalog-sort-select">
             <option class="game" value="MODS" selected>Сортировка по количеству модов</option>
             <option class="mod" value="SIZE">Сортировка по размеру</option>
             <option class="mod" value="UPDATE">Сортировка по дате обновления</option>
@@ -35,7 +35,7 @@
             <option value="CREATION">Сортировка по дате создания</option>
             <option value="NAME">Сортировка по алфавиту</option>
           </select>
-          <button id="sort-select-invert" class="invert" title="Инверсия сортировки" onclick="$(this).toggleClass('toggled'); invertSort(this)">
+          <button id="sort-select-invert" class="invert" title="Инверсия сортировки" data-action="catalog-sort-invert">
             <img src="/assets/images/svg/white/sort.svg" alt="Инверсия сортировки">
           </button>
           <input class="input-checkbox" id="sort-checkboxmode" type="checkbox" hidden>
@@ -44,7 +44,7 @@
 
       <hr>
 
-      <setting id="game-select" onclick="stateMachineGameSelect.call(this)">
+      <setting id="game-select" data-action="catalog-toggle-game-mode">
         <input type="checkbox" hidden>
         <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
         <label>Выбрать игру</label>
@@ -52,7 +52,7 @@
 
       <hr>
 
-      <setting id="depen" onclick="undependencyMod.call(this)">
+      <setting id="depen" data-action="catalog-toggle-independent">
         <input type="checkbox">
         <label>Независимые моды</label>
       </setting>

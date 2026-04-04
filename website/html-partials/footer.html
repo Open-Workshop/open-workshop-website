@@ -2,8 +2,8 @@
 {% set discord = (ow.site.socials | selectattr('id', 'equalto', 'discord') | first) %}
 {% set github = (ow.site.socials | selectattr('id', 'equalto', 'github') | first) %}
 
-<div class="phone-full-background" onclick="hideMenu()"></div>
-<button class="phone-navigator" onclick="showMenu()">Навигатор</button>
+<div class="phone-full-background" data-action="close-phone-menu"></div>
+<button class="phone-navigator" data-action="toggle-phone-menu">Навигатор</button>
 
 <section class="phone-menu" hidden="hidden">
     <div class="phone-menu-header">
@@ -33,7 +33,7 @@
     <div class="phone-menu-actions">
         {% if not user_profile %}
         {% for provider in ow.site.auth_providers %}
-        <a onclick="serviceAuthorization('{{ ow.api.base }}{{ provider.path }}')">Войти с {{ provider.label }}</a>
+        <a data-action="service-auth" data-service-url="{{ ow.api.base }}{{ provider.path }}">Войти с {{ provider.label }}</a>
         {% endfor %}
         {% endif %}
         {% if user_profile %}
@@ -48,7 +48,7 @@
         <a href="/game/add">Создать игру</a>
         {% endif %}
         {% endfor %}
-        <a onclick="logon()">Выйти</a>
+        <a data-action="logout">Выйти</a>
         {% endif %}
     </div>
     <hr>
@@ -78,24 +78,6 @@
         </a>
     </div>
 </section>
-
-<script>
-    const $button = $('section.menu__button');
-    const $menu = $('section.phone-menu');
-    const $close = $('.phone-full-background');
-
-    function showMenu() {
-        $button.attr('hidden', '');
-        $menu.removeAttr('hidden');
-        $close.addClass('active')
-    };
-
-    function hideMenu() {
-        $menu.attr('hidden', '');
-        $button.removeAttr('hidden');
-        $close.removeClass('active')
-    };
-</script>
 
 <footer>
     <ul>

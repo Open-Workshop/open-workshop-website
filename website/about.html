@@ -37,7 +37,7 @@
                     OW позволяет скачивать модификации по их ID в Steam.<br>
                     Это расширение позволит скачивать ZIP архивы модов!
                 </p>
-                <button onclick="toLink('https://github.com/Open-Workshop/open-workshop-browser-extension/releases')">Попробовать!</button>
+                <button data-action="open-link" data-link="https://github.com/Open-Workshop/open-workshop-browser-extension/releases">Попробовать!</button>
             </li>
 
             <br>
@@ -46,8 +46,8 @@
                 <p>
                     Каталог OW доступный через соц. сети)
                 </p>
-                <button onclick="toLink('https://discord.com/api/oauth2/authorize?client_id=1137841106852253818&permissions=2148063296&scope=bot%20applications.commands')">Discord</button>
-                <button onclick="toLink('https://t.me/get_from_steam_bot')">Telegram</button>
+                <button data-action="open-link" data-link="https://discord.com/api/oauth2/authorize?client_id=1137841106852253818&permissions=2148063296&scope=bot%20applications.commands">Discord</button>
+                <button data-action="open-link" data-link="https://t.me/get_from_steam_bot">Telegram</button>
             </li>
 
             <br>
@@ -56,7 +56,7 @@
                 <p>
                     Каталог OW с удобным поиском 🤩
                 </p>
-                <button onclick="toLink('/')">На главную</button>
+                <button data-action="open-link" data-link="/">На главную</button>
             </li>
         </article>
 
@@ -73,8 +73,6 @@
             </list>
         </article>
     </main>
-
-    <script src="assets/scripts/about.js"></script>
 {% endblock %}
 {% block title %}
 Open Workshop: About

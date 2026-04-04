@@ -140,6 +140,7 @@
     itemSelector: '.card:not([fixed])',
     ...masonrySettings,
   });
+  const cardsRoot = document.getElementById('cards');
 
   window.addEventListener('resize', function () {
     Catalog.masonry();
@@ -147,7 +148,9 @@
 
   window.Catalog = {
     removeAll: function () {
-      $('#cards').html('');
+      if (cardsRoot) {
+        cardsRoot.innerHTML = '';
+      }
     },
     /**
      * @param {Dictionary} settings
@@ -228,27 +231,30 @@
 
       if (response.status == 200) {
         data.results.forEach((element) => {
-          if ($('#cards').find('div#' + element.id).length <= 0) {
+          const existingCard = cardsRoot ? cardsRoot.querySelector('div.card[id="' + String(element.id) + '"]') : null;
+          if (!cardsRoot || existingCard) {
+            console.log('Duplicate (xuricat paradox): ', element);
+            return;
+          }
+
+          if (cardsRoot) {
             element.doplink = doplink;
 
             const tags = [];
             const contextTag = buildContextTag(element, isGameMode, contextSortMode);
             if (contextTag) tags.push(contextTag);
 
-            $('#cards').append(
-              Cards.create(
-                element,
-                settings.get('page', 0),
-                true,
-                settings.get('name', ''),
-                isGameMode,
-                tags,
-                editTrigger,
-              ),
+            const card = Cards.create(
+              element,
+              settings.get('page', 0),
+              true,
+              settings.get('name', ''),
+              isGameMode,
+              tags,
+              editTrigger,
             );
-            msnry.appended(element);
-          } else {
-            console.log('Duplicate (xuricat paradox): ', element);
+            cardsRoot.appendChild(card);
+            msnry.appended(card);
           }
         });
       } else {
@@ -258,38 +264,45 @@
       return data;
     },
     notFound: function () {
-      $('#cards').append(
-        Cards.create(
-          {
-            name: 'Ничего не найдено',
-            short_description: 'По выбранным параметрам ничего не найдено (×﹏×)',
-            logo: '/assets/images/webp/not-found.webp',
-          },
-          0,
-          false,
-        ),
+      if (!cardsRoot) return;
+      const card = Cards.create(
+        {
+          name: 'Ничего не найдено',
+          short_description: 'По выбранным параметрам ничего не найдено (×﹏×)',
+          logo: '/assets/images/webp/not-found.webp',
+        },
+        0,
+        false,
       );
-      msnry.appended(element);
+      cardsRoot.appendChild(card);
+      msnry.appended(card);
       Catalog.masonry();
     },
     masonry: function () {
-      $('#cards').css('width', 'auto');
+      if (cardsRoot) {
+        cardsRoot.style.width = 'auto';
+      }
       msnry.reloadItems();
       msnry.layout();
     },
     cardShow: function (cardClick) {
-      const $cards = $('#cards');
-      $cards.addClass('showing');
-      $cards.find('.card').removeClass('show');
+      if (!cardsRoot) return;
+      cardsRoot.classList.add('showing');
+      cardsRoot.querySelectorAll('.card').forEach(function (card) {
+        card.classList.remove('show');
+      });
 
-      const $card = $(cardClick).closest('.card');
-      $card.addClass('show');
+      const card = cardClick instanceof Element ? cardClick.closest('.card') : null;
+      if (card) {
+        card.classList.add('show');
+      }
     },
     cardsCancel: function () {
-      const $cards = $('#cards');
-      $cards.removeClass('showing');
-
-      $cards.find('.card').removeClass('show');
+      if (!cardsRoot) return;
+      cardsRoot.classList.remove('showing');
+      cardsRoot.querySelectorAll('.card').forEach(function (card) {
+        card.classList.remove('show');
+      });
     },
   };
 })();

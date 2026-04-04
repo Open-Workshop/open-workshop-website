@@ -1,12 +1,12 @@
 <div id="page-delete-account" class="user-container-settings">
   <div>
-    <input maxlength="18" placeholder="Введите никнейм" oninput="usernameDeleteEditEvent()" startdata="{{ user_data.general.username }}" id="username-access-delete">
+    <input maxlength="18" placeholder="Введите никнейм" data-action="user-delete-name-input" startdata="{{ user_data.general.username }}" id="username-access-delete">
     
     <div class="outline-container">
-      <input type="checkbox" id="checkbox-delete-confirm" onchange="activateDeleteButton()">
+      <input type="checkbox" id="checkbox-delete-confirm" data-action="user-delete-confirm-toggle">
       <label>Я осознаю возможные риски</label>
     </div>
     
-    <button onclick="commitToDelete()" disabled>Удалить аккаунт</button>
+    <button data-action="user-delete-account" disabled>Удалить аккаунт</button>
   </div>
 </div>

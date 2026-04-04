@@ -1,7 +1,6 @@
-
 const millisecondsPerDay = Math.floor(1000 * 60 * 60 * 24); // Количество миллисекунд в одном дне
 
-$(document).ready(function() {
+function initUserPage() {
     const about = document.getElementById('mod-description');
     if (about) {
         Formating.renderInto(about, about.innerHTML);
@@ -27,7 +26,7 @@ $(document).ready(function() {
             }
           }, 500);
     }
-});
+}
 
 function dates(selectDate) {
     const oldDate = new Date(); // Замените на свою старую дату
@@ -80,4 +79,10 @@ function format(text, elementId) {
         return false
     }
     return "<i id='"+elementId+"' style='background-color: #0000007d; padding-left: 2pt; padding-right: 2pt; border-radius: 4pt;'>через "+text+"</i>"
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initUserPage);
+} else {
+    initUserPage();
 }

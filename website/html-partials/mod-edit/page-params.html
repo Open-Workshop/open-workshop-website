@@ -5,7 +5,7 @@
       <p class="ow-muted">Загрузите новый архив. Лимит 10 GB.</p>
       {% include "html-partials/upload-file.html" %}
       <div class="mod-edit__row">
-        <button class="button-style" type="button" onclick="uploadModVersion()">Загрузить</button>
+        <button class="button-style" type="button" data-action="mod-upload-version">Загрузить</button>
       </div>
       {% include "html-partials/green-bar.html" %}
     </div>
@@ -17,7 +17,7 @@
         <input id="delete-mod-confirm" type="checkbox">
         Подтверждаю удаление
       </label>
-      <button id="delete-mod-button" class="button-style" type="button" onclick="deleteMod()" disabled>Удалить мод</button>
+      <button id="delete-mod-button" class="button-style" type="button" data-action="mod-delete" disabled>Удалить мод</button>
     </div>
   </div>
 </div>

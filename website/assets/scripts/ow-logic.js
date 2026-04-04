@@ -1,5 +1,3 @@
-
-
 // Расширяем его, добавляя метод get с возможностью значения по умолчанию
 class Dictionary {
     constructor(old = {}) {
@@ -50,8 +48,16 @@ class Dictionary {
 // Handlers
 
 function handlerImgErrorLoad(element) {
-    console.log('ImgErrorLoad', element)
-    $(element).attr('src', '/assets/images/image-not-found.webp');
+    if (!(element instanceof HTMLImageElement)) return;
+
+    const fallbackSrc = element.dataset.fallbackSrc || '/assets/images/image-not-found.webp';
+    if (element.dataset.owFallbackApplied === fallbackSrc || element.getAttribute('src') === fallbackSrc) {
+        return;
+    }
+
+    console.log('ImgErrorLoad', element);
+    element.dataset.owFallbackApplied = fallbackSrc;
+    element.setAttribute('src', fallbackSrc);
 }
 
 
@@ -160,12 +166,7 @@ function observeDomChanges() {
     observer.observe(document.body, { childList: true, subtree: true });
 }
 
-$(document).ready(function() {
-    // Дополняем jquery логику
-    $.fn.hasAttr = function(name) {  
-        return this.attr(name) !== undefined;
-    };
-
+function initOWLogic() {
     // Глобальный обработчик ошибок картинок (ловит и динамические изображения)
     document.addEventListener('error', function (event) {
         const target = event.target;
@@ -174,47 +175,53 @@ $(document).ready(function() {
         }
     }, true);
 
-    // Функция динамической подсветки input элементов
-    $(document).on('event-height', 'input[displaylimit]', function() {
-        inputDisplayLimit(this);
-    });
+    document.addEventListener('event-height', function (event) {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
 
-    // Функция динамической длины input элементов
-    $(document).on('event-height', 'input[dynamlen]', function() {
-        inputDynamLen(this);
-    });
-    
-    $(document).on('event-height', '[import-height]', function() {
-        scheduleImportHeightUpdate();
+        if (target.matches('input[displaylimit]')) {
+            inputDisplayLimit(target);
+        }
+        if (target.matches('input[dynamlen]')) {
+            inputDynamLen(target);
+        }
+        if (target.matches('[import-height]') || target.closest('[import-height]')) {
+            scheduleImportHeightUpdate();
+        }
     });
 
     bindDynamicInputs(document);
     bindImportHeight(document);
     scheduleImportHeightUpdate();
     observeDomChanges();
-});
+}
 
 // Сами логические функции
 function inputDynamLen(element) {
-    const elem = $(element);
-    if ((!elem.hasAttr('empty-width')) || (elem.val().length > 0 && elem.hasAttr('empty-width'))) {
-        elem.css('width', 0);
-        elem.css('width', elem[0].scrollWidth + 15 + "px");
+    if (!(element instanceof HTMLInputElement)) return;
+
+    const hasEmptyWidth = element.hasAttribute('empty-width');
+    const value = element.value || '';
+
+    if ((!hasEmptyWidth) || (value.length > 0 && hasEmptyWidth)) {
+        element.style.width = '0px';
+        element.style.width = element.scrollWidth + 15 + 'px';
     } else {
-        elem.css('width', elem.attr('empty-width'))
+        element.style.width = element.getAttribute('empty-width');
     }
-};
+}
 
 function inputDisplayLimit(element) {
-    const elem = $(element);
-    const myText = elem.val();
-    const maxLength = elem.attr('maxlength');
-    const minLength = elem.attr('minlength');
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return;
+
+    const myText = element.value || '';
+    const maxLength = element.getAttribute('maxlength');
+    const minLength = element.getAttribute('minlength');
 
     if ((maxLength && myText.length > maxLength) || (minLength && myText.length < minLength)) {
-        elem.addClass('limit');
+        element.classList.add('limit');
     } else {
-        elem.removeClass('limit');
+        element.classList.remove('limit');
     }
 }
 
@@ -222,15 +229,21 @@ function inputDisplayLimit(element) {
 // Автоматическая подгонка высоты одного элемента к другому
 
 function checkElementsImportHeight() {
-    $('[import-height]').each(function() {
-        registerImportHeightElement(this);
+    document.querySelectorAll('[import-height]').forEach(function (element) {
+        registerImportHeightElement(element);
     });
 }
 
-$(window).on('resize', function() {
+window.addEventListener('resize', function() {
     scheduleImportHeightUpdate();
 });
 
-$(window).on('load', function(){
+window.addEventListener('load', function() {
     scheduleImportHeightUpdate();
 });
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOWLogic);
+} else {
+    initOWLogic();
+}

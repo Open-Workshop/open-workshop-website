@@ -51,7 +51,7 @@
             {% set is_storage_item = (item['url'] or '').startswith(storage_address) %}
             <div class="media-item" data-id="{{ item['id'] }}" data-start-url="{{ item['url'] }}" data-start-type="{{ item['type'] }}" data-source="url">
                 <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
-                    <img src="{{ item['url'] }}" alt="Изображение мода" onerror="this.src='/assets/images/image-not-found.webp'"/>
+                    <img src="{{ item['url'] }}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp"/>
                     <span class="media-item__badge" data-media-badge>
                         {% if item['type'] == 'logo' %}Логотип{% else %}Скриншот{% endif %}
                     </span>

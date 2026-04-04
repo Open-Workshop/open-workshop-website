@@ -41,12 +41,17 @@ function renderPagesSelect() {
 
 function updateEmptyState() {
   var hasImages = sliderImagesItems.length > 0;
-  $('p#no-screenshots-edit').css('display', hasImages ? 'none' : 'flex');
+  const editEmpty = document.getElementById('no-screenshots-edit');
+  if (editEmpty) {
+    editEmpty.style.display = hasImages ? 'none' : 'flex';
+  }
 
-  const noImgsPlaceholder = $('#no-screenshots-error');
-  if (noImgsPlaceholder.length) {
-    noImgsPlaceholder.css('display', hasImages ? 'none' : 'flex');
-    $(sliderImages).css('display', hasImages ? 'block' : 'none');
+  const noImgsPlaceholder = document.getElementById('no-screenshots-error');
+  if (noImgsPlaceholder) {
+    noImgsPlaceholder.style.display = hasImages ? 'none' : 'flex';
+    if (sliderImages) {
+      sliderImages.style.display = hasImages ? 'block' : 'none';
+    }
   }
 }
 
@@ -58,12 +63,13 @@ function allResetVars() {
 }
 
 // set up first slide
-$(document).ready(function() {
+function initSlider() {
   renderPagesSelect();
   sliderTarget = 0
   sliderResponse(0)
-});
-$(window).on('load', function(){
+}
+
+window.addEventListener('load', function(){
   renderPagesSelect();
   sliderResponse(sliderTarget)
 });
@@ -74,8 +80,8 @@ function sliderResponse(sliderTarget) {
   sliderImagesItems.forEach(function (item, index) {
     if (index === sliderTarget) {
       item.style.display = 'flex';
-      console.log(item, $(item));
-      $(item).trigger('onscreenshotselect');
+      console.log(item);
+      item.dispatchEvent(new CustomEvent('onscreenshotselect', { bubbles: true }));
     } else {
       item.style.display = 'none';
     }
@@ -89,7 +95,7 @@ function sliderResponse(sliderTarget) {
   });
 
   if (sliderImagesItems.length == 0) {
-    $(document).trigger('noscreenshotsavailable');
+    document.dispatchEvent(new CustomEvent('noscreenshotsavailable'));
   }
 }
 
@@ -110,4 +116,10 @@ function resetTiming() {
     timingRun = setInterval(function() {
       sliderTiming();
     }, sliderSpeed);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSlider);
+} else {
+  initSlider();
 }

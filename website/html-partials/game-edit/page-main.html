@@ -40,7 +40,7 @@
         class="game-edit__logo"
         src="{{ game['logo'] if game['logo'] else '/assets/images/image-not-found.webp' }}"
         alt="Логотип игры"
-        onerror="this.onerror=null;this.src='/assets/images/image-not-found.webp';"
+        data-fallback-src="/assets/images/image-not-found.webp"
       >
 
       <div class="game-edit__meta-grid">

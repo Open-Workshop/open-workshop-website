@@ -1,49 +1,5 @@
-<div class="upload-file" onclick="$('#input-mod-file-upload').click()">
+<div class="upload-file" data-upload-file>
     <img src="/assets/images/add-file.svg" alt="Иконка добавления изображения">
     <p id="input-mod-file-upload-text" class="upload-file__text">выберите файл</p>
-
-    <script>
-        let $fileInput;
-
-        function fileSelectToUpload() {
-            $('p#input-mod-file-upload-text').text($fileInput.prop('files')[0].name)
-        }
-        
-        $(document).ready(function() {
-            $fileInput = $('input#input-mod-file-upload')
-            const dropArea = $('div.upload-file');
-            
-            // Prevent default drag behaviors
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                dropArea.on(eventName, preventDefaults);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            
-            // Add visual effects when file is dragged over
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropArea.on(eventName, function() {
-                dropArea.addClass('dragover');
-                });
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropArea.on(eventName, function() {
-                dropArea.removeClass('dragover');
-                });
-            });
-            
-            dropArea.on('drop', function(e) {
-                // Handle the dropped files
-                const files = e.originalEvent.dataTransfer.files;
-                console.log(files);
-                $fileInput.prop('files', files);
-                fileSelectToUpload()
-            });
-        });
-    </script>
 </div>
-<input type="file" accept=".zip" id="input-mod-file-upload" onchange="fileSelectToUpload()" hidden />
+<input type="file" accept=".zip" id="input-mod-file-upload" hidden />

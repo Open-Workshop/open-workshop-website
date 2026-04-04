@@ -21,10 +21,10 @@
       <h3>Удаление игры</h3>
       <p class="ow-muted">Действие необратимо. Игра пропадет из каталога, а связанные операции останутся на стороне API.</p>
       <label class="mod-edit__confirm">
-        <input id="delete-game-confirm" type="checkbox" onchange="toggleDeleteGameButton()">
+        <input id="delete-game-confirm" type="checkbox" data-action="game-delete-toggle">
         Подтверждаю удаление
       </label>
-      <button id="delete-game-button" class="button-style" type="button" onclick="deleteGame()" disabled>Удалить игру</button>
+      <button id="delete-game-button" class="button-style" type="button" data-action="game-delete" disabled>Удалить игру</button>
     </div>
   </div>
 </div>

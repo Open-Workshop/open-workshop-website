@@ -9,9 +9,9 @@
   const addModEndpoint = apiPaths.mod && apiPaths.mod.add ? apiPaths.mod.add : null;
   const addGameEndpoint = apiPaths.game && apiPaths.game.add ? apiPaths.game.add : null;
 
-  const titleInput = $('input#entity-name-title');
-  const fileInput = $('input#input-mod-file-upload');
-  const gameSelector = $('div.main-body-game-selector');
+  const titleInput = document.querySelector('input#entity-name-title');
+  const fileInput = document.querySelector('input#input-mod-file-upload');
+  const gameSelector = document.querySelector('div.main-body-game-selector');
   const descriptionModules = Array.isArray(config.description_modules) ? config.description_modules : [];
   const stageLabels = {
     uploading: 'Загрузка файла...',
@@ -39,7 +39,10 @@
   function updateStage(stage) {
     if (!stage) return;
     const label = stageLabels[stage] || stage;
-    $('#greenBarText').text(label);
+    const greenBarText = document.getElementById('greenBarText');
+    if (greenBarText) {
+      greenBarText.textContent = label;
+    }
   }
 
   function parseJwt(token) {
@@ -132,7 +135,7 @@
   }
 
   function getNameValue() {
-    return String(titleInput.val() || '').trim();
+    return String(titleInput ? titleInput.value : '').trim();
   }
 
   function getDescriptionValue(module, useTutorialValue) {
@@ -228,10 +231,10 @@
     }
 
     const typeSelect = config.type_select && config.type_select.id
-      ? $('#' + config.type_select.id)
-      : $();
-    const gameType = typeSelect.length
-      ? String(typeSelect.val() || config.type_select.default || 'game')
+      ? document.getElementById(config.type_select.id)
+      : null;
+    const gameType = typeSelect
+      ? String(typeSelect.value || config.type_select.default || 'game')
       : 'game';
 
     const formData = new URLSearchParams();
@@ -302,12 +305,13 @@
       return;
     }
 
-    if (!gameSelector.attr('gameid')) {
+    const selectedGameId = gameSelector ? gameSelector.getAttribute('gameid') : '';
+    if (!selectedGameId) {
       printError('Игра-владелец не выбрана!');
       return;
     }
 
-    if (!fileInput.get(0) || fileInput.get(0).files.length <= 0) {
+    if (!fileInput || !fileInput.files || fileInput.files.length <= 0) {
       printError('Нужно выбрать файл первой версии!');
       return;
     }
@@ -317,7 +321,7 @@
 
     const formData = new FormData();
     formData.append('mod_source', 'local');
-    formData.append('mod_game', gameSelector.attr('gameid'));
+    formData.append('mod_game', selectedGameId);
     formData.append('mod_name', getNameValue());
     formData.append('mod_short_description', textDesc);
     formData.append('mod_description', textDesc);
@@ -334,7 +338,7 @@
       }
 
       const parsedUpload = new URL(uploadUrl);
-      const fileToUpload = fileInput.prop('files')[0];
+      const fileToUpload = fileInput.files[0];
       const token = parsedUpload.searchParams.get('token');
       const tokenPayload = token ? parseJwt(token) : null;
       const modId = transfer.mod_id || (tokenPayload ? tokenPayload.mod_id : null);
@@ -355,7 +359,10 @@
         if (finalizeStarted) return;
         finalizeStarted = true;
         progressUpdate(100);
-        $('#greenBarText').text('Обработка файла...');
+        const greenBarText = document.getElementById('greenBarText');
+        if (greenBarText) {
+          greenBarText.textContent = 'Обработка файла...';
+        }
 
         if (!modId) {
           uploadComplete();
@@ -484,7 +491,7 @@
     }
   }
 
-  window.submitAddEntity = async function submitAddEntity() {
+  async function submitAddEntity() {
     if (submitInProgress) return;
 
     if (addKind === 'game') {
@@ -493,7 +500,12 @@
     }
 
     await uploadNewMod();
-  };
+  }
 
-  window.uploadNewMod = uploadNewMod;
+  const submitButton = root.querySelector('[data-action="submit-add-entity"]');
+  if (submitButton) {
+    submitButton.addEventListener('click', function () {
+      submitAddEntity();
+    });
+  }
 })();
