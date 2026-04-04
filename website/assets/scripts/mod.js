@@ -1,48 +1,48 @@
-
 const millisecondsPerDay = 1000 * 60 * 60 * 24; // Количество миллисекунд в одном дне
 
-$(document).ready(function() {
+function initModPage() {
     const md = document.getElementById('mod-description');
     if (md) {
         Formating.renderInto(md, md.innerHTML);
     }
 
     const gameLabel = document.getElementById('mod-for-game-label');
-    let dopLink = ""
+    let dopLink = "";
     if (window.location.href.includes("?")) {
-        dopLink = "?"+window.location.href.split("?").pop();
+        dopLink = "?" + window.location.href.split("?").pop();
     }
 
     const depens = Array.from(document.getElementsByClassName("element"));
-    depens.forEach(depen => {
-        depen.href = depen.href+dopLink;
+    depens.forEach((depen) => {
+        depen.href = depen.href + dopLink;
     });
-    
+
     let params = dopLink.replace("?", "").split('&');
-    params = params.filter(param => !param.startsWith('game=') && !param.startsWith('game_select='));
-    result = params.join('&');
+    params = params.filter((param) => !param.startsWith('game=') && !param.startsWith('game_select='));
+    let result = params.join('&');
 
     if (result.length > 0) {
-        result = "&"+result;
+        result = "&" + result;
     }
-    gameLabel.href += result;
 
-    
+    if (gameLabel) {
+        gameLabel.href += result;
+    }
+
     const dateCreation = document.getElementById('date_creation_a_tag');
     const dateUpdate = document.getElementById('date_update_a_tag');
 
-    dateCreation.innerHTML += format(dates(dateCreation.getAttribute("datejs")), "dateCreationJSDate")
-    if (dateUpdate != null) {
-        dateUpdate.innerHTML += format(dates(dateUpdate.getAttribute("datejs")), "dateUpdateJSDate")
+    if (dateCreation) {
+        dateCreation.innerHTML += format(dates(dateCreation.getAttribute("datejs")), "dateCreationJSDate");
     }
-});
+    if (dateUpdate) {
+        dateUpdate.innerHTML += format(dates(dateUpdate.getAttribute("datejs")), "dateUpdateJSDate");
+    }
+}
 
 function dates(selectDate) {
     const oldDate = new Date(selectDate); // Замените на свою старую дату
     const currentDate = new Date(); // Текущая дата и время
-
-    console.log(currentDate)
-    console.log(oldDate)
 
     const timeDifference = currentDate - oldDate; // Разница в миллисекундах между старой и текущей датами
     const daysDifference = Math.floor(timeDifference / millisecondsPerDay); // Разница в днях
@@ -63,8 +63,6 @@ function dates(selectDate) {
 
     if (daysDifference <= 0) {
         const minutesDifference = Math.floor(timeDifference / 1000); // Разница в секундах
-
-        console.log(minutesDifference)
         if (minutesDifference < 60) {
             return dif(1, "секунду", "секунды", "секунд", minutesDifference)
         } else if (minutesDifference < 3600) {
@@ -83,4 +81,10 @@ function dates(selectDate) {
 
 function format(text, elementId) {
     return "<i id='"+elementId+"' style='margin-left: 3pt; background-color: #0000007d; padding-left: 2pt; padding-right: 2pt; border-radius: 4pt;'>("+text+" назад)</i>"
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initModPage);
+} else {
+    initModPage();
 }

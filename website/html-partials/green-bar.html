@@ -5,27 +5,37 @@
     </div>
 </section>
 <script>
-    let elem = $("span#greenBar");
-    let text = $("p#greenBarText");
-    let bar = $('section[progressuploadmod]');
+    const elem = document.querySelector("span#greenBar");
+    const text = document.querySelector("p#greenBarText");
+    const bar = document.querySelector('section[progressuploadmod]');
 
     function uploadStart() {
-        console.log(elem, bar)
-
-        text.text("Начинаем...");
-        elem.css("width", "0%");
-        bar.show();
+        if (text) {
+            text.textContent = "Начинаем...";
+        }
+        if (elem) {
+            elem.style.width = "0%";
+        }
+        if (bar) {
+            bar.style.display = "";
+        }
     }
     function progressUpdate(percent) {
-        elem.css("width", percent + "%");
+        if (elem) {
+            elem.style.width = percent + "%";
+        }
         const roundedPercent = Math.round(percent);
-        if (roundedPercent >= 100) {
-            text.text("Ещё мгновение...");
-        } else {
-            text.text(roundedPercent + "%");
+        if (text) {
+            if (roundedPercent >= 100) {
+                text.textContent = "Ещё мгновение...";
+            } else {
+                text.textContent = roundedPercent + "%";
+            }
         }
     }
     function uploadComplete() {
-        bar.hide()
+        if (bar) {
+            bar.style.display = "none";
+        }
     }
 </script>
