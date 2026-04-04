@@ -116,9 +116,9 @@ window.Cards = {
             to.classList.add('button-flap');
             flapButtons.appendChild(to);
         }
-        if (showEditButton && toLink && !isGame) {
+        if (showEditButton && toLink) {
             const toEdit = document.createElement('a');
-            toEdit.href = "/mod/"+cardData.id+"/edit";
+            toEdit.href = isGame ? "/game/"+cardData.id+"/edit" : "/mod/"+cardData.id+"/edit";
             toEdit.id = "toeditlink"+cardData.id;
             toEdit.classList.add('button-style');
             toEdit.classList.add('button-style-small');
@@ -130,7 +130,7 @@ window.Cards = {
 
             toEdit.classList.add('button-card');
             toEdit.classList.add('button-flap');
-            toEdit.title = "Редактировать мод";
+            toEdit.title = isGame ? "Редактировать игру" : "Редактировать мод";
             flapButtons.appendChild(toEdit);
         }
         if (isGame) {

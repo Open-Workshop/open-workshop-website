@@ -2,14 +2,17 @@
   const root = document.getElementById('main-container');
   if (!root) return;
 
+  const config = window.OWAddPage || {};
+  const addKind = String(config.kind || root.dataset.addKind || 'mod').toLowerCase();
   const apiBase = window.OWCore.getApiBase();
   const apiPaths = window.OWCore.getApiPaths();
-  const addModEndpoint = apiPaths.mod.add;
+  const addModEndpoint = apiPaths.mod && apiPaths.mod.add ? apiPaths.mod.add : null;
+  const addGameEndpoint = apiPaths.game && apiPaths.game.add ? apiPaths.game.add : null;
 
-  const titleMod = $('input#mod-name-title');
-  const descMod = $('.mod-edit__content[data-desc-module="add"] div[limit=256] textarea.editing').first();
-  const fileMod = $('input#input-mod-file-upload');
-  const gameOwnerMod = $('div.main-body-game-selector');
+  const titleInput = $('input#entity-name-title');
+  const fileInput = $('input#input-mod-file-upload');
+  const gameSelector = $('div.main-body-game-selector');
+  const descriptionModules = Array.isArray(config.description_modules) ? config.description_modules : [];
   const stageLabels = {
     uploading: 'Загрузка файла...',
     uploaded: 'Файл загружен',
@@ -18,14 +21,18 @@
     downloading: 'Скачивание файла...',
     downloaded: 'Файл скачан',
   };
+  let submitInProgress = false;
 
   function initDescriptionModule() {
     if (!window.OWDescriptionModules) return;
-    window.OWDescriptionModules.init({
-      moduleKey: 'add',
-      limit: 256,
+    descriptionModules.forEach(function (module) {
+      if (!module || !module.module_key) return;
+      window.OWDescriptionModules.init({
+        moduleKey: module.module_key,
+        limit: module.limit,
+      });
+      window.OWDescriptionModules.setView(module.module_key, false);
     });
-    window.OWDescriptionModules.setView('add', false);
   }
 
   initDescriptionModule();
@@ -90,25 +97,201 @@
     throw new Error(text || `Ошибка (${managerResp.status})`);
   }
 
-  window.uploadNewMod = async function uploadNewMod() {
-    function printError(targetText) {
-      new Toast({
-        title: 'Ошибка форматирования',
-        text: targetText,
-        theme: 'warning',
-        autohide: true,
-        interval: 6000,
-      });
+  function printError(targetText) {
+    new Toast({
+      title: 'Ошибка форматирования',
+      text: targetText,
+      theme: 'warning',
+      autohide: true,
+      interval: 6000,
+    });
+  }
+
+  function printDanger(targetText) {
+    new Toast({
+      title: 'Ошибка',
+      text: targetText,
+      theme: 'danger',
+      autohide: true,
+      interval: 6000,
+    });
+  }
+
+  function parseResponseMessage(text, fallback) {
+    if (!text) return fallback;
+
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') return parsed;
+      if (parsed && typeof parsed.detail === 'string') return parsed.detail;
+      if (parsed && typeof parsed.message === 'string') return parsed.message;
+    } catch (error) {
+      return text.replace(/^"(.*)"$/, '$1');
     }
 
-    if (titleMod.val().length <= 0) {
+    return fallback;
+  }
+
+  function getNameValue() {
+    return String(titleInput.val() || '').trim();
+  }
+
+  function getDescriptionValue(module, useTutorialValue) {
+    if (!module) return '';
+
+    if (window.OWDescriptionModules && typeof window.OWDescriptionModules.getValue === 'function') {
+      return String(window.OWDescriptionModules.getValue(module.module_key, useTutorialValue) || '');
+    }
+
+    const textarea = document.querySelector(
+      '.mod-edit__content[data-desc-module="' + module.module_key + '"] textarea.editing',
+    );
+    return textarea ? String(textarea.value || '') : '';
+  }
+
+  function normalizeIdCandidate(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+      return Number(value.trim());
+    }
+    return null;
+  }
+
+  function extractCreatedId(payload, kind) {
+    const directId = normalizeIdCandidate(payload);
+    if (directId !== null) return directId;
+
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        const nestedId = extractCreatedId(item, kind);
+        if (nestedId !== null) return nestedId;
+      }
+      return null;
+    }
+
+    if (!payload || typeof payload !== 'object') return null;
+
+    const candidates = kind === 'game' ? ['game_id', 'id'] : ['mod_id', 'id'];
+    for (const key of candidates) {
+      const value = normalizeIdCandidate(payload[key]);
+      if (value !== null) return value;
+    }
+
+    const nestedContainers = ['result', 'data', 'game', 'mod'];
+    for (const key of nestedContainers) {
+      if (payload[key] === undefined) continue;
+      const nestedId = extractCreatedId(payload[key], kind);
+      if (nestedId !== null) return nestedId;
+    }
+
+    return null;
+  }
+
+  function extractIdFromLocation(locationHeader) {
+    if (typeof locationHeader !== 'string' || locationHeader.trim() === '') return null;
+    const match = locationHeader.match(/\/(\d+)(?:\/)?$/);
+    return match ? Number(match[1]) : null;
+  }
+
+  function setSubmitInProgress(nextValue) {
+    submitInProgress = nextValue;
+    const button = root.querySelector('.entity-add__actions > button');
+    if (button) {
+      button.disabled = nextValue;
+    }
+  }
+
+  async function createNewGame() {
+    if (!addGameEndpoint) {
+      printDanger('В приложении не настроен endpoint для добавления игр');
+      return;
+    }
+
+    const name = getNameValue();
+    if (name.length <= 0) {
+      printError('Не указали название игры!');
+      return;
+    }
+
+    const shortModule = descriptionModules[0] || null;
+    const shortText = getDescriptionValue(shortModule, true).trim();
+
+    if (shortText.length <= 0) {
+      printError('Краткое описание игры не указано!');
+      return;
+    }
+    if (shortModule && shortModule.limit && shortText.length > shortModule.limit) {
+      printError('Краткое описание игры слишком длинное!');
+      return;
+    }
+
+    const typeSelect = config.type_select && config.type_select.id
+      ? $('#' + config.type_select.id)
+      : $();
+    const gameType = typeSelect.length
+      ? String(typeSelect.val() || config.type_select.default || 'game')
+      : 'game';
+
+    const formData = new URLSearchParams();
+    formData.set('game_name', name);
+    formData.set('game_short_desc', shortText);
+    formData.set('game_desc', shortText);
+    formData.set('game_type', gameType);
+
+    setSubmitInProgress(true);
+
+    try {
+      const response = await fetch(apiBase + addGameEndpoint.path, {
+        method: addGameEndpoint.method,
+        body: formData.toString(),
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          Accept: 'application/json, text/plain, */*',
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        throw new Error(parseResponseMessage(text, `Ошибка (${response.status})`));
+      }
+
+      const payload = await response.json().catch(() => null);
+      const gameId =
+        extractCreatedId(payload, 'game') ||
+        extractIdFromLocation(response.headers.get('Location') || response.headers.get('location'));
+
+      if (gameId !== null) {
+        window.location.href = `/game/${gameId}/edit`;
+        return;
+      }
+
+      new Toast({
+        title: 'Готово',
+        text: 'Игра создана',
+        theme: 'success',
+        autohide: true,
+        interval: 5000,
+      });
+      window.location.href = '/?sgame=yes&trigger=edit';
+    } catch (error) {
+      printDanger(error && error.message ? error.message : 'Не удалось добавить игру');
+      setSubmitInProgress(false);
+    }
+  }
+
+  async function uploadNewMod() {
+    if (!addModEndpoint) {
+      printDanger('В приложении не настроен endpoint для загрузки модов');
+      return;
+    }
+
+    if (getNameValue().length <= 0) {
       printError('Не указали название мода!');
       return;
     }
 
-    const textDesc = window.OWDescriptionModules
-      ? window.OWDescriptionModules.getValue('add', true)
-      : (descMod.length ? descMod.val() : '');
+    const textDesc = getDescriptionValue(descriptionModules[0], true).trim();
     if (textDesc.length <= 0) {
       printError('Описание мода не указано!');
       return;
@@ -117,22 +300,23 @@
       return;
     }
 
-    if (!gameOwnerMod.attr('gameid')) {
+    if (!gameSelector.attr('gameid')) {
       printError('Игра-владелец не выбрана!');
       return;
     }
 
-    if (fileMod.get(0).files.length <= 0) {
+    if (!fileInput.get(0) || fileInput.get(0).files.length <= 0) {
       printError('Нужно выбрать файл первой версии!');
       return;
     }
 
+    setSubmitInProgress(true);
     uploadStart();
 
     const formData = new FormData();
     formData.append('mod_source', 'local');
-    formData.append('mod_game', gameOwnerMod.attr('gameid'));
-    formData.append('mod_name', titleMod.val());
+    formData.append('mod_game', gameSelector.attr('gameid'));
+    formData.append('mod_name', getNameValue());
     formData.append('mod_short_description', textDesc);
     formData.append('mod_description', textDesc);
     formData.append('mod_public', '2');
@@ -148,7 +332,7 @@
       }
 
       const parsedUpload = new URL(uploadUrl);
-      const fileToUpload = fileMod.prop('files')[0];
+      const fileToUpload = fileInput.prop('files')[0];
       const token = parsedUpload.searchParams.get('token');
       const tokenPayload = token ? parseJwt(token) : null;
       const modId = transfer.mod_id || (tokenPayload ? tokenPayload.mod_id : null);
@@ -226,6 +410,7 @@
               interval: 6000,
             });
             uploadComplete();
+            setSubmitInProgress(false);
             return;
           }
           startFinalizePoll();
@@ -239,6 +424,7 @@
             interval: 6000,
           });
           uploadComplete();
+          setSubmitInProgress(false);
         });
 
       if (wsUrl) {
@@ -272,6 +458,7 @@
                 autohide: true,
                 interval: 6000,
               });
+              setSubmitInProgress(false);
               ws.close();
             }
           } catch (err) {
@@ -291,6 +478,20 @@
         autohide: true,
         interval: 6000,
       });
+      setSubmitInProgress(false);
     }
+  }
+
+  window.submitAddEntity = async function submitAddEntity() {
+    if (submitInProgress) return;
+
+    if (addKind === 'game') {
+      await createNewGame();
+      return;
+    }
+
+    await uploadNewMod();
   };
+
+  window.uploadNewMod = uploadNewMod;
 })();

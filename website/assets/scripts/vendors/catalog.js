@@ -243,7 +243,7 @@
                 settings.get('name', ''),
                 isGameMode,
                 tags,
-                editTrigger && !isGameMode,
+                editTrigger,
               ),
             );
             msnry.appended(element);

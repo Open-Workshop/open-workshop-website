@@ -1,36 +1,89 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
+  <script>
+    window.OWAddPage = {{ add_page | tojson }};
+  </script>
   <link href="/assets/styles/pages/mod-add.css" rel="stylesheet"/>
 
-  <main id="main-container" class="mod-add">
-      <h1 class="mod-add__title">Загрузить мод 😉</h1>
-      
-      <input displaylimit class="edit-username mod-add__name" placeholder="Этот мод прозвали..." maxlength="60" minlength="1" id="mod-name-title" name="mod-name-title">
+  <main
+    id="main-container"
+    class="entity-add"
+    data-add-kind="{{ add_page.kind }}"
+    style="--entity-add-max-width: {{ add_page.max_width | default('300pt') }};"
+  >
+      <h1 class="entity-add__title">{{ add_page.heading }}</h1>
 
-      {% with module_key='add', aria_label='Режим описания', limit=256, placeholder='Описание не может быть пустым!(', init_text='' %}
-        {% include 'html-partials/mod-edit/description-module.html' %}
-      {% endwith %}
+      <section class="entity-add__group">
+        <input
+          displaylimit
+          class="edit-username entity-add__name"
+          placeholder="{{ add_page.name_placeholder }}"
+          maxlength="{{ add_page.name_maxlength }}"
+          minlength="{{ add_page.name_minlength }}"
+          id="entity-name-title"
+          name="entity-name-title"
+        >
+      </section>
 
-      {% include "html-partials/new-game-selector.html" %}
+      {% if add_page.type_select %}
+      <section class="entity-add__group">
+        <label class="entity-add__field">
+          <span>{{ add_page.type_select.label }}</span>
+          <select id="{{ add_page.type_select.id }}" class="entity-add__select">
+            {% for option in add_page.type_select.options %}
+            <option value="{{ option.value }}" {% if option.value == add_page.type_select.default %}selected{% endif %}>{{ option.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </section>
+      {% endif %}
 
-      {% include "html-partials/upload-file.html" %}
+      {% for module in add_page.description_modules %}
+      <section class="entity-add__group">
+        {% if module.label %}
+        <h2 class="entity-add__section-title">{{ module.label }}</h2>
+        {% endif %}
 
-      <div class="mod-add__actions">
-        <button onclick="uploadNewMod()">Подтвердить</button>
+        {% with module_key=module.module_key, aria_label='Режим описания', limit=module.limit, placeholder=module.placeholder, init_text=module.init_text %}
+          {% include 'html-partials/mod-edit/description-module.html' %}
+        {% endwith %}
+      </section>
+      {% endfor %}
+
+      {% if add_page.show_game_selector %}
+        <section class="entity-add__group">
+          <h2 class="entity-add__section-title">Игра-владелец</h2>
+          {% include "html-partials/new-game-selector.html" %}
+        </section>
+      {% endif %}
+
+      {% if add_page.show_file_upload %}
+        <section class="entity-add__group">
+          <h2 class="entity-add__section-title">Первая версия</h2>
+          {% include "html-partials/upload-file.html" %}
+        </section>
+      {% endif %}
+
+      <div class="entity-add__actions">
+        <button onclick="submitAddEntity()">{{ add_page.submit_label }}</button>
       </div>
 
-      {% include "html-partials/green-bar.html" %}
+      {% if add_page.show_progress %}
+        {% include "html-partials/green-bar.html" %}
+      {% endif %}
   </main>
 
+  {% if add_page.show_game_selector %}
   <script src="/assets/scripts/components/new-game-selector.js"></script>
+  {% endif %}
   <script src="/assets/scripts/pages/mod-add.js"></script>
 {% endblock %}
 
 
 {% block title %}
-OW: Add mod
+{{ add_page.page_title }}
 {% endblock %}
 
 {% block description %}
-Добавьте мод в свободный каталог Open Workshop!
+{{ add_page.page_description }}
 {% endblock %}

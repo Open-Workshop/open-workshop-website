@@ -1,0 +1,181 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+<link href="/assets/styles/pages/mod-edit.css" rel="stylesheet"/>
+<link href="/assets/styles/pages/game-edit.css" rel="stylesheet"/>
+
+<div id="main-game-edit" data-game-id="{{ game['id'] }}">
+  <main class="mod-edit game-edit">
+    <div class="standart-panel mod-edit-nav">
+      <a class="mod-edit-nav__save dark button-style" href="/?game={{ game['id'] }}&game_select=false" title="Открыть игру в каталоге">
+        <img src="/assets/images/svg/white/eye.svg" style="padding: 5px;" alt="Открыть игру в каталоге">
+      </a>
+
+      <div class="navigation mod-edit-nav__group" variants="main-game, params-game">
+        <button id="start-page-button" class="dark" variant="main-game" onclick="Pager.change(this)">
+          <img src="/assets/images/home-ico.svg" alt="Иконка 'домой'">
+        </button>
+        <button variant="params-game" class="dark" onclick="Pager.change(this)">
+          <img src="/assets/images/params-ico.svg" alt="Иконка 'параметры'">
+        </button>
+      </div>
+
+      <button id="save-game-button" class="mod-edit-nav__save" onclick="saveGameChanges()">
+        <img src="/assets/images/save-ico.svg" alt="Иконка 'сохранить'">
+      </button>
+    </div>
+
+    <div id="page-main-game" class="mod-edit__page mod-edit__split">
+      <section class="mod-edit__main">
+        <div class="mod-edit__titlebar game-edit__titlebar">
+          <input
+            id="game-name"
+            dynamlen
+            empty-width="180pt"
+            placeholder="Название игры"
+            type="text"
+            class="title-mod mod-edit__title-input"
+            startdata="{{ game['name'] }}"
+            value="{{ game['name'] }}"
+          >
+          <select id="game-type" class="game-edit__type-select" startdata="{{ game['type'] }}">
+            <option value="game" {% if game['type'] == 'game' %}selected{% endif %}>Игра</option>
+            <option value="app" {% if game['type'] == 'app' %}selected{% endif %}>Приложение</option>
+          </select>
+        </div>
+
+        <div id="game-short-desc-panel" class="standart-panel mod-edit__panel">
+          <h3>Краткое описание</h3>
+          {% with limit=256, placeholder='Краткое описание игры...', init_text=game['short_description'] %}
+            {% include 'html-partials/desc-edit.html' %}
+          {% endwith %}
+        </div>
+
+        <div id="game-full-desc-panel" class="standart-panel mod-edit__panel">
+          <h3>Полное описание</h3>
+          {% with limit=10000, placeholder='Полное описание игры...', init_text=game['description'] %}
+            {% include 'html-partials/desc-edit.html' %}
+          {% endwith %}
+        </div>
+      </section>
+
+      <aside class="mod-edit__sidebar">
+        <div class="standart-panel game-edit__meta-card">
+          <img
+            class="game-edit__logo"
+            src="{{ game['logo'] if game['logo'] else '/assets/images/image-not-found.webp' }}"
+            alt="Логотип игры"
+            onerror="this.onerror=null;this.src='/assets/images/image-not-found.webp';"
+          >
+
+          <div class="game-edit__meta-grid">
+            <div class="game-edit__meta-item">
+              <span>ID</span>
+              <strong>{{ game['id'] }}</strong>
+            </div>
+            <div class="game-edit__meta-item">
+              <span>Тип</span>
+              <strong>{{ game['type'] }}</strong>
+            </div>
+            <div class="game-edit__meta-item">
+              <span>Модов</span>
+              <strong>{{ game['mods_count'] if game['mods_count'] is defined else '—' }}</strong>
+            </div>
+            <div class="game-edit__meta-item">
+              <span>Скачиваний модов</span>
+              <strong>{{ game['mods_downloads'] if game['mods_downloads'] is defined else '—' }}</strong>
+            </div>
+            <div class="game-edit__meta-item game-edit__meta-item--wide">
+              <span>Дата создания</span>
+              <strong>{{ game['date_creation'] if game['date_creation'] is defined else '—' }}</strong>
+            </div>
+          </div>
+
+          <p class="ow-muted">Логотип подтягивается из ресурсов игры и здесь отображается для контроля.</p>
+        </div>
+
+        {% with tags=game_tags, game=0 %}
+          {% include 'html-partials/tags-edit.html' %}
+        {% endwith %}
+
+        <div class="standart-panel game-edit__genres">
+          <div class="game-edit__genres-head">
+            <div id="game-genres-selected" class="alls game-edit__selected-genres">
+              <br>
+              {% for item in selected_genres %}
+              <div class="element" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
+                <e>
+                  <h3 translate="no">{{ item.name }}</h3>
+                  <img src="/assets/images/removal-triangle.svg" alt="Кнопка удаления жанра">
+                </e>
+              </div>
+              {% endfor %}
+              <p>Жанры не выбраны</p>
+            </div>
+
+            <button type="button" data-popup-menu-target=".popup-game-genres-select" data-popup-menu-open-callback="GameGenres.refresh" class="small">
+              Изменить жанры
+            </button>
+          </div>
+
+          <div class="popup-game-genres-select popup-menu-select popup-nonvisible">
+            <input id="search-update-input-genres" type="text" placeholder="Поиск..." oninput="GameGenres.refresh()">
+
+            <div class="alls game-edit__genre-list" id="game-genres-search-list">
+              {% for item in available_genres %}
+              <div class="element{% if item.id in selected_genre_ids %} genre-selected{% endif %}" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
+                <e>
+                  <h3 translate="no">{{ item.name }}</h3>
+                </e>
+              </div>
+              {% endfor %}
+              <p>Не найдено</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="page-params-game" class="mod-edit__page">
+      <div class="mod-edit__params">
+        <div class="standart-panel mod-edit__panel">
+          <h3>Параметры источника</h3>
+          <p class="ow-muted">`source` и `source_id` лучше менять парой, иначе API может отклонить обновление.</p>
+
+          <div class="mod-edit__row">
+            <label class="game-edit__field">
+              <span>Источник</span>
+              <input id="game-source" type="text" placeholder="steam / local / ..." startdata="{{ game['source'] }}" value="{{ game['source'] }}">
+            </label>
+
+            <label class="game-edit__field">
+              <span>ID в источнике</span>
+              <input id="game-source-id" type="number" placeholder="294100" startdata="{{ game['source_id'] }}" value="{{ game['source_id'] }}">
+            </label>
+          </div>
+        </div>
+
+        <div class="standart-panel mod-edit__panel mod-edit__panel--danger">
+          <h3>Удаление игры</h3>
+          <p class="ow-muted">Действие необратимо. Игра пропадет из каталога, а связанные операции останутся на стороне API.</p>
+          <label class="mod-edit__confirm">
+            <input id="delete-game-confirm" type="checkbox" onchange="toggleDeleteGameButton()">
+            Подтверждаю удаление
+          </label>
+          <button id="delete-game-button" class="button-style" type="button" onclick="deleteGame()" disabled>Удалить игру</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/assets/scripts/vendors/pager-logic.js"></script>
+<script src="/assets/scripts/pages/game-edit.js"></script>
+{% endblock %}
+
+{% block title %}
+{{ game['name'] }} - edit Open Game
+{% endblock %}
+
+{% block description %}
+{{ game['short_description'] }}
+{% endblock %}

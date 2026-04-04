@@ -1,41 +1,68 @@
-.mod-add {
-  padding: 10px;
-  max-width: 300pt;
+.entity-add {
+  width: min(var(--entity-add-max-width, 300pt), 100%);
+  padding: 12px 10px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0 auto;
+  gap: 12px;
+}
+
+.entity-add__title {
+  color: white;
+  font-size: 25pt;
+  line-height: 1.05;
+  margin: 0 0 5pt;
+  text-align: center;
+}
+
+.entity-add__group {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin: 0 auto;
-  gap: 6pt;
+  gap: 8px;
 }
 
-.mod-add__title {
-  color: white;
-  font-size: 25pt;
-  margin: 0 0 5pt;
+.entity-add__section-title {
+  margin: 0;
+  color: #dfe4f3;
+  font-size: 1rem;
 }
 
-.mod-add__name {
+.entity-add__name,
+.entity-add__select {
   width: 100%;
   margin: 0;
 }
 
-.mod-add__actions {
+.entity-add__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.entity-add__field > span {
+  color: #c4cad8;
+  font-size: 0.92rem;
+}
+
+.entity-add__actions {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 5pt;
+  margin-top: 4px;
+}
+
+.entity-add .desc-edit {
+  margin: 0;
 }
 
 @media screen and (min-width: 459px) {
-  .mod-add {
+  .entity-add {
     scale: 1.1;
     margin-top: 30pt;
   }
-}
-
-.desc-edit {
-  margin: 0;
 }
 
 .main-body-game-selector {

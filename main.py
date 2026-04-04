@@ -351,9 +351,116 @@ async def add_mod():
 
             return handler.finish(page), 403
 
-        page = handler.render("mod-add.html")
+        page = handler.render("mod-add.html", add_page=app_config.ADD_PAGE_CONFIGS["mod"])
 
         return handler.finish(page)
+
+async def add_game():
+    async with UserHandler() as handler:
+        if not handler.rights.get("admin", False):
+            if not handler.profile:
+                page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
+            else:
+                page = handler.render(
+                    "error.html",
+                    error='Панель добавления игр доступна только администраторам',
+                    error_title='Отказано в доступе'
+                )
+            return handler.finish(page), 403
+
+        page = handler.render("mod-add.html", add_page=app_config.ADD_PAGE_CONFIGS["game"])
+
+        return handler.finish(page)
+
+async def game_edit(game_id):
+    launge = "ru"
+
+    async with UserHandler() as handler:
+        if not handler.rights.get("admin", False):
+            if not handler.profile:
+                page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
+            else:
+                page = handler.render(
+                    "error.html",
+                    error='Панель редактирования игр доступна только администраторам',
+                    error_title='Отказано в доступе'
+                )
+            return handler.finish(page), 403
+
+        game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
+        tag_list_path = app_config.api_path("tag", "list")
+        genre_list_path = app_config.api_path("genre", "list")
+        game_genres_path = app_config.api_path("game", "genres").format(
+            games_ids_list=_compact_json_list([game_id])
+        )
+        resources_list_path = app_config.api_path("resource", "list")
+
+        game_info_result, game_tags_result, all_genres_result, game_genres_result, game_logo_result = await asyncio.gather(
+            handler.fetch(f"{game_info_path}?short_description=true&description=true&dates=true&statistics=true"),
+            handler.fetch(f"{tag_list_path}?game_id={game_id}&page_size=100"),
+            handler.fetch(f"{genre_list_path}?page_size=200"),
+            handler.fetch(game_genres_path),
+            handler.fetch(
+                f'{resources_list_path}?page_size=10&owner_type=games&owner_ids={_compact_json_list([game_id])}&types_resources=["logo"]'
+            ),
+        )
+
+        game_info_code, game_info = game_info_result
+        if game_info_code != 200 or not isinstance(game_info, dict):
+            return handler.finish(handler.render(
+                "error.html",
+                error=game_info,
+                error_title=f'Ошибка ({game_info_code})')
+            ), game_info_code
+
+        _, game_tags = game_tags_result
+        _, all_genres = all_genres_result
+        _, game_genres = game_genres_result
+        _, game_logo = game_logo_result
+
+        if game_info.get("date_creation"):
+            input_date = parse_api_datetime(game_info["date_creation"])
+            game_info["date_creation_js"] = format_js_datetime(input_date)
+            game_info["date_creation"] = dates.format_date(input_date, locale=launge)
+
+        game_info["short_description"] = str(game_info.get("short_description") or "")
+        game_info["description"] = str(game_info.get("description") or "")
+        game_info["source"] = str(game_info.get("source") or "")
+        game_info["source_id"] = "" if game_info.get("source_id") is None else str(game_info.get("source_id"))
+
+        game_logo_url = ""
+        if isinstance(game_logo, dict):
+            for resource in game_logo.get("results", []):
+                if isinstance(resource, dict) and resource.get("url"):
+                    game_logo_url = resource["url"]
+                    break
+        game_info["logo"] = game_logo_url
+
+        selected_genres = []
+        if isinstance(game_genres, dict):
+            selected_genres = game_genres.get(str(game_id), []) or game_genres.get(game_id, []) or []
+        if not isinstance(selected_genres, list):
+            selected_genres = []
+
+        selected_genre_ids = [
+            int(item["id"])
+            for item in selected_genres
+            if isinstance(item, dict) and item.get("id") is not None
+        ]
+
+        if not isinstance(game_tags, dict):
+            game_tags = {"results": []}
+        if not isinstance(all_genres, dict):
+            all_genres = {"results": []}
+
+        return handler.finish(handler.render(
+            "game-edit.html",
+            game=game_info,
+            game_tags=game_tags.get("results", []),
+            available_genres=all_genres.get("results", []),
+            selected_genres=selected_genres,
+            selected_genre_ids=selected_genre_ids,
+        ))
 
 async def user(user_id):
     launge = "ru"
@@ -519,6 +626,10 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=mod_view_and_edit)
     for route in app_config.ROUTES["mod"]["add"]:
         app.add_url_rule(route, view_func=add_mod)
+    for route in app_config.ROUTES["game"]["add"]:
+        app.add_url_rule(route, view_func=add_game)
+    for route in app_config.ROUTES["game"]["edit"]:
+        app.add_url_rule(route, view_func=game_edit)
 
     for route in app_config.ROUTES["user"]["view"]:
         app.add_url_rule(route, view_func=user)

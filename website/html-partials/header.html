@@ -34,12 +34,16 @@
                     <img src="{{ user_profile.avatar_url }}" alt="Аватар пользователя">
                     <a class="header__profile-link" href="/user/{{ user_profile.id }}"></a>
                     <ul>
+                        {% set user_is_admin = user_rights and user_rights.get('admin') %}
                         {% for item in ow.site.profile_menu %}
                         {% set href = item.href.format(id=user_profile.id) %}
                         {% if item.id == 'my_mods' %}
                         {% set href = href + '?show_not_public=true&trigger=edit' %}
                         {% endif %}
                         <a href="{{ href }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>
+                        {% if item.id == 'upload_mod' and user_is_admin %}
+                        <a href="/game/add">Создать игру</a>
+                        {% endif %}
                         {% endfor %}
                         <a onclick="logon()">Выйти</a>
                     </ul>

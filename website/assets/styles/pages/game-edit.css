@@ -1,0 +1,218 @@
+#page-main-game,
+#page-params-game,
+#main-game-edit {
+  transition: opacity 0.15s ease;
+}
+
+#main-game-edit {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  opacity: 0;
+  padding: 8px 10px 20px;
+}
+
+main.game-edit {
+  min-width: 0;
+}
+
+.game-edit__titlebar {
+  gap: 0;
+}
+
+#main-game-edit input.title-mod {
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.game-edit__type-select {
+  min-width: 148px;
+  height: 48px;
+  margin: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  border: 1px solid var(--border-color-strong);
+  border-left: 0;
+  background: #1f2130;
+  color: #f2f2f2;
+  padding: 0 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.game-edit__type-select:hover {
+  border-color: #60647c;
+  background: #1a1c28;
+}
+
+.game-edit__type-select:focus {
+  border-color: #6f7393;
+  background: #171924;
+}
+
+.game-edit__meta-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.game-edit__logo {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid #2a2f43;
+  background: #111522;
+}
+
+.game-edit__meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.game-edit__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid #2a2f43;
+  background: #171a28;
+}
+
+.game-edit__meta-item span {
+  color: #aeb6ca;
+  font-size: 0.76rem;
+}
+
+.game-edit__meta-item strong {
+  color: #f2f2f2;
+  font-size: 0.96rem;
+  overflow-wrap: anywhere;
+}
+
+.game-edit__meta-item--wide {
+  grid-column: 1 / -1;
+}
+
+.game-edit__genres {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.game-edit__genres-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.game-edit__selected-genres,
+.game-edit__genre-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px;
+}
+
+.game-edit__selected-genres > .element,
+.game-edit__genre-list > .element {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: #2b2d38;
+  cursor: pointer;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+
+.game-edit__selected-genres > .element:hover,
+.game-edit__genre-list > .element:hover {
+  background: #34374a;
+}
+
+.game-edit__selected-genres > .element:active,
+.game-edit__genre-list > .element:active {
+  transform: translateY(1px);
+}
+
+.game-edit__selected-genres > .element > e,
+.game-edit__genre-list > .element > e {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-edit__selected-genres > .element > e > h3,
+.game-edit__genre-list > .element > e > h3 {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.game-edit__selected-genres > .element > e > img {
+  width: 18px;
+  height: 18px;
+}
+
+.game-edit__genre-list > .genre-selected {
+  background: var(--interactive-element-background);
+}
+
+.game-edit__genre-list > .genre-selected:hover {
+  background: var(--interactive-element-background-hover);
+}
+
+.game-edit__genre-list > .genre-selected:active {
+  background: var(--interactive-element-background-active);
+}
+
+.popup-game-genres-select {
+  width: min(100%, 360px);
+}
+
+.game-edit__field {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.game-edit__field > span {
+  color: #cfd4e2;
+  font-size: 0.88rem;
+}
+
+.game-edit__field input {
+  margin: 0;
+}
+
+@media screen and (max-width: 640px) {
+  #main-game-edit {
+    padding: 6px 6px 16px;
+  }
+
+  .game-edit__titlebar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #main-game-edit input.title-mod,
+  .game-edit__type-select {
+    width: 100%;
+    min-width: 0;
+    border-radius: var(--radius-md);
+    border-left: 1px solid var(--border-color-strong);
+  }
+
+  .game-edit__meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .popup-game-genres-select {
+    width: 100%;
+  }
+}

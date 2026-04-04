@@ -90,6 +90,15 @@ PUBLIC_CONFIG: dict = {
             "game": {
                 "info": {"method": "GET", "path": "/games/{game_id}"},
                 "list": {"method": "GET", "path": "/games"},
+                "add": {"method": "POST", "path": "/add/game"},
+                "edit": {"method": "POST", "path": "/edit/game"},
+                "delete": {"method": "DELETE", "path": "/delete/game"},
+                "tag_association": {"method": "POST", "path": "/association/game/tag"},
+                "genre_association": {"method": "POST", "path": "/association/game/genre"},
+                "genres": {"method": "GET", "path": "/list/genres/games/{games_ids_list}"},
+            },
+            "genre": {
+                "list": {"method": "GET", "path": "/list/genres"},
             },
             "tag": {
                 "list": {"method": "GET", "path": "/tags"},
@@ -191,10 +200,80 @@ ROUTES: dict = {
         ],
         "add": ["/mod/add", "/mod/add.html"],
     },
+    "game": {
+        "add": [
+            "/game/add",
+            "/game/add.html",
+        ],
+        "edit": [
+            "/game/<int:game_id>/edit",
+            "/game/<int:game_id>/edit.html",
+        ],
+    },
     "user": {
         "view": ["/user/<int:user_id>", "/user/<int:user_id>.html"],
         "settings": ["/user/<int:user_id>/settings", "/user/<int:user_id>/settings.html"],
         "mods": ["/user/<int:user_id>/mods", "/user/<int:user_id>/mods.html"],
+    },
+}
+
+
+ADD_PAGE_CONFIGS: dict = {
+    "mod": {
+        "kind": "mod",
+        "heading": "Загрузить мод 😉",
+        "max_width": "300pt",
+        "name_placeholder": "Этот мод прозвали...",
+        "name_maxlength": 60,
+        "name_minlength": 1,
+        "submit_label": "Подтвердить",
+        "show_game_selector": True,
+        "show_file_upload": True,
+        "show_progress": True,
+        "type_select": None,
+        "description_modules": [
+            {
+                "module_key": "mod-short",
+                "label": "Описание",
+                "limit": 256,
+                "placeholder": "Описание не может быть пустым!(",
+                "init_text": "",
+            }
+        ],
+        "page_title": "OW: Add mod",
+        "page_description": "Добавьте мод в свободный каталог Open Workshop!",
+    },
+    "game": {
+        "kind": "game",
+        "heading": "Добавить игру 😉",
+        "max_width": "300pt",
+        "name_placeholder": "Название игры",
+        "name_maxlength": 128,
+        "name_minlength": 1,
+        "submit_label": "Создать игру",
+        "show_game_selector": False,
+        "show_file_upload": False,
+        "show_progress": False,
+        "type_select": {
+            "id": "entity-type-select",
+            "label": "Тип сущности",
+            "default": "game",
+            "options": [
+                {"value": "game", "label": "Игра"},
+                {"value": "app", "label": "Приложение"},
+            ],
+        },
+        "description_modules": [
+            {
+                "module_key": "game-short",
+                "label": "Краткое описание",
+                "limit": 256,
+                "placeholder": "Краткое описание игры...",
+                "init_text": "",
+            },
+        ],
+        "page_title": "OW: Add game",
+        "page_description": "Добавьте игру в каталог Open Workshop!",
     },
 }
 

@@ -172,6 +172,7 @@ class UserHandler:
             manager_address=config.MANAGER_ADDRESS,
             storage_address=config.STORAGE_ADDRESS,
             user_profile=self.profile,
+            user_rights=self.rights,
             ow=app_config.PUBLIC_CONFIG,
             **kwargs,
         )
