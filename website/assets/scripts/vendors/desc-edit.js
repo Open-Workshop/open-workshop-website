@@ -49,6 +49,53 @@
     );
   }
 
+  function syncCodeButtonState(editor) {
+    const toolbar = editor.quill.getModule('toolbar');
+    if (!toolbar || !toolbar.container) return;
+
+    const codeButton = toolbar.container.querySelector('.ql-code');
+    if (!codeButton) return;
+
+    const selection = editor.quill.getSelection();
+    if (!selection) {
+      codeButton.classList.remove('ql-active');
+      return;
+    }
+
+    const formats = editor.quill.getFormat(selection);
+    codeButton.classList.toggle('ql-active', Boolean(formats.code || formats['code-block']));
+  }
+
+  function toggleSmartCode(quill) {
+    const range = quill.getSelection(true);
+    if (!range) return;
+
+    const formats = quill.getFormat(range);
+    const selectedText = range.length > 0 ? quill.getText(range.index, range.length) : '';
+    const lines = quill.getLines(range.index, range.length);
+    const useBlockMode = Boolean(
+      formats['code-block'] || (range.length > 0 && (selectedText.includes('\n') || lines.length > 1)),
+    );
+
+    if (useBlockMode) {
+      quill.formatLine(
+        range.index,
+        Math.max(range.length, 1),
+        'code-block',
+        !Boolean(formats['code-block']),
+        Quill.sources.USER,
+      );
+      return;
+    }
+
+    if (range.length === 0) {
+      quill.format('code', !Boolean(formats.code), Quill.sources.USER);
+      return;
+    }
+
+    quill.formatText(range.index, range.length, 'code', !Boolean(formats.code), Quill.sources.USER);
+  }
+
   function syncTransport(editor) {
     if (editor.isApplying) return;
     editor.textarea.value = serializeEditorRoot(editor.quill.root);
@@ -170,11 +217,14 @@
           container: [
             [{ header: [1, 2, 3, 4, 5, 6, false] }],
             ['bold', 'italic', 'underline', 'strike', 'code'],
-            ['blockquote', 'code-block', 'link'],
+            ['blockquote', 'link'],
             [{ list: 'bullet' }],
             ['image', 'clean'],
           ],
           handlers: {
+            code: function () {
+              toggleSmartCode(this.quill);
+            },
             image: function () {
               insertImageByUrl(this.quill);
             },
@@ -217,7 +267,12 @@
     setEditorValue(editor, initialValue, { silent: true, updateStart: true });
     quill.on('text-change', function () {
       syncTransport(editor);
+      syncCodeButtonState(editor);
     });
+    quill.on('selection-change', function () {
+      syncCodeButtonState(editor);
+    });
+    syncCodeButtonState(editor);
 
     bindOutsideClose();
     root.classList.add('is-ready');

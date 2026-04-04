@@ -91,6 +91,11 @@
   padding: 0;
 }
 
+.ow-description-content strong,
+.ow-description-content b {
+  font-weight: 700;
+}
+
 .ow-description-content br {
   display: inline;
   height: auto;
@@ -141,11 +146,6 @@
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.12));
 }
 
-.ow-description-content ul,
-.ow-description-content ol {
-  padding-left: 1.4rem;
-}
-
 .ow-description-content ul {
   list-style: disc outside;
 }
@@ -174,12 +174,13 @@
 
 .ow-description-content code {
   display: inline;
-  padding: 0.12em 0.38em;
-  border-radius: var(--radius-sm);
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
+  padding: 0.12em 0.38em !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #dfe6f7;
+  background: var(--interactive-element-dark-background) !important;
   font-family: "Cascadia Mono", "Fira Code", "JetBrains Mono", monospace;
-  font-size: 0.95em;
+  font-size: 0.95em !important;
 }
 
 .ow-description-content pre,
