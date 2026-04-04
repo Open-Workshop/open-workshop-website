@@ -1,14 +1,12 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-<script>
-  window.OWEditPage = {{ edit_page | tojson }};
-</script>
 {% for style in edit_page.styles %}
 <link href="{{ style }}" rel="stylesheet"/>
 {% endfor %}
 
 <div
   id="{{ edit_page.root_id }}"
+  data-edit-page='{{ edit_page | tojson | forceescape }}'
   data-edit-kind="{{ edit_page.kind }}"
   data-entity-id="{{ edit_page.entity_id }}"
   {% if edit_page.kind == 'mod' %}

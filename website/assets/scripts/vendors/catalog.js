@@ -233,7 +233,6 @@
         data.results.forEach((element) => {
           const existingCard = cardsRoot ? cardsRoot.querySelector('div.card[id="' + String(element.id) + '"]') : null;
           if (!cardsRoot || existingCard) {
-            console.log('Duplicate (xuricat paradox): ', element);
             return;
           }
 
@@ -257,8 +256,6 @@
             msnry.appended(card);
           }
         });
-      } else {
-        console.log('Error addPage: ' + data);
       }
 
       return data;

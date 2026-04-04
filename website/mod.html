@@ -20,10 +20,10 @@
             <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ info['result']['downloads'] }}</a>
 
             {% if info['result']['date_update_file_js'] != info['result']['date_creation_js'] %}
-            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ info['result']['date_update_file_js'] }}" class="tag-link" translate="no">⏳{{ info['result']['date_update_file'] }}</a>
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ info['result']['date_update_file_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">⏳{{ info['result']['date_update_file'] }}</a>
             {% endif %}
 
-            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['result']['date_creation_js'] }}" class="tag-link" translate="no">📝{{ info['result']['date_creation'] }}</a>
+            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['result']['date_creation_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">📝{{ info['result']['date_creation'] }}</a>
         </div>
 
         <article id="mod-description">

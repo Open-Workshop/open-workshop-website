@@ -2,12 +2,20 @@
   const root = document.getElementById('main-container');
   if (!root) return;
 
-  const config = window.OWAddPage || {};
+  let config = {};
+  try {
+    config = JSON.parse(root.dataset.addPage || '{}');
+  } catch (error) {
+    config = {};
+  }
   const addKind = String(config.kind || root.dataset.addKind || 'mod').toLowerCase();
   const apiBase = window.OWCore.getApiBase();
   const apiPaths = window.OWCore.getApiPaths();
   const addModEndpoint = apiPaths.mod && apiPaths.mod.add ? apiPaths.mod.add : null;
   const addGameEndpoint = apiPaths.game && apiPaths.game.add ? apiPaths.game.add : null;
+  const uploadProgress = window.OWUI
+    ? window.OWUI.createUploadProgress(root.querySelector('[data-upload-progress-root]'))
+    : null;
 
   const titleInput = document.querySelector('input#entity-name-title');
   const fileInput = document.querySelector('input#input-mod-file-upload');
@@ -36,13 +44,60 @@
 
   initDescriptionModule();
 
+  function showUploadProgress() {
+    if (uploadProgress) {
+      uploadProgress.start();
+      return;
+    }
+
+    const progressRoot = root.querySelector('[data-upload-progress-root]');
+    if (progressRoot) {
+      progressRoot.hidden = false;
+      progressRoot.style.display = '';
+    }
+  }
+
+  function setUploadProgress(percent) {
+    if (uploadProgress) {
+      uploadProgress.setProgress(percent);
+      return;
+    }
+
+    const bar = root.querySelector('[data-upload-progress-bar]');
+    if (bar) {
+      bar.style.width = (Number.isFinite(percent) ? percent : 0) + '%';
+    }
+  }
+
+  function setUploadStatus(text) {
+    if (uploadProgress) {
+      uploadProgress.setLabel(text);
+      return;
+    }
+
+    const status = root.querySelector('[data-upload-progress-text]');
+    if (status) {
+      status.textContent = String(text || '');
+    }
+  }
+
+  function hideUploadProgress() {
+    if (uploadProgress) {
+      uploadProgress.complete();
+      return;
+    }
+
+    const progressRoot = root.querySelector('[data-upload-progress-root]');
+    if (progressRoot) {
+      progressRoot.hidden = true;
+      progressRoot.style.display = 'none';
+    }
+  }
+
   function updateStage(stage) {
     if (!stage) return;
     const label = stageLabels[stage] || stage;
-    const greenBarText = document.getElementById('greenBarText');
-    if (greenBarText) {
-      greenBarText.textContent = label;
-    }
+    setUploadStatus(label);
   }
 
   function parseJwt(token) {
@@ -317,7 +372,9 @@
     }
 
     setSubmitInProgress(true);
-    uploadStart();
+    showUploadProgress();
+    setUploadProgress(0);
+    updateStage('uploading');
 
     const formData = new FormData();
     formData.append('mod_source', 'local');
@@ -358,20 +415,17 @@
       function startFinalizePoll() {
         if (finalizeStarted) return;
         finalizeStarted = true;
-        progressUpdate(100);
-        const greenBarText = document.getElementById('greenBarText');
-        if (greenBarText) {
-          greenBarText.textContent = 'Обработка файла...';
-        }
+        setUploadProgress(100);
+        setUploadStatus('Обработка файла...');
 
         if (!modId) {
-          uploadComplete();
+          hideUploadProgress();
           return;
         }
 
         const poll = async () => {
           if (Date.now() - finalizeStart > maxFinalizeMs) {
-            uploadComplete();
+            hideUploadProgress();
             new Toast({
               title: 'Обработка занимает слишком долго',
               text: 'Попробуйте обновить страницу через несколько минут.',
@@ -389,7 +443,7 @@
             const data = await resp.json().catch(() => null);
             const condition = data && data.result ? data.result.condition : null;
             if (condition === 0) {
-              uploadComplete();
+              hideUploadProgress();
               window.location.href = `/mod/${modId}/edit`;
               return;
             }
@@ -418,7 +472,7 @@
               autohide: true,
               interval: 6000,
             });
-            uploadComplete();
+            hideUploadProgress();
             setSubmitInProgress(false);
             return;
           }
@@ -432,7 +486,7 @@
             autohide: true,
             interval: 6000,
           });
-          uploadComplete();
+          hideUploadProgress();
           setSubmitInProgress(false);
         });
 
@@ -450,16 +504,16 @@
             }
             if (msg.event === 'progress') {
               if (msg.total) {
-                progressUpdate((msg.bytes / msg.total) * 100);
+                setUploadProgress((msg.bytes / msg.total) * 100);
               } else {
-                progressUpdate(0);
+                setUploadProgress(0);
                 updateStage(msg.stage || 'uploading');
               }
             } else if (msg.event === 'complete') {
               startFinalizePoll();
               ws.close();
             } else if (msg.event === 'error') {
-              uploadComplete();
+              hideUploadProgress();
               new Toast({
                 title: 'Ошибка загрузки',
                 text: msg.message || 'Не удалось загрузить файл',
@@ -479,7 +533,7 @@
         };
       }
     } catch (error) {
-      uploadComplete();
+      hideUploadProgress();
       new Toast({
         title: 'Ошибка загрузки',
         text: error && error.message ? error.message : 'Не удалось загрузить мод',

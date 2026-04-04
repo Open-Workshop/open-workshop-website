@@ -180,6 +180,16 @@
       syncListState();
       requestLayout(root);
 
+      root.dispatchEvent(new CustomEvent('ow:picker-selection-change', {
+        bubbles: true,
+        detail: {
+          editor: api,
+          key,
+          state: getState(),
+          context: getContext(),
+        },
+      }));
+
       if (typeof config.onSelectionChange === 'function') {
         config.onSelectionChange(api);
       }
@@ -479,6 +489,14 @@
     async function open() {
       closeAll(key);
       root.classList.add('is-open');
+      root.dispatchEvent(new CustomEvent('ow:picker-open-change', {
+        bubbles: true,
+        detail: {
+          editor: api,
+          key,
+          open: true,
+        },
+      }));
       if (typeof config.onOpen === 'function') {
         await config.onOpen(api);
       } else {
@@ -487,7 +505,16 @@
     }
 
     function close() {
+      if (!root.classList.contains('is-open')) return;
       root.classList.remove('is-open');
+      root.dispatchEvent(new CustomEvent('ow:picker-open-change', {
+        bubbles: true,
+        detail: {
+          editor: api,
+          key,
+          open: false,
+        },
+      }));
     }
 
     function isOpen() {

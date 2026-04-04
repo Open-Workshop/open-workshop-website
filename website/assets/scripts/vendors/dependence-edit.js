@@ -165,18 +165,6 @@
     return element;
   }
 
-  function dispatchDependenciesChanged(editor) {
-    const selectedIds = editor.getState().visible.map(function (item) {
-      return String(item.id);
-    });
-
-    window.dispatchEvent(
-      new CustomEvent('ow:dependencies-changed', {
-        detail: { ids: selectedIds },
-      }),
-    );
-  }
-
   function initDependencyEditors() {
     document.querySelectorAll('[data-picker-editor-kind="dependencies"]').forEach(function (root) {
       if (root.dataset.owDependencyEditorBound === 'true') return;
@@ -200,7 +188,6 @@
           });
           return data.results;
         },
-        onSelectionChange: dispatchDependenciesChanged,
       });
     });
   }

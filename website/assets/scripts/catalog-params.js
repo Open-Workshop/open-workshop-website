@@ -1,6 +1,9 @@
 /* eslint-env browser */
 
 (function () {
+  const root = document.querySelector('main.catalog');
+  if (!root) return;
+
   const { getApiPaths, apiUrl } = window.OWCore;
   const apiPaths = getApiPaths();
 
@@ -8,6 +11,9 @@
   let outOfCards = false;
   let warns = [false, false, false];
   let suppressDependencySync = false;
+  let pendingTagSync = false;
+  let infiniteScrollObserver = null;
+  let infiniteScrollSentinel = null;
 
   function getTagsEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
@@ -58,12 +64,29 @@
       .replaceAll(']', '')
       .replaceAll('_', ',')
       .split(',')
-      .map((id) => String(id).trim())
-      .filter((id) => /^\d+$/.test(id));
+      .map(function (id) {
+        return String(id).trim();
+      })
+      .filter(function (id) {
+        return /^\d+$/.test(id);
+      });
   }
 
   function getSelectedDependencyIds() {
     const editor = getDependenciesEditor();
+    if (!editor) return [];
+
+    return editor.getState().visible
+      .map(function (item) {
+        return String(item.id);
+      })
+      .filter(function (id) {
+        return id.length > 0;
+      });
+  }
+
+  function getSelectedTagIds() {
+    const editor = getTagsEditor();
     if (!editor) return [];
 
     return editor.getState().visible
@@ -132,6 +155,22 @@
     return true;
   }
 
+  function syncTagsUrlFromSelected(selectedIds, triggerReset) {
+    const tagsValue = selectedIds.join('_');
+    const params = URLManager.getParams();
+    if (tagsValue === String(params.get('tags', '') || '')) return false;
+
+    URLManager.updateParams([
+      new Dictionary({ key: 'tags', value: tagsValue, default: '' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+
+    if (triggerReset) {
+      resetCatalog();
+    }
+    return true;
+  }
+
   async function hydrateDependenciesFilter(ids) {
     const editor = getDependenciesEditor();
     if (!ids.length || !editor) return;
@@ -144,19 +183,19 @@
     }
   }
 
-  window.undependencyMod = function undependencyMod() {
-    const setting = this instanceof Element ? this : getDependencySetting();
+  function toggleIndependent(settingElement) {
+    const setting = settingElement instanceof Element ? settingElement : getDependencySetting();
     const input = setting ? setting.querySelector('input') : null;
     const checked = !(input && input.checked);
     if (input) {
       input.checked = checked;
     }
+
     const updates = [
       new Dictionary({ key: 'depen', value: checked ? 'yes' : 'no', default: 'no' }),
       new Dictionary({ key: 'page', value: 0 }),
     ];
 
-    // API conflicts on independents=true with dependencies filter.
     if (checked && getSelectedDependencyIds().length > 0) {
       clearSelectedDependencies();
       updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
@@ -164,47 +203,51 @@
 
     URLManager.updateParams(updates);
     resetCatalog();
-  };
+  }
 
-  window.stateMachineGameSelect = function stateMachineGameSelect() {
-    const setting = this instanceof Element ? this : getGameSetting();
+  function toggleGameMode(settingElement) {
+    const setting = settingElement instanceof Element ? settingElement : getGameSetting();
     const input = setting ? setting.querySelector('input') : null;
-
     const params = URLManager.getParams();
     const checked = !(input && input.checked);
     const hasDependencies =
       getSelectedDependencyIds().length > 0 || parseDependenciesParam(params.get('dependencies', '')).length > 0;
 
-    if (!checked && params.get('game', '') == '' && !hasDependencies) {
+    if (!checked && params.get('game', '') === '' && !hasDependencies) {
       const label = setting ? setting.querySelector('label') : null;
       if (label) {
         label.textContent = 'Выберете игру!';
       }
-    } else {
-      if (input) {
-        input.checked = checked;
-      }
-      sortOptionsList(checked);
-      const updates = [
-        new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
-        new Dictionary({ key: 'page', value: 0 }),
-      ];
-      if (checked) {
-        // В режиме игр фильтр по модам не применяется.
-        clearSelectedDependencies();
-        updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
-      }
-      URLManager.updateParams(updates);
-      syncDependenceSearchGame(checked ? '' : params.get('game', ''));
-      const settingsCatalog = document.getElementById('settings-catalog');
-      if (settingsCatalog) {
-        settingsCatalog.classList.remove('full-screen');
-      }
-      resetCatalog();
+      return;
     }
-  };
 
-  window.gameSelect = function gameSelect(gameID) {
+    if (input) {
+      input.checked = checked;
+    }
+
+    sortOptionsList(checked);
+    const updates = [
+      new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ];
+
+    if (checked) {
+      clearSelectedDependencies();
+      updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+    }
+
+    URLManager.updateParams(updates);
+    syncDependenceSearchGame(checked ? '' : params.get('game', ''));
+
+    const settingsCatalog = document.getElementById('settings-catalog');
+    if (settingsCatalog) {
+      settingsCatalog.classList.remove('full-screen');
+    }
+
+    resetCatalog();
+  }
+
+  function selectGame(gameID) {
     sortOptionsList(false);
     URLManager.updateParams([
       new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
@@ -225,17 +268,20 @@
         settingLabel.textContent = previewTitle.textContent || '';
       }
     }
+
     syncTagsSearchGame(gameID);
     syncDependenceSearchGame(gameID);
+    pendingTagSync = false;
+
     const tagsEditor = getTagsEditor();
     if (tagsEditor) {
       tagsEditor.clearVisibleSelection();
     }
 
     resetCatalog();
-  };
+  }
 
-  window.nameSearch = function nameSearch(input) {
+  function searchByName(input) {
     const searchInput = input instanceof Element
       ? input
       : document.querySelector(input || '#search-in-catalog-menu');
@@ -249,23 +295,23 @@
     ]);
 
     resetCatalog();
-  };
+  }
 
-  window.refreshCatalog = function refreshCatalog(input) {
+  function refreshCatalogList(input) {
     const menuInput = document.getElementById('search-in-catalog-menu');
     const headerInput = document.getElementById('search-in-catalog-header');
     const searchInput = input || menuInput || headerInput;
 
     if (searchInput) {
-      window.nameSearch(searchInput);
+      searchByName(searchInput);
       return;
     }
 
     URLManager.updateParam('page', 0);
     resetCatalog();
-  };
+  }
 
-  window.sortSelect = function sortSelect(input) {
+  function applySortSelect(input) {
     const select = input instanceof Element ? input : document.getElementById('sort-select');
     if (!select) return;
 
@@ -281,9 +327,9 @@
     ]);
 
     resetCatalog();
-  };
+  }
 
-  window.invertSort = function invertSort(button) {
+  function applyInvertSort(button) {
     const toggleButton = button instanceof Element ? button : document.querySelector('button#sort-select-invert');
     const select = document.querySelector('select#sort-select');
     if (!toggleButton || !select) return;
@@ -299,9 +345,9 @@
     ]);
 
     resetCatalog();
-  };
+  }
 
-  window.clearUserFilter = function clearUserFilter() {
+  function clearUserFilter() {
     URLManager.updateParams([
       new Dictionary({ key: 'user', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
@@ -309,19 +355,18 @@
     const filterEl = document.getElementById('catalog-user-filter');
     if (filterEl) filterEl.remove();
     resetCatalog();
-  };
+  }
 
   async function render(params) {
     const res = await Catalog.addPage(params);
     try {
       if (res.results && res.results.length > 0) {
-        const ownerType = params.get('sgame', 'yes') == 'yes' ? 'games' : 'mods';
+        const ownerType = params.get('sgame', 'yes') === 'yes' ? 'games' : 'mods';
         await Cards.setterImgs(params.get('page', 0), ownerType);
         return true;
       }
       return false;
     } catch (error) {
-      console.log(error);
       return false;
     }
   }
@@ -341,6 +386,132 @@
     }
   }
 
+  function warnAboutCardCount(countElems) {
+    if (countElems >= 500 && warns[0] === false) {
+      warns[0] = true;
+      new Toast({
+        title: 'Рекомендуем обновить страницу',
+        text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!',
+        theme: 'warning',
+      });
+    } else if (countElems > 700 && warns[1] === false) {
+      warns[1] = true;
+      new Toast({
+        title: 'Обновите страницу',
+        text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!!',
+        theme: 'error',
+      });
+    } else if (countElems > 1000 && warns[2] === false) {
+      warns[2] = true;
+      new Toast({
+        title: 'Обновите страницу!',
+        text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!!!',
+        theme: 'critical',
+      });
+    }
+  }
+
+  async function loadNextPage() {
+    if (blocking || outOfCards) return;
+    blocking = true;
+
+    try {
+      const params = URLManager.getParams();
+      params.set('page', Number(params.get('page', 0)) + 1);
+
+      const renderRes = await render(params);
+      if (renderRes) {
+        URLManager.updateParam('page', Number(params.get('page', 0)));
+        warnAboutCardCount(document.querySelectorAll('.card').length);
+      } else {
+        outOfCards = true;
+        setEndOfCardsVisible(true);
+      }
+    } finally {
+      blocking = false;
+    }
+  }
+
+  function ensureInfiniteScrollSentinel() {
+    if (infiniteScrollSentinel && infiniteScrollSentinel.isConnected) {
+      return infiniteScrollSentinel;
+    }
+
+    const cardsContainer = document.getElementById('cards-container');
+    if (!cardsContainer) return null;
+
+    infiniteScrollSentinel = document.createElement('div');
+    infiniteScrollSentinel.id = 'catalog-scroll-sentinel';
+    infiniteScrollSentinel.setAttribute('aria-hidden', 'true');
+    infiniteScrollSentinel.style.height = '1px';
+    infiniteScrollSentinel.style.opacity = '0';
+    infiniteScrollSentinel.style.pointerEvents = 'none';
+    cardsContainer.appendChild(infiniteScrollSentinel);
+    return infiniteScrollSentinel;
+  }
+
+  function bindInfiniteScroll() {
+    const sentinel = ensureInfiniteScrollSentinel();
+    if (!sentinel || !window.IntersectionObserver) return;
+
+    if (infiniteScrollObserver) {
+      infiniteScrollObserver.disconnect();
+    }
+
+    infiniteScrollObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          loadNextPage();
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: '0px 0px 2500px 0px',
+      threshold: 0,
+    });
+
+    infiniteScrollObserver.observe(sentinel);
+  }
+
+  function handleTagsSelectionChange() {
+    const editor = getTagsEditor();
+    if (!editor) return;
+
+    if (editor.isOpen()) {
+      pendingTagSync = true;
+      return;
+    }
+
+    pendingTagSync = false;
+    syncTagsUrlFromSelected(getSelectedTagIds(), true);
+  }
+
+  function handleTagsOpenChange(event) {
+    if (!event.detail || event.detail.open !== false || !pendingTagSync) return;
+    pendingTagSync = false;
+    syncTagsUrlFromSelected(getSelectedTagIds(), true);
+  }
+
+  function handleDependenciesSelectionChange() {
+    if (suppressDependencySync) return;
+    syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
+  }
+
+  function bindPickerEvents() {
+    const tagsRoot = document.getElementById('catalog-tags-editor');
+    if (tagsRoot && tagsRoot.dataset.catalogBound !== '1') {
+      tagsRoot.dataset.catalogBound = '1';
+      tagsRoot.addEventListener('ow:picker-selection-change', handleTagsSelectionChange);
+      tagsRoot.addEventListener('ow:picker-open-change', handleTagsOpenChange);
+    }
+
+    const dependenciesRoot = document.getElementById('catalog-dependencies-editor');
+    if (dependenciesRoot && dependenciesRoot.dataset.catalogBound !== '1') {
+      dependenciesRoot.dataset.catalogBound = '1';
+      dependenciesRoot.addEventListener('ow:picker-selection-change', handleDependenciesSelectionChange);
+    }
+  }
+
   async function initCatalogPage() {
     let params = URLManager.getParams();
     const filterEl = document.getElementById('catalog-user-filter');
@@ -354,8 +525,7 @@
           new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
           new Dictionary({ key: 'page', value: 0 }),
         ]);
-        params.set('user', String(userId));
-        params.set('sgame', 'no');
+        params = URLManager.getParams();
       }
     }
 
@@ -379,9 +549,9 @@
       params = URLManager.getParams();
     }
 
-    const sgame = params.get('sgame', 'yes') == 'yes';
+    const sgame = params.get('sgame', 'yes') === 'yes';
 
-    setSettingChecked(getDependencySetting(), params.get('depen', 'no') == 'yes');
+    setSettingChecked(getDependencySetting(), params.get('depen', 'no') === 'yes');
     setSettingChecked(getGameSetting(), sgame);
     setCatalogSearchValues(params.get('name', ''));
     syncTagsSearchGame(params.get('game', ''));
@@ -394,7 +564,7 @@
     sortOptionsList(sgame);
     const tagsEditor = getTagsEditor();
     if (tagsEditor) {
-      tagsEditor.setDefaultSelected(
+      await tagsEditor.setDefaultSelected(
         params.get('tags', '')
           .replaceAll('_', ',')
           .split(',')
@@ -406,6 +576,7 @@
           }),
       );
     }
+
     const sortMode = params.get('sort', 'iDOWNLOADS');
     const invertButton = document.querySelector('button#sort-select-invert');
     if (invertButton) {
@@ -416,7 +587,7 @@
       sortSelectInput.value = sortMode.replace('i', '');
     }
 
-    if (params.get('game', '') != '') {
+    if (params.get('game', '') !== '') {
       const gameListPath = apiPaths.game.list.path;
       const resourcesPath = apiPaths.resource.list.path;
       const gameIds = '[' + params.get('game', '') + ']';
@@ -444,78 +615,17 @@
       }
     }
 
+    bindPickerEvents();
+    bindInfiniteScroll();
     resetCatalog();
   }
 
-  window.addEventListener('ow:dependencies-changed', function () {
-    if (suppressDependencySync) return;
-    syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
+  document.addEventListener('ow:catalog-game-select', function (event) {
+    const gameId = event.detail && event.detail.gameId ? String(event.detail.gameId) : '';
+    if (gameId) {
+      selectGame(gameId);
+    }
   });
-
-  setInterval(function () {
-    const tagsEditor = getTagsEditor();
-    if (tagsEditor && !tagsEditor.isOpen()) {
-      const params = URLManager.getParams();
-      const tags = tagsEditor.getState().visible.map(function (item) {
-        return item.id;
-      });
-
-      if (String(tags).replaceAll(',', '_') != params.get('tags', '')) {
-        URLManager.updateParams([
-          new Dictionary({ key: 'tags', value: String(tags).replaceAll(',', '_'), default: '' }),
-          new Dictionary({ key: 'page', value: 0 }),
-        ]);
-        resetCatalog();
-      }
-    }
-  }, 1000);
-
-  setInterval(async () => {
-    if (
-      window.innerHeight + window.scrollY >= document.body.offsetHeight - 2500 &&
-      !blocking &&
-      !outOfCards
-    ) {
-      blocking = true;
-
-      const params = URLManager.getParams();
-      params.set('page', Number(params.get('page', 0)) + 1);
-
-      const renderRes = await render(params);
-
-      if (renderRes) {
-        URLManager.updateParam('page', Number(params.get('page', 0)));
-        const countElems = document.querySelectorAll('.card').length;
-        if (countElems >= 500 && warns[0] === false) {
-          warns[0] = true;
-          new Toast({
-            title: 'Рекомендуем обновить страницу',
-            text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!',
-            theme: 'warning',
-          });
-        } else if (countElems > 700 && warns[1] === false) {
-          warns[1] = true;
-          new Toast({
-            title: 'Обновите страницу',
-            text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!!',
-            theme: 'error',
-          });
-        } else if (countElems > 1000 && warns[2] === false) {
-          warns[2] = true;
-          new Toast({
-            title: 'Обновите страницу!',
-            text: 'На странице ' + countElems + ' карточек из-за чего рендер замедляется!!!',
-            theme: 'critical',
-          });
-        }
-      } else {
-        outOfCards = true;
-        setEndOfCardsVisible(true);
-      }
-
-      blocking = false;
-    }
-  }, 2000);
 
   document.addEventListener('click', function (event) {
     const target = event.target instanceof Element ? event.target.closest('[data-action]') : null;
@@ -532,29 +642,29 @@
     }
 
     if (action === 'catalog-clear-user') {
-      window.clearUserFilter();
+      clearUserFilter();
       return;
     }
 
     if (action === 'catalog-refresh') {
       const input = document.querySelector(target.dataset.target || '');
-      window.refreshCatalog(input);
+      refreshCatalogList(input);
       return;
     }
 
     if (action === 'catalog-sort-invert') {
       target.classList.toggle('toggled');
-      window.invertSort(target);
+      applyInvertSort(target);
       return;
     }
 
     if (action === 'catalog-toggle-game-mode') {
-      window.stateMachineGameSelect.call(target);
+      toggleGameMode(target);
       return;
     }
 
     if (action === 'catalog-toggle-independent') {
-      window.undependencyMod.call(target);
+      toggleIndependent(target);
     }
   });
 
@@ -563,12 +673,12 @@
     if (!(target instanceof Element)) return;
 
     if (target.matches('[data-action="catalog-search"]')) {
-      window.nameSearch(target);
+      searchByName(target);
       return;
     }
 
     if (target.matches('[data-action="catalog-sort-select"]')) {
-      window.sortSelect(target);
+      applySortSelect(target);
     }
   });
 

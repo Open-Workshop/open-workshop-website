@@ -12,10 +12,24 @@
  */
 
 (function () {
+  let configCache = null;
+
+  function readConfigScript() {
+    const configNode = document.getElementById('ow-config');
+    if (!configNode) return {};
+
+    try {
+      return JSON.parse(configNode.textContent || '{}');
+    } catch (error) {
+      return {};
+    }
+  }
+
   function getConfig() {
-    const cfg = window.OW || {};
-    window.owConfig = cfg;
-    return cfg;
+    if (configCache == null) {
+      configCache = readConfigScript();
+    }
+    return configCache;
   }
 
   function getApiPaths() {

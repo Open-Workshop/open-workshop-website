@@ -1,41 +1,6 @@
-<section progressuploadmod style="display: none; margin: 4pt; width: 95%;">
+<section progressuploadmod data-upload-progress-root hidden style="margin: 4pt; width: 95%;">
     <div class="progressbarWrapper">
-        <span id="greenBar"></span>
-        <p id="greenBarText"></p>
+        <span id="greenBar" data-upload-progress-bar></span>
+        <p id="greenBarText" data-upload-progress-text></p>
     </div>
 </section>
-<script>
-    const elem = document.querySelector("span#greenBar");
-    const text = document.querySelector("p#greenBarText");
-    const bar = document.querySelector('section[progressuploadmod]');
-
-    function uploadStart() {
-        if (text) {
-            text.textContent = "Начинаем...";
-        }
-        if (elem) {
-            elem.style.width = "0%";
-        }
-        if (bar) {
-            bar.style.display = "";
-        }
-    }
-    function progressUpdate(percent) {
-        if (elem) {
-            elem.style.width = percent + "%";
-        }
-        const roundedPercent = Math.round(percent);
-        if (text) {
-            if (roundedPercent >= 100) {
-                text.textContent = "Ещё мгновение...";
-            } else {
-                text.textContent = roundedPercent + "%";
-            }
-        }
-    }
-    function uploadComplete() {
-        if (bar) {
-            bar.style.display = "none";
-        }
-    }
-</script>

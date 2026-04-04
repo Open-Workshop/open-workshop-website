@@ -223,6 +223,22 @@ blockquote > .light {
   text-align: center;
 }
 
+.ow-relative-time-badge {
+  background-color: #0000007d;
+  padding-left: 2pt;
+  padding-right: 2pt;
+  border-radius: 4pt;
+  display: inline-block;
+}
+
+.ow-relative-time-badge--inline {
+  margin-left: 3pt;
+}
+
+.ow-relative-time-badge--stacked {
+  margin-top: 4pt;
+}
+
 @media (max-width: 699px) {
   .mod-container {
     display: block;
@@ -311,4 +327,3 @@ blockquote > .light {
 .none-display {
   display: none !important;
 }
-

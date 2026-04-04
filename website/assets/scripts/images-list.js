@@ -1,125 +1,135 @@
-// create pager list items
-var sliderImage = document.querySelectorAll('.slider__images-image');
-var sliderPagers = document.querySelectorAll('.js__slider__pagers');
+(function () {
+  const AUTOPLAY_DELAY_MS = 100000;
 
-var sliderImages = document.querySelector('ul.js__slider__images');
-var sliderImagesItems = document.querySelectorAll('.slider__images-item');
-var sliderSpeed = 100000;//10000;
-var sliderTarget;
+  function createSlider(root) {
+    if (!(root instanceof Element) || root.dataset.sliderBound === '1') return null;
+    root.dataset.sliderBound = '1';
 
-var sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
-var lastElem = sliderPagersList.length - 1;
-function renderPagesSelect() {
-  if (!sliderPagers || sliderPagers.length === 0) {
-    sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
-    lastElem = sliderPagersList.length - 1;
-    updateEmptyState();
-    return;
-  }
-  sliderPagers[0].innerHTML = '';
-  sliderImage.forEach(function (image, index) {
-    var listItem = document.createElement('li');
-    listItem.textContent = index + 1;
-    sliderPagers[0].appendChild(listItem);
-  });
-  sliderPagersList = document.querySelectorAll('ol.js__slider__pagers li');
-  lastElem = sliderPagersList.length - 1;
-  
-  // pager controls
-  sliderPagersList.forEach(function (pager) {
-    pager.addEventListener('click', function () {
-      if (!pager.classList.contains('active')) {
-        sliderTarget = Array.from(sliderPagersList).indexOf(pager);
-        sliderResponse(sliderTarget);
-        resetTiming();
+    const imagesList = root.querySelector('.js__slider__images');
+    const pagersRoot = root.querySelector('.js__slider__pagers');
+    if (!imagesList) return null;
+
+    let currentIndex = 0;
+    let autoplayId = 0;
+
+    function getItems() {
+      return Array.from(root.querySelectorAll('.slider__images-item'));
+    }
+
+    function getPagers() {
+      return Array.from(root.querySelectorAll('.js__slider__pagers li'));
+    }
+
+    function updateEmptyState() {
+      const hasImages = getItems().length > 0;
+      const editEmpty = document.getElementById('no-screenshots-edit');
+      const noImgsPlaceholder = document.getElementById('no-screenshots-error');
+
+      if (editEmpty) {
+        editEmpty.style.display = hasImages ? 'none' : 'flex';
+      }
+
+      if (noImgsPlaceholder) {
+        noImgsPlaceholder.style.display = hasImages ? 'none' : 'flex';
+        imagesList.style.display = hasImages ? 'block' : 'none';
+      }
+    }
+
+    function renderPagers() {
+      if (!pagersRoot) {
+        updateEmptyState();
+        return;
+      }
+
+      pagersRoot.innerHTML = '';
+      getItems().forEach(function (item, index) {
+        const listItem = document.createElement('li');
+        listItem.textContent = index + 1;
+        listItem.addEventListener('click', function () {
+          if (currentIndex === index) return;
+          show(index);
+          restartAutoplay();
+        });
+        pagersRoot.appendChild(listItem);
+      });
+
+      updateEmptyState();
+    }
+
+    function show(nextIndex) {
+      const items = getItems();
+      const pagers = getPagers();
+
+      if (!items.length) {
+        document.dispatchEvent(new CustomEvent('noscreenshotsavailable'));
+        return;
+      }
+
+      currentIndex = Math.max(0, Math.min(nextIndex, items.length - 1));
+      items.forEach(function (item, index) {
+        const active = index === currentIndex;
+        item.style.display = active ? 'flex' : 'none';
+        if (active) {
+          item.dispatchEvent(new CustomEvent('onscreenshotselect', { bubbles: true }));
+        }
+      });
+      pagers.forEach(function (pager, index) {
+        pager.classList.toggle('active', index === currentIndex);
+      });
+    }
+
+    function stopAutoplay() {
+      if (!autoplayId) return;
+      window.clearInterval(autoplayId);
+      autoplayId = 0;
+    }
+
+    function startAutoplay() {
+      stopAutoplay();
+
+      if (document.hidden || getItems().length <= 1) return;
+      autoplayId = window.setInterval(function () {
+        const items = getItems();
+        if (!items.length || document.hidden) return;
+        show((currentIndex + 1) % items.length);
+      }, AUTOPLAY_DELAY_MS);
+    }
+
+    function restartAutoplay() {
+      startAutoplay();
+    }
+
+    function init() {
+      renderPagers();
+      show(0);
+      startAutoplay();
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        stopAutoplay();
+      } else {
+        startAutoplay();
       }
     });
-  });
-  
-  updateEmptyState();
-}
 
-function updateEmptyState() {
-  var hasImages = sliderImagesItems.length > 0;
-  const editEmpty = document.getElementById('no-screenshots-edit');
-  if (editEmpty) {
-    editEmpty.style.display = hasImages ? 'none' : 'flex';
+    init();
+    return {
+      refresh() {
+        renderPagers();
+        show(currentIndex);
+        startAutoplay();
+      },
+    };
   }
 
-  const noImgsPlaceholder = document.getElementById('no-screenshots-error');
-  if (noImgsPlaceholder) {
-    noImgsPlaceholder.style.display = hasImages ? 'none' : 'flex';
-    if (sliderImages) {
-      sliderImages.style.display = hasImages ? 'block' : 'none';
-    }
+  function initSliders() {
+    document.querySelectorAll('.slider').forEach(createSlider);
   }
-}
 
-function allResetVars() {
-  sliderImage = document.querySelectorAll('.slider__images-image');
-  sliderPagers = document.querySelectorAll('.js__slider__pagers');
-  sliderImages = document.querySelector('ul.js__slider__images');
-  sliderImagesItems = document.querySelectorAll('.slider__images-item');
-}
-
-// set up first slide
-function initSlider() {
-  renderPagesSelect();
-  sliderTarget = 0
-  sliderResponse(0)
-}
-
-window.addEventListener('load', function(){
-  renderPagesSelect();
-  sliderResponse(sliderTarget)
-});
-
-
-// transition function
-function sliderResponse(sliderTarget) {
-  sliderImagesItems.forEach(function (item, index) {
-    if (index === sliderTarget) {
-      item.style.display = 'flex';
-      console.log(item);
-      item.dispatchEvent(new CustomEvent('onscreenshotselect', { bubbles: true }));
-    } else {
-      item.style.display = 'none';
-    }
-  });
-  sliderPagersList.forEach(function (pager, index) {
-    if (index === sliderTarget) {
-      pager.classList.add('active');
-    } else {
-      pager.classList.remove('active');
-    }
-  });
-
-  if (sliderImagesItems.length == 0) {
-    document.dispatchEvent(new CustomEvent('noscreenshotsavailable'));
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSliders);
+  } else {
+    initSliders();
   }
-}
-
-// slider timing
-function sliderTiming() {
-  sliderTarget = Array.from(sliderPagersList).indexOf(document.querySelector('.js__slider__pagers li.active'));
-  sliderTarget === lastElem ? (sliderTarget = 0) : (sliderTarget = sliderTarget + 1);
-  sliderResponse(sliderTarget);
-}
-
-// slider autoplay
-var timingRun = setInterval(function() {
-    sliderTiming();
-}, sliderSpeed);
-
-function resetTiming() {
-    clearInterval(timingRun);
-    timingRun = setInterval(function() {
-      sliderTiming();
-    }, sliderSpeed);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initSlider);
-} else {
-  initSlider();
-}
+})();

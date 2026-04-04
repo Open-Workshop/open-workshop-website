@@ -1,3 +1,45 @@
+(function () {
+    function fallbackCardShow(cardClick) {
+        const cards = cardClick instanceof Element ? cardClick.closest('div.cards') : null;
+        if (!cards) return;
+        cards.classList.add('showing');
+        cards.querySelectorAll('.card').forEach(function (card) {
+            card.classList.remove('show');
+        });
+        const currentCard = cardClick.closest('.card');
+        if (currentCard) {
+            currentCard.classList.add('show');
+        }
+    }
+
+    function fallbackCardsCancel(target) {
+        const cards = target instanceof Element
+            ? target.closest('div.cards')
+            : document.querySelector('div.cards.showing, div.mod-edit__catalog-cards');
+        if (!cards) return;
+        cards.classList.remove('showing');
+        cards.querySelectorAll('.card').forEach(function (card) {
+            card.classList.remove('show');
+        });
+    }
+
+    function callCatalogMethod(methodName, fallback, args) {
+        const catalog = window.Catalog;
+        if (catalog && typeof catalog[methodName] === 'function') {
+            return catalog[methodName].apply(catalog, args || []);
+        }
+        if (typeof fallback === 'function') {
+            return fallback.apply(null, args || []);
+        }
+        return undefined;
+    }
+
+    function dispatchGameSelect(gameId) {
+        document.dispatchEvent(new CustomEvent('ow:catalog-game-select', {
+            bubbles: true,
+            detail: { gameId: String(gameId) }
+        }));
+    }
 
 window.Cards = {
     create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false) {
@@ -11,7 +53,9 @@ window.Cards = {
         // Создаем кликабельную часть
         const cardClick = document.createElement('div');
         cardClick.classList.add('card-click');
-        cardClick.addEventListener('click', function () { Catalog.cardShow(this) });
+        cardClick.addEventListener('click', function () {
+            callCatalogMethod('cardShow', fallbackCardShow, [this]);
+        });
 
         // В кликабельной части - картинка
         const image = document.createElement('img');
@@ -26,7 +70,9 @@ window.Cards = {
         image.id = "preview-logo-card-"+cardData.id
         image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
         image.addEventListener('error', function () { handlerImgErrorLoad(this) });
-        image.addEventListener('load', function () { Catalog.masonry() });
+        image.addEventListener('load', function () {
+            callCatalogMethod('masonry', function () {}, []);
+        });
 
         cardClick.appendChild(image);
 
@@ -138,7 +184,9 @@ window.Cards = {
         if (isGame) {
             const tog = document.createElement('button');
             tog.id = "togamelink"+cardData.id;
-            tog.addEventListener('click', function () { gameSelect(cardData.id) });
+            tog.addEventListener('click', function () {
+                dispatchGameSelect(cardData.id);
+            });
 
             const to_img = document.createElement('img');
             to_img.src = "/assets/images/telescope.webp";
@@ -152,7 +200,9 @@ window.Cards = {
 
         const tog = document.createElement('button');
         tog.id = "togamelink"+cardData.id;
-        tog.addEventListener('click', function () { Catalog.cardsCancel() });
+        tog.addEventListener('click', function () {
+            callCatalogMethod('cardsCancel', fallbackCardsCancel, [card]);
+        });
 
         const to_img = document.createElement('img');
         to_img.src = "/assets/images/svg/white/cancel.svg";
@@ -171,9 +221,7 @@ window.Cards = {
         return card;
     },
     setterImgs: async function(page, owner_type = "mods") {
-        console.log('setterImgs', page)
         let ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
-        console.log('setterImgs', ids)
 
         const { getApiPaths, apiUrl } = window.OWCore;
         const apiPaths = getApiPaths();
@@ -203,7 +251,7 @@ window.Cards = {
                 }
             }
         }
-        for (id of ids) {
+        for (const id of ids) {
             const img = document.getElementById("preview-logo-card-"+id)
             if (img) {
                 changeImage(img, "/assets/images/image-not-found.webp");
@@ -211,3 +259,4 @@ window.Cards = {
         }
     },
 }
+})();

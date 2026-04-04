@@ -3,7 +3,7 @@
   if (!root) return;
 
   const modID = parseInt(root.dataset.modId, 10);
-  const ow = window.OW || {};
+  const ow = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
   const apiPaths = window.OWCore.getApiPaths();
   const publicIcons = (ow.assets && ow.assets.icons && ow.assets.icons.public) || {
     0: '/assets/images/svg/white/eye.svg',
@@ -28,6 +28,9 @@
   const mediaManagerState = {
     deleted: new Set(),
   };
+  const uploadProgress = window.OWUI
+    ? window.OWUI.createUploadProgress(root.querySelector('[data-upload-progress-root]'))
+    : null;
 
   function getDescModuleRoot(moduleKey) {
     return document.querySelector(`.mod-edit__content[data-desc-module="${moduleKey}"] .desc-edit`);
@@ -51,36 +54,33 @@
   }
 
   function showUploadProgress() {
-    if (typeof uploadStart === 'function') {
-      uploadStart();
+    if (uploadProgress) {
+      uploadProgress.start();
       return;
     }
 
-    const wrap = document.getElementById('mod-upload-progress-wrap');
+    const wrap = root.querySelector('[data-upload-progress-root]');
     if (wrap) wrap.hidden = false;
   }
 
   function setUploadStatus(text) {
     const value = text || '';
-    const greenBarText = document.getElementById('greenBarText');
-    if (greenBarText) {
-      greenBarText.textContent = value;
+    if (uploadProgress) {
+      uploadProgress.setLabel(value);
       return;
     }
-
-    const el = document.getElementById('mod-upload-status');
+    const el = root.querySelector('[data-upload-progress-text]');
     if (el) el.textContent = value;
   }
 
   function setUploadProgress(percent) {
     const value = Number.isFinite(percent) ? percent : 0;
-    if (typeof progressUpdate === 'function') {
-      progressUpdate(value);
+    if (uploadProgress) {
+      uploadProgress.setProgress(value);
       return;
     }
-
-    const el = document.getElementById('mod-upload-progress');
-    if (el) el.value = value;
+    const el = root.querySelector('[data-upload-progress-bar]');
+    if (el) el.style.width = value + '%';
   }
 
   function updateStage(stage) {
@@ -232,53 +232,25 @@
     return null;
   }
 
-  function updateCatalogLogo() {
-    const logoHref = getLogoUrlFromMedia();
-    if (!logoHref) return;
-    const previewLogo = document.getElementById(`preview-logo-card-${modID}`);
-    if (previewLogo) {
-      previewLogo.setAttribute('src', logoHref);
-    }
+  function getCatalogPreviewLogo() {
+    return getLogoUrlFromMedia() || '/assets/images/loading.webp';
   }
 
-  function ensureCatalogPreviewApi() {
-    if (window.Catalog) return;
-
-    window.Catalog = {
-      masonry: function () {},
-      cardShow: function (cardClick) {
-        const cards = cardClick instanceof Element ? cardClick.closest('div.cards') : null;
-        if (!cards) return;
-        cards.classList.add('showing');
-        cards.querySelectorAll('.card').forEach(function (card) {
-          card.classList.remove('show');
-        });
-        const currentCard = cardClick.closest('.card');
-        if (currentCard) {
-          currentCard.classList.add('show');
-        }
-      },
-      cardsCancel: function () {
-        const cards = document.querySelector('div.mod-edit__catalog-cards');
-        if (!cards) return;
-        cards.classList.remove('showing');
-        cards.querySelectorAll('.card').forEach(function (card) {
-          card.classList.remove('show');
-        });
-      },
-    };
+  function updateCatalogLogo() {
+    const previewLogo = document.getElementById(`preview-logo-card-${modID}`);
+    if (previewLogo) {
+      previewLogo.setAttribute('src', getCatalogPreviewLogo());
+    }
   }
 
   function buildCatalogPreviewCard(shortDescription, titleValue) {
     const cardsContainer = document.querySelector('div.mod-edit__catalog-cards');
     if (!cardsContainer || !window.Cards || typeof window.Cards.create !== 'function') return null;
 
-    ensureCatalogPreviewApi();
-
     const sizeText = cardsContainer.dataset.modSize || '';
     const gameId = cardsContainer.dataset.gameId || '';
     const doplink = gameId ? `?sgame=no&game=${encodeURIComponent(gameId)}` : '';
-    const logoHref = getLogoUrlFromMedia() || '/assets/images/loading.webp';
+    const logoHref = getCatalogPreviewLogo();
     const tags = sizeText
       ? [{ text: '📦', description: 'Размер мода', value: sizeText }]
       : [];
@@ -326,11 +298,13 @@
   function initCatalogPreview() {
     const catalogDescRoot = getDescModuleRoot('catalog');
     const titleInput = document.querySelector('input.title-mod');
+    const mediaManager = document.getElementById('media-manager');
     if (!catalogDescRoot) return;
 
-    const initialShortDesc = getDescModuleValue('catalog');
-    const initialTitle = titleInput ? titleInput.value : '';
-    const card = buildCatalogPreviewCard(initialShortDesc, initialTitle);
+    const card = buildCatalogPreviewCard(
+      getDescModuleValue('catalog'),
+      titleInput ? titleInput.value : '',
+    );
     if (!card) return;
 
     const cardDesc = card.querySelector('article');
@@ -338,28 +312,35 @@
 
     if (!cardDesc || !cardTitle) return;
 
-    cardDesc.dataset.cashData = initialShortDesc;
-    Formating.renderInto(cardDesc, initialShortDesc);
-    cardTitle.dataset.cashData = initialTitle;
-    cardTitle.setAttribute('title', initialTitle);
-    cardTitle.textContent = initialTitle;
+    function renderPreviewDescription() {
+      Formating.renderInto(cardDesc, getDescModuleValue('catalog'));
+    }
 
-    setInterval(function () {
-      const dataText = getDescModuleValue('catalog');
-      if (cardDesc.dataset.cashData != dataText) {
-        cardDesc.dataset.cashData = dataText;
-        Formating.renderInto(cardDesc, dataText);
-      }
-
+    function renderPreviewTitle() {
       const nextTitle = titleInput ? titleInput.value : '';
-      if (cardTitle.dataset.cashData != nextTitle) {
-        cardTitle.dataset.cashData = nextTitle;
-        cardTitle.setAttribute('title', nextTitle);
-        cardTitle.textContent = nextTitle;
-      }
-    }, 300);
+      cardTitle.setAttribute('title', nextTitle);
+      cardTitle.textContent = nextTitle;
+    }
 
+    renderPreviewDescription();
+    renderPreviewTitle();
     updateCatalogLogo();
+
+    if (titleInput) {
+      titleInput.addEventListener('input', renderPreviewTitle);
+      titleInput.addEventListener('change', renderPreviewTitle);
+    }
+
+    if (window.OWDescEditors) {
+      const descEditor = window.OWDescEditors.get(catalogDescRoot);
+      if (descEditor) {
+        descEditor.onChange(renderPreviewDescription);
+      }
+    }
+
+    if (mediaManager) {
+      mediaManager.addEventListener('ow:media-manager-change', updateCatalogLogo);
+    }
   }
 
   function initMediaManager() {
@@ -441,6 +422,15 @@
       if (countEl) countEl.textContent = count;
       if (empty) empty.style.display = count ? 'none' : 'flex';
       updateLogoState();
+    }
+
+    function emitMediaManagerChange() {
+      manager.dispatchEvent(new CustomEvent('ow:media-manager-change', {
+        bubbles: true,
+        detail: {
+          count: list.querySelectorAll('.media-item').length,
+        },
+      }));
     }
 
     function setMode(nextMode) {
@@ -541,6 +531,7 @@
       }
       updateCount();
       updateCatalogLogo();
+      emitMediaManagerChange();
     }
 
     function addUrlItem() {
@@ -652,6 +643,7 @@
         updateBadge(target.closest('.media-item'), target.value);
         updateLogoState();
         updateCatalogLogo();
+        emitMediaManagerChange();
       }
     });
 
@@ -673,6 +665,7 @@
         }
         const typeSelect = item.querySelector('.media-item__type');
         if (typeSelect && typeSelect.value === 'logo') updateCatalogLogo();
+        emitMediaManagerChange();
       }
     });
 
@@ -694,6 +687,7 @@
       }
       updateCount();
       updateCatalogLogo();
+      emitMediaManagerChange();
     });
 
     if (fileInput) {
@@ -707,6 +701,7 @@
 
     updateCount();
     setMode(mode);
+    emitMediaManagerChange();
   }
 
   function initPublicToggle() {

@@ -16,13 +16,11 @@ window.URLManager = {
         } else {
             urlParams.set(key, value);
         }
-        console.log(urlParams)
 
         window.history.pushState('', '', window.location.pathname + '?' + urlParams.toString());
     },
     // Принимает данные формата [{key: value, default: value}, ...] при этом словарь используется мой кастомный который в ow-logic.js
     updateParams: function(params) {
-        console.log(window.location.search)
         const urlParams = new URLSearchParams(window.location.search);
 
         params.forEach(param => {
@@ -33,7 +31,6 @@ window.URLManager = {
             }
         });
         
-        console.log(urlParams.toString())
         window.history.pushState('', '', window.location.pathname + '?' + urlParams.toString());
     },
     genString: function(params, replaceKeyMap = new Dictionary) {

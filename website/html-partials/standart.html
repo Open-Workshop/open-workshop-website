@@ -70,9 +70,7 @@
     <meta name="msvalidate.01" content="93E9A08A2C90737FB01BF7BE50B2433F" />
     <link href="/assets/styles/mini-parts/toast-modern.css" rel="stylesheet"/>
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
-    <script>
-      window.OW = {{ ow | tojson }};
-    </script>
+    <script id="ow-config" type="application/json">{{ ow | tojson }}</script>
   </head>
   <body manager-url="{{ ow.api.base }}">
     <!-- Yandex.Metrika counter -->
@@ -97,6 +95,7 @@
 
       <script src="/assets/scripts/ow-core.js"></script>
       <script src="/assets/scripts/ow-logic.js"></script>
+      <script src="/assets/scripts/ow-ui.js"></script>
       <script src="/assets/scripts/vendors/url-manager.js"></script>
       <script src="/assets/scripts/vendors/cookie-manager.js"></script>
       <script src="/assets/scripts/vendors/description-codec.js"></script>

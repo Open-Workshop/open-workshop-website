@@ -1,105 +1,155 @@
+(function () {
+  const AUTH_REQUEST_EVENT = 'ow:auth-request';
+  const AUTH_POLL_INTERVAL_MS = 250;
+  const AUTH_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 
-function serviceAuthorization(serviceUrl) {
-  const banner = {
-    title: 'Авторизация прервана',
-    text: 'Вы закрыли авторизационное окно',
-    theme: 'dark'
-  };
+  function clearCookie(name) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  }
 
-  authWindow(serviceUrl, banner);
-};
+  function getPopupPosition() {
+    return {
+      x: screen.width / 2 - 400 / 2,
+      y: screen.height / 2 - 570 / 2,
+    };
+  }
 
-function serviceConnect(serviceUrl) {
-  const banner = {
-    title: 'Подключение прервано',
-    text: 'Вы закрыли авторизационное окно',
-    theme: 'dark'
-  };
-
-  authWindow(serviceUrl, banner);
-};
-
-
-function authWindow(serviceUrl, bannerCloseWindow) {
-  var x = screen.width/2 - 400/2;
-  var y = screen.height/2 - 570/2;
-  
-  const win = window.open('/api/login-popup?f='+serviceUrl,
-      '_blank', 
-      'location=no,height=570,width=400,scrollbars=no,status=yes,left='+x+',top='+y
-  );
-
-  const AT = CookieManager.get('accessJS');
-  const interval = setInterval(() => {
-    if (win.closed) {
-      console.log("Окно закрыто :(");
-
-      clearInterval(interval);
-
-      window.setTimeout(() => {
-        new Toast(bannerCloseWindow)
-      }, 1000);
+  function getCloseBanner(type) {
+    if (type === 'connect') {
+      return {
+        title: 'Подключение прервано',
+        text: 'Вы закрыли авторизационное окно',
+        theme: 'dark'
+      };
     }
-    
-    console.log(AT, CookieManager.get("accessJS"))
-    if (CookieManager.has('accessJS') && (AT == null || AT != CookieManager.get("accessJS"))) {
-      console.log("Кука появилась!");
 
-      clearInterval(interval);
-      win.close();
+    return {
+      title: 'Авторизация прервана',
+      text: 'Вы закрыли авторизационное окно',
+      theme: 'dark'
+    };
+  }
 
-      location.reload();
-    }
-    if (CookieManager.has('popupLink')) {
-      console.log("Пользователь переходит на другую страницу!");
+  function openAuthPopup(serviceUrl) {
+    const popup = getPopupPosition();
+    return window.open(
+      '/api/login-popup?f=' + serviceUrl,
+      '_blank',
+      `location=no,height=570,width=400,scrollbars=no,status=yes,left=${popup.x},top=${popup.y}`
+    );
+  }
 
-      clearInterval(interval);
-      win.close();
+  function monitorAuthPopup(win, bannerCloseWindow) {
+    const initialAccessToken = CookieManager.get('accessJS');
+    const startedAt = Date.now();
 
-      const link = CookieManager.get("popupLink");
-      console.log(link)
-      document.cookie = "popupLink=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-
-      location.href = link;
-    }
-  }, 200);
-}
-
-function serviceDisconnect(service) {
-  const apiPaths = window.OWCore.getApiPaths();
-  const apiBase = window.OWCore.getApiBase();
-  const disconnectEndpoint = apiPaths.oauth.disconnect;
-  const url = `${apiBase}${disconnectEndpoint.path.replace('{service}', service)}`;
-  fetch(url, {
-    method: disconnectEndpoint.method
-  }).then(response => {
-    if (response.status === 200) {
-      console.log('Код ответа равен 200!');
-      location.reload();
-    } else {
-      console.log('Код ответа не равен 200');
-      response.text().then(text => {
-        banner_error_a = {
-          title: 'Ошибка',
-          text: text.substring(1, text.length - 1),
+    const intervalId = window.setInterval(function () {
+      if (Date.now() - startedAt > AUTH_POLL_TIMEOUT_MS) {
+        window.clearInterval(intervalId);
+        if (win && !win.closed) {
+          win.close();
+        }
+        new Toast({
+          title: 'Авторизация отменена',
+          text: 'Время ожидания истекло',
           theme: 'warning',
           autohide: true,
           interval: 6000
-        };
+        });
+        return;
+      }
 
-        new Toast(banner_error_a);
+      if (!win || win.closed) {
+        window.clearInterval(intervalId);
+        window.setTimeout(function () {
+          new Toast(bannerCloseWindow);
+        }, 1000);
+        return;
+      }
+
+      const currentAccessToken = CookieManager.get('accessJS');
+      if (CookieManager.has('accessJS') && (initialAccessToken == null || initialAccessToken !== currentAccessToken)) {
+        window.clearInterval(intervalId);
+        win.close();
+        location.reload();
+        return;
+      }
+
+      if (CookieManager.has('popupLink')) {
+        window.clearInterval(intervalId);
+        win.close();
+
+        const link = CookieManager.get('popupLink');
+        clearCookie('popupLink');
+        location.href = link;
+      }
+    }, AUTH_POLL_INTERVAL_MS);
+  }
+
+  function startAuthFlow(type, serviceUrl) {
+    if (!serviceUrl) return;
+
+    const popupWindow = openAuthPopup(serviceUrl);
+    if (!popupWindow) {
+      new Toast({
+        title: 'Окно заблокировано',
+        text: 'Разрешите всплывающие окна для продолжения',
+        theme: 'warning',
+        autohide: true,
+        interval: 6000
+      });
+      return;
+    }
+
+    monitorAuthPopup(popupWindow, getCloseBanner(type));
+  }
+
+  async function disconnectService(service) {
+    const apiPaths = window.OWCore.getApiPaths();
+    const apiBase = window.OWCore.getApiBase();
+    const disconnectEndpoint = apiPaths.oauth.disconnect;
+    const url = `${apiBase}${disconnectEndpoint.path.replace('{service}', service)}`;
+
+    try {
+      const response = await fetch(url, {
+        method: disconnectEndpoint.method
+      });
+
+      if (response.status === 200) {
+        location.reload();
+        return;
+      }
+
+      const text = await response.text().catch(function () {
+        return '';
+      });
+      new Toast({
+        title: 'Ошибка',
+        text: text.substring(1, text.length - 1),
+        theme: 'warning',
+        autohide: true,
+        interval: 6000
+      });
+    } catch (error) {
+      new Toast({
+        title: 'Ошибка',
+        text: 'При запросе на сервер произошла непредвиденная ошибка...',
+        theme: 'danger',
+        autohide: true,
+        interval: 6000
       });
     }
-  }).catch(error => {
-    console.error('Произошла ошибка при отправке запроса: ' + error);
-    banner_error_a = {
-      title: 'Ошибка',
-      text: 'При запросе на сервер произошла непредвиденная ошибка...',
-      theme: 'danger',
-      autohide: true,
-      interval: 6000
-    };
+  }
 
-    new Toast(banner_error_a)
+  document.addEventListener(AUTH_REQUEST_EVENT, function (event) {
+    const detail = event.detail || {};
+    if (detail.type === 'authorize' || detail.type === 'connect') {
+      startAuthFlow(detail.type, detail.serviceUrl || '');
+      return;
+    }
+
+    if (detail.type === 'disconnect') {
+      disconnectService(detail.service || '');
+    }
   });
-}
+})();

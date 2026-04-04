@@ -55,7 +55,6 @@ function handlerImgErrorLoad(element) {
         return;
     }
 
-    console.log('ImgErrorLoad', element);
     element.dataset.owFallbackApplied = fallbackSrc;
     element.setAttribute('src', fallbackSrc);
 }
@@ -105,7 +104,6 @@ function registerImportHeightElement(element) {
     if (!selector) return;
     const target = document.querySelector(selector);
     if (!target) {
-        console.warn('Элемент, соответствующий фильтру "' + selector + '", не найден.');
         return;
     }
     element.dataset.owImportBound = '1';

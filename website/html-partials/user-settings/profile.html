@@ -30,7 +30,7 @@
       </div>
       {% endif %}
       {% if user_data.general.mute %}
-      <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
+      <p title="Социальная активность пользователя ограничена из-за нарушения правил сервиса..." datejs="{{ user_data.general.mute_js }}" id="user-mute" class="user-mute-profile" data-relative-time="countdown" data-relative-prefix="через " data-relative-break="true" data-relative-hide-on-expire="true" data-relative-class="ow-relative-time-badge ow-relative-time-badge--stacked">Лишен голоса до<br><a class="tag-link" translate="no">{{ user_data.general.mute }}</a></p>
       {% endif %}
     </div>
   </div>

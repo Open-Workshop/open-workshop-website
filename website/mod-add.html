@@ -1,14 +1,12 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
-  <script>
-    window.OWAddPage = {{ add_page | tojson }};
-  </script>
   <link href="/assets/styles/pages/mod-add.css" rel="stylesheet"/>
 
   <main
     id="main-container"
     class="entity-add"
     data-add-kind="{{ add_page.kind }}"
+    data-add-page='{{ add_page | tojson | forceescape }}'
     style="--entity-add-max-width: {{ add_page.max_width | default('300pt') }};"
   >
       <h1 class="entity-add__title">{{ add_page.heading }}</h1>

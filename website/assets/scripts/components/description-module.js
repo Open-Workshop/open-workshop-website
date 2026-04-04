@@ -116,13 +116,4 @@
     getValue,
     toggleHelp,
   };
-
-  window.toggleHelpMode = function toggleHelpMode(button) {
-    const root = button instanceof Element
-      ? button.closest('.mod-edit__content')
-      : null;
-    const moduleKey = root ? root.getAttribute('data-desc-module') : null;
-    if (!moduleKey) return;
-    toggleHelp(moduleKey);
-  };
 })();
