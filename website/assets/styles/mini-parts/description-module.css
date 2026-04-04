@@ -2,32 +2,4 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-
-.mod-edit__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.mod-edit__toolbar .navigation > button {
-  min-width: 36px;
-  min-height: 36px;
-  padding: 6px;
-  border-radius: var(--radius-md);
-}
-
-.mod-edit__toolbar .navigation > button img {
-  width: 100%;
-}
-
-.mod-edit__content .desc-edit__surface {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border-top: none;
 }

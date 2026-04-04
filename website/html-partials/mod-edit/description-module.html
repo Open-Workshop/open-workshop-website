@@ -1,13 +1,5 @@
 <div class="mod-edit__content" data-desc-module="{{ module_key | default('default') }}">
-  <div class="mod-edit__toolbar standart-panel">
-    <div class="navigation mod-edit__toolbar-group">
-      <button type="button" class="dark mod-edit__help-toggle" data-desc-help-toggle>
-        <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
-      </button>
-    </div>
-  </div>
-
-  {% with limit=limit, placeholder=placeholder, init_text=init_text %}
+  {% with limit=limit, placeholder=placeholder, init_text=init_text, show_help_toggle=true %}
     {% include 'html-partials/desc-edit.html' %}
   {% endwith %}
 </div>

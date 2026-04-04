@@ -9,6 +9,22 @@
       data-desc-editor
       data-placeholder="{{ placeholder | default('Описание не может быть пустым!(') }}"
     ></div>
+
+    <div class="desc-edit__status">
+      <div class="desc-edit__status-bubble">
+        {% if show_help_toggle | default(false) %}
+        <button
+          type="button"
+          class="dark desc-edit__help-toggle"
+          data-desc-help-toggle
+          title="Показать гайд по форматированию"
+        >
+          <img src="/assets/images/info-ico.svg" alt="Иконка 'туториал'">
+        </button>
+        {% endif %}
+        <span class="desc-edit__limit" data-desc-limit title="Ограничение в {{ limit | default('256') }} символов описания!"></span>
+      </div>
+    </div>
   </div>
 
   <textarea
@@ -18,8 +34,4 @@
     spellcheck="false"
     hidden
   >{{ init_text | default('') }}</textarea>
-
-  <div class="desc-edit__status">
-    <span class="desc-edit__limit" data-desc-limit title="Ограничение в {{ limit | default('256') }} символов описания!"></span>
-  </div>
 </div>
