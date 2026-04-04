@@ -321,19 +321,41 @@ async def mod_view_and_edit(mod_id):
 
         plugins_more_count = max(plugins_database_size - len(plugins), 0)
 
-        page_html = handler.render(
-            "mod-edit.html" if edit_page else "mod.html",
-            info=info,
-            tags=tags,
-            resources=resources,
-            dependencies=dependencies,
-            plugins=plugins,
-            plugins_more_count=plugins_more_count,
-            right_edit=right_edit_mod,
-            authors=authors,
-            is_mod_data=not edit_page,
-            data=[info],
-        )
+        if edit_page:
+            edit_page_config = {
+                **app_config.EDIT_PAGE_CONFIGS["mod"],
+                "entity_id": info["result"]["id"],
+            }
+            page_html = handler.render(
+                "mod-edit.html",
+                edit_page=edit_page_config,
+                edit_title=f"{info['result']['name']} - edit Open Mod",
+                edit_description=info["result"]["short_description"],
+                info=info,
+                tags=tags,
+                resources=resources,
+                dependencies=dependencies,
+                plugins=plugins,
+                plugins_more_count=plugins_more_count,
+                right_edit=right_edit_mod,
+                authors=authors,
+                is_mod_data=False,
+                data=[info],
+            )
+        else:
+            page_html = handler.render(
+                "mod.html",
+                info=info,
+                tags=tags,
+                resources=resources,
+                dependencies=dependencies,
+                plugins=plugins,
+                plugins_more_count=plugins_more_count,
+                right_edit=right_edit_mod,
+                authors=authors,
+                is_mod_data=True,
+                data=[info],
+            )
 
         return handler.finish(page_html)
 
@@ -453,8 +475,16 @@ async def game_edit(game_id):
         if not isinstance(all_genres, dict):
             all_genres = {"results": []}
 
+        edit_page_config = {
+            **app_config.EDIT_PAGE_CONFIGS["game"],
+            "entity_id": game_info["id"],
+        }
+
         return handler.finish(handler.render(
-            "game-edit.html",
+            "mod-edit.html",
+            edit_page=edit_page_config,
+            edit_title=f"{game_info['name']} - edit Open Game",
+            edit_description=game_info["short_description"],
             game=game_info,
             game_tags=game_tags.get("results", []),
             available_genres=all_genres.get("results", []),
@@ -716,8 +746,8 @@ async def sitemap():
 
 
 if __name__ == '__main__':
-    #app.run(host="0.0.0.0",
+    #app.run(host="127.0.0.1",
     #        port=443,
     #        ssl_context=("fakesite.openworkshop.miskler.ru.pem", "fakesite.openworkshop.miskler.ru-key.pem"))
     from waitress import serve
-    serve(app, host="0.0.0.0", port=6660, threads=100)
+    serve(app, host="127.0.0.1", port=6660, threads=100)

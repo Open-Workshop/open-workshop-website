@@ -6,15 +6,15 @@
 
   const apiPaths = window.OWCore.getApiPaths();
   const gameId = Number(root.dataset.gameId || 0);
-  const genresPath = apiPaths.genre.list.path;
-  const selectedGenresRoot = document.getElementById('game-genres-selected');
   const saveButton = document.getElementById('save-game-button');
   const deleteButton = document.getElementById('delete-game-button');
+  const tagsEditorId = 'game-tags-editor';
+  const genresEditorId = 'game-genres-editor';
 
   let saveInProgress = false;
   let deleteInProgress = false;
 
-  function showToast(title, text, theme = 'info') {
+  function showToast(title, text, theme) {
     new Toast({
       title,
       text,
@@ -69,25 +69,35 @@
     return String(value || '').trim().replace(/\s+/g, ' ');
   }
 
-  function buildGenresUrl(params = {}) {
-    const query = new URLSearchParams();
-
-    Object.entries(params).forEach(([key, value]) => {
-      query.set(key, String(value ?? ''));
-    });
-
-    const queryString = query.toString();
-    return queryString === ''
-      ? window.OWCore.apiUrl(genresPath)
-      : `${window.OWCore.apiUrl(genresPath)}?${queryString}`;
-  }
-
   function parseNumericIds(items) {
     return items
       .map(function (item) {
         return Number(item.id);
       })
       .filter(Number.isFinite);
+  }
+
+  function getPickerEditor(editorId) {
+    return window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
+  }
+
+  function getPickerChanges(editorId) {
+    const editor = getPickerEditor(editorId);
+    if (!editor) {
+      return { add: [], remove: [], create: [] };
+    }
+
+    const state = editor.getState();
+    return {
+      add: parseNumericIds(state.unsavedVisible),
+      remove: parseNumericIds(state.savedHidden),
+      create: state.pendingVisible.map(function (item) {
+        return {
+          tempId: item.id,
+          name: item.name,
+        };
+      }),
+    };
   }
 
   function parseCreatedEntityId(text, entityLabel) {
@@ -134,7 +144,7 @@
       return response;
     }
 
-    const responseText = await response.text().catch(() => '');
+    const responseText = await response.text().catch(function () { return ''; });
     throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
   }
 
@@ -149,7 +159,7 @@
       params.set(fieldName, entityName);
 
       const response = await sendForm(endpoint, params);
-      const responseText = await response.text().catch(() => '');
+      const responseText = await response.text().catch(function () { return ''; });
       const createdId = parseCreatedEntityId(responseText, entityName);
 
       finalizeCallback(item.tempId, createdId);
@@ -158,78 +168,6 @@
 
     return createdIds;
   }
-
-  function createGenreItemElement({ id, name, saved, selected, pendingCreate, showRemoveIcon }) {
-    const normalizedName = normalizeEntityName(name);
-    const element = document.createElement('div');
-    element.classList.add('taglike-item', 'element');
-    element.setAttribute('genreid', String(id));
-    element.dataset.taglikeName = normalizedName;
-
-    if (saved) {
-      element.setAttribute('saved', '');
-    }
-    if (pendingCreate) {
-      element.setAttribute('data-pending-create', 'true');
-    }
-    if (selected) {
-      element.classList.add('genre-selected');
-    }
-
-    const content = document.createElement('e');
-    const title = document.createElement('h3');
-    title.setAttribute('translate', 'no');
-    title.textContent = normalizedName;
-
-    content.appendChild(title);
-    if (showRemoveIcon !== false) {
-      const removeIcon = document.createElement('img');
-      removeIcon.src = '/assets/images/removal-triangle.svg';
-      removeIcon.alt = 'Кнопка удаления жанра';
-      content.appendChild(removeIcon);
-    }
-    element.appendChild(content);
-    return element;
-  }
-
-  async function fetchGenres(queryValue) {
-    const response = await fetch(buildGenresUrl({ page_size: 30, name: queryValue }), {
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const responseText = await response.text().catch(() => '');
-      throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
-    }
-
-    const data = await response.json().catch(() => ({}));
-    return {
-      results: Array.isArray(data.results) ? data.results : [],
-      databaseSize: Number(data.database_size),
-    };
-  }
-
-  function triggerGenreHeightUpdate() {
-    if (!selectedGenresRoot) return;
-    $(selectedGenresRoot).parent().trigger('event-height');
-  }
-
-  const genresSelector = window.OWTaglikeSelector
-    ? window.OWTaglikeSelector.create({
-      selectedRoot: '#game-genres-selected',
-      searchRoot: '#game-genres-search-list',
-      searchInput: '#search-update-input-genres',
-      idAttribute: 'genreid',
-      selectedClass: 'genre-selected',
-      pendingPrefix: 'pending-genre',
-      searchEmptyText: 'Не найдено',
-      emptyNameMessage: 'Введите название нового жанра',
-      duplicateMessage: 'Этот жанр уже выбран',
-      createItemElement: createGenreItemElement,
-      fetchSearchResults: fetchGenres,
-      onSelectionChange: triggerGenreHeightUpdate,
-    })
-    : null;
 
   function collectBaseChanges() {
     const params = new URLSearchParams();
@@ -270,8 +208,7 @@
       changed = true;
     }
 
-    const sourcePairChanged =
-      sourceValue !== startSourceValue || sourceIdValue !== startSourceIdValue;
+    const sourcePairChanged = sourceValue !== startSourceValue || sourceIdValue !== startSourceIdValue;
 
     if (sourcePairChanged) {
       if (sourceValue === '' && sourceIdValue === '') {
@@ -294,19 +231,6 @@
     return { changed, params };
   }
 
-  function collectTagChanges() {
-    if (!window.TagsSelector || typeof window.TagsSelector.returnSelectedTags !== 'function') {
-      return { add: [], remove: [] };
-    }
-
-    const selected = window.TagsSelector.returnSelectedTags();
-    return {
-      add: Array.isArray(selected.notStandardSelected) ? selected.notStandardSelected : [],
-      remove: Array.isArray(selected.standardNotSelected) ? selected.standardNotSelected : [],
-      create: Array.isArray(selected.pendingCreate) ? selected.pendingCreate : [],
-    };
-  }
-
   async function syncAssociations(endpoint, ids, idField, mode) {
     for (const relationId of ids) {
       const params = new URLSearchParams();
@@ -316,36 +240,6 @@
       await sendForm(endpoint, params);
     }
   }
-
-  window.GameGenres = genresSelector
-    ? {
-      refresh: genresSelector.refresh,
-      toggle: genresSelector.toggle,
-      queueCreate: genresSelector.queueCreate,
-      finalizeCreated: genresSelector.finalizeCreated,
-      getChanges() {
-        const state = genresSelector.getState();
-        return {
-          add: parseNumericIds(state.unsavedVisible),
-          remove: parseNumericIds(state.savedHidden),
-          create: state.pendingVisible.map(function (item) {
-            return {
-              tempId: item.id,
-              name: item.name,
-            };
-          }),
-        };
-      },
-    }
-    : {
-      refresh() {},
-      toggle() {},
-      queueCreate() {},
-      finalizeCreated() {},
-      getChanges() {
-        return { add: [], remove: [], create: [] };
-      },
-    };
 
   window.toggleDeleteGameButton = function toggleDeleteGameButton() {
     const confirmInput = document.getElementById('delete-game-confirm');
@@ -379,8 +273,10 @@
 
     try {
       const base = collectBaseChanges();
-      const tags = collectTagChanges();
-      const genres = window.GameGenres.getChanges();
+      const tags = getPickerChanges(tagsEditorId);
+      const genres = getPickerChanges(genresEditorId);
+      const tagsEditor = getPickerEditor(tagsEditorId);
+      const genresEditor = getPickerEditor(genresEditorId);
       const createdTagDefinitions = Array.isArray(tags.create) ? tags.create : [];
       const createdGenreDefinitions = Array.isArray(genres.create) ? genres.create : [];
       const hasChanges =
@@ -406,8 +302,8 @@
 
       const createdTagIds = createdTagDefinitions.length > 0
         ? await createNamedEntities(apiPaths.tag.add, 'tag_name', createdTagDefinitions, function (tempId, realId) {
-          if (window.TagsSelector && typeof window.TagsSelector.finalizeCreatedTag === 'function') {
-            window.TagsSelector.finalizeCreatedTag(tempId, realId);
+          if (tagsEditor) {
+            tagsEditor.finalizeCreated(tempId, realId);
           }
         })
         : [];
@@ -423,7 +319,9 @@
 
       const createdGenreIds = createdGenreDefinitions.length > 0
         ? await createNamedEntities(apiPaths.genre.add, 'genre_name', createdGenreDefinitions, function (tempId, realId) {
-          window.GameGenres.finalizeCreated(tempId, realId);
+          if (genresEditor) {
+            genresEditor.finalizeCreated(tempId, realId);
+          }
         })
         : [];
 
@@ -445,20 +343,17 @@
     }
   };
 
-  $(document).ready(function () {
-    window.setTimeout(function () {
-      $('#main-game-edit').css('opacity', 1);
-    }, 250);
+  window.setTimeout(function () {
+    root.style.opacity = 1;
+  }, 250);
 
-    const startButton = document.querySelector('#start-page-button');
-    if (startButton && window.Pager) {
+  const startButton = document.querySelector('#start-page-button');
+  if (startButton && window.Pager) {
+    Pager.updateSelect.call(startButton);
+    window.addEventListener('popstate', function () {
       Pager.updateSelect.call(startButton);
-      window.addEventListener('popstate', function () {
-        Pager.updateSelect.call(startButton);
-      });
-    }
+    });
+  }
 
-    window.GameGenres.refresh();
-    window.toggleDeleteGameButton();
-  });
+  window.toggleDeleteGameButton();
 })();

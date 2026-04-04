@@ -7,6 +7,15 @@
   let blocking = false;
   let outOfCards = false;
   let warns = [false, false, false];
+  let suppressDependencySync = false;
+
+  function getTagsEditor() {
+    return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
+  }
+
+  function getDependenciesEditor() {
+    return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-dependencies-editor') : null;
+  }
 
   function sortOptionsList(mode) {
     $('select#sort-select').toggleClass('game', !mode).toggleClass('mod', mode);
@@ -23,26 +32,46 @@
   }
 
   function getSelectedDependencyIds() {
-    return $('#mod-dependence-selected')
-      .find('div.element:not(.none-display)')
-      .map(function () {
-        return String($(this).attr('modid'));
+    const editor = getDependenciesEditor();
+    if (!editor) return [];
+
+    return editor.getState().visible
+      .map(function (item) {
+        return String(item.id);
       })
-      .get()
-      .filter((id) => id.length > 0);
+      .filter(function (id) {
+        return id.length > 0;
+      });
   }
 
   function clearSelectedDependencies() {
-    const $container = $('#mod-dependence-selected');
-    if (!$container.length) return;
-    $container.find('div.element').addClass('none-display');
-    $container.parent().parent().trigger('event-height');
+    const editor = getDependenciesEditor();
+    if (!editor) return;
+
+    suppressDependencySync = true;
+    try {
+      editor.clearVisibleSelection();
+    } finally {
+      suppressDependencySync = false;
+    }
   }
 
   function syncDependenceSearchGame(gameID) {
-    const $dependenceSearchInput = $('#search-update-input-dependence');
-    if (!$dependenceSearchInput.length) return;
-    $dependenceSearchInput.attr('gameid', gameID ? String(gameID) : '');
+    const editor = getDependenciesEditor();
+    if (!editor) return;
+    editor.setContext({ gameId: gameID ? String(gameID) : '' });
+    if (editor.isOpen()) {
+      editor.refresh();
+    }
+  }
+
+  function syncTagsSearchGame(gameID) {
+    const editor = getTagsEditor();
+    if (!editor) return;
+    editor.setContext({ gameId: gameID ? String(gameID) : '' });
+    if (editor.isOpen()) {
+      editor.refresh();
+    }
   }
 
   function syncDependenciesUrlFromSelected(selectedIds, triggerReset) {
@@ -72,84 +101,16 @@
     return true;
   }
 
-  function appendSelectedDependency(modName, modID, modLogo) {
-    const $container = $('#mod-dependence-selected');
-    if (!$container.length) return;
-
-    const id = String(modID);
-    const $exists = $container.find(`div.element[modid="${id}"]`).first();
-    if ($exists.length) {
-      $exists.removeClass('none-display');
-      return;
-    }
-
-    const $item = $('<div/>', {
-      class: 'element',
-      modid: id,
-      onclick: 'editModDependence(this)',
-      saved: true,
-    });
-    const $logo = $('<img/>', {
-      src: modLogo || '/assets/images/image-not-found.webp',
-      alt: 'Логотип мода',
-      onerror: 'handlerImgErrorLoad(this)',
-    });
-    const $meta = $('<e/>');
-    const $title = $('<h3/>', {
-      translate: 'no',
-      title: modName,
-      text: modName,
-    });
-    const $remove = $('<img/>', {
-      src: '/assets/images/removal-triangle.svg',
-      alt: 'Кнопка удаления зависимости',
-    });
-
-    $meta.append($title, $remove);
-    $item.append($logo, $meta);
-    $container.append($item);
-  }
-
   async function hydrateDependenciesFilter(ids) {
-    if (!ids.length || !$('#mod-dependence-selected').length) return;
+    const editor = getDependenciesEditor();
+    if (!ids.length || !editor) return;
 
-    const modsPath = apiPaths.mod.list.path;
-    const resourcesPath = apiPaths.resource.list.path;
-    const idsAsList = '[' + ids.join(',') + ']';
-
-    const [modsResponse, logosResponse] = await Promise.all([
-      fetch(`${apiUrl(modsPath)}?allowed_ids=${idsAsList}&page_size=50`, { credentials: 'include' }),
-      fetch(`${apiUrl(resourcesPath)}?owner_type=mods&owner_ids=${idsAsList}&types_resources=["logo"]`, {
-        credentials: 'include',
-      }),
-    ]);
-
-    if (!modsResponse.ok) return;
-
-    const [modsData, logosData] = await Promise.all([
-      modsResponse.json().catch(() => ({ results: [] })),
-      logosResponse.ok ? logosResponse.json().catch(() => ({ results: [] })) : Promise.resolve({ results: [] }),
-    ]);
-
-    const logosById = {};
-    (logosData.results || []).forEach((logo) => {
-      if (!logo || logo.owner_id === undefined || !logo.url) return;
-      logosById[String(logo.owner_id)] = logo.url;
-    });
-
-    const modsById = {};
-    (modsData.results || []).forEach((mod) => {
-      if (!mod || mod.id === undefined) return;
-      modsById[String(mod.id)] = mod;
-    });
-
-    ids.forEach((id) => {
-      const mod = modsById[String(id)];
-      if (!mod) return;
-      appendSelectedDependency(mod.name, mod.id, logosById[String(mod.id)]);
-    });
-
-    $('#mod-dependence-selected').parent().parent().trigger('event-height');
+    suppressDependencySync = true;
+    try {
+      await editor.setDefaultSelected(ids);
+    } finally {
+      suppressDependencySync = false;
+    }
   }
 
   window.undependencyMod = function undependencyMod() {
@@ -215,9 +176,12 @@
       .find('img')
       .attr('src', $('img#preview-logo-card-' + gameID).attr('src'));
     $('setting#game-select').find('label').text($('h2#titlename' + gameID).text());
-    $('#search-update-input-tags').attr('gameid', gameID);
+    syncTagsSearchGame(gameID);
     syncDependenceSearchGame(gameID);
-    TagsSelector.unselectAllTags();
+    const tagsEditor = getTagsEditor();
+    if (tagsEditor) {
+      tagsEditor.clearVisibleSelection();
+    }
 
     resetCatalog();
   };
@@ -366,7 +330,7 @@
     $('setting#game-select').find('input').prop('checked', sgame);
     $('input#search-in-catalog-header').val(params.get('name', ''));
     $('input#search-in-catalog-menu').val(params.get('name', ''));
-    $('#search-update-input-tags').attr('gameid', params.get('game', ''));
+    syncTagsSearchGame(params.get('game', ''));
     syncDependenceSearchGame(params.get('game', ''));
 
     await hydrateDependenciesFilter(parseDependenciesParam(params.get('dependencies', '')));
@@ -374,7 +338,20 @@
     URLManager.updateParam('page', Number(params.get('page', 0)));
 
     sortOptionsList(sgame);
-    TagsSelector.setDefaultSelectedTags(params.get('tags', '').replaceAll('_', ','));
+    const tagsEditor = getTagsEditor();
+    if (tagsEditor) {
+      tagsEditor.setDefaultSelected(
+        params.get('tags', '')
+          .replaceAll('_', ',')
+          .split(',')
+          .map(function (item) {
+            return String(item).trim();
+          })
+          .filter(function (item) {
+            return /^\d+$/.test(item);
+          }),
+      );
+    }
     const sortMode = params.get('sort', 'iDOWNLOADS');
     $('button#sort-select-invert').toggleClass('toggled', sortMode.startsWith('i'));
     $('select#sort-select').val(sortMode.replace('i', ''));
@@ -402,13 +379,17 @@
   });
 
   window.addEventListener('ow:dependencies-changed', function () {
+    if (suppressDependencySync) return;
     syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
   });
 
   setInterval(function () {
-    if ($('div.popup-tags-select').hasClass('popup-nonvisible')) {
+    const tagsEditor = getTagsEditor();
+    if (tagsEditor && !tagsEditor.isOpen()) {
       const params = URLManager.getParams();
-      const tags = TagsSelector.returnSelectedTags().selected;
+      const tags = tagsEditor.getState().visible.map(function (item) {
+        return item.id;
+      });
 
       if (String(tags).replaceAll(',', '_') != params.get('tags', '')) {
         URLManager.updateParams([

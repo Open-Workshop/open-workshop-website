@@ -1,33 +1,8 @@
+{% from 'html-partials/macros/taglike-editor.html' import render_dependencies_editor %}
+
 {% set dependence_items = dependencies.values() if dependencies is defined else [] %}
 {% set dependence_game_id = game if game is defined else info["result"]["game"]["id"] %}
 {% set dependence_button_text = dependence_button_text if dependence_button_text is defined else 'Добавить зависимость' %}
+{% set dependence_editor_id = editor_id if editor_id is defined else 'mod-dependencies-editor' %}
 
-<div class="standart-panel dependence-edit" import-height="div#mod-dependence-header">
-    <div id="mod-dependence-header" class="dependence-edit__header">
-        <div id="mod-dependence-selected" class="alls">
-            <br>
-            {% for item in dependence_items %}
-            <div class="element" modid="{{ item.id }}" onclick="editModDependence(this)" saved>
-                <img src="{{ item.img }}" alt="Логотип мода" errorcap>
-                <e>
-                    <h3 translate="no">{{ item.name }}</h3>
-                    <img src="/assets/images/removal-triangle.svg" alt="Кнопка удаления зависимости">
-                </e>
-            </div>
-            {% endfor %}
-            <p>Модов не выбрано</p>
-        </div>
-
-        <button type="button" data-popup-menu-target=".popup-dependence-select" class="small">{{ dependence_button_text }}</button>
-    </div>
-
-    <div class="popup-dependence-select popup-menu-select popup-nonvisible">
-        <input id="search-update-input-dependence" gameid='{{ dependence_game_id }}' type="text" placeholder="Поиск..." oninput="searchRequestDependenceUpdate()">
-        
-        <div class="alls all-mod-dependence" id="dependence-edit-search-dependence">
-            <p>Не найдено</p>
-        </div>
-        
-        <p class="show-more" id="show-more-count-dependence"></p>
-    </div>
-</div>
+{{ render_dependencies_editor(dependence_items, dependence_game_id, dependence_editor_id, dependence_button_text) }}

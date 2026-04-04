@@ -3,10 +3,8 @@
 (function () {
   if (!window.OWPickerEditors || !window.OWCore) return;
 
-  const { getApiPaths, apiUrl } = window.OWCore;
-  const apiPaths = getApiPaths();
-  const tagsPath = apiPaths.tag.list.path;
-  const noGameValues = new Set(['', '0', 'none', 'null', 'undefined']);
+  const apiPaths = window.OWCore.getApiPaths();
+  const genresPath = apiPaths.genre.list.path;
 
   function parseResponseMessage(text, fallback) {
     if (!text) return fallback;
@@ -23,16 +21,11 @@
     return fallback;
   }
 
-  function normalizeTagName(value) {
+  function normalizeGenreName(value) {
     return String(value || '').trim().replace(/\s+/g, ' ');
   }
 
-  function normalizeGameId(value) {
-    const rawValue = String(value || '').trim();
-    return noGameValues.has(rawValue.toLowerCase()) ? '' : rawValue;
-  }
-
-  function buildTagsUrl(params) {
+  function buildGenresUrl(params) {
     const query = new URLSearchParams();
 
     Object.entries(params || {}).forEach(function ([key, value]) {
@@ -41,11 +34,14 @@
     });
 
     const queryString = query.toString();
-    return queryString === '' ? apiUrl(tagsPath) : `${apiUrl(tagsPath)}?${queryString}`;
+    return queryString === '' ? window.OWCore.apiUrl(genresPath) : `${window.OWCore.apiUrl(genresPath)}?${queryString}`;
   }
 
-  async function fetchTags(params) {
-    const response = await fetch(buildTagsUrl(params), { credentials: 'include' });
+  async function fetchGenres(params) {
+    const response = await fetch(buildGenresUrl(params), {
+      credentials: 'include',
+    });
+
     if (!response.ok) {
       const responseText = await response.text().catch(function () { return ''; });
       throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
@@ -56,73 +52,53 @@
     });
   }
 
-  function createTagItemElement(options) {
+  function createGenreItemElement(options) {
     const element = document.createElement('div');
     element.className = 'picker-editor__item picker-editor__item--chip';
 
     const title = document.createElement('span');
     title.className = 'picker-editor__item-title';
     title.setAttribute('translate', 'no');
-    title.textContent = normalizeTagName(options.name);
+    title.textContent = normalizeGenreName(options.name);
     element.appendChild(title);
 
     if (options.showRemoveIcon !== false) {
       const removeIcon = document.createElement('img');
       removeIcon.className = 'picker-editor__item-action';
       removeIcon.src = '/assets/images/removal-triangle.svg';
-      removeIcon.alt = 'Убрать тег';
+      removeIcon.alt = 'Убрать жанр';
       element.appendChild(removeIcon);
     }
 
     return element;
   }
 
-  function initTagEditors() {
-    document.querySelectorAll('[data-picker-editor-kind="tags"]').forEach(function (root) {
-      if (root.dataset.owTagsEditorBound === 'true') return;
-      root.dataset.owTagsEditorBound = 'true';
+  function initGenreEditors() {
+    document.querySelectorAll('[data-picker-editor-kind="genres"]').forEach(function (root) {
+      if (root.dataset.owGenresEditorBound === 'true') return;
+      root.dataset.owGenresEditorBound = 'true';
 
       window.OWPickerEditors.create({
         root,
         key: root.id,
-        pendingPrefix: 'pending-tag',
-        context: {
-          gameId: normalizeGameId(root.dataset.pickerContextGameId),
-        },
-        emptyNameMessage: 'Введите название нового тега',
-        duplicateMessage: 'Этот тег уже выбран',
-        renderItem: createTagItemElement,
-        async fetchSearchResults(queryValue, editor) {
-          const params = {
+        pendingPrefix: 'pending-genre',
+        emptyNameMessage: 'Введите название нового жанра',
+        duplicateMessage: 'Этот жанр уже выбран',
+        renderItem: createGenreItemElement,
+        async fetchSearchResults(queryValue) {
+          const data = await fetchGenres({
             page_size: 30,
             name: queryValue,
-          };
-          const gameId = normalizeGameId(editor.getContext().gameId);
-          if (gameId !== '') {
-            params.game_id = gameId;
-          }
+          });
 
-          const data = await fetchTags(params);
           return {
             results: Array.isArray(data.results) ? data.results : [],
             databaseSize: Number(data.database_size),
           };
         },
-        async fetchItemsByIds(ids, editor) {
-          const params = {
-            tags_ids: '[' + ids.join(',') + ']',
-          };
-          const gameId = normalizeGameId(editor.getContext().gameId);
-          if (gameId !== '') {
-            params.game_id = gameId;
-          }
-
-          const data = await fetchTags(params);
-          return Array.isArray(data.results) ? data.results : [];
-        },
       });
     });
   }
 
-  initTagEditors();
+  initGenreEditors();
 })();

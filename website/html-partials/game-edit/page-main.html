@@ -1,4 +1,4 @@
-{% from 'html-partials/macros/taglike-editor.html' import render_taglike_editor, render_tags_editor %}
+{% from 'html-partials/macros/taglike-editor.html' import render_genres_editor, render_tags_editor %}
 
 <div id="page-main-game" class="mod-edit__page mod-edit__split">
   <section class="mod-edit__main">
@@ -69,48 +69,8 @@
       <p class="ow-muted">Логотип подтягивается из ресурсов игры и здесь отображается для контроля.</p>
     </div>
 
-    {{ render_tags_editor(game_tags, 0, true) }}
+    {{ render_tags_editor(game_tags, 0, true, 'game-tags-editor') }}
 
-    {% call(section) render_taglike_editor(
-      panel_classes='game-edit__genres',
-      selected_wrapper_classes='game-edit__genres-head',
-      selected_list_id='game-genres-selected',
-      selected_list_classes='game-edit__selected-genres',
-      selected_empty_text='Жанры не выбраны',
-      button_text='Изменить жанры',
-      button_classes='small',
-      button_target='.popup-game-genres-select',
-      button_open_callback='GameGenres.refresh',
-      popup_classes='popup-game-genres-select',
-      search_input_id='search-update-input-genres',
-      search_input_placeholder='Поиск...',
-      search_input_oninput='GameGenres.refresh()',
-      search_list_id='game-genres-search-list',
-      search_list_classes='game-edit__genre-list',
-      search_empty_text='Не найдено'
-    ) %}
-      {% if section == 'selected' %}
-        {% for item in selected_genres %}
-          <div class="taglike-item element" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
-            <e>
-              <h3 translate="no">{{ item.name }}</h3>
-              <img src="/assets/images/removal-triangle.svg" alt="Кнопка удаления жанра">
-            </e>
-          </div>
-        {% endfor %}
-      {% elif section == 'search' %}
-        {% for item in available_genres %}
-          <div class="taglike-item element{% if item.id in selected_genre_ids %} genre-selected{% endif %}" genreid="{{ item.id }}" onclick="GameGenres.toggle(this)" saved>
-            <e>
-              <h3 translate="no">{{ item.name }}</h3>
-            </e>
-          </div>
-        {% endfor %}
-      {% elif section == 'popup_footer' %}
-        <button type="button" class="small taglike-editor__create-button" onclick="GameGenres.queueCreate()">
-          Добавить новое
-        </button>
-      {% endif %}
-    {% endcall %}
+    {{ render_genres_editor(selected_genres, available_genres, selected_genre_ids, 'game-genres-editor') }}
   </aside>
 </div>

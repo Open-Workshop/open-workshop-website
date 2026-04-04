@@ -1,156 +1,209 @@
 /* eslint-env browser */
 
 (function () {
+  if (!window.OWPickerEditors || !window.OWCore) return;
+
   const { getApiPaths, apiUrl } = window.OWCore;
   const apiPaths = getApiPaths();
   const modsPath = apiPaths.mod.list.path;
   const resourcesPath = apiPaths.resource.list.path;
 
-  const containerDependencies = $('#mod-dependence-selected');
-  const searchedDependencies = $('#dependence-edit-search-dependence');
+  function parseResponseMessage(text, fallback) {
+    if (!text) return fallback;
 
-  function getSelectedDependencyIds() {
-    return containerDependencies
-      .find('div.element:not(.none-display)')
-      .map(function () {
-        return String($(this).attr('modid'));
-      })
-      .get()
-      .filter((id) => id.length > 0);
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') return parsed;
+      if (parsed && typeof parsed.detail === 'string') return parsed.detail;
+      if (parsed && typeof parsed.message === 'string') return parsed.message;
+    } catch (error) {
+      return text.replace(/^"(.*)"$/, '$1');
+    }
+
+    return fallback;
   }
 
-  window.editModDependence = function editModDependence(dependenc) {
-    dependenc = $(dependenc);
+  function normalizeGameId(value) {
+    const rawValue = String(value || '').trim();
+    return rawValue === '0' ? '' : rawValue;
+  }
 
-    const dependenceName = dependenc.find('h3').html();
-    const dependencId = dependenc.attr('modid');
-    const dependencImg = dependenc.find('img[onerror]').attr('src');
+  function buildUrl(path, params) {
+    const query = new URLSearchParams();
 
-    const searchedDependence = searchedDependencies.find('[modid="' + dependencId + '"]');
-
-    if (dependenc.hasClass('dependence-selected') || dependenc.parent().attr('id') == 'mod-dependence-selected') {
-      searchedDependence.removeClass('dependence-selected');
-
-      const inCont = containerDependencies.find('[modid="' + dependencId + '"]');
-      if (inCont.hasAttr('saved')) {
-        inCont.addClass('none-display');
-      } else {
-        inCont.remove();
-      }
-    } else {
-      searchedDependence.addClass('dependence-selected');
-
-      if (containerDependencies.find('[modid="' + dependencId + '"]').length == 0) {
-        const modDependenceE = $('<div>')
-          .addClass('element')
-          .attr('modid', dependencId)
-          .attr('onclick', 'editModDependence(this)');
-        const logoE = $('<img>')
-          .attr('src', dependencImg)
-          .attr('alt', 'Логотип мода')
-          .attr('onerror', 'handlerImgErrorLoad(this)');
-        const eE = $('<e>');
-        const hE = $('<h3>').attr('translate', 'no').text(dependenceName);
-        const iconE = $('<img>')
-          .attr('src', '/assets/images/removal-triangle.svg')
-          .attr('alt', 'Кнопка удаления зависимости');
-
-        eE.append(hE, iconE);
-        modDependenceE.append(logoE, eE);
-        containerDependencies.append(modDependenceE);
-      } else {
-        containerDependencies.find('[modid="' + dependencId + '"]').removeClass('none-display');
-      }
-    }
-
-    containerDependencies.parent().parent().trigger('event-height');
-    window.dispatchEvent(
-      new CustomEvent('ow:dependencies-changed', {
-        detail: { ids: getSelectedDependencyIds() },
-      }),
-    );
-  };
-
-  window.searchRequestDependenceUpdate = async function searchRequestDependenceUpdate() {
-    const searchInput = $('#search-update-input-dependence');
-    const pNoInList = $('p#show-more-count-dependence');
-
-    pNoInList.addClass('hiden');
-    searchedDependencies.addClass('hiden');
-
-    const searchParams = new URLSearchParams({
-      page_size: '5',
-      name: String(searchInput.val() || ''),
+    Object.entries(params || {}).forEach(function ([key, value]) {
+      if (value === undefined || value === null || value === '') return;
+      query.set(key, String(value));
     });
-    const gameId = String(searchInput.attr('gameid') || '').trim();
-    if (gameId.length > 0 && gameId !== '0') {
-      searchParams.set('game', gameId);
-    }
 
-    const ref = await fetch(`${apiUrl(modsPath)}?${searchParams.toString()}`, {
+    const queryString = query.toString();
+    return queryString === '' ? apiUrl(path) : `${apiUrl(path)}?${queryString}`;
+  }
+
+  async function fetchJson(path, params) {
+    const response = await fetch(buildUrl(path, params), {
       credentials: 'include',
     });
-    const data = await ref.json();
 
-    const ids = [];
-
-    searchedDependencies.html(searchedDependencies.find('p')[0]);
-    data.results.forEach((t) => {
-      ids.push(t.id);
-
-      let classes = 'element';
-      if (containerDependencies.find('[modid="' + t.id + '"]').length > 0) {
-        classes += ' dependence-selected';
-      }
-
-      const $dependenceSelected = $('<div/>', {
-        class: classes,
-        modid: t.id,
-        onclick: 'editModDependence(this)',
-        saved: true,
-      });
-      $dependenceSelected.append(
-        $('<img/>', {
-          src: '/assets/images/loading.webp',
-          alt: 'Логотип мода',
-          onerror: 'handlerImgErrorLoad(this)',
-        }),
-      );
-      const $e = $('<e/>');
-      $e.append(
-        $('<h3/>', {
-          translate: 'no',
-          title: t.name,
-          text: t.name,
-        }),
-      );
-      $dependenceSelected.append($e);
-      searchedDependencies.append($dependenceSelected);
-    });
-
-    const refImgs = await fetch(
-      `${apiUrl(resourcesPath)}?owner_type=mods&owner_ids=[${ids}]&types_resources=["logo"]`,
-      { credentials: 'include' },
-    );
-    const dataImgs = await refImgs.json();
-
-    dataImgs.results.forEach((t) => {
-      searchedDependencies.find('[modid="' + t.owner_id + '"]').find('img').attr('src', t.url);
-    });
-    searchedDependencies.find("img[src='/assets/images/loading.webp']").attr('src', '/assets/images/image-not-found.webp');
-
-    function notInList(number) {
-      pNoInList.text('И ещё ' + number + ' шт...');
-      if (number <= 0) {
-        pNoInList.attr('hidden', '');
-      } else {
-        pNoInList.removeAttr('hidden');
-      }
+    if (!response.ok) {
+      const responseText = await response.text().catch(function () { return ''; });
+      throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
     }
 
-    notInList(data.database_size - data.results.length);
+    return response.json().catch(function () {
+      return {};
+    });
+  }
 
-    pNoInList.removeClass('hiden');
-    searchedDependencies.removeClass('hiden');
-  };
+  async function fetchModItems(params) {
+    const [modsData, resourcesData] = await Promise.all([
+      fetchJson(modsPath, params),
+      fetchJson(resourcesPath, {
+        owner_type: 'mods',
+        owner_ids: params.allowed_ids || '[]',
+        types_resources: '["logo"]',
+      }).catch(function () {
+        return { results: [] };
+      }),
+    ]);
+
+    const logosById = {};
+    (resourcesData.results || []).forEach(function (resource) {
+      if (!resource || resource.owner_id === undefined || !resource.url) return;
+      logosById[String(resource.owner_id)] = resource.url;
+    });
+
+    return {
+      results: Array.isArray(modsData.results)
+        ? modsData.results.map(function (item) {
+          return {
+            id: item.id,
+            name: item.name,
+            img: logosById[String(item.id)] || '/assets/images/image-not-found.webp',
+          };
+        })
+        : [],
+      databaseSize: Number(modsData.database_size),
+    };
+  }
+
+  async function searchDependencies(queryValue, gameId) {
+    const searchParams = {
+      page_size: 5,
+      name: queryValue,
+    };
+
+    const normalizedGameId = normalizeGameId(gameId);
+    if (normalizedGameId !== '') {
+      searchParams.game = normalizedGameId;
+    }
+
+    const modsData = await fetchJson(modsPath, searchParams);
+    const modIds = Array.isArray(modsData.results)
+      ? modsData.results.map(function (item) { return item.id; }).filter(function (item) { return item !== undefined; })
+      : [];
+
+    const resourcesData = modIds.length > 0
+      ? await fetchJson(resourcesPath, {
+        owner_type: 'mods',
+        owner_ids: '[' + modIds.join(',') + ']',
+        types_resources: '["logo"]',
+      }).catch(function () {
+        return { results: [] };
+      })
+      : { results: [] };
+
+    const logosById = {};
+    (resourcesData.results || []).forEach(function (resource) {
+      if (!resource || resource.owner_id === undefined || !resource.url) return;
+      logosById[String(resource.owner_id)] = resource.url;
+    });
+
+    return {
+      results: Array.isArray(modsData.results)
+        ? modsData.results.map(function (item) {
+          return {
+            id: item.id,
+            name: item.name,
+            img: logosById[String(item.id)] || '/assets/images/image-not-found.webp',
+          };
+        })
+        : [],
+      databaseSize: Number(modsData.database_size),
+    };
+  }
+
+  function createDependencyItemElement(options) {
+    const element = document.createElement('div');
+    element.className = 'picker-editor__item picker-editor__item--row';
+
+    const media = document.createElement('img');
+    media.className = 'picker-editor__item-media';
+    media.src = (options.data && options.data.img) || '/assets/images/image-not-found.webp';
+    media.alt = 'Логотип мода';
+    media.setAttribute('errorcap', '');
+    element.appendChild(media);
+
+    const content = document.createElement('div');
+    content.className = 'picker-editor__item-content';
+
+    const title = document.createElement('h3');
+    title.className = 'picker-editor__item-title';
+    title.setAttribute('translate', 'no');
+    title.textContent = String(options.name || '');
+    content.appendChild(title);
+
+    if (options.showRemoveIcon !== false) {
+      const removeIcon = document.createElement('img');
+      removeIcon.className = 'picker-editor__item-action';
+      removeIcon.src = '/assets/images/removal-triangle.svg';
+      removeIcon.alt = 'Убрать зависимость';
+      content.appendChild(removeIcon);
+    }
+
+    element.appendChild(content);
+    return element;
+  }
+
+  function dispatchDependenciesChanged(editor) {
+    const selectedIds = editor.getState().visible.map(function (item) {
+      return String(item.id);
+    });
+
+    window.dispatchEvent(
+      new CustomEvent('ow:dependencies-changed', {
+        detail: { ids: selectedIds },
+      }),
+    );
+  }
+
+  function initDependencyEditors() {
+    document.querySelectorAll('[data-picker-editor-kind="dependencies"]').forEach(function (root) {
+      if (root.dataset.owDependencyEditorBound === 'true') return;
+      root.dataset.owDependencyEditorBound = 'true';
+
+      window.OWPickerEditors.create({
+        root,
+        key: root.id,
+        context: {
+          gameId: normalizeGameId(root.dataset.pickerContextGameId),
+        },
+        renderItem: createDependencyItemElement,
+        async fetchSearchResults(queryValue, editor) {
+          return searchDependencies(queryValue, editor.getContext().gameId);
+        },
+        async fetchItemsByIds(ids) {
+          if (!Array.isArray(ids) || ids.length === 0) return [];
+          const data = await fetchModItems({
+            allowed_ids: '[' + ids.join(',') + ']',
+            page_size: 50,
+          });
+          return data.results;
+        },
+        onSelectionChange: dispatchDependenciesChanged,
+      });
+    });
+  }
+
+  initDependencyEditors();
 })();

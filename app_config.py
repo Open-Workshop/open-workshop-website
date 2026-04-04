@@ -295,7 +295,6 @@ EDIT_PAGE_CONFIGS: dict = {
             "html-partials/mod-edit/page-params.html",
         ],
         "scripts": [
-            "/assets/scripts/vendors/dependence-edit.js",
             "/assets/scripts/vendors/pager-logic.js",
             "/assets/scripts/pages/mod-edit.js",
         ],

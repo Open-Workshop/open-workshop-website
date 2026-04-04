@@ -998,19 +998,25 @@
     location.href = '/';
   };
 
-  function getChangesTags() {
-    const box = $('div#tags-edit-selected-tags');
-    const res = { new: [], deleted: [] };
+  function getPickerChanges(editorId) {
+    const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
+    if (!editor) {
+      return { new: [], deleted: [] };
+    }
 
-    box.find('div').each(function () {
-      const el = $(this);
-      if (el.hasAttr('saved')) {
-        if (el.hasClass('none-display')) res.deleted.push(el.attr('tagid'));
-      } else {
-        res.new.push(el.attr('tagid'));
-      }
-    });
-    return res;
+    const state = editor.getState();
+    return {
+      new: state.unsavedVisible.map(function (item) {
+        return item.id;
+      }),
+      deleted: state.savedHidden.map(function (item) {
+        return item.id;
+      }),
+    };
+  }
+
+  function getChangesTags() {
+    return getPickerChanges('mod-tags-editor');
   }
 
   async function modUpdateTags(tags) {
@@ -1031,18 +1037,7 @@
   }
 
   function getChangesDependence() {
-    const box = $('#mod-dependence-selected');
-    const res = { new: [], deleted: [] };
-
-    box.find('div.mod-dependence').each(function () {
-      const el = $(this);
-      if (el.hasAttr('saved')) {
-        if (el.hasClass('none-display')) res.deleted.push(el.attr('modid'));
-      } else {
-        res.new.push(el.attr('modid'));
-      }
-    });
-    return res;
+    return getPickerChanges('mod-dependencies-editor');
   }
 
   async function modUpdateDependecie(dep) {

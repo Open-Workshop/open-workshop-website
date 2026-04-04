@@ -60,7 +60,7 @@
       <hr>
       
       <setting class="with-events catalog-dependencies-setting">
-        {% with dependencies={}, game=0, dependence_button_text='Плагины для модов' %}
+        {% with dependencies={}, game=0, dependence_button_text='Плагины для модов', editor_id='catalog-dependencies-editor' %}
           {% include 'html-partials/mod-dependence-edit.html' %}
         {% endwith %}
       </setting>
@@ -68,7 +68,7 @@
       <hr>
 
       <setting class="with-events">
-        {{ render_tags_editor({}, 0) }}
+        {{ render_tags_editor({}, 0, false, 'catalog-tags-editor') }}
       </setting>
     </div>
   </div>
@@ -83,8 +83,6 @@
 
   <script src='//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js'></script>
   <script src='https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js'></script>
-  
-  <script src="/assets/scripts/vendors/dependence-edit.js"></script>
   <script src="/assets/scripts/vendors/catalog.js"></script>
   <script src="/assets/scripts/catalog-params.js"></script>
 </main>
