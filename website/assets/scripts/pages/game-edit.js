@@ -8,15 +8,11 @@
   const gameId = Number(root.dataset.gameId || 0);
   const genresPath = apiPaths.genre.list.path;
   const selectedGenresRoot = document.getElementById('game-genres-selected');
-  const searchGenresRoot = document.getElementById('game-genres-search-list');
-  const genresSearchInput = document.getElementById('search-update-input-genres');
   const saveButton = document.getElementById('save-game-button');
   const deleteButton = document.getElementById('delete-game-button');
 
   let saveInProgress = false;
   let deleteInProgress = false;
-  let pendingGenreCreateCounter = 0;
-  let genreSearchRequestCounter = 0;
 
   function showToast(title, text, theme = 'info') {
     new Toast({
@@ -73,10 +69,6 @@
     return String(value || '').trim().replace(/\s+/g, ' ');
   }
 
-  function getEntityNameKey(value) {
-    return normalizeEntityName(value).toLocaleLowerCase('ru-RU');
-  }
-
   function buildGenresUrl(params = {}) {
     const query = new URLSearchParams();
 
@@ -88,6 +80,14 @@
     return queryString === ''
       ? window.OWCore.apiUrl(genresPath)
       : `${window.OWCore.apiUrl(genresPath)}?${queryString}`;
+  }
+
+  function parseNumericIds(items) {
+    return items
+      .map(function (item) {
+        return Number(item.id);
+      })
+      .filter(Number.isFinite);
   }
 
   function parseCreatedEntityId(text, entityLabel) {
@@ -159,24 +159,18 @@
     return createdIds;
   }
 
-  function createGenreElement(genreId, genreName, options = {}) {
-    const {
-      saved = false,
-      pendingCreate = false,
-      selected = false,
-      showRemoveIcon = true,
-    } = options;
-
-    const normalizedName = normalizeEntityName(genreName);
+  function createGenreItemElement({ id, name, saved, selected, pendingCreate, showRemoveIcon }) {
+    const normalizedName = normalizeEntityName(name);
     const element = document.createElement('div');
     element.classList.add('taglike-item', 'element');
-    element.setAttribute('genreid', String(genreId));
-    element.dataset.genreName = normalizedName;
+    element.setAttribute('genreid', String(id));
+    element.dataset.taglikeName = normalizedName;
+
     if (saved) {
       element.setAttribute('saved', '');
     }
     if (pendingCreate) {
-      element.dataset.pendingCreate = 'true';
+      element.setAttribute('data-pending-create', 'true');
     }
     if (selected) {
       element.classList.add('genre-selected');
@@ -188,112 +182,14 @@
     title.textContent = normalizedName;
 
     content.appendChild(title);
-    if (showRemoveIcon) {
+    if (showRemoveIcon !== false) {
       const removeIcon = document.createElement('img');
       removeIcon.src = '/assets/images/removal-triangle.svg';
       removeIcon.alt = 'Кнопка удаления жанра';
       content.appendChild(removeIcon);
     }
     element.appendChild(content);
-    element.addEventListener('click', function () {
-      window.GameGenres.toggle(element);
-    });
     return element;
-  }
-
-  function getGenreName(node) {
-    if (!node) return '';
-    if (node.dataset && node.dataset.genreName) {
-      return normalizeEntityName(node.dataset.genreName);
-    }
-    const title = node.querySelector('h3');
-    return title ? normalizeEntityName(title.textContent) : '';
-  }
-
-  function getSearchGenreNode(genreId) {
-    return searchGenresRoot ? searchGenresRoot.querySelector('[genreid="' + genreId + '"]') : null;
-  }
-
-  function getSelectedGenreNode(genreId) {
-    return selectedGenresRoot ? selectedGenresRoot.querySelector('[genreid="' + genreId + '"]') : null;
-  }
-
-  function isGenreSelected(genreId) {
-    const selectedNode = getSelectedGenreNode(genreId);
-    return Boolean(selectedNode && !selectedNode.classList.contains('none-display'));
-  }
-
-  function isPendingGenre(node) {
-    return Boolean(node && node.dataset && node.dataset.pendingCreate === 'true');
-  }
-
-  function isGenreVisible(node) {
-    return Boolean(node) && !node.classList.contains('none-display');
-  }
-
-  function findGenreByName(rootNode, nameKey) {
-    if (!rootNode) return null;
-
-    return Array.from(rootNode.querySelectorAll('[genreid]')).find(function (node) {
-      return getEntityNameKey(getGenreName(node)) === nameKey;
-    }) || null;
-  }
-
-  function resetGenreSearchRoot() {
-    if (!searchGenresRoot) return null;
-
-    const emptyState = searchGenresRoot.querySelector('p');
-    const detachedEmptyState = emptyState ? emptyState.cloneNode(true) : null;
-    searchGenresRoot.innerHTML = '';
-
-    if (detachedEmptyState) {
-      detachedEmptyState.textContent = 'Не найдено';
-      searchGenresRoot.appendChild(detachedEmptyState);
-    }
-
-    return detachedEmptyState;
-  }
-
-  function getPendingSelectedGenres() {
-    if (!selectedGenresRoot) return [];
-
-    return Array.from(selectedGenresRoot.querySelectorAll('[genreid]')).filter(function (node) {
-      return isPendingGenre(node) && isGenreVisible(node);
-    });
-  }
-
-  function syncPendingGenresToSearch(queryKey) {
-    if (!searchGenresRoot) return;
-
-    const existingIds = new Set(
-      Array.from(searchGenresRoot.querySelectorAll('[genreid]')).map(function (node) {
-        return String(node.getAttribute('genreid') || '');
-      }),
-    );
-
-    getPendingSelectedGenres().forEach(function (node) {
-      const genreName = getGenreName(node);
-      if (queryKey !== '' && !getEntityNameKey(genreName).includes(queryKey)) {
-        return;
-      }
-
-      const genreId = String(node.getAttribute('genreid') || '');
-      if (existingIds.has(genreId)) {
-        const existingNode = getSearchGenreNode(genreId);
-        if (existingNode) {
-          existingNode.classList.add('genre-selected');
-        }
-        return;
-      }
-
-      searchGenresRoot.appendChild(
-        createGenreElement(genreId, genreName, {
-          pendingCreate: true,
-          selected: true,
-          showRemoveIcon: false,
-        }),
-      );
-    });
   }
 
   async function fetchGenres(queryValue) {
@@ -307,20 +203,33 @@
     }
 
     const data = await response.json().catch(() => ({}));
-    return Array.isArray(data.results) ? data.results : [];
-  }
-
-  function updateGenreSearchState(genreId) {
-    const searchNode = getSearchGenreNode(genreId);
-    if (!searchNode) return;
-
-    searchNode.classList.toggle('genre-selected', isGenreSelected(genreId));
+    return {
+      results: Array.isArray(data.results) ? data.results : [],
+      databaseSize: Number(data.database_size),
+    };
   }
 
   function triggerGenreHeightUpdate() {
     if (!selectedGenresRoot) return;
     $(selectedGenresRoot).parent().trigger('event-height');
   }
+
+  const genresSelector = window.OWTaglikeSelector
+    ? window.OWTaglikeSelector.create({
+      selectedRoot: '#game-genres-selected',
+      searchRoot: '#game-genres-search-list',
+      searchInput: '#search-update-input-genres',
+      idAttribute: 'genreid',
+      selectedClass: 'genre-selected',
+      pendingPrefix: 'pending-genre',
+      searchEmptyText: 'Не найдено',
+      emptyNameMessage: 'Введите название нового жанра',
+      duplicateMessage: 'Этот жанр уже выбран',
+      createItemElement: createGenreItemElement,
+      fetchSearchResults: fetchGenres,
+      onSelectionChange: triggerGenreHeightUpdate,
+    })
+    : null;
 
   function collectBaseChanges() {
     const params = new URLSearchParams();
@@ -408,146 +317,35 @@
     }
   }
 
-  window.GameGenres = {
-    async refresh() {
-      if (!searchGenresRoot) return;
-
-      const queryValue = normalizeEntityName(genresSearchInput ? genresSearchInput.value : '');
-      const queryKey = getEntityNameKey(queryValue);
-      const requestId = ++genreSearchRequestCounter;
-
-      try {
-        const results = await fetchGenres(queryValue);
-        if (requestId !== genreSearchRequestCounter) return;
-
-        resetGenreSearchRoot();
-
-        results.forEach(function (item) {
-          const genreId = String(item.id || '');
-          const genreNode = createGenreElement(genreId, item.name, {
-            selected: isGenreSelected(genreId),
-            showRemoveIcon: false,
-          });
-          searchGenresRoot.appendChild(genreNode);
-        });
-
-        syncPendingGenresToSearch(queryKey);
-      } catch (error) {
-        if (requestId !== genreSearchRequestCounter) return;
-        showToast('Ошибка', error.message || String(error), 'danger');
-      }
-    },
-    toggle(node) {
-      const genreId = String(node.getAttribute('genreid') || '');
-      if (genreId === '') return;
-
-      const selectedNode = getSelectedGenreNode(genreId);
-      const alreadySelected = Boolean(selectedNode && !selectedNode.classList.contains('none-display'));
-
-      if (alreadySelected) {
-        if (selectedNode.hasAttribute('saved')) {
-          selectedNode.classList.add('none-display');
-        } else {
-          selectedNode.remove();
-        }
-      } else if (selectedNode) {
-        selectedNode.classList.remove('none-display');
-      } else {
-        const genreName = getGenreName(node);
-        if (selectedGenresRoot) {
-          selectedGenresRoot.appendChild(createGenreElement(genreId, genreName));
-        }
-      }
-
-      updateGenreSearchState(genreId);
-      triggerGenreHeightUpdate();
-    },
-    queueCreate() {
-      const genreName = normalizeEntityName(genresSearchInput ? genresSearchInput.value : '');
-      const genreNameKey = getEntityNameKey(genreName);
-
-      if (genreName === '') {
-        showToast('Пустое имя', 'Введите название нового жанра', 'info');
-        return;
-      }
-
-      const selectedGenre = findGenreByName(selectedGenresRoot, genreNameKey);
-      if (selectedGenre) {
-        if (!selectedGenre.classList.contains('none-display')) {
-          showToast('Уже добавлено', 'Этот жанр уже выбран', 'info');
-          return;
-        }
-
-        selectedGenre.classList.remove('none-display');
-        updateGenreSearchState(String(selectedGenre.getAttribute('genreid') || ''));
-        triggerGenreHeightUpdate();
-        return;
-      }
-
-      const searchGenre = findGenreByName(searchGenresRoot, genreNameKey);
-      if (searchGenre) {
-        if (!searchGenre.classList.contains('genre-selected')) {
-          window.GameGenres.toggle(searchGenre);
-        } else {
-          showToast('Уже добавлено', 'Этот жанр уже выбран', 'info');
-        }
-        return;
-      }
-
-      pendingGenreCreateCounter += 1;
-      const pendingGenreId = 'pending-genre-' + pendingGenreCreateCounter;
-
-      if (selectedGenresRoot) {
-        selectedGenresRoot.appendChild(
-          createGenreElement(pendingGenreId, genreName, {
-            pendingCreate: true,
+  window.GameGenres = genresSelector
+    ? {
+      refresh: genresSelector.refresh,
+      toggle: genresSelector.toggle,
+      queueCreate: genresSelector.queueCreate,
+      finalizeCreated: genresSelector.finalizeCreated,
+      getChanges() {
+        const state = genresSelector.getState();
+        return {
+          add: parseNumericIds(state.unsavedVisible),
+          remove: parseNumericIds(state.savedHidden),
+          create: state.pendingVisible.map(function (item) {
+            return {
+              tempId: item.id,
+              name: item.name,
+            };
           }),
-        );
-      }
-
-      if (searchGenresRoot) {
-        searchGenresRoot.appendChild(
-          createGenreElement(pendingGenreId, genreName, {
-            pendingCreate: true,
-            selected: true,
-            showRemoveIcon: false,
-          }),
-        );
-      }
-
-      window.GameGenres.refresh();
-      triggerGenreHeightUpdate();
-    },
-    finalizeCreated(tempId, realId) {
-      document.querySelectorAll('[genreid="' + tempId + '"]').forEach(function (node) {
-        node.setAttribute('genreid', String(realId));
-        if (node.dataset) {
-          delete node.dataset.pendingCreate;
-        }
-      });
-    },
-    getChanges() {
-      if (!selectedGenresRoot) {
+        };
+      },
+    }
+    : {
+      refresh() {},
+      toggle() {},
+      queueCreate() {},
+      finalizeCreated() {},
+      getChanges() {
         return { add: [], remove: [], create: [] };
-      }
-
-      const allSelected = Array.from(selectedGenresRoot.querySelectorAll('[genreid]'));
-      return {
-        add: allSelected
-          .filter((node) => !node.hasAttribute('saved') && !node.classList.contains('none-display') && !isPendingGenre(node))
-          .map((node) => Number(node.getAttribute('genreid'))),
-        remove: allSelected
-          .filter((node) => node.hasAttribute('saved') && node.classList.contains('none-display'))
-          .map((node) => Number(node.getAttribute('genreid'))),
-        create: allSelected
-          .filter((node) => !node.classList.contains('none-display') && isPendingGenre(node))
-          .map((node) => ({
-            tempId: String(node.getAttribute('genreid') || ''),
-            name: getGenreName(node),
-          })),
-      };
-    },
-  };
+      },
+    };
 
   window.toggleDeleteGameButton = function toggleDeleteGameButton() {
     const confirmInput = document.getElementById('delete-game-confirm');
