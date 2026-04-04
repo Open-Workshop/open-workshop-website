@@ -35,7 +35,7 @@
     <div class="right-bar">
         {% if resources['results']|length >0 %}
         <div class="slider{% if info['no_many_screenshots'] %} one_slider{% endif %}">
-            <ul class="js__slider__images slider__images">
+            <ul class="js__slider__images slider__images" data-photoswipe-gallery>
             {% for item in resources['results'] %}
                 <a href="{{ item['url'] }}" class="slider__images-item without-caption image-link">
                 <img src="{{ item['url'] }}" alt="Скриншот мода" class="slider__images-image" onerror="this.src='/assets/images/image-not-found.webp'" />  

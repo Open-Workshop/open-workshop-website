@@ -45,7 +45,7 @@
             </div>
         </div>
 
-        <div class="media-manager__list" id="media-list">
+        <div class="media-manager__list" id="media-list" data-photoswipe-gallery>
             {% for item in resources['results'] %}
             {% if item['type'] in ['logo', 'screenshot'] %}
             {% set is_storage_item = (item['url'] or '').startswith(storage_address) %}
