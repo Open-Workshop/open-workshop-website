@@ -91,9 +91,10 @@ window.Cards = {
         flap.classList.add('card-flap');
 
         const description = document.createElement('article');
+        description.classList.add('ow-description-content');
 
         var desc = cardData.short_description;
-        description.innerHTML = Formating.syntax2HTML(desc, true);
+        Formating.renderInto(description, desc, true);
 
         flap.appendChild(description);
 

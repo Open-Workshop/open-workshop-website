@@ -41,13 +41,19 @@
   }
 
   function getEditorValue(panelSelector) {
-    const textarea = document.querySelector(panelSelector + ' textarea.editing');
-    return textarea ? String(textarea.value || '') : '';
+    const descRoot = document.querySelector(panelSelector + ' .desc-edit');
+    if (window.OWDescEditors) {
+      return String(window.OWDescEditors.getValue(descRoot) || '');
+    }
+    return '';
   }
 
   function getEditorStartValue(panelSelector) {
-    const textarea = document.querySelector(panelSelector + ' textarea.editing');
-    return textarea ? String(textarea.getAttribute('startdata') || '') : '';
+    const descRoot = document.querySelector(panelSelector + ' .desc-edit');
+    if (window.OWDescEditors) {
+      return String(window.OWDescEditors.getStartValue(descRoot) || '');
+    }
+    return '';
   }
 
   function parseResponseMessage(text, fallback) {

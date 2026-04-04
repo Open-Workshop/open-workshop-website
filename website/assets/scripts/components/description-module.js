@@ -1,18 +1,27 @@
 (function () {
   const modules = new Map();
 
-  const defaultHelpText =
-    '[h1]Гайд По Форматированию![/h1]\n\nФорматирование работает как в [b]полном[/b] описании мода, так и в [i]коротком[/i].\n\nФорматирование поддерживает заголовки от 1 до 6 (от большего к меньшему).\nФорматирование в виде добавления ссылок как вида https://openworkshop.su , так и [url=https://openworkshop.su]текста с гиперссылкой[/url]\n\nТак же можно вставлять ссылки на изображения:\n[img]https://cdn.akamai.steamstatic.com/steam/apps/105600/header.jpg?t=1666290860[/img]\n\nА ещё можно создать список:\n[list]\n[*] Первый пункт\n[*] Второй пункт\n[/list]\n\n[h5]Удачи в разработке![/h5]';
-  const defaultWarningText = 'Вы редактируете текст гайда. Эти правки не сохраняются для описания мода.';
-
-  function normalizeButton(button) {
-    if (!button) return $();
-    return button.jquery ? button : $(button);
-  }
+  const defaultHelpText = [
+    '[h1]Гайд По Форматированию[/h1]',
+    '',
+    'Выделите текст, чтобы открыть bubble-панель форматирования.',
+    '',
+    '[b]Поддерживаются:[/b] заголовки, жирный, курсив, подчёркивание, зачёркивание, цитаты, ссылки, картинки и списки.',
+    '',
+    'Пример ссылки: [url=https://openworkshop.miskler.ru]Open Workshop[/url]',
+    'Пример картинки: [img]https://cdn.akamai.steamstatic.com/steam/apps/294100/header.jpg[/img]',
+    '',
+    '[list]',
+    '[*] Первый пункт',
+    '[*] Второй пункт',
+    '[/list]',
+  ].join('\n');
+  const defaultWarningText = 'Вы редактируете текст гайда. Эти правки не сохранятся в описание.';
 
   function showGuideWarning(module) {
-    if (module.$descEditArea.attr('tutorial') === undefined || module.guideEditWarned) return;
+    if (!module || module.helpValue === null || module.guideEditWarned) return;
     module.guideEditWarned = true;
+
     new Toast({
       title: 'Редактирование гайда',
       text: module.warningText,
@@ -20,26 +29,6 @@
       autohide: true,
       interval: 4500,
     });
-  }
-
-  function renderPreview(module) {
-    if (!module || !module.$descView.length || !module.$descEditArea.length) return;
-    module.$descView.html(Formating.syntax2HTML(module.$descEditArea.val()));
-  }
-
-  function setView(module, mode) {
-    if (!module) return;
-    if (module.viewToggle) module.viewToggle.checked = !!mode;
-    if (module.viewToggleWrap) module.viewToggleWrap.dataset.mode = mode ? 'preview' : 'edit';
-
-    if (mode) {
-      module.$descEdit.hide();
-      module.$descView.show();
-      renderPreview(module);
-    } else {
-      module.$descEdit.show();
-      module.$descView.hide();
-    }
   }
 
   function getModule(moduleKey) {
@@ -50,102 +39,90 @@
     const moduleKey = options && options.moduleKey;
     if (!moduleKey) return null;
 
-    const limit = options.limit != null ? String(options.limit) : null;
     const root = document.querySelector(`.mod-edit__content[data-desc-module="${moduleKey}"]`);
     if (!root) return null;
 
-    const $root = $(root);
-    const descEditSelector = limit ? `div[limit=${limit}]#desc-edit` : 'div#desc-edit';
-    const $descEdit = $root.find(descEditSelector).first();
-    const $descEditArea = $descEdit.find('textarea.editing').first();
-    const $descView = $root.find('.mod-edit__description-view').first();
-    const viewToggle = root.querySelector('.mod-edit__view-toggle-input');
-    const viewToggleWrap = root.querySelector('.mod-edit__view-toggle');
-
-    if (!$descEdit.length || !$descEditArea.length || !$descView.length) return null;
+    const descRoot = root.querySelector('.desc-edit');
+    const helpButton = root.querySelector('[data-desc-help-toggle]');
+    const editor = window.OWDescEditors ? window.OWDescEditors.init(descRoot) : null;
+    if (!descRoot || !editor) return null;
 
     const module = {
       moduleKey,
-      $root,
-      $descEdit,
-      $descEditArea,
-      $descView,
-      viewToggle,
-      viewToggleWrap,
+      root,
+      descRoot,
+      editor,
+      helpButton,
       helpText: options.helpText || defaultHelpText,
       warningText: options.warningText || defaultWarningText,
+      helpValue: null,
       guideEditWarned: false,
+      removeEditorListener: null,
     };
+
+    if (module.removeEditorListener) {
+      module.removeEditorListener();
+    }
+
+    module.removeEditorListener = editor.onChange(function () {
+      showGuideWarning(module);
+    });
+
+    if (helpButton && !helpButton.dataset.descHelpBound) {
+      helpButton.dataset.descHelpBound = '1';
+      helpButton.addEventListener('click', function () {
+        toggleHelp(moduleKey);
+      });
+    }
+
     modules.set(moduleKey, module);
-
-    if (module.viewToggle && !module.viewToggle.dataset.descModuleBound) {
-      module.viewToggle.dataset.descModuleBound = '1';
-      module.viewToggle.addEventListener('change', function () {
-        setView(module, module.viewToggle.checked);
-      });
-    }
-
-    if (!module.$descEditArea.data('ow-desc-bound')) {
-      module.$descEditArea.data('ow-desc-bound', true);
-      module.$descEditArea.on('input', function () {
-        showGuideWarning(module);
-        if (module.viewToggle && module.viewToggle.checked) {
-          renderPreview(module);
-        }
-      });
-    }
-
-    setView(module, false);
     return module;
   }
 
-  function setViewByKey(moduleKey, mode) {
-    setView(getModule(moduleKey), mode);
-  }
-
-  function getValue(moduleKey, useTutorialValue) {
+  function getValue(moduleKey, useHelpFallback) {
     const module = getModule(moduleKey);
-    if (!module || !module.$descEditArea.length) return '';
-    if (useTutorialValue && module.$descEditArea.attr('tutorial') !== undefined) {
-      return module.$descEditArea.attr('tutorial');
+    if (!module) return '';
+    if (useHelpFallback && module.helpValue !== null) {
+      return module.helpValue;
     }
-    return module.$descEditArea.val();
+    return module.editor.getValue();
   }
 
-  function toggleHelp(button) {
-    const $button = normalizeButton(button);
-    const moduleKey = $button.closest('.mod-edit__content').attr('data-desc-module');
+  function toggleHelp(moduleKey) {
     const module = getModule(moduleKey);
     if (!module) return;
 
     module.guideEditWarned = false;
 
-    if (module.$descEditArea.attr('tutorial') !== undefined) {
-      $button.removeClass('toggle toggled');
-      module.$descEditArea.val(module.$descEditArea.attr('tutorial'));
-      module.$descEditArea.removeAttr('tutorial');
-    } else {
-      $button.removeClass('toggle').addClass('toggled');
-      module.$descEditArea.attr('tutorial', module.$descEditArea.val());
-      module.$descEditArea.val(module.helpText);
+    if (module.helpValue !== null) {
+      module.editor.setValue(module.helpValue, { silent: true });
+      module.helpValue = null;
+      if (module.helpButton) {
+        module.helpButton.classList.remove('toggled');
+      }
+      return;
     }
 
-    if (typeof fullDescUpdate === 'function') {
-      fullDescUpdate(module.$descEditArea);
+    module.helpValue = module.editor.getValue();
+    module.editor.setValue(module.helpText, { silent: true });
+    if (module.helpButton) {
+      module.helpButton.classList.add('toggled');
     }
-    renderPreview(module);
   }
 
   window.OWDescriptionModules = {
     init,
     get: getModule,
-    setView: setViewByKey,
     getValue,
     toggleHelp,
   };
 
-  // Backward-compatible inline handler used in templates.
   window.toggleHelpMode = function toggleHelpMode(button) {
-    window.OWDescriptionModules.toggleHelp(button);
+    const root = button instanceof Element
+      ? button.closest('.mod-edit__content')
+      : (button && button.jquery ? button.closest('.mod-edit__content').get(0) : null);
+    const moduleKey = root ? root.getAttribute('data-desc-module') : null;
+    if (!moduleKey) return;
+    toggleHelp(moduleKey);
   };
 })();

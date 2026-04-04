@@ -29,6 +29,27 @@
     deleted: new Set(),
   };
 
+  function getDescModuleRoot(moduleKey) {
+    return document.querySelector(`.mod-edit__content[data-desc-module="${moduleKey}"] .desc-edit`);
+  }
+
+  function getDescModuleValue(moduleKey) {
+    if (window.OWDescriptionModules) {
+      return window.OWDescriptionModules.getValue(moduleKey, true);
+    }
+    if (window.OWDescEditors) {
+      return window.OWDescEditors.getValue(getDescModuleRoot(moduleKey));
+    }
+    return '';
+  }
+
+  function getDescModuleStartValue(moduleKey) {
+    if (window.OWDescEditors) {
+      return window.OWDescEditors.getStartValue(getDescModuleRoot(moduleKey));
+    }
+    return '';
+  }
+
   function showUploadProgress() {
     if (typeof uploadStart === 'function') {
       uploadStart();
@@ -293,11 +314,11 @@
   });
 
   function initCatalogPreview() {
-    const $shortDescD = $('.mod-edit__content[data-desc-module="catalog"] div[limit=256] textarea.editing').first();
+    const catalogDescRoot = getDescModuleRoot('catalog');
     const $titleInput = $('input.title-mod');
-    if (!$shortDescD.length) return;
+    if (!catalogDescRoot) return;
 
-    const initialShortDesc = $shortDescD.val();
+    const initialShortDesc = getDescModuleValue('catalog');
     const initialTitle = $titleInput.length ? $titleInput.val() : '';
     const card = buildCatalogPreviewCard(initialShortDesc, initialTitle);
     if (!card) return;
@@ -306,16 +327,16 @@
     const $cardTitle = $(card).find(`#titlename${modID}`).first();
 
     $cardDescD.attr('cashData', initialShortDesc);
-    $cardDescD.html(Formating.syntax2HTML(initialShortDesc));
+    Formating.renderInto($cardDescD.get(0), initialShortDesc);
     $cardTitle.attr('cashData', initialTitle);
     $cardTitle.attr('title', initialTitle);
     $cardTitle.text(initialTitle);
 
     setInterval(function () {
-      const dataText = $shortDescD.val();
+      const dataText = getDescModuleValue('catalog');
       if ($cardDescD.attr('cashData') != dataText) {
         $cardDescD.attr('cashData', dataText);
-        $cardDescD.html(Formating.syntax2HTML(dataText));
+        Formating.renderInto($cardDescD.get(0), dataText);
       }
 
       const nextTitle = $titleInput.length ? $titleInput.val() : '';
@@ -690,8 +711,6 @@
       moduleKey: 'catalog',
       limit: 256,
     });
-    window.OWDescriptionModules.setView('full', false);
-    window.OWDescriptionModules.setView('catalog', false);
   }
 
   const publicButton = $('button.public-mod-toggle');
@@ -704,11 +723,6 @@
     const mode = publicButton.attr('public-mode');
     publicIcon.attr('src', publicIcons[mode]);
     publicButton.attr('title', publicTitles[mode]);
-  };
-
-  window.fullEditView = function fullEditView(mode) {
-    if (!window.OWDescriptionModules) return;
-    window.OWDescriptionModules.setView('full', mode);
   };
 
   function initDeleteModControl() {
@@ -740,20 +754,14 @@
 
   function collectModChanges() {
     const title = $('input.title-mod');
-    const shortDesc = $('.mod-edit__content[data-desc-module="catalog"] div[limit=256] textarea.editing').first();
-    const fullDesc = $('.mod-edit__content[data-desc-module="full"] div[limit=10000] textarea.editing').first();
     const pub = $('button.public-mod-toggle');
-    const shortDescValue = window.OWDescriptionModules
-      ? window.OWDescriptionModules.getValue('catalog', true)
-      : (shortDesc.length ? shortDesc.val() : '');
-    const fullDescValue = window.OWDescriptionModules
-      ? window.OWDescriptionModules.getValue('full', true)
-      : (fullDesc.length ? fullDesc.val() : '');
+    const shortDescValue = getDescModuleValue('catalog');
+    const fullDescValue = getDescModuleValue('full');
 
     return {
       mod_name: diff(title.val(), title.attr('startdata')),
-      mod_short_description: diff(shortDescValue, shortDesc.attr('startdata')),
-      mod_description: diff(fullDescValue, fullDesc.attr('startdata')),
+      mod_short_description: diff(shortDescValue, getDescModuleStartValue('catalog')),
+      mod_description: diff(fullDescValue, getDescModuleStartValue('full')),
       mod_public: diff(pub.attr('public-mode'), pub.attr('startdata')),
     };
   }

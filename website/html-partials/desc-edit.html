@@ -1,9 +1,25 @@
-<div limit="{{ limit | default('256') }}" class="desc-edit" id="desc-edit">
-    <textarea placeholder="{{ placeholder | default('Описание не может быть пустым!(') }}" class="editing" spellcheck="false">{{ init_text | default('') }}</textarea>
-    <pre id="highlighting" aria-hidden="true">
-        <code class="language-ow" id="highlighting-content">
-        </code>
-      
-        <h3 title="Ограничение в {{ limit | default('256') }} символов описания!" id="limit-desc-text"></h3>
-    </pre>
+<div
+  limit="{{ limit | default('256') }}"
+  class="desc-edit"
+  data-desc-edit
+>
+  <div class="desc-edit__surface">
+    <div
+      class="desc-edit__editor"
+      data-desc-editor
+      data-placeholder="{{ placeholder | default('Описание не может быть пустым!(') }}"
+    ></div>
+  </div>
+
+  <textarea
+    placeholder="{{ placeholder | default('Описание не может быть пустым!(') }}"
+    class="desc-edit__transport"
+    data-desc-transport
+    spellcheck="false"
+    hidden
+  >{{ init_text | default('') }}</textarea>
+
+  <div class="desc-edit__status">
+    <span class="desc-edit__limit" data-desc-limit title="Ограничение в {{ limit | default('256') }} символов описания!"></span>
+  </div>
 </div>

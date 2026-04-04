@@ -6,6 +6,11 @@
   const ow = window.OWCore.getConfig ? window.OWCore.getConfig() : (window.OW || {});
   const rightsList = (ow.rights && ow.rights.list) || [];
   const userId = root.dataset.userId;
+  const aboutView = document.querySelector('#page-profile article#mod-description');
+
+  if (aboutView) {
+    Formating.renderInto(aboutView, aboutView.innerHTML);
+  }
 
   const pageProfileButton = document.querySelector('#page-profile-button');
   if (pageProfileButton && window.Pager) {
@@ -134,9 +139,11 @@
       formData.append('grade', $grade.val());
       tofetch = true;
     }
-    const $about = $('#page-profile').find('textarea.editing');
-    if ($about.val() != $about.attr('startdata')) {
-      formData.append('about', $about.val());
+    const aboutRoot = document.querySelector('#page-profile .desc-edit');
+    const aboutValue = window.OWDescEditors ? window.OWDescEditors.getValue(aboutRoot) : '';
+    const aboutStartValue = window.OWDescEditors ? window.OWDescEditors.getStartValue(aboutRoot) : '';
+    if (aboutValue != aboutStartValue) {
+      formData.append('about', aboutValue);
       tofetch = true;
     }
     const $input = $('#file-select-avatar');

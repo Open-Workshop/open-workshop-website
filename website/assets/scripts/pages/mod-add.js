@@ -31,7 +31,6 @@
         moduleKey: module.module_key,
         limit: module.limit,
       });
-      window.OWDescriptionModules.setView(module.module_key, false);
     });
   }
 
@@ -143,10 +142,13 @@
       return String(window.OWDescriptionModules.getValue(module.module_key, useTutorialValue) || '');
     }
 
-    const textarea = document.querySelector(
-      '.mod-edit__content[data-desc-module="' + module.module_key + '"] textarea.editing',
+    const descRoot = document.querySelector(
+      '.mod-edit__content[data-desc-module="' + module.module_key + '"] .desc-edit',
     );
-    return textarea ? String(textarea.value || '') : '';
+    if (window.OWDescEditors) {
+      return String(window.OWDescEditors.getValue(descRoot) || '');
+    }
+    return '';
   }
 
   function normalizeIdCandidate(value) {

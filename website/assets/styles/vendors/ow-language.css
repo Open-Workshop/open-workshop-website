@@ -1,187 +1,269 @@
-/* Please see the article */
-
-.editing, #highlighting {
-    /* Both elements need the same text and space styling so they are directly on top of each other */
-    padding: 10px;
-    margin: 0;
-    border: 0;
-    width: 100%;
-    height: 150px;
-    min-height: 53px;
-    overflow: hidden;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-.editing, #highlighting, #highlighting * {
-    /* Also add text styles to highlighing tokens */
-    tab-size: 2;
-    font-size: 15pt;
-    tab-size: 1pt;
-    line-height: 25pt;
-    font-family: unset;
-
-    word-wrap: break-word;
-    text-wrap: wrap;
-    white-space: pre-wrap;
+.desc-edit {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-
-#limit-desc-text {
-    position: absolute; 
-    right: 5pt; 
-    bottom: 5pt; 
-    backdrop-filter: blur(5px); 
-    padding-left: 5pt; 
-    padding-right: 5pt; 
-    border-radius: 10pt; 
-    background: #90909030;
-    text-indent: 0;
+.desc-edit__surface {
+  width: 100%;
+  min-height: 200px;
+  padding: 10px 12px;
+  border: var(--panel-border);
+  border-radius: var(--radius-md);
+  background: var(--panel-on-page-background);
 }
 
-
-/* Move the textarea in front of the result */
-
-#highlighting {
-    z-index: 0;
-    border-radius: 10pt;
-    text-indent: -33.5pt;
-    border: var(--panel-border);
-}
-code.invisible-highlighting {
-    opacity: 0;
-}
-textarea.invisible-highlighting {
-    color: white;
+.desc-edit__editor {
+  width: 100%;
 }
 
-
-/* Make textarea almost completely transparent */
-
-.editing {
-    background: #ffffff00;
-    color: rgba(0, 204, 255, 0);
-    caret-color: red;
-    resize: none;
-    z-index: 1;
+.desc-edit__transport {
+  display: none;
 }
 
-/* Paragraphs; First Image */
-p code {
-    border-radius: 2px;
-    background-color: #eee;
-    color: #111;
+.desc-edit__status {
+  display: flex;
+  justify-content: flex-end;
 }
 
-
-/* Syntax Highlighting from prism.js starts below, partly modified: */
-
-/* PrismJS 1.23.0
-https://prismjs.com/download.html#themes=prism-funky&languages=markup */
-/**
-* prism.js Funky theme
-* Based on “Polyfilling the gaps” talk slides http://lea.verou.me/polyfilling-the-gaps/
-* @author Lea Verou
-*/
-
-code[class*="language-"],
-pre[class*="language-"] {
-    font-size: 1em;
-    text-align: left;
-    word-spacing: normal;
-    word-break: normal;
-    word-wrap: normal;
-    line-height: 1.5;
-
-    -moz-tab-size: 4;
-    -o-tab-size: 4;
-    tab-size: 4;
-
-    -webkit-hyphens: none;
-    -moz-hyphens: none;
-    -ms-hyphens: none;
-    hyphens: none;
+.desc-edit__limit {
+  min-width: 44px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(144, 144, 144, 0.18);
+  color: #dbe0ec;
+  font-size: 0.95rem;
+  text-align: center;
 }
 
-/* Code blocks */
-pre[class*="language-"] {
-    padding: .4em .8em;
-    margin: .5em 0;
-    overflow: auto;
-    background: var(--panel-on-page-background);
+.desc-edit__limit.is-over-limit {
+  background: rgba(140, 29, 40, 0.22);
+  color: #ff9da8;
 }
 
-code[class*="language-"] {
-    color: white;
+.desc-edit .ql-container.ql-bubble {
+  border: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  color: white;
 }
 
-/* Inline code */
-:not(pre) > code[class*="language-"] {
-    padding: .2em;
-    border-radius: .3em;
-    box-shadow: none;
+.ow-description-content {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: white;
 }
 
-.token {
-    border-radius: 2pt;
-    padding-top: 3pt;
-    padding-bottom: 3pt;
-    background-color: #484B5B;
+.desc-edit .ql-editor {
+  min-height: 178px;
+  overflow-y: visible;
 }
 
-.token.img {
-    color: #FF6885;
+.desc-edit .ql-editor.ql-blank::before {
+  left: 0;
+  right: 0;
+  color: rgba(220, 226, 238, 0.45);
+  font-style: normal;
 }
 
-.token.url {
-    color: #FF6868;
+.ow-description-content > * + * {
+  margin-top: 0.8rem;
 }
 
-.token.link {
-    color: #FF6885;
+.ow-description-content p,
+.ow-description-content h1,
+.ow-description-content h2,
+.ow-description-content h3,
+.ow-description-content h4,
+.ow-description-content h5,
+.ow-description-content h6,
+.ow-description-content blockquote,
+.ow-description-content ul,
+.ow-description-content ol,
+.ow-description-content hr,
+.ow-description-content table {
+  margin: 0;
+  padding: 0;
 }
 
-.token.list {
-    color: #8368FF;
+.ow-description-content br {
+  display: inline;
+  height: auto;
+  line-height: inherit;
+  content: none;
 }
 
-.token.point {
-    color: #FB68FF;
+.ow-description-content h1 {
+  font-size: 2rem;
 }
 
-.token.bold {
-    color: #6896FF;
-    font-weight: bold;
-    letter-spacing: -0.5pt;
+.ow-description-content h2 {
+  font-size: 1.65rem;
 }
 
-.token.italic {
-    color: #68C8FF;
-    font-style: italic;
+.ow-description-content h3 {
+  font-size: 1.35rem;
 }
 
-.token.title {
-    color: #68B0FF;
-    background-color: rgb(60, 60, 60);
+.ow-description-content h4 {
+  font-size: 1.18rem;
 }
 
-.token.punctuation {
-    color: #FFCC68;
-    font-weight: normal;
-    font-style: normal;
+.ow-description-content h5 {
+  font-size: 1.05rem;
 }
 
-/* Plugin styles: Diff Highlight */
-pre.diff-highlight.diff-highlight > code .token.deleted:not(.prefix),
-pre > code.diff-highlight.diff-highlight .token.deleted:not(.prefix) {
-    background-color: rgba(255, 0, 0, .3);
-    display: inline;
+.ow-description-content h6 {
+  font-size: 0.95rem;
 }
 
-pre.diff-highlight.diff-highlight > code .token.inserted:not(.prefix),
-pre > code.diff-highlight.diff-highlight .token.inserted:not(.prefix) {
-    background-color: rgba(0, 255, 128, .3);
-    display: inline;
+.ow-description-content a:not(.ql-preview):not(.ql-action):not(.ql-remove) {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  margin: 2px 0;
+  border-radius: var(--radius-sm);
+  background-color: rgb(61, 61, 61, 0.5);
+  color: rgb(230, 238, 255);
+  text-decoration: none;
 }
 
-/* End of prism.js syntax highlighting*/
+.ow-description-content blockquote {
+  margin-left: 0;
+  padding: 10px 14px;
+  border-left: 4px solid rgb(0, 80, 0);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.12));
+}
+
+.ow-description-content ul,
+.ow-description-content ol {
+  padding-left: 1.4rem;
+}
+
+.ow-description-content ul {
+  list-style: disc outside;
+}
+
+.ow-description-content ol {
+  list-style: decimal outside;
+}
+
+.ow-description-content li {
+  padding-left: 0;
+}
+
+.ow-description-content li + li {
+  margin-top: 0.28rem;
+}
+
+.ow-description-content img {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+.ow-description-content hr {
+  margin: 0.9rem 0;
+}
+
+.ow-description-content code {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.desc-edit .ql-bubble .ql-tooltip {
+  z-index: 60;
+}
+
+.desc-edit .ql-bubble .ql-tooltip:not(.ql-editing) {
+  z-index: 60;
+  width: max-content !important;
+  max-width: min(calc(100vw - 24px), 640px);
+  border-radius: 24px;
+}
+
+.desc-edit .ql-bubble .ql-tooltip.ql-editing {
+  max-width: min(calc(100vw - 24px), 560px);
+}
+
+.desc-edit .ql-bubble .ql-tooltip-editor input[type='text'] {
+  padding-right: 52px;
+}
+
+.desc-edit .ql-bubble .ql-tooltip a.ql-close::before {
+  color: #e7eaf2;
+}
+
+.desc-edit .ql-toolbar.ql-bubble,
+.desc-edit .ql-bubble .ql-toolbar {
+  display: flex;
+  align-items: center;
+  width: auto !important;
+  max-width: 100%;
+  padding: 0;
+}
+
+.desc-edit .ql-bubble .ql-toolbar::after {
+  display: none;
+}
+
+.desc-edit .ql-bubble .ql-toolbar .ql-formats {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  float: none;
+}
+
+.desc-edit .ql-bubble .ql-toolbar .ql-formats:first-child {
+  margin-left: 0;
+}
+
+.desc-edit .ql-bubble .ql-toolbar button,
+.desc-edit .ql-bubble .ql-toolbar .ql-picker {
+  float: none;
+  flex: none;
+}
+
+.desc-edit .ql-bubble .ql-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desc-edit .ql-bubble .ql-toolbar button svg {
+  float: none;
+}
+
+.desc-edit .ql-bubble .ql-toolbar .ql-picker {
+  min-width: 96px;
+}
+
+.desc-edit .ql-bubble .ql-toolbar .ql-picker-label {
+  padding-right: 18px;
+}
+
+.desc-edit .ql-bubble .ql-toolbar .ql-picker-options {
+  z-index: 2;
+}
+
+.desc-edit .ql-bubble .ql-toolbar button:hover .ql-stroke,
+.desc-edit .ql-bubble .ql-toolbar button.ql-active .ql-stroke,
+.desc-edit .ql-bubble .ql-toolbar button:hover .ql-stroke-miter,
+.desc-edit .ql-bubble .ql-toolbar button.ql-active .ql-stroke-miter {
+  stroke: white;
+}
+
+.desc-edit .ql-bubble .ql-toolbar button:hover .ql-fill,
+.desc-edit .ql-bubble .ql-toolbar button.ql-active .ql-fill,
+.desc-edit .ql-bubble .ql-toolbar button:hover .ql-stroke.ql-fill,
+.desc-edit .ql-bubble .ql-toolbar button.ql-active .ql-stroke.ql-fill {
+  fill: white;
+}

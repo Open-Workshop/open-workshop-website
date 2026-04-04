@@ -2,6 +2,11 @@
 const millisecondsPerDay = Math.floor(1000 * 60 * 60 * 24); // Количество миллисекунд в одном дне
 
 $(document).ready(function() {
+    const about = document.getElementById('mod-description');
+    if (about) {
+        Formating.renderInto(about, about.innerHTML);
+    }
+
     const userMute = document.getElementById('user-mute');
 
     if (userMute != null) {
