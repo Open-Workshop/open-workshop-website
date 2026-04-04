@@ -1,715 +1,31 @@
-(function () {
-  const root = document.getElementById('main-mod-edit');
-  if (!root) return;
+/* eslint-env browser */
 
-  const modID = parseInt(root.dataset.modId, 10);
-  const ow = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
+(function () {
+  const runtime = window.OWEditRuntime;
+  const root = document.getElementById('main-mod-edit');
+  if (!runtime || !root) return;
+
+  const modId = Number(root.dataset.modId || 0);
+  const config = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
   const apiPaths = window.OWCore.getApiPaths();
-  const publicIcons = (ow.assets && ow.assets.icons && ow.assets.icons.public) || {
+  const publicIcons = (config.assets && config.assets.icons && config.assets.icons.public) || {
     0: '/assets/images/svg/white/eye.svg',
     1: '/assets/images/svg/white/link.svg',
     2: '/assets/images/svg/white/lock.svg',
   };
-  const stageLabels = {
-    uploading: 'Загрузка файла...',
-    uploaded: 'Файл загружен',
-    repacking: 'Перепаковка файла...',
-    packed: 'Ожидание сохранения...',
-    downloading: 'Скачивание файла...',
-    downloaded: 'Файл скачан',
-  };
-
   const publicTitles = {
     0: 'Доступен всем',
     1: 'Доступен по ссылке',
     2: 'Доступен только владельцам',
   };
 
-  const mediaManagerState = {
-    deleted: new Set(),
-  };
-  const uploadProgress = window.OWUI
-    ? window.OWUI.createUploadProgress(root.querySelector('[data-upload-progress-root]'))
-    : null;
-
-  function getDescModuleRoot(moduleKey) {
-    return document.querySelector(`.mod-edit__content[data-desc-module="${moduleKey}"] .desc-edit`);
-  }
-
-  function getDescModuleValue(moduleKey) {
-    if (window.OWDescriptionModules) {
-      return window.OWDescriptionModules.getValue(moduleKey, true);
-    }
-    if (window.OWDescEditors) {
-      return window.OWDescEditors.getValue(getDescModuleRoot(moduleKey));
-    }
-    return '';
-  }
-
-  function getDescModuleStartValue(moduleKey) {
-    if (window.OWDescEditors) {
-      return window.OWDescEditors.getStartValue(getDescModuleRoot(moduleKey));
-    }
-    return '';
-  }
-
-  function showUploadProgress() {
-    if (uploadProgress) {
-      uploadProgress.start();
-      return;
-    }
-
-    const wrap = root.querySelector('[data-upload-progress-root]');
-    if (wrap) wrap.hidden = false;
-  }
-
-  function setUploadStatus(text) {
-    const value = text || '';
-    if (uploadProgress) {
-      uploadProgress.setLabel(value);
-      return;
-    }
-    const el = root.querySelector('[data-upload-progress-text]');
-    if (el) el.textContent = value;
-  }
-
-  function setUploadProgress(percent) {
-    const value = Number.isFinite(percent) ? percent : 0;
-    if (uploadProgress) {
-      uploadProgress.setProgress(value);
-      return;
-    }
-    const el = root.querySelector('[data-upload-progress-bar]');
-    if (el) el.style.width = value + '%';
-  }
-
-  function updateStage(stage) {
-    if (!stage) return;
-    const label = stageLabels[stage] || stage;
-    setUploadStatus(label);
-  }
-
-  function parseJwt(token) {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    let payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padding = payload.length % 4;
-    if (padding) {
-      payload += '='.repeat(4 - padding);
-    }
-    try {
-      const decoded = atob(payload);
-      return JSON.parse(decoded);
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function getWebSocketUrl(baseUrl, path, token) {
-    const wsBase = baseUrl.replace(/^http/, 'ws');
-    const url = new URL(path, wsBase);
-    url.searchParams.set('token', token);
-    return url.toString();
-  }
-
-  async function fetchModInfo() {
-    const baseUrl = window.OWCore.apiUrl(
-      window.OWCore.formatPath(apiPaths.mod.info.path, { mod_id: modID }),
-    );
-    const url = new URL(baseUrl, window.location.origin);
-    url.searchParams.set('dates', 'true');
-    const resp = await fetch(url.toString(), { credentials: 'include' }).catch(() => null);
-    if (!resp || !resp.ok) return null;
-    return resp.json().catch(() => null);
-  }
-
-  async function startUpdateTransfer(formData) {
-    const endpoint = apiPaths.mod.file;
-    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
-    const managerResp = await fetch(url, {
-      method: endpoint.method,
-      body: formData,
-      credentials: 'include',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        Accept: 'application/json',
-      },
-    });
-
-    if (managerResp.ok) {
-      const payload = await managerResp.json().catch(() => ({}));
-      if (payload && payload.transfer_url) {
-        return payload;
-      }
-      throw new Error('Ответ менеджера некорректен');
-    }
-
-    if (managerResp.status === 307 || managerResp.status === 302) {
-      const redirectUrl = managerResp.headers.get('Location');
-      if (!redirectUrl) {
-        throw new Error('Redirect URL не получен');
-      }
-      return { transfer_url: redirectUrl };
-    }
-
-    const text = await managerResp.text();
-    throw new Error(text || `Ошибка (${managerResp.status})`);
-  }
-
-  async function startResourceTransfer(formData, resourceId = null) {
-    const endpoint = resourceId ? apiPaths.resource.upload_init_edit : apiPaths.resource.upload_init;
-    const endpointPath = resourceId
-      ? window.OWCore.formatPath(endpoint.path, { resource_id: resourceId })
-      : endpoint.path;
-    const url = window.OWCore.apiUrl(endpointPath);
-    const managerResp = await fetch(url, {
-      method: endpoint.method,
-      body: formData,
-      credentials: 'include',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        Accept: 'application/json',
-      },
-    });
-
-    if (managerResp.ok) {
-      const payload = await managerResp.json().catch(() => ({}));
-      if (payload && payload.transfer_url) {
-        return payload;
-      }
-      throw new Error('Ответ менеджера некорректен');
-    }
-
-    if (managerResp.status === 307 || managerResp.status === 302) {
-      const redirectUrl = managerResp.headers.get('Location');
-      if (!redirectUrl) {
-        throw new Error('Redirect URL не получен');
-      }
-      return { transfer_url: redirectUrl };
-    }
-
-    const text = await managerResp.text();
-    throw new Error(text || `Ошибка (${managerResp.status})`);
-  }
-
-  async function uploadFileToTransfer(file, transfer) {
-    const uploadUrl = transfer && transfer.transfer_url ? transfer.transfer_url : null;
-    if (!uploadUrl) {
-      throw new Error('Не удалось получить ссылку загрузки');
-    }
-    const parsedUpload = new URL(uploadUrl);
-    if (file && file.name) {
-      parsedUpload.searchParams.set('filename', file.name);
-    }
-    if (file && Number.isFinite(file.size) && file.size >= 0) {
-      parsedUpload.searchParams.set('size', String(file.size));
-    }
-    const resp = await fetch(parsedUpload.toString(), {
-      method: 'POST',
-      body: file,
-      headers: {
-        'Content-Type': 'application/octet-stream',
-      },
-      credentials: 'omit',
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      throw new Error(text || `Ошибка (${resp.status})`);
-    }
-  }
-
-  function getLogoUrlFromMedia() {
-    const items = document.querySelectorAll('.media-item');
-    for (const item of items) {
-      const typeSelect = item.querySelector('.media-item__type');
-      const type = typeSelect ? typeSelect.value : item.dataset.startType;
-      if (type !== 'logo') continue;
-      const link = item.querySelector('.media-item__preview');
-      if (link && link.getAttribute('href')) return link.getAttribute('href');
-      const img = item.querySelector('img');
-      if (img && img.src) return img.src;
-    }
-    return null;
-  }
-
-  function getCatalogPreviewLogo() {
-    return getLogoUrlFromMedia() || '/assets/images/loading.webp';
-  }
-
-  function updateCatalogLogo() {
-    const previewLogo = document.getElementById(`preview-logo-card-${modID}`);
-    if (previewLogo) {
-      previewLogo.setAttribute('src', getCatalogPreviewLogo());
-    }
-  }
-
-  function buildCatalogPreviewCard(shortDescription, titleValue) {
-    const cardsContainer = document.querySelector('div.mod-edit__catalog-cards');
-    if (!cardsContainer || !window.Cards || typeof window.Cards.create !== 'function') return null;
-
-    const sizeText = cardsContainer.dataset.modSize || '';
-    const gameId = cardsContainer.dataset.gameId || '';
-    const doplink = gameId ? `?sgame=no&game=${encodeURIComponent(gameId)}` : '';
-    const logoHref = getCatalogPreviewLogo();
-    const tags = sizeText
-      ? [{ text: '📦', description: 'Размер мода', value: sizeText }]
-      : [];
-
-    const card = window.Cards.create(
-      {
-        id: modID,
-        name: titleValue || '',
-        short_description: shortDescription || '',
-        logo: logoHref,
-        doplink,
-      },
-      0,
-      true,
-      '',
-      false,
-      tags,
-    );
-
-    cardsContainer.innerHTML = '';
-    cardsContainer.appendChild(card);
-    return card;
-  }
-
-  function initModEditPage() {
-    setTimeout(function () {
-      root.style.opacity = 1;
-    }, 500);
-
-    const startBtn = document.querySelector('#start-page-button');
-    if (startBtn && window.Pager) {
-      Pager.updateSelect.call(startBtn);
-      window.addEventListener('popstate', function () {
-        Pager.updateSelect.call(startBtn);
-      });
-    }
-
-    initMediaManager();
-    initDescriptionModules();
-    initCatalogPreview();
-    initPublicToggle();
-    initDeleteModControl();
-  }
-
-  function initCatalogPreview() {
-    const catalogDescRoot = getDescModuleRoot('catalog');
-    const titleInput = document.querySelector('input.title-mod');
-    const mediaManager = document.getElementById('media-manager');
-    if (!catalogDescRoot) return;
-
-    const card = buildCatalogPreviewCard(
-      getDescModuleValue('catalog'),
-      titleInput ? titleInput.value : '',
-    );
-    if (!card) return;
-
-    const cardDesc = card.querySelector('article');
-    const cardTitle = card.querySelector(`#titlename${modID}`);
-
-    if (!cardDesc || !cardTitle) return;
-
-    function renderPreviewDescription() {
-      Formating.renderInto(cardDesc, getDescModuleValue('catalog'));
-    }
-
-    function renderPreviewTitle() {
-      const nextTitle = titleInput ? titleInput.value : '';
-      cardTitle.setAttribute('title', nextTitle);
-      cardTitle.textContent = nextTitle;
-    }
-
-    renderPreviewDescription();
-    renderPreviewTitle();
-    updateCatalogLogo();
-
-    if (titleInput) {
-      titleInput.addEventListener('input', renderPreviewTitle);
-      titleInput.addEventListener('change', renderPreviewTitle);
-    }
-
-    if (window.OWDescEditors) {
-      const descEditor = window.OWDescEditors.get(catalogDescRoot);
-      if (descEditor) {
-        descEditor.onChange(renderPreviewDescription);
-      }
-    }
-
-    if (mediaManager) {
-      mediaManager.addEventListener('ow:media-manager-change', updateCatalogLogo);
-    }
-  }
-
-  function initMediaManager() {
-    const manager = document.getElementById('media-manager');
-    if (!manager) return;
-
-    const list = manager.querySelector('.media-manager__list');
-    const empty = manager.querySelector('[data-media-empty]');
-    const countEl = manager.querySelector('[data-media-count]');
-    const logoStateEl = manager.querySelector('[data-media-logo-state]');
-    const modeButtons = manager.querySelectorAll('[data-media-mode]');
-    const urlRow = manager.querySelector('[data-media-row="url"]');
-    const fileRow = manager.querySelector('[data-media-row="file"]');
-    const dropzone = manager.querySelector('[data-media-dropzone]');
-    const urlInput = manager.querySelector('[data-media-input="url"]');
-    const fileInput = manager.querySelector('[data-media-input="file"]');
-    const typeInput = manager.querySelector('[data-media-input="type"]');
-    const typeFileInput = manager.querySelector('[data-media-input="type-file"]');
-    const addUrlButton = manager.querySelector('[data-media-action="add"]');
-    const addFileButton = manager.querySelector('[data-media-action="add-file"]');
-
-    if (!list) return;
-
-    let mode = 'url';
-    let storageHost = '';
-
-    if (manager.dataset.storageOrigin) {
-      try {
-        storageHost = new URL(manager.dataset.storageOrigin).hostname;
-      } catch (err) {
-        storageHost = '';
-      }
-    }
-
-    function isHttpUrl(value) {
-      if (!value) return false;
-      try {
-        const parsed = new URL(value);
-        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-      } catch (err) {
-        return false;
-      }
-    }
-
-    function isStorageUrl(value) {
-      if (!value || !storageHost) return false;
-      try {
-        const parsed = new URL(value, window.location.origin);
-        return parsed.hostname === storageHost;
-      } catch (err) {
-        return false;
-      }
-    }
-
-    function getTypeLabel(type) {
-      return type === 'logo' ? 'Логотип' : 'Скриншот';
-    }
-
-    function updateLogoState() {
-      if (!logoStateEl) return;
-
-      const logoExists = Array.from(list.querySelectorAll('.media-item')).some((item) => {
-        const typeSelect = item.querySelector('.media-item__type');
-        const type = typeSelect ? typeSelect.value : item.dataset.startType;
-        return type === 'logo';
-      });
-
-      if (logoExists) {
-        logoStateEl.textContent = 'Логотип выбран';
-        logoStateEl.classList.add('has-logo');
-      } else {
-        logoStateEl.textContent = 'Логотип не выбран';
-        logoStateEl.classList.remove('has-logo');
-      }
-    }
-
-    function updateCount() {
-      const count = list.querySelectorAll('.media-item').length;
-      if (countEl) countEl.textContent = count;
-      if (empty) empty.style.display = count ? 'none' : 'flex';
-      updateLogoState();
-    }
-
-    function emitMediaManagerChange() {
-      manager.dispatchEvent(new CustomEvent('ow:media-manager-change', {
-        bubbles: true,
-        detail: {
-          count: list.querySelectorAll('.media-item').length,
-        },
-      }));
-    }
-
-    function setMode(nextMode) {
-      mode = nextMode === 'file' ? 'file' : 'url';
-      manager.dataset.mode = mode;
-      modeButtons.forEach((btn) => {
-        btn.classList.toggle('is-active', btn.dataset.mediaMode === mode);
-      });
-      if (urlRow) urlRow.hidden = mode !== 'url';
-      if (fileRow) fileRow.hidden = mode !== 'file';
-      if (dropzone) dropzone.hidden = mode !== 'file';
-    }
-
-    function updateBadge(item, type) {
-      const badge = item.querySelector('[data-media-badge]');
-      if (!badge) return;
-      badge.textContent = getTypeLabel(type);
-    }
-
-    function enforceSingleLogo(activeSelect) {
-      const selects = list.querySelectorAll('.media-item__type');
-      selects.forEach((select) => {
-        if (select !== activeSelect && select.value === 'logo') {
-          select.value = 'screenshot';
-          updateBadge(select.closest('.media-item'), 'screenshot');
-        }
-      });
-      updateLogoState();
-    }
-
-    function createItem({ url, type, source, file }) {
-      const id = `new-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const previewUrl = url || '/assets/images/image-not-found.webp';
-      const isStorageItem = source === 'url' && isStorageUrl(url);
-      const item = document.createElement('div');
-      item.className = 'media-item';
-      item.dataset.id = id;
-      item.dataset.startUrl = url || '';
-      item.dataset.startType = type;
-      item.dataset.source = source;
-      item.dataset.urlEditable = source === 'url' && !isStorageItem ? '1' : '0';
-      item.dataset.new = '1';
-      if (source === 'file') item._file = file;
-
-      const urlFieldHtml =
-        source === 'url' && !isStorageItem
-          ? '<input type="url" class="media-item__url" placeholder="URL изображения">'
-          : '';
-
-      item.innerHTML = `
-        <a href="${previewUrl}" class="media-item__preview without-caption image-link" target="_blank">
-          <img src="${previewUrl}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp">
-          <span class="media-item__badge" data-media-badge></span>
-        </a>
-        <div class="media-item__meta">
-          <div class="media-item__controls">
-            <select class="media-item__type">
-              <option value="logo">Логотип</option>
-              <option value="screenshot">Скриншот</option>
-            </select>
-            <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение">Удалить</button>
-          </div>
-          ${urlFieldHtml}
-          <div class="media-item__source ow-muted"></div>
-        </div>
-      `;
-
-      const typeSelect = item.querySelector('.media-item__type');
-      const urlField = item.querySelector('.media-item__url');
-      const sourceField = item.querySelector('.media-item__source');
-      typeSelect.value = type;
-      updateBadge(item, type);
-
-      if (source === 'file') {
-        if (urlField) {
-          urlField.value = '';
-          urlField.placeholder = 'Файл загружен';
-          urlField.disabled = true;
-        }
-        if (sourceField) sourceField.textContent = `Файл: ${file ? file.name : ''}`;
-        if (file) item.dataset.objectUrl = previewUrl;
-      } else {
-        if (urlField) {
-          urlField.value = url;
-          urlField.disabled = false;
-        }
-        if (sourceField) sourceField.textContent = isStorageItem ? 'Storage' : 'URL';
-      }
-
-      return item;
-    }
-
-    function prependItem(item) {
-      list.prepend(item);
-      const typeSelect = item.querySelector('.media-item__type');
-      if (typeSelect && typeSelect.value === 'logo') {
-        enforceSingleLogo(typeSelect);
-      }
-      updateCount();
-      updateCatalogLogo();
-      emitMediaManagerChange();
-    }
-
-    function addUrlItem() {
-      const rawUrl = urlInput ? urlInput.value.trim() : '';
-      if (!rawUrl) {
-        new Toast({ title: 'Нужна ссылка', text: 'Введите URL изображения', theme: 'info' });
-        return;
-      }
-      if (!isHttpUrl(rawUrl)) {
-        if (urlInput) urlInput.classList.add('is-invalid');
-        new Toast({ title: 'Некорректный URL', text: 'Разрешены только http/https ссылки', theme: 'warning' });
-        return;
-      }
-
-      const type = typeInput ? typeInput.value : 'screenshot';
-      const item = createItem({ url: rawUrl, type, source: 'url' });
-      prependItem(item);
-
-      if (urlInput) {
-        urlInput.value = '';
-        urlInput.classList.remove('is-invalid');
-      }
-    }
-
-    function addFileItem(file) {
-      if (!file) {
-        new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
-        return;
-      }
-      if (!String(file.type || '').startsWith('image/')) {
-        new Toast({ title: 'Неверный формат', text: 'Можно загружать только изображения', theme: 'warning' });
-        return;
-      }
-
-      const type = typeFileInput ? typeFileInput.value : 'screenshot';
-      const objectUrl = URL.createObjectURL(file);
-      const item = createItem({ url: objectUrl, type, source: 'file', file });
-      prependItem(item);
-    }
-
-    function addFileFromInput() {
-      const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-      if (!file) {
-        new Toast({ title: 'Нужен файл', text: 'Выберите изображение', theme: 'info' });
-        return;
-      }
-      addFileItem(file);
-      if (fileInput) fileInput.value = '';
-    }
-
-    modeButtons.forEach((btn) => {
-      btn.addEventListener('click', () => setMode(btn.dataset.mediaMode));
-    });
-
-    if (addUrlButton) {
-      addUrlButton.addEventListener('click', addUrlItem);
-    }
-
-    if (urlInput) {
-      urlInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          addUrlItem();
-        }
-      });
-      urlInput.addEventListener('input', () => {
-        if (!urlInput.value.trim() || isHttpUrl(urlInput.value.trim())) {
-          urlInput.classList.remove('is-invalid');
-        }
-      });
-    }
-
-    if (addFileButton && fileInput) {
-      addFileButton.addEventListener('click', () => fileInput.click());
-    }
-
-    if (dropzone && fileInput) {
-      dropzone.addEventListener('click', () => fileInput.click());
-      dropzone.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          fileInput.click();
-        }
-      });
-
-      ['dragenter', 'dragover'].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.add('is-dragover');
-        });
-      });
-      ['dragleave', 'drop'].forEach((eventName) => {
-        dropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          dropzone.classList.remove('is-dragover');
-        });
-      });
-      dropzone.addEventListener('drop', (event) => {
-        const files = event.dataTransfer ? event.dataTransfer.files : null;
-        const file = files && files.length > 0 ? files[0] : null;
-        if (file) addFileItem(file);
-      });
-    }
-
-    list.addEventListener('change', (event) => {
-      const target = event.target;
-      if (target.classList.contains('media-item__type')) {
-        if (target.value === 'logo') enforceSingleLogo(target);
-        updateBadge(target.closest('.media-item'), target.value);
-        updateLogoState();
-        updateCatalogLogo();
-        emitMediaManagerChange();
-      }
-    });
-
-    list.addEventListener('input', (event) => {
-      const target = event.target;
-      if (target.classList.contains('media-item__url')) {
-        const url = target.value.trim();
-        const item = target.closest('.media-item');
-        const preview = item.querySelector('.media-item__preview');
-        const img = item.querySelector('img');
-        const fallbackUrl = item.dataset.startUrl || '/assets/images/image-not-found.webp';
-        const valid = url.length === 0 || isHttpUrl(url);
-
-        target.classList.toggle('is-invalid', !valid);
-        if (valid) {
-          const next = url || fallbackUrl;
-          if (preview) preview.setAttribute('href', next);
-          if (img) img.setAttribute('src', next);
-        }
-        const typeSelect = item.querySelector('.media-item__type');
-        if (typeSelect && typeSelect.value === 'logo') updateCatalogLogo();
-        emitMediaManagerChange();
-      }
-    });
-
-    list.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-media-action="delete"]');
-      if (!button) return;
-      const item = button.closest('.media-item');
-      if (!item) return;
-
-      if (item.dataset.objectUrl) {
-        URL.revokeObjectURL(item.dataset.objectUrl);
-      }
-
-      if (item.dataset.new === '1') {
-        item.remove();
-      } else {
-        mediaManagerState.deleted.add(item.dataset.id);
-        item.remove();
-      }
-      updateCount();
-      updateCatalogLogo();
-      emitMediaManagerChange();
-    });
-
-    if (fileInput) {
-      fileInput.addEventListener('change', () => {
-        if (mode !== 'file') return;
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        addFileFromInput();
-      });
-    }
-
-    updateCount();
-    setMode(mode);
-    emitMediaManagerChange();
-  }
-
-  function initPublicToggle() {
-    toggleNextPublic(false);
+  function getDescRoot(moduleKey) {
+    return root.querySelector(`.mod-edit__content[data-desc-module="${moduleKey}"] .desc-edit`);
   }
 
   function initDescriptionModules() {
     if (!window.OWDescriptionModules) return;
+
     window.OWDescriptionModules.init({
       moduleKey: 'full',
       limit: 10000,
@@ -720,414 +36,111 @@
     });
   }
 
-  const publicButton = document.querySelector('button.public-mod-toggle');
-  const publicIcon = publicButton ? publicButton.querySelector('img') : null;
+  function bindPublicToggle(button) {
+    const publicButton = runtime.resolveElement(button);
+    const publicIcon = publicButton ? publicButton.querySelector('img') : null;
 
-  function toggleNextPublic(next = true) {
-    if (!publicButton || !publicIcon) return;
-    if (next) {
-      publicButton.setAttribute('public-mode', String((parseInt(publicButton.getAttribute('public-mode'), 10) + 1) % 3));
+    function sync() {
+      if (!publicButton || !publicIcon) return;
+
+      const mode = runtime.getAttributeValue(publicButton, 'public-mode') || '0';
+      publicIcon.setAttribute('src', publicIcons[mode] || publicIcons[0]);
+      publicButton.setAttribute('title', publicTitles[mode] || publicTitles[0]);
     }
-    const mode = publicButton.getAttribute('public-mode');
-    publicIcon.setAttribute('src', publicIcons[mode]);
-    publicButton.setAttribute('title', publicTitles[mode]);
-  }
 
-  function initDeleteModControl() {
-    const confirmInput = document.getElementById('delete-mod-confirm');
-    const deleteButton = document.getElementById('delete-mod-button');
-    if (!confirmInput || !deleteButton) return;
-    const sync = () => {
-      deleteButton.disabled = !confirmInput.checked;
-    };
-    confirmInput.addEventListener('change', sync);
+    function toggle() {
+      if (!publicButton) return;
+      const currentMode = Number.parseInt(runtime.getAttributeValue(publicButton, 'public-mode') || '0', 10);
+      const nextMode = Number.isFinite(currentMode) ? (currentMode + 1) % 3 : 0;
+      publicButton.setAttribute('public-mode', String(nextMode));
+      sync();
+    }
+
     sync();
-  }
-
-  async function send(url, method, body = null) {
-    try {
-      const res = await fetch(url, { method, body, credentials: 'include' });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) throw data || 'Ошибка запроса';
-      return data;
-    } catch (e) {
-      new Toast({ title: 'Ошибка', text: e, theme: 'danger' });
-      throw e;
-    }
-  }
-
-  function diff(value, start) {
-    return { val: value, changed: value != start };
-  }
-
-  function collectModChanges() {
-    const title = document.querySelector('input.title-mod');
-    const pub = document.querySelector('button.public-mod-toggle');
-    const shortDescValue = getDescModuleValue('catalog');
-    const fullDescValue = getDescModuleValue('full');
-
     return {
-      mod_name: diff(title ? title.value : '', title ? title.getAttribute('startdata') : ''),
-      mod_short_description: diff(shortDescValue, getDescModuleStartValue('catalog')),
-      mod_description: diff(fullDescValue, getDescModuleStartValue('full')),
-      mod_public: diff(pub ? pub.getAttribute('public-mode') : '', pub ? pub.getAttribute('startdata') : ''),
+      sync,
+      toggle,
     };
   }
 
-  function buildFormData(changes) {
-    const fd = new FormData();
-    for (const [k, v] of Object.entries(changes)) if (v.changed) fd.append(k, v.val);
-    return fd;
-  }
+  function initModEditPage() {
+    runtime.initPage(root, { fadeInDelay: 500 });
+    runtime.bindPager(document.getElementById('start-page-button'));
+    initDescriptionModules();
 
-  async function updateMod(changes) {
-    if (!Object.values(changes).some((v) => v.changed)) return;
-    const endpoint = apiPaths.mod.edit;
-    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
-    await send(url, endpoint.method, buildFormData(changes));
-  }
+    const api = runtime.requireFactory('mod-edit-api')({
+      modId,
+      apiPaths,
+    });
 
-  function getChangesLogos() {
-    const list = document.querySelector('#media-manager .media-manager__list');
-    const res = { new: [], changed: [], deleted: Array.from(mediaManagerState.deleted) };
-    if (!list) return res;
+    const mediaManager = runtime.requireFactory('mod-edit-media-manager')({
+      root: root.querySelector('#media-manager'),
+    });
 
-    list.querySelectorAll('.media-item').forEach((item) => {
-      const isNew = item.dataset.new === '1';
-      const typeSelect = item.querySelector('.media-item__type');
-      const type = typeSelect ? typeSelect.value : item.dataset.startType;
+    const catalogPreview = runtime.requireFactory('mod-edit-catalog-preview')({
+      root: root.querySelector('.mod-edit__catalog-cards'),
+      titleInput: root.querySelector('.title-mod'),
+      descriptionRoot: getDescRoot('catalog'),
+      mediaManager,
+      modId,
+      sizeText: root.querySelector('.mod-edit__catalog-cards')?.dataset.modSize || '',
+      gameId: root.querySelector('.mod-edit__catalog-cards')?.dataset.gameId || '',
+    });
 
-      if (isNew) {
-        if (item.dataset.source === 'file') {
-          if (item._file) res.new.push({ type, file: item._file });
-        } else {
-          const urlInput = item.querySelector('.media-item__url');
-          const url = urlInput ? urlInput.value.trim() : item.dataset.startUrl;
-          if (url) res.new.push({ type, url });
-        }
+    if (catalogPreview) {
+      catalogPreview.bind();
+    }
+
+    const uploadFlow = runtime.requireFactory('mod-edit-upload-flow')({
+      api,
+      uploadButton: root.querySelector('[data-action="mod-upload-version"]'),
+      progressRoot: root.querySelector('[data-upload-progress-root]'),
+    });
+
+    const saveService = runtime.requireFactory('mod-edit-save-service')({
+      api,
+      saveButton: root.querySelector('[data-action="mod-save"]'),
+      deleteButton: root.querySelector('[data-action="mod-delete"]'),
+      deleteConfirmInput: root.querySelector('#delete-mod-confirm'),
+      titleInput: root.querySelector('.title-mod'),
+      publicButton: root.querySelector('[data-action="mod-toggle-public"]'),
+      fullDescriptionRoot: getDescRoot('full'),
+      catalogDescriptionRoot: getDescRoot('catalog'),
+      mediaManager,
+      tagsEditorId: 'mod-tags-editor',
+      dependenciesEditorId: 'mod-dependencies-editor',
+    });
+
+    const publicController = bindPublicToggle(root.querySelector('[data-action="mod-toggle-public"]'));
+
+    root.addEventListener('click', function (event) {
+      const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+      if (!actionNode) return;
+
+      const action = actionNode.dataset.action;
+
+      if (action === 'mod-toggle-public') {
+        publicController.toggle();
         return;
       }
 
-      const startType = item.dataset.startType;
-      const startUrl = item.dataset.startUrl;
-      const urlInput = item.querySelector('.media-item__url');
-      const currentUrl = urlInput ? urlInput.value.trim() : startUrl;
-      const resolvedUrl = currentUrl || startUrl;
-      const typeChanged = type && startType && type !== startType;
-      const urlChanged = resolvedUrl && startUrl && resolvedUrl !== startUrl;
+      if (action === 'mod-save') {
+        saveService.save();
+        return;
+      }
 
-      if (typeChanged || urlChanged) {
-        const c = { id: item.dataset.id };
-        if (typeChanged) c.type = type;
-        if (urlChanged) c.url = resolvedUrl;
-        res.changed.push(c);
+      if (action === 'mod-upload-version') {
+        const fileInput = document.getElementById('input-mod-file-upload');
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        uploadFlow.start(file);
+        return;
+      }
+
+      if (action === 'mod-delete') {
+        saveService.deleteMod();
       }
     });
-    return res;
   }
-
-  async function modUpdateLogos(logos) {
-    const addEndpoint = apiPaths.resource.add;
-    const editEndpoint = apiPaths.resource.edit;
-    const delEndpoint = apiPaths.resource.delete;
-
-    for (const l of logos.new) {
-      if (l.file) {
-        const transferData = new FormData();
-        transferData.append('owner_type', 'mods');
-        transferData.append('resource_type', l.type);
-        transferData.append('resource_owner_id', modID);
-        const transfer = await startResourceTransfer(transferData);
-        await uploadFileToTransfer(l.file, transfer);
-      } else {
-        const fd = new FormData();
-        fd.append('owner_type', 'mods');
-        fd.append('resource_type', l.type);
-        fd.append('resource_owner_id', modID);
-        if (l.url) fd.append('resource_url', l.url);
-        await send(window.OWCore.apiUrl(addEndpoint.path), addEndpoint.method, fd);
-      }
-    }
-
-    for (const l of logos.changed) {
-      const fd = new FormData();
-      if (l.type) fd.append('resource_type', l.type);
-      if (l.url) fd.append('resource_url', l.url);
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(editEndpoint.path, { resource_id: l.id }),
-      );
-      await send(url, editEndpoint.method, fd);
-    }
-
-    for (const id of logos.deleted) {
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(delEndpoint.path, { resource_id: id }),
-      );
-      await send(url, delEndpoint.method);
-    }
-  }
-
-  async function uploadModVersion() {
-    const input = document.getElementById('input-mod-file-upload') || document.getElementById('mod-file-input');
-    if (!input || !input.files || !input.files[0]) {
-      new Toast({ title: 'Файл не выбран', text: 'Выберите архив мода', theme: 'info' });
-      return;
-    }
-    const file = input.files[0];
-
-    showUploadProgress();
-    setUploadProgress(0);
-    updateStage('uploading');
-
-    const prevInfo = await fetchModInfo();
-    const prevDate = prevInfo && prevInfo.result ? prevInfo.result.date_update_file : null;
-
-    const formData = new FormData();
-    formData.append('pack_format', 'zip');
-    formData.append('pack_level', '3');
-
-    let transfer;
-    try {
-      transfer = await startUpdateTransfer(formData);
-    } catch (err) {
-      new Toast({ title: 'Ошибка', text: err.message || err, theme: 'danger' });
-      setUploadStatus('Ошибка получения ссылки');
-      return;
-    }
-
-    const uploadUrl = transfer.transfer_url;
-    if (!uploadUrl) {
-      new Toast({ title: 'Ошибка', text: 'Не удалось получить ссылку загрузки', theme: 'danger' });
-      setUploadStatus('Ошибка получения ссылки');
-      return;
-    }
-
-    const parsedUpload = new URL(uploadUrl);
-    if (file && file.name) {
-      parsedUpload.searchParams.set('filename', file.name);
-    }
-    const token = parsedUpload.searchParams.get('token');
-    const tokenPayload = token ? parseJwt(token) : null;
-    const jobId = transfer.job_id || (tokenPayload ? tokenPayload.job_id : null);
-    const rawWsUrl =
-      transfer.ws_url ||
-      (jobId && token ? getWebSocketUrl(parsedUpload.origin, `/transfer/ws/${jobId}`, token) : null);
-    const wsUrl = rawWsUrl ? rawWsUrl.replace(/^http/, 'ws') : null;
-
-    let finalizeStarted = false;
-    const finalizeStart = Date.now();
-    const maxFinalizeMs = 20 * 60 * 1000;
-
-    function startFinalizePoll() {
-      if (finalizeStarted) return;
-      finalizeStarted = true;
-      setUploadProgress(100);
-      updateStage('packed');
-
-      const poll = async () => {
-        if (Date.now() - finalizeStart > maxFinalizeMs) {
-          setUploadStatus('Обработка занимает слишком долго');
-          new Toast({
-            title: 'Обработка занимает слишком долго',
-            text: 'Попробуйте обновить страницу через несколько минут.',
-            theme: 'warning',
-            autohide: true,
-            interval: 6000,
-          });
-          return;
-        }
-        const info = await fetchModInfo();
-        const nextDate = info && info.result ? info.result.date_update_file : null;
-        if (nextDate && nextDate !== prevDate) {
-          setUploadStatus('Новая версия сохранена');
-          new Toast({ title: 'Готово', text: 'Новая версия загружена', theme: 'success' });
-          location.reload();
-          return;
-        }
-        setTimeout(poll, 3000);
-      };
-
-      poll();
-    }
-
-    if (wsUrl) {
-      try {
-        const ws = new WebSocket(wsUrl);
-        ws.onmessage = (event) => {
-          let data = null;
-          try {
-            data = JSON.parse(event.data);
-          } catch (e) {
-            return;
-          }
-          if (data.event === 'stage') {
-            updateStage(data.stage);
-          }
-          if (data.event === 'progress') {
-            if (data.total) {
-              const percent = Math.min(100, Math.round((data.bytes / data.total) * 100));
-              setUploadProgress(percent);
-            }
-            if (data.stage) updateStage(data.stage);
-          }
-          if (data.event === 'complete') {
-            startFinalizePoll();
-          }
-          if (data.event === 'error') {
-            setUploadStatus('Ошибка загрузки');
-            new Toast({ title: 'Ошибка', text: data.message || 'Ошибка загрузки', theme: 'danger' });
-          }
-        };
-      } catch (e) {
-        // WS is optional
-      }
-    }
-
-    try {
-      const resp = await fetch(parsedUpload.toString(), {
-        method: 'POST',
-        body: file,
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-        credentials: 'omit',
-      });
-      if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(text || `Ошибка (${resp.status})`);
-      }
-      startFinalizePoll();
-    } catch (err) {
-      new Toast({ title: 'Ошибка', text: err.message || err, theme: 'danger' });
-      setUploadStatus('Ошибка загрузки');
-    }
-  }
-
-  async function deleteMod() {
-    const confirmInput = document.getElementById('delete-mod-confirm');
-    if (confirmInput && !confirmInput.checked) return;
-    if (!confirm('Удалить мод без возможности восстановления?')) return;
-    const endpoint = apiPaths.mod.delete;
-    const url = window.OWCore.apiUrl(window.OWCore.formatPath(endpoint.path, { mod_id: modID }));
-    await send(url, endpoint.method);
-    new Toast({ title: 'Удалено', text: 'Мод удален', theme: 'success' });
-    location.href = '/';
-  }
-
-  function getPickerChanges(editorId) {
-    const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
-    if (!editor) {
-      return { new: [], deleted: [] };
-    }
-
-    const state = editor.getState();
-    return {
-      new: state.unsavedVisible.map(function (item) {
-        return item.id;
-      }),
-      deleted: state.savedHidden.map(function (item) {
-        return item.id;
-      }),
-    };
-  }
-
-  function getChangesTags() {
-    return getPickerChanges('mod-tags-editor');
-  }
-
-  async function modUpdateTags(tags) {
-    const addEndpoint = apiPaths.mod.tags_add;
-    const delEndpoint = apiPaths.mod.tags_delete;
-    for (const id of tags.new) {
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(addEndpoint.path, { mod_id: modID, tag_id: id }),
-      );
-      await send(url, addEndpoint.method);
-    }
-    for (const id of tags.deleted) {
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(delEndpoint.path, { mod_id: modID, tag_id: id }),
-      );
-      await send(url, delEndpoint.method);
-    }
-  }
-
-  function getChangesDependence() {
-    return getPickerChanges('mod-dependencies-editor');
-  }
-
-  async function modUpdateDependecie(dep) {
-    const addEndpoint = apiPaths.mod.dependencies_add;
-    const delEndpoint = apiPaths.mod.dependencies_delete;
-    for (const id of dep.new) {
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(addEndpoint.path, { mod_id: modID, dependencie_id: id }),
-      );
-      await send(url, addEndpoint.method);
-    }
-    for (const id of dep.deleted) {
-      const url = window.OWCore.apiUrl(
-        window.OWCore.formatPath(delEndpoint.path, { mod_id: modID, dependencie_id: id }),
-      );
-      await send(url, delEndpoint.method);
-    }
-  }
-
-  async function saveChanges() {
-    const base = collectModChanges();
-    const logos = getChangesLogos();
-    const tags = getChangesTags();
-    const deps = getChangesDependence();
-
-    const has =
-      Object.values(base).some((v) => v.changed) ||
-      logos.new.length ||
-      logos.changed.length ||
-      logos.deleted.length ||
-      tags.new.length ||
-      tags.deleted.length ||
-      deps.new.length ||
-      deps.deleted.length;
-
-    if (!has) {
-      new Toast({ title: 'Нечего сохранять', text: 'Нет изменений', theme: 'info' });
-      return;
-    }
-
-    await updateMod(base);
-    if (logos.new.length || logos.changed.length || logos.deleted.length) await modUpdateLogos(logos);
-    if (tags.new.length || tags.deleted.length) await modUpdateTags(tags);
-    if (deps.new.length || deps.deleted.length) await modUpdateDependecie(deps);
-
-    new Toast({ title: 'Готово', text: 'Изменения сохранены', theme: 'success' });
-    location.reload();
-  }
-
-  root.addEventListener('click', function (event) {
-    const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;
-    if (!actionNode) return;
-
-    const action = actionNode.dataset.action;
-
-    if (action === 'mod-toggle-public') {
-      toggleNextPublic();
-      return;
-    }
-
-    if (action === 'mod-save') {
-      saveChanges();
-      return;
-    }
-
-    if (action === 'mod-upload-version') {
-      uploadModVersion();
-      return;
-    }
-
-    if (action === 'mod-delete') {
-      deleteMod();
-    }
-  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initModEditPage);

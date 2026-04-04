@@ -296,6 +296,12 @@ EDIT_PAGE_CONFIGS: dict = {
         ],
         "scripts": [
             "/assets/scripts/vendors/pager-logic.js",
+            "/assets/scripts/ow-edit-runtime.js",
+            "/assets/scripts/pages/mod-edit/api.js",
+            "/assets/scripts/pages/mod-edit/media-manager.js",
+            "/assets/scripts/pages/mod-edit/catalog-preview.js",
+            "/assets/scripts/pages/mod-edit/upload-flow.js",
+            "/assets/scripts/pages/mod-edit/save-service.js",
             "/assets/scripts/pages/mod-edit.js",
         ],
     },
@@ -314,6 +320,7 @@ EDIT_PAGE_CONFIGS: dict = {
         ],
         "scripts": [
             "/assets/scripts/vendors/pager-logic.js",
+            "/assets/scripts/ow-edit-runtime.js",
             "/assets/scripts/pages/game-edit.js",
         ],
     },

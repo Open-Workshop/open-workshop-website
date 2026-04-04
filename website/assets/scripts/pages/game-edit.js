@@ -4,6 +4,7 @@
   const root = document.getElementById('main-game-edit');
   if (!root) return;
 
+  const editRuntime = window.OWEditRuntime;
   const apiPaths = window.OWCore.getApiPaths();
   const gameId = Number(root.dataset.gameId || 0);
   const saveButton = document.getElementById('save-game-button');
@@ -15,60 +16,44 @@
   let deleteInProgress = false;
 
   function showToast(title, text, theme) {
-    new Toast({
-      title,
-      text,
-      theme,
-      autohide: true,
-      interval: 5000,
-    });
+    if (editRuntime) {
+      editRuntime.showToast(title, text, theme);
+      return;
+    }
+
+    new Toast({ title, text, theme, autohide: true, interval: 5000 });
   }
 
   function setButtonBusy(button, busy) {
-    if (!button) return;
-    button.disabled = busy;
-    button.classList.toggle('disabled', busy);
+    if (editRuntime) {
+      editRuntime.setButtonBusy(button, busy);
+      return;
+    }
+
+    if (button) {
+      button.disabled = busy;
+      button.classList.toggle('disabled', busy);
+    }
   }
 
   function getTextValue(selector) {
-    const node = document.querySelector(selector);
-    return node ? String(node.value || '') : '';
+    return editRuntime ? editRuntime.getTextValue(selector) : '';
   }
 
   function getStartValue(selector) {
-    const node = document.querySelector(selector);
-    return node ? String(node.getAttribute('startdata') || '') : '';
+    return editRuntime ? editRuntime.getStartValue(selector) : '';
   }
 
   function getEditorValue(panelSelector) {
-    const descRoot = document.querySelector(panelSelector + ' .desc-edit');
-    if (window.OWDescEditors) {
-      return String(window.OWDescEditors.getValue(descRoot) || '');
-    }
-    return '';
+    return editRuntime ? editRuntime.getEditorValue(panelSelector) : '';
   }
 
   function getEditorStartValue(panelSelector) {
-    const descRoot = document.querySelector(panelSelector + ' .desc-edit');
-    if (window.OWDescEditors) {
-      return String(window.OWDescEditors.getStartValue(descRoot) || '');
-    }
-    return '';
+    return editRuntime ? editRuntime.getEditorStartValue(panelSelector) : '';
   }
 
   function parseResponseMessage(text, fallback) {
-    if (!text) return fallback;
-
-    try {
-      const parsed = JSON.parse(text);
-      if (typeof parsed === 'string') return parsed;
-      if (parsed && typeof parsed.detail === 'string') return parsed.detail;
-      if (parsed && typeof parsed.message === 'string') return parsed.message;
-    } catch (error) {
-      return text.replace(/^"(.*)"$/, '$1');
-    }
-
-    return fallback;
+    return editRuntime ? editRuntime.parseResponseMessage(text, fallback) : fallback;
   }
 
   function normalizeEntityName(value) {
@@ -349,16 +334,9 @@
     }
   }
 
-  window.setTimeout(function () {
-    root.style.opacity = 1;
-  }, 250);
-
-  const startButton = document.querySelector('#start-page-button');
-  if (startButton && window.Pager) {
-    Pager.updateSelect.call(startButton);
-    window.addEventListener('popstate', function () {
-      Pager.updateSelect.call(startButton);
-    });
+  if (editRuntime) {
+    editRuntime.initPage(root, { fadeInDelay: 250 });
+    editRuntime.bindPager(document.querySelector('#start-page-button'));
   }
 
   root.addEventListener('click', function (event) {
