@@ -1,8 +1,12 @@
+{% set media_title = media_title if media_title is defined else 'Логотип и скриншоты мода' %}
+{% set media_image_alt = media_image_alt if media_image_alt is defined else 'Изображение мода' %}
+{% set media_items = resources['results'] if resources is defined and resources and resources['results'] is defined else [] %}
+
 <div class="standart-panel screenshots-edit">
     <div class="media-manager" id="media-manager" data-storage-origin="{{ storage_address }}">
         <div class="media-manager__header">
             <div class="media-manager__title">
-                <p class="ow-muted">Логотип и скриншоты мода</p>
+                <p class="ow-muted">{{ media_title }}</p>
             </div>
             <div class="media-manager__stats">
                 <span class="ow-badge" data-media-count>0</span>
@@ -16,13 +20,13 @@
             <div class="media-manager__viewport">
                 <div class="media-manager__canvas">
                     <div class="media-manager__list" id="media-list" data-photoswipe-gallery>
-                        {% for item in resources['results'] %}
+                        {% for item in media_items %}
                         {% if item['type'] in ['logo', 'screenshot'] %}
                         {% set is_storage_item = (item['url'] or '').startswith(storage_address) %}
                         <div class="media-item" data-id="{{ item['id'] }}" data-start-url="{{ item['url'] }}" data-start-type="{{ item['type'] }}" data-source="url">
                             <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
                                 <img class="media-item__backdrop" src="{{ item['url'] }}" alt="" aria-hidden="true" data-fallback-src="/assets/images/image-not-found.webp"/>
-                                <img class="media-item__image" src="{{ item['url'] }}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp"/>
+                                <img class="media-item__image" src="{{ item['url'] }}" alt="{{ media_image_alt }}" data-fallback-src="/assets/images/image-not-found.webp"/>
                             </a>
                             <div class="media-item__toolbar">
                                 <label class="media-item__logo-toggle">

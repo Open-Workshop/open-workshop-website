@@ -23,6 +23,8 @@
   runtime.define('mod-edit-api', function createModEditApi(options) {
     const config = options || {};
     const modId = Number(config.modId || 0);
+    const entityId = Number(config.entityId || modId || 0);
+    const resourceOwnerType = String(config.resourceOwnerType || 'mods');
     const apiPaths = config.apiPaths || window.OWCore.getApiPaths();
 
     function formatEndpoint(endpoint, pathParams, query) {
@@ -142,9 +144,9 @@
 
     async function addResourceUrl(resource) {
       const formData = new FormData();
-      formData.append('owner_type', 'mods');
+      formData.append('owner_type', resourceOwnerType);
       formData.append('resource_type', resource.type);
-      formData.append('resource_owner_id', String(modId));
+      formData.append('resource_owner_id', String(entityId));
       formData.append('resource_url', resource.url);
 
       return requestEndpoint(apiPaths.resource.add, {
@@ -268,9 +270,9 @@
 
     async function uploadNewResourceFile(resource) {
       const transferData = new FormData();
-      transferData.append('owner_type', 'mods');
+      transferData.append('owner_type', resourceOwnerType);
       transferData.append('resource_type', resource.type);
-      transferData.append('resource_owner_id', String(modId));
+      transferData.append('resource_owner_id', String(entityId));
 
       const transfer = await startResourceTransfer(transferData);
       await uploadBinaryToTransfer(transfer.transfer_url, resource.file);

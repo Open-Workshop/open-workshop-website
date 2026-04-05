@@ -11,6 +11,7 @@
     const descriptionRoot = runtime.resolveElement(settings.descriptionRoot);
     const descriptionEditorRoot = runtime.resolveElement(descriptionRoot, '.desc-edit');
     const logoImage = runtime.resolveElement(settings.logoImage);
+    const mediaManager = settings.mediaManager || null;
     const gameId = Number(settings.gameId || 0);
 
     if (!container || !window.Cards || typeof window.Cards.create !== 'function') {
@@ -31,6 +32,13 @@
     }
 
     function getLogoUrl() {
+      if (mediaManager && typeof mediaManager.getState === 'function') {
+        const mediaState = mediaManager.getState();
+        if (mediaState && mediaState.logoUrl) {
+          return String(mediaState.logoUrl);
+        }
+      }
+
       if (logoImage instanceof HTMLImageElement && logoImage.getAttribute('src')) {
         return String(logoImage.getAttribute('src') || '');
       }
@@ -123,6 +131,12 @@
             update({ title: false, logo: false });
           });
         }
+      }
+
+      if (mediaManager && typeof mediaManager.subscribe === 'function') {
+        mediaManager.subscribe(function () {
+          update({ title: false, description: false });
+        });
       }
     }
 

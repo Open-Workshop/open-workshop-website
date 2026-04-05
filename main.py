@@ -457,13 +457,13 @@ async def game_edit(game_id):
         )
         resources_list_path = app_config.api_path("resource", "list")
 
-        game_info_result, game_tags, all_genres_result, game_genres_result, game_logo_result = await asyncio.gather(
+        game_info_result, game_tags, all_genres_result, game_genres_result, game_resources_result = await asyncio.gather(
             handler.fetch(f"{game_info_path}?short_description=true&description=true&dates=true&statistics=true"),
             _load_paged_results(handler, f"{tag_list_path}?game_id={game_id}", page_size=50),
             handler.fetch(f"{genre_list_path}?page_size=200"),
             handler.fetch(game_genres_path),
             handler.fetch(
-                f'{resources_list_path}?page_size=10&owner_type=games&owner_ids={_compact_json_list([game_id])}&types_resources=["logo"]'
+                f'{resources_list_path}?page_size=30&owner_type=games&owner_ids={_compact_json_list([game_id])}&types_resources=["logo","screenshot"]'
             ),
         )
 
@@ -477,7 +477,7 @@ async def game_edit(game_id):
 
         _, all_genres = all_genres_result
         _, game_genres = game_genres_result
-        _, game_logo = game_logo_result
+        _, game_resources = game_resources_result
 
         if game_info.get("date_creation"):
             input_date = parse_api_datetime(game_info["date_creation"])
@@ -490,11 +490,14 @@ async def game_edit(game_id):
         game_info["source_id"] = "" if game_info.get("source_id") is None else str(game_info.get("source_id"))
 
         game_logo_url = ""
-        if isinstance(game_logo, dict):
-            for resource in game_logo.get("results", []):
+        if isinstance(game_resources, dict):
+            for resource in game_resources.get("results", []):
                 if isinstance(resource, dict) and resource.get("url"):
-                    game_logo_url = resource["url"]
-                    break
+                    if resource.get("type") == "logo":
+                        game_logo_url = resource["url"]
+                        break
+                    if not game_logo_url:
+                        game_logo_url = resource["url"]
         game_info["logo"] = game_logo_url
 
         selected_genres = []
@@ -523,6 +526,7 @@ async def game_edit(game_id):
             edit_title=f"{game_info['name']} - edit Open Game",
             edit_description=game_info["short_description"],
             game=game_info,
+            resources=game_resources if isinstance(game_resources, dict) else {"results": []},
             game_tags=game_tags,
             available_genres=all_genres.get("results", []),
             selected_genres=selected_genres,

@@ -28,39 +28,9 @@
   </section>
 
   <aside class="mod-edit__sidebar">
-    <div class="standart-panel game-edit__meta-card">
-      <img
-        class="game-edit__logo"
-        src="{{ game['logo'] if game['logo'] else '/assets/images/image-not-found.webp' }}"
-        alt="Логотип игры"
-        data-fallback-src="/assets/images/image-not-found.webp"
-      >
-
-      <div class="game-edit__meta-grid">
-        <div class="game-edit__meta-item">
-          <span>ID</span>
-          <strong>{{ game['id'] }}</strong>
-        </div>
-        <div class="game-edit__meta-item">
-          <span>Тип</span>
-          <strong>{{ game['type'] }}</strong>
-        </div>
-        <div class="game-edit__meta-item">
-          <span>Модов</span>
-          <strong>{{ game['mods_count'] if game['mods_count'] is defined else '—' }}</strong>
-        </div>
-        <div class="game-edit__meta-item">
-          <span>Скачиваний модов</span>
-          <strong>{{ game['mods_downloads'] if game['mods_downloads'] is defined else '—' }}</strong>
-        </div>
-        <div class="game-edit__meta-item game-edit__meta-item--wide">
-          <span>Дата создания</span>
-          <strong>{{ game['date_creation'] if game['date_creation'] is defined else '—' }}</strong>
-        </div>
-      </div>
-
-      <p class="ow-muted">Логотип подтягивается из ресурсов игры и здесь отображается для контроля.</p>
-    </div>
+    {% with media_title='Логотип и скриншоты игры', media_image_alt='Изображение игры' %}
+      {% include 'html-partials/screenshots-edit.html' %}
+    {% endwith %}
 
     {{ render_tags_editor(game_tags, 0, true, 'game-tags-editor') }}
 

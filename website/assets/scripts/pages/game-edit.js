@@ -128,7 +128,7 @@
       root: root.querySelector('.game-edit__catalog-cards'),
       titleInput: root.querySelector('#game-name'),
       descriptionRoot: root.querySelector('#game-short-desc-panel'),
-      logoImage: root.querySelector('.game-edit__logo'),
+      mediaManager,
       gameId,
     });
 
@@ -251,6 +251,26 @@
     }
   }
 
+  async function syncMedia(changes) {
+    if (!resourceApi || !changes) return;
+
+    for (const item of changes.new) {
+      if (item.file) {
+        await resourceApi.uploadNewResourceFile(item);
+      } else if (item.url) {
+        await resourceApi.addResourceUrl(item);
+      }
+    }
+
+    for (const item of changes.changed) {
+      await resourceApi.editResource(item);
+    }
+
+    for (const id of changes.deleted) {
+      await resourceApi.deleteResource(id);
+    }
+  }
+
   function toggleDeleteGameButton() {
     const confirmInput = document.getElementById('delete-game-confirm');
     if (!confirmInput || !deleteButton || deleteInProgress) return;
@@ -283,6 +303,9 @@
 
     try {
       const base = collectBaseChanges();
+      const mediaState = mediaManager && typeof mediaManager.getState === 'function'
+        ? mediaManager.getState()
+        : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
       const tags = getPickerChanges(tagsEditorId);
       const genres = getPickerChanges(genresEditorId);
       const tagsEditor = getPickerEditor(tagsEditorId);
@@ -291,6 +314,9 @@
       const createdGenreDefinitions = Array.isArray(genres.create) ? genres.create : [];
       const hasChanges =
         base.changed ||
+        mediaState.changes.new.length > 0 ||
+        mediaState.changes.changed.length > 0 ||
+        mediaState.changes.deleted.length > 0 ||
         tags.add.length > 0 ||
         tags.remove.length > 0 ||
         createdTagDefinitions.length > 0 ||
@@ -303,12 +329,19 @@
         return;
       }
 
+      if (mediaState.hasInvalidUrls) {
+        showToast('Проверьте изображения', 'Исправьте некорректные данные ресурсов перед сохранением', 'warning');
+        return;
+      }
+
       saveInProgress = true;
       setButtonBusy(saveButton, true);
 
       if (base.changed) {
         await sendForm(apiPaths.game.edit, base.params);
       }
+
+      await syncMedia(mediaState.changes);
 
       const createdTagIds = createdTagDefinitions.length > 0
         ? await createNamedEntities(apiPaths.tag.add, 'tag_name', createdTagDefinitions, function (tempId, realId) {
@@ -352,6 +385,20 @@
       setButtonBusy(saveButton, false);
     }
   }
+
+  const resourceApi = editRuntime
+    ? editRuntime.requireFactory('mod-edit-api')({
+      apiPaths,
+      entityId: gameId,
+      resourceOwnerType: 'games',
+    })
+    : null;
+
+  const mediaManager = editRuntime
+    ? editRuntime.requireFactory('mod-edit-media-manager')({
+      root: root.querySelector('#media-manager'),
+    })
+    : null;
 
   if (editRuntime) {
     editRuntime.initPage(root, { fadeInDelay: 250 });

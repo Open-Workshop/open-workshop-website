@@ -48,54 +48,6 @@ main.game-edit {
   background: #171924;
 }
 
-.game-edit__meta-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-}
-
-.game-edit__logo {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 1px solid #2a2f43;
-  background: #111522;
-}
-
-.game-edit__meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.game-edit__meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  padding: 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid #2a2f43;
-  background: #171a28;
-}
-
-.game-edit__meta-item span {
-  color: #aeb6ca;
-  font-size: 0.76rem;
-}
-
-.game-edit__meta-item strong {
-  color: #f2f2f2;
-  font-size: 0.96rem;
-  overflow-wrap: anywhere;
-}
-
-.game-edit__meta-item--wide {
-  grid-column: 1 / -1;
-}
-
 .game-edit__field {
   display: flex;
   flex: 1 1 260px;
@@ -128,10 +80,6 @@ main.game-edit {
     min-width: 0;
     border-radius: var(--radius-md);
     border-left: 1px solid var(--border-color-strong);
-  }
-
-  .game-edit__meta-grid {
-    grid-template-columns: 1fr;
   }
 
 }
