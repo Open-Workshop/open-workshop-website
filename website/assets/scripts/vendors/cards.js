@@ -43,6 +43,9 @@
 
 window.Cards = {
     create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false) {
+        const allowGameEdit = document.body && document.body.dataset.userIsAdmin === 'true';
+        const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit));
+
         // Создаем карточку
         const card = document.createElement('div');
         card.setAttribute('pageOwner', page);
@@ -164,7 +167,7 @@ window.Cards = {
             to.classList.add('button-flap');
             flapButtons.appendChild(to);
         }
-        if (showEditButton && toLink) {
+        if (canShowEditButton && toLink) {
             const toEdit = document.createElement('a');
             toEdit.href = isGame ? "/game/"+cardData.id+"/edit" : "/mod/"+cardData.id+"/edit";
             toEdit.id = "toeditlink"+cardData.id;
