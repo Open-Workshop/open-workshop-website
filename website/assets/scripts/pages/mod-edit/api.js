@@ -69,12 +69,30 @@
     async function fetchModInfo() {
       const result = await requestEndpoint(apiPaths.mod.info, {
         pathParams: { mod_id: modId },
-        query: { dates: 'true' },
+        query: { dates: 'true', authors: 'true' },
         parseAs: 'json',
         fallbackError: 'Не удалось получить информацию о моде',
       });
 
       return result.data;
+    }
+
+    async function fetchProfile(userId) {
+      const result = await requestEndpoint(apiPaths.profile.info, {
+        pathParams: { user_id: userId },
+        query: { general: 'true' },
+        parseAs: 'json',
+        fallbackError: 'Не удалось получить профиль пользователя',
+      });
+
+      if (result.data && result.data.general && typeof result.data.general === 'object') {
+        return {
+          ...result.data.general,
+          id: Number(result.data.general.id || userId),
+        };
+      }
+
+      throw new Error('Ответ сервера не содержит данных профиля');
     }
 
     async function updateMod(formData) {
@@ -103,6 +121,22 @@
         pathParams: { mod_id: modId, dependencie_id: dependencyId },
         parseAs: 'text',
         fallbackError: add ? 'Не удалось добавить зависимость' : 'Не удалось удалить зависимость',
+      });
+    }
+
+    async function updateAuthor(authorId, mode, owner) {
+      const formData = new FormData();
+      formData.append('mode', String(Boolean(mode)));
+      formData.append('author', String(authorId));
+      if (owner !== undefined) {
+        formData.append('owner', String(Boolean(owner)));
+      }
+
+      return requestEndpoint(apiPaths.mod.authors, {
+        pathParams: { mod_id: modId },
+        data: formData,
+        parseAs: 'text',
+        fallbackError: 'Не удалось обновить список авторов',
       });
     }
 
@@ -245,9 +279,11 @@
     return {
       modId,
       fetchModInfo,
+      fetchProfile,
       updateMod,
       updateTag,
       updateDependency,
+      updateAuthor,
       addResourceUrl,
       editResource,
       deleteResource,

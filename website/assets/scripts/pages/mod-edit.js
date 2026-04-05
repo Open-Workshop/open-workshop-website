@@ -77,6 +77,11 @@
       root: root.querySelector('#media-manager'),
     });
 
+    const authorsManager = runtime.requireFactory('mod-edit-authors-manager')({
+      root: root.querySelector('#mod-authors-manager'),
+      api,
+    });
+
     const catalogPreview = runtime.requireFactory('mod-edit-catalog-preview')({
       root: root.querySelector('.mod-edit__catalog-cards'),
       titleInput: root.querySelector('.title-mod'),
@@ -107,6 +112,7 @@
       fullDescriptionRoot: getDescRoot('full'),
       catalogDescriptionRoot: getDescRoot('catalog'),
       mediaManager,
+      authorsManager,
       tagsEditorId: 'mod-tags-editor',
       dependenciesEditorId: 'mod-dependencies-editor',
     });

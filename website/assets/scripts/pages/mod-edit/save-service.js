@@ -15,6 +15,7 @@
     const fullDescriptionRoot = runtime.resolveElement(settings.fullDescriptionRoot);
     const catalogDescriptionRoot = runtime.resolveElement(settings.catalogDescriptionRoot);
     const mediaManager = settings.mediaManager || null;
+    const authorsManager = settings.authorsManager || null;
     const tagsEditorId = String(settings.tagsEditorId || 'mod-tags-editor');
     const dependenciesEditorId = String(settings.dependenciesEditorId || 'mod-dependencies-editor');
 
@@ -76,6 +77,13 @@
       const mediaState = mediaManager && typeof mediaManager.getState === 'function'
         ? mediaManager.getState()
         : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
+      const authorsState = authorsManager && typeof authorsManager.getState === 'function'
+        ? authorsManager.getState()
+        : {
+          changes: { add: [], remove: [], initialOwnerId: 0, currentOwnerId: 0, ownerChanged: false },
+          hasChanges: false,
+          hasInvalidState: false,
+        };
       const tags = getPickerChanges(tagsEditorId);
       const dependencies = getPickerChanges(dependenciesEditorId);
 
@@ -84,9 +92,12 @@
         tags,
         dependencies,
         media: mediaState.changes,
+        authors: authorsState.changes,
         hasInvalidMedia: Boolean(mediaState.hasInvalidUrls),
+        hasInvalidAuthors: Boolean(authorsState.hasInvalidState),
         hasChanges:
           Object.values(base).some(function (item) { return item.changed; }) ||
+          authorsState.hasChanges ||
           mediaState.changes.new.length > 0 ||
           mediaState.changes.changed.length > 0 ||
           mediaState.changes.deleted.length > 0 ||
@@ -112,6 +123,41 @@
       }
       for (const id of changes.remove) {
         await api.updateDependency(id, false);
+      }
+    }
+
+    async function syncAuthors(changes) {
+      if (!changes) return;
+
+      const addMap = new Map();
+      const removeQueue = [];
+
+      changes.add.forEach(function (item) {
+        addMap.set(String(item.id), item);
+      });
+      changes.remove.forEach(function (item) {
+        removeQueue.push(item);
+      });
+
+      const currentOwnerId = Number(changes.currentOwnerId || 0);
+      const initialOwnerId = Number(changes.initialOwnerId || 0);
+
+      if (currentOwnerId > 0 && currentOwnerId !== initialOwnerId) {
+        const ownerAdd = addMap.get(String(currentOwnerId));
+        if (ownerAdd) {
+          await api.updateAuthor(ownerAdd.id, true, true);
+          addMap.delete(String(currentOwnerId));
+        } else {
+          await api.updateAuthor(currentOwnerId, true, true);
+        }
+      }
+
+      for (const item of addMap.values()) {
+        await api.updateAuthor(item.id, true, false);
+      }
+
+      for (const item of removeQueue) {
+        await api.updateAuthor(item.id, false, false);
       }
     }
 
@@ -146,12 +192,17 @@
         runtime.showToast('Проверьте ссылки', 'Исправьте некорректные URL изображений перед сохранением', 'warning');
         return;
       }
+      if (changes.hasInvalidAuthors) {
+        runtime.showToast('Проверьте авторов', 'У мода должен остаться хотя бы один автор и один владелец', 'warning');
+        return;
+      }
 
       saveInProgress = true;
       runtime.setButtonBusy(saveButton, true);
 
       try {
         await api.updateMod(buildFormData(changes.base));
+        await syncAuthors(changes.authors);
         await syncMedia(changes.media);
         await syncTags(changes.tags);
         await syncDependencies(changes.dependencies);

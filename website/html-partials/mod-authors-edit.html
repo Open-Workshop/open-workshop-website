@@ -1,0 +1,28 @@
+{% set mod_authors = authors if authors is defined else [] %}
+
+<div
+  id="mod-authors-manager"
+  class="standart-panel mod-authors"
+  data-authors='{{ mod_authors | tojson | forceescape }}'
+>
+  <div class="mod-authors__header">
+    <p class="ow-muted">Соавторы</p>
+    <span class="ow-badge" data-authors-count>0 шт</span>
+  </div>
+
+  <div class="outline-container mod-authors__list" data-authors-list></div>
+  <p class="mod-authors__empty ow-muted" data-authors-empty hidden>Список авторов пуст</p>
+
+  <div class="mod-authors__add">
+    <input
+      type="text"
+      class="mod-authors__input"
+      data-authors-input
+      placeholder="ID пользователя или /user/123"
+      inputmode="numeric"
+    >
+    <button type="button" class="button-style button-style-small" data-action="authors-add">Добавить</button>
+  </div>
+
+  <p class="mod-authors__hint ow-muted">Добавление по ID профиля или ссылке `/user/123`. Кнопка `Владелец` передаёт владение выбранному автору.</p>
+</div>
