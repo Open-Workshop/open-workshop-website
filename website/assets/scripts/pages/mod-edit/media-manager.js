@@ -62,10 +62,6 @@
       }
     }
 
-    function getTypeLabel(type) {
-      return type === 'logo' ? 'Логотип' : 'Скриншот';
-    }
-
     function getSourceLabel(item) {
       if (item.source === 'file') {
         return `Файл: ${item.fileName || ''}`;
@@ -175,14 +171,8 @@
       image.alt = 'Изображение мода';
       image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
 
-      const badge = document.createElement('span');
-      badge.className = 'media-item__badge';
-      badge.setAttribute('data-media-badge', '');
-      badge.textContent = getTypeLabel(item.type);
-
       preview.appendChild(backdrop);
       preview.appendChild(image);
-      preview.appendChild(badge);
 
       const toolbar = document.createElement('div');
       toolbar.className = 'media-item__toolbar';
@@ -196,7 +186,8 @@
       logoCheckbox.checked = item.type === 'logo';
 
       const logoLabel = document.createElement('span');
-      logoLabel.textContent = 'Логотип';
+      logoLabel.className = 'media-item__logo-label';
+      logoLabel.textContent = 'Лого';
 
       const deleteButton = document.createElement('button');
       deleteButton.className = 'button-style button-style-small media-item__delete';
@@ -228,7 +219,6 @@
       const preview = node.querySelector('.media-item__preview');
       const backdrop = node.querySelector('.media-item__backdrop');
       const image = node.querySelector('.media-item__image');
-      const badge = node.querySelector('[data-media-badge]');
       const logoCheckbox = node.querySelector('.media-item__logo-checkbox');
       const source = node.querySelector('[data-media-role="source"]');
       const nextUrl = getResolvedUrl(item);
@@ -241,9 +231,6 @@
       }
       if (image) {
         image.src = nextUrl;
-      }
-      if (badge) {
-        badge.textContent = getTypeLabel(item.type);
       }
       if (logoCheckbox) {
         logoCheckbox.checked = item.type === 'logo';
@@ -288,7 +275,7 @@
       if (!pagination) return;
 
       if (footer) {
-        footer.hidden = state.items.length === 0;
+        footer.hidden = false;
       }
       pagination.replaceChildren();
       pagination.hidden = state.items.length === 0;

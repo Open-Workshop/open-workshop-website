@@ -23,14 +23,11 @@
                             <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
                                 <img class="media-item__backdrop" src="{{ item['url'] }}" alt="" aria-hidden="true" data-fallback-src="/assets/images/image-not-found.webp"/>
                                 <img class="media-item__image" src="{{ item['url'] }}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp"/>
-                                <span class="media-item__badge" data-media-badge>
-                                    {% if item['type'] == 'logo' %}Логотип{% else %}Скриншот{% endif %}
-                                </span>
                             </a>
                             <div class="media-item__toolbar">
                                 <label class="media-item__logo-toggle">
                                     <input class="media-item__logo-checkbox" type="checkbox" {% if item['type'] == 'logo' %}checked{% endif %}>
-                                    <span>Логотип</span>
+                                    <span class="media-item__logo-label">Лого</span>
                                 </label>
                                 <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение" aria-label="Удалить изображение"></button>
                             </div>
@@ -49,13 +46,13 @@
                         <span class="media-manager__dropzone-subtitle ow-muted">Поддерживаются обычные файлы картинок</span>
                     </div>
 
-                    <button class="media-manager__fab" type="button" data-media-action="add-file" aria-label="Добавить изображение">+</button>
                 </div>
 
                 <div class="media-manager__footer" hidden>
                     <button class="media-manager__nav media-manager__nav--prev" type="button" data-media-action="prev-page" aria-label="Предыдущее изображение">&lt;</button>
                     <div class="media-manager__pagination" data-media-pagination></div>
                     <button class="media-manager__nav media-manager__nav--next" type="button" data-media-action="next-page" aria-label="Следующее изображение">&gt;</button>
+                    <button class="media-manager__nav media-manager__fab" type="button" data-media-action="add-file" aria-label="Добавить изображение">+</button>
                 </div>
             </div>
         </div>
