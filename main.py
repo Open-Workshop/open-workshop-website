@@ -31,6 +31,46 @@ def _chunked(values, chunk_size: int):
         yield values[index:index + chunk_size]
 
 
+async def _load_paged_results(handler: UserHandler, base_url: str, *, page_size: int = 50) -> list:
+    safe_page_size = max(1, min(int(page_size), 50))
+    query_joiner = '&' if '?' in base_url else '?'
+
+    first_status, first_payload = await handler.fetch(f"{base_url}{query_joiner}page_size={safe_page_size}")
+    if first_status != 200 or not isinstance(first_payload, dict):
+        return []
+
+    first_results = first_payload.get("results", [])
+    if not isinstance(first_results, list):
+        first_results = []
+
+    try:
+        total_size = int(first_payload.get("database_size", len(first_results)))
+    except (TypeError, ValueError):
+        total_size = len(first_results)
+
+    if total_size <= len(first_results):
+        return first_results
+
+    page_count = (total_size + safe_page_size - 1) // safe_page_size
+    page_requests = [
+        handler.fetch(f"{base_url}{query_joiner}page_size={safe_page_size}&page={page}")
+        for page in range(1, page_count)
+    ]
+
+    page_results = await asyncio.gather(*page_requests)
+    collected_results = list(first_results)
+
+    for status_code, payload in page_results:
+        if status_code != 200 or not isinstance(payload, dict):
+            continue
+
+        results = payload.get("results", [])
+        if isinstance(results, list):
+            collected_results.extend(results)
+
+    return collected_results
+
+
 async def _load_mod_cards_by_ids(
     handler: UserHandler,
     mod_ids,
@@ -417,9 +457,9 @@ async def game_edit(game_id):
         )
         resources_list_path = app_config.api_path("resource", "list")
 
-        game_info_result, game_tags_result, all_genres_result, game_genres_result, game_logo_result = await asyncio.gather(
+        game_info_result, game_tags, all_genres_result, game_genres_result, game_logo_result = await asyncio.gather(
             handler.fetch(f"{game_info_path}?short_description=true&description=true&dates=true&statistics=true"),
-            handler.fetch(f"{tag_list_path}?game_id={game_id}&page_size=100"),
+            _load_paged_results(handler, f"{tag_list_path}?game_id={game_id}", page_size=50),
             handler.fetch(f"{genre_list_path}?page_size=200"),
             handler.fetch(game_genres_path),
             handler.fetch(
@@ -435,7 +475,6 @@ async def game_edit(game_id):
                 error_title=f'Ошибка ({game_info_code})')
             ), game_info_code
 
-        _, game_tags = game_tags_result
         _, all_genres = all_genres_result
         _, game_genres = game_genres_result
         _, game_logo = game_logo_result
@@ -470,8 +509,6 @@ async def game_edit(game_id):
             if isinstance(item, dict) and item.get("id") is not None
         ]
 
-        if not isinstance(game_tags, dict):
-            game_tags = {"results": []}
         if not isinstance(all_genres, dict):
             all_genres = {"results": []}
 
@@ -486,7 +523,7 @@ async def game_edit(game_id):
             edit_title=f"{game_info['name']} - edit Open Game",
             edit_description=game_info["short_description"],
             game=game_info,
-            game_tags=game_tags.get("results", []),
+            game_tags=game_tags,
             available_genres=all_genres.get("results", []),
             selected_genres=selected_genres,
             selected_genre_ids=selected_genre_ids,
