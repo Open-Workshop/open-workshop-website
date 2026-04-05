@@ -17,6 +17,8 @@ main.user.settings > pager > label {
 }
 main.user.settings > pager > button,
 main.user.settings > pager > .button-style {
+    display: block;
+    box-sizing: border-box;
     margin: 1px;
 }
 
