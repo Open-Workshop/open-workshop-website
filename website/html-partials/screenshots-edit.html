@@ -2,7 +2,6 @@
     <div class="media-manager" id="media-manager" data-storage-origin="{{ storage_address }}">
         <div class="media-manager__header">
             <div class="media-manager__title">
-                <h3>Изображения</h3>
                 <p class="ow-muted">Логотип и скриншоты мода</p>
             </div>
             <div class="media-manager__stats">
@@ -11,70 +10,53 @@
             </div>
         </div>
 
-        <div class="media-manager__add">
-            <div class="media-manager__mode" role="group" aria-label="Способ добавления">
-                <button class="media-manager__mode-btn is-active" type="button" data-media-mode="url">URL</button>
-                <button class="media-manager__mode-btn" type="button" data-media-mode="file">Файл</button>
-            </div>
+        <input type="file" class="media-manager__file" data-media-input="file" accept="image/*" multiple hidden>
 
-            <div class="media-manager__row" data-media-row="url">
-                <select class="media-manager__type-input" data-media-input="type">
-                    <option value="logo">Логотип</option>
-                    <option value="screenshot" selected>Скриншот</option>
-                </select>
-                <input type="url" class="media-manager__input" data-media-input="url" placeholder="https://...">
-                <button class="button-style media-manager__add-btn" type="button" data-media-action="add">Добавить URL</button>
-            </div>
-
-            <div class="media-manager__row media-manager__row--file" data-media-row="file" hidden>
-                <select class="media-manager__type-input" data-media-input="type-file">
-                    <option value="logo">Логотип</option>
-                    <option value="screenshot" selected>Скриншот</option>
-                </select>
-                <input type="file" class="media-manager__file" data-media-input="file" accept="image/*" hidden>
-                <button class="button-style media-manager__add-btn" type="button" data-media-action="add-file">Выбрать файл</button>
-            </div>
-
-            <button class="media-manager__dropzone" type="button" data-media-dropzone hidden>
-                <span class="media-manager__dropzone-title">Перетащите изображение сюда</span>
-                <span class="media-manager__dropzone-subtitle ow-muted">или нажмите, чтобы выбрать файл</span>
-            </button>
-
-            <div class="media-manager__hint ow-muted">
-                Можно изменить тип, URL и удалить любое изображение до сохранения.
-            </div>
-        </div>
-
-        <div class="media-manager__list" id="media-list" data-photoswipe-gallery>
-            {% for item in resources['results'] %}
-            {% if item['type'] in ['logo', 'screenshot'] %}
-            {% set is_storage_item = (item['url'] or '').startswith(storage_address) %}
-            <div class="media-item" data-id="{{ item['id'] }}" data-start-url="{{ item['url'] }}" data-start-type="{{ item['type'] }}" data-source="url">
-                <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
-                    <img src="{{ item['url'] }}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp"/>
-                    <span class="media-item__badge" data-media-badge>
-                        {% if item['type'] == 'logo' %}Логотип{% else %}Скриншот{% endif %}
-                    </span>
-                </a>
-                <div class="media-item__meta">
-                    <div class="media-item__controls">
-                        <select class="media-item__type">
-                            <option value="logo" {% if item['type'] == 'logo' %}selected{% endif %}>Логотип</option>
-                            <option value="screenshot" {% if item['type'] == 'screenshot' %}selected{% endif %}>Скриншот</option>
-                        </select>
-                        <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение">Удалить</button>
+        <div class="media-manager__stage" data-media-stage>
+            <div class="media-manager__viewport">
+                <div class="media-manager__canvas">
+                    <div class="media-manager__list" id="media-list" data-photoswipe-gallery>
+                        {% for item in resources['results'] %}
+                        {% if item['type'] in ['logo', 'screenshot'] %}
+                        {% set is_storage_item = (item['url'] or '').startswith(storage_address) %}
+                        <div class="media-item" data-id="{{ item['id'] }}" data-start-url="{{ item['url'] }}" data-start-type="{{ item['type'] }}" data-source="url">
+                            <a href="{{ item['url'] }}" class="media-item__preview without-caption image-link" target="_blank">
+                                <img class="media-item__backdrop" src="{{ item['url'] }}" alt="" aria-hidden="true" data-fallback-src="/assets/images/image-not-found.webp"/>
+                                <img class="media-item__image" src="{{ item['url'] }}" alt="Изображение мода" data-fallback-src="/assets/images/image-not-found.webp"/>
+                                <span class="media-item__badge" data-media-badge>
+                                    {% if item['type'] == 'logo' %}Логотип{% else %}Скриншот{% endif %}
+                                </span>
+                            </a>
+                            <div class="media-item__toolbar">
+                                <label class="media-item__logo-toggle">
+                                    <input class="media-item__logo-checkbox" type="checkbox" {% if item['type'] == 'logo' %}checked{% endif %}>
+                                    <span>Логотип</span>
+                                </label>
+                                <button class="button-style button-style-small media-item__delete" type="button" data-media-action="delete" title="Удалить изображение" aria-label="Удалить изображение"></button>
+                            </div>
+                            <div class="media-item__source ow-muted">{% if is_storage_item %}Storage{% else %}URL{% endif %}</div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% if not is_storage_item %}
-                    <input type="url" class="media-item__url" value="{{ item['url'] }}" placeholder="URL изображения">
-                    {% endif %}
-                    <div class="media-item__source ow-muted">{% if is_storage_item %}Storage{% else %}URL{% endif %}</div>
-                </div>
-            </div>
-            {% endif %}
-            {% endfor %}
 
-            <div class="media-manager__empty ow-muted" data-media-empty>
-                Изображений пока нет. Добавьте логотип или скриншот выше.
+                    <div class="media-manager__empty ow-muted" data-media-empty>
+                        Нажмите на кнопку внизу справа или перетащите картинку сюда.
+                    </div>
+
+                    <div class="media-manager__dropzone" data-media-dropzone hidden aria-hidden="true">
+                        <span class="media-manager__dropzone-title">Отпустите файл, чтобы добавить изображение</span>
+                        <span class="media-manager__dropzone-subtitle ow-muted">Поддерживаются обычные файлы картинок</span>
+                    </div>
+
+                    <button class="media-manager__fab" type="button" data-media-action="add-file" aria-label="Добавить изображение">+</button>
+                </div>
+
+                <div class="media-manager__footer" hidden>
+                    <button class="media-manager__nav media-manager__nav--prev" type="button" data-media-action="prev-page" aria-label="Предыдущее изображение">&lt;</button>
+                    <div class="media-manager__pagination" data-media-pagination></div>
+                    <button class="media-manager__nav media-manager__nav--next" type="button" data-media-action="next-page" aria-label="Следующее изображение">&gt;</button>
+                </div>
             </div>
         </div>
     </div>

@@ -16,7 +16,7 @@
 
   <aside class="mod-edit__sidebar">
     {% include 'html-partials/screenshots-edit.html' %}
-    
+
     {{ render_tags_editor(tags, info["result"]["game"]["id"], false, 'mod-tags-editor') }}
 
     {% with editor_id='mod-dependencies-editor' %}

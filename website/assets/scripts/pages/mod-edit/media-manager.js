@@ -8,30 +8,31 @@
     const root = runtime.resolveElement(options && options.root);
     if (!root) return null;
 
+    const stage = root.querySelector('[data-media-stage]');
     const list = root.querySelector('.media-manager__list');
-    const emptyNode = list ? list.querySelector('[data-media-empty]') : null;
+    const emptyNode = root.querySelector('[data-media-empty]');
+    const footer = root.querySelector('.media-manager__footer');
+    const pagination = root.querySelector('[data-media-pagination]');
     const countNode = root.querySelector('[data-media-count]');
     const logoStateNode = root.querySelector('[data-media-logo-state]');
-    const modeButtons = root.querySelectorAll('[data-media-mode]');
-    const urlRow = root.querySelector('[data-media-row="url"]');
-    const fileRow = root.querySelector('[data-media-row="file"]');
     const dropzone = root.querySelector('[data-media-dropzone]');
-    const urlInput = root.querySelector('[data-media-input="url"]');
     const fileInput = root.querySelector('[data-media-input="file"]');
-    const typeInput = root.querySelector('[data-media-input="type"]');
-    const typeFileInput = root.querySelector('[data-media-input="type-file"]');
-    const addUrlButton = root.querySelector('[data-media-action="add"]');
     const addFileButton = root.querySelector('[data-media-action="add-file"]');
+    const prevButton = root.querySelector('[data-media-action="prev-page"]');
+    const nextButton = root.querySelector('[data-media-action="next-page"]');
 
-    if (!list || !emptyNode) return null;
+    if (!stage || !list || !emptyNode) return null;
 
+    const PAGINATION_WINDOW = 4;
     const state = {
       items: [],
       deletedIds: new Set(),
       subscribers: new Set(),
       nextKey: 0,
-      mode: 'url',
       storageHost: '',
+      activeKey: '',
+      isDragOver: false,
+      dragDepth: 0,
     };
 
     if (root.dataset.storageOrigin) {
@@ -49,16 +50,6 @@
 
     function normalizeUrl(value) {
       return String(value || '').trim();
-    }
-
-    function isHttpUrl(value) {
-      if (!value) return false;
-      try {
-        const parsed = new URL(value);
-        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-      } catch (error) {
-        return false;
-      }
     }
 
     function isStorageUrl(value) {
@@ -79,7 +70,7 @@
       if (item.source === 'file') {
         return `Файл: ${item.fileName || ''}`;
       }
-      return item.urlEditable ? 'URL' : 'Storage';
+      return isStorageUrl(item.startUrl || item.url) ? 'Storage' : 'URL';
     }
 
     function getResolvedUrl(item) {
@@ -103,25 +94,62 @@
       return list.querySelector(`[data-media-key="${key}"]`);
     }
 
-    function createMediaTypeSelect(item) {
-      const select = document.createElement('select');
-      select.className = 'media-item__type';
-      select.setAttribute('data-media-role', 'type');
-
-      [
-        { value: 'logo', label: 'Логотип' },
-        { value: 'screenshot', label: 'Скриншот' },
-      ].forEach(function (optionData) {
-        const option = document.createElement('option');
-        option.value = optionData.value;
-        option.textContent = optionData.label;
-        if (item.type === optionData.value) {
-          option.selected = true;
-        }
-        select.appendChild(option);
+    function getActiveIndex() {
+      const index = state.items.findIndex(function (item) {
+        return item.key === state.activeKey;
       });
+      return index >= 0 ? index : 0;
+    }
 
-      return select;
+    function ensureActiveItem(preferredKey) {
+      if (state.items.length === 0) {
+        state.activeKey = '';
+        return;
+      }
+
+      if (preferredKey && findItem(preferredKey)) {
+        state.activeKey = preferredKey;
+        return;
+      }
+
+      if (findItem(state.activeKey)) {
+        return;
+      }
+
+      state.activeKey = state.items[0].key;
+    }
+
+    function setActiveIndex(index) {
+      if (state.items.length === 0) {
+        state.activeKey = '';
+        renderCarousel();
+        return;
+      }
+
+      const nextIndex = Math.max(0, Math.min(index, state.items.length - 1));
+      state.activeKey = state.items[nextIndex].key;
+      renderCarousel();
+    }
+
+    function getPaginationRange(activeIndex) {
+      const total = state.items.length;
+      const visibleCount = Math.min(PAGINATION_WINDOW, total);
+      let start = 0;
+
+      if (total > visibleCount) {
+        start = activeIndex - Math.floor(visibleCount / 2);
+        if (start < 0) {
+          start = 0;
+        }
+        if (start + visibleCount > total) {
+          start = total - visibleCount;
+        }
+      }
+
+      return {
+        start,
+        end: start + visibleCount,
+      };
     }
 
     function createMediaItemNode(item) {
@@ -134,7 +162,15 @@
       preview.target = '_blank';
       preview.href = getResolvedUrl(item);
 
+      const backdrop = document.createElement('img');
+      backdrop.className = 'media-item__backdrop';
+      backdrop.src = getResolvedUrl(item);
+      backdrop.alt = '';
+      backdrop.setAttribute('aria-hidden', 'true');
+      backdrop.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
+
       const image = document.createElement('img');
+      image.className = 'media-item__image';
       image.src = getResolvedUrl(item);
       image.alt = 'Изображение мода';
       image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
@@ -144,47 +180,44 @@
       badge.setAttribute('data-media-badge', '');
       badge.textContent = getTypeLabel(item.type);
 
+      preview.appendChild(backdrop);
       preview.appendChild(image);
       preview.appendChild(badge);
 
-      const meta = document.createElement('div');
-      meta.className = 'media-item__meta';
+      const toolbar = document.createElement('div');
+      toolbar.className = 'media-item__toolbar';
 
-      const controls = document.createElement('div');
-      controls.className = 'media-item__controls';
+      const logoToggle = document.createElement('label');
+      logoToggle.className = 'media-item__logo-toggle';
 
-      const typeSelect = createMediaTypeSelect(item);
+      const logoCheckbox = document.createElement('input');
+      logoCheckbox.type = 'checkbox';
+      logoCheckbox.className = 'media-item__logo-checkbox';
+      logoCheckbox.checked = item.type === 'logo';
+
+      const logoLabel = document.createElement('span');
+      logoLabel.textContent = 'Логотип';
 
       const deleteButton = document.createElement('button');
       deleteButton.className = 'button-style button-style-small media-item__delete';
       deleteButton.type = 'button';
       deleteButton.dataset.mediaAction = 'delete';
       deleteButton.title = 'Удалить изображение';
-      deleteButton.textContent = 'Удалить';
+      deleteButton.setAttribute('aria-label', 'Удалить изображение');
 
-      controls.appendChild(typeSelect);
-      controls.appendChild(deleteButton);
-      meta.appendChild(controls);
-
-      if (item.urlEditable) {
-        const itemUrlInput = document.createElement('input');
-        itemUrlInput.type = 'url';
-        itemUrlInput.className = 'media-item__url';
-        itemUrlInput.placeholder = 'URL изображения';
-        itemUrlInput.value = item.url;
-        itemUrlInput.dataset.mediaRole = 'url';
-        itemUrlInput.classList.toggle('is-invalid', Boolean(item.invalidUrl));
-        meta.appendChild(itemUrlInput);
-      }
+      logoToggle.appendChild(logoCheckbox);
+      logoToggle.appendChild(logoLabel);
+      toolbar.appendChild(logoToggle);
+      toolbar.appendChild(deleteButton);
 
       const source = document.createElement('div');
       source.className = 'media-item__source ow-muted';
       source.dataset.mediaRole = 'source';
       source.textContent = getSourceLabel(item);
-      meta.appendChild(source);
 
       node.appendChild(preview);
-      node.appendChild(meta);
+      node.appendChild(toolbar);
+      node.appendChild(source);
       return node;
     }
 
@@ -193,15 +226,18 @@
       if (!node) return;
 
       const preview = node.querySelector('.media-item__preview');
-      const image = node.querySelector('img');
+      const backdrop = node.querySelector('.media-item__backdrop');
+      const image = node.querySelector('.media-item__image');
       const badge = node.querySelector('[data-media-badge]');
-      const typeSelect = node.querySelector('.media-item__type');
-      const itemUrlInput = node.querySelector('.media-item__url');
+      const logoCheckbox = node.querySelector('.media-item__logo-checkbox');
       const source = node.querySelector('[data-media-role="source"]');
       const nextUrl = getResolvedUrl(item);
 
       if (preview) {
         preview.href = nextUrl;
+      }
+      if (backdrop) {
+        backdrop.src = nextUrl;
       }
       if (image) {
         image.src = nextUrl;
@@ -209,12 +245,8 @@
       if (badge) {
         badge.textContent = getTypeLabel(item.type);
       }
-      if (typeSelect) {
-        typeSelect.value = item.type;
-      }
-      if (itemUrlInput) {
-        itemUrlInput.value = item.url;
-        itemUrlInput.classList.toggle('is-invalid', Boolean(item.invalidUrl));
+      if (logoCheckbox) {
+        logoCheckbox.checked = item.type === 'logo';
       }
       if (source) {
         source.textContent = getSourceLabel(item);
@@ -223,19 +255,19 @@
 
     function insertNode(node, prepend) {
       if (prepend) {
-        list.insertBefore(node, list.firstChild === emptyNode ? emptyNode : list.firstChild);
+        list.insertBefore(node, list.firstChild);
         return;
       }
-      list.insertBefore(node, emptyNode);
+      list.appendChild(node);
     }
 
     function updateIndicators() {
       const count = state.items.length;
       if (countNode) {
-        countNode.textContent = String(count);
+        countNode.textContent = `${count} шт`;
       }
 
-      emptyNode.style.display = count > 0 ? 'none' : 'flex';
+      emptyNode.hidden = count > 0;
 
       const logoItem = state.items.find(function (item) {
         return item.type === 'logo';
@@ -250,6 +282,55 @@
           logoStateNode.classList.remove('has-logo');
         }
       }
+    }
+
+    function renderPagination() {
+      if (!pagination) return;
+
+      if (footer) {
+        footer.hidden = state.items.length === 0;
+      }
+      pagination.replaceChildren();
+      pagination.hidden = state.items.length === 0;
+
+      if (state.items.length === 0) {
+        return;
+      }
+
+      const activeIndex = getActiveIndex();
+      const range = getPaginationRange(activeIndex);
+
+      for (let index = range.start; index < range.end; index += 1) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'media-manager__page';
+        button.dataset.mediaPage = String(index);
+        button.textContent = String(index + 1);
+        button.classList.toggle('is-active', index === activeIndex);
+        pagination.appendChild(button);
+      }
+    }
+
+    function renderCarousel() {
+      ensureActiveItem();
+
+      const count = state.items.length;
+      const activeIndex = getActiveIndex();
+      list.style.transform = count > 0 ? `translateX(-${activeIndex * 100}%)` : 'translateX(0)';
+
+      if (prevButton) {
+        prevButton.disabled = activeIndex <= 0;
+      }
+      if (nextButton) {
+        nextButton.disabled = activeIndex >= count - 1;
+      }
+
+      stage.classList.toggle('is-dragover', state.isDragOver);
+      if (dropzone) {
+        dropzone.hidden = !state.isDragOver;
+      }
+
+      renderPagination();
     }
 
     function getResourceChanges() {
@@ -281,18 +362,11 @@
           return;
         }
 
-        const resolvedUrl = item.urlEditable ? (normalizeUrl(item.url) || item.startUrl) : item.startUrl;
         const typeChanged = item.type !== item.startType;
-        const urlChanged = item.urlEditable && resolvedUrl !== item.startUrl;
 
-        if (typeChanged || urlChanged) {
+        if (typeChanged) {
           const nextChange = { id: item.id };
-          if (typeChanged) {
-            nextChange.type = item.type;
-          }
-          if (urlChanged) {
-            nextChange.url = resolvedUrl;
-          }
+          nextChange.type = item.type;
           changes.changed.push(nextChange);
         }
       });
@@ -332,7 +406,10 @@
     }
 
     function notify(reason) {
+      ensureActiveItem();
       updateIndicators();
+      renderCarousel();
+
       const snapshot = getState();
       state.subscribers.forEach(function (listener) {
         listener(snapshot, reason || 'update');
@@ -349,19 +426,6 @@
       return function unsubscribe() {
         state.subscribers.delete(listener);
       };
-    }
-
-    function setMode(nextMode) {
-      state.mode = nextMode === 'file' ? 'file' : 'url';
-      root.dataset.mode = state.mode;
-
-      modeButtons.forEach(function (button) {
-        button.classList.toggle('is-active', button.dataset.mediaMode === state.mode);
-      });
-
-      if (urlRow) urlRow.hidden = state.mode !== 'url';
-      if (fileRow) fileRow.hidden = state.mode !== 'file';
-      if (dropzone) dropzone.hidden = state.mode !== 'file';
     }
 
     function enforceSingleLogo(activeItem) {
@@ -396,14 +460,23 @@
     function addItem(item, prepend) {
       state.items[prepend ? 'unshift' : 'push'](item);
       insertNode(createMediaItemNode(item), Boolean(prepend));
+
       if (item.type === 'logo') {
         enforceSingleLogo(item);
       }
+
+      ensureActiveItem(item.key);
       notify('add');
     }
 
     function removeItem(item) {
       if (!item) return;
+
+      const removedIndex = state.items.findIndex(function (candidate) {
+        return candidate.key === item.key;
+      });
+      const nextIndex = Math.max(0, Math.min(removedIndex, state.items.length - 2));
+      const nextActiveItem = state.items[nextIndex] || null;
 
       state.items = state.items.filter(function (candidate) {
         return candidate.key !== item.key;
@@ -422,121 +495,102 @@
         node.remove();
       }
 
+      ensureActiveItem(nextActiveItem ? nextActiveItem.key : '');
       notify('delete');
     }
 
-    function addUrlItem() {
-      const rawUrl = normalizeUrl(urlInput ? urlInput.value : '');
-      if (!rawUrl) {
-        runtime.showToast('Нужна ссылка', 'Введите URL изображения', 'info');
-        return;
-      }
-      if (!isHttpUrl(rawUrl)) {
-        if (urlInput) urlInput.classList.add('is-invalid');
-        runtime.showToast('Некорректный URL', 'Разрешены только http/https ссылки', 'warning');
-        return;
-      }
-
-      const item = createStateItem({
-        type: typeInput ? typeInput.value : 'screenshot',
-        source: 'url',
-        url: rawUrl,
-        urlEditable: !isStorageUrl(rawUrl),
-        isNew: true,
-        invalidUrl: false,
+    function addFileItems(files) {
+      const nextFiles = Array.from(files || []);
+      const validFiles = nextFiles.filter(function (file) {
+        return String(file && file.type || '').startsWith('image/');
       });
 
-      addItem(item, true);
-
-      if (urlInput) {
-        urlInput.value = '';
-        urlInput.classList.remove('is-invalid');
-      }
-    }
-
-    function addFileItem(file) {
-      if (!file) {
+      if (validFiles.length === 0) {
         runtime.showToast('Нужен файл', 'Выберите изображение', 'info');
         return;
       }
-      if (!String(file.type || '').startsWith('image/')) {
-        runtime.showToast('Неверный формат', 'Можно загружать только изображения', 'warning');
-        return;
+
+      if (validFiles.length !== nextFiles.length) {
+        runtime.showToast('Часть файлов пропущена', 'Можно загружать только изображения', 'warning');
       }
 
-      const objectUrl = URL.createObjectURL(file);
-      const item = createStateItem({
-        type: typeFileInput ? typeFileInput.value : 'screenshot',
-        source: 'file',
-        isNew: true,
-        file,
-        fileName: file.name,
-        objectUrl,
-      });
-
-      addItem(item, true);
+      for (let index = validFiles.length - 1; index >= 0; index -= 1) {
+        const file = validFiles[index];
+        const objectUrl = URL.createObjectURL(file);
+        addItem(createStateItem({
+          type: 'screenshot',
+          source: 'file',
+          isNew: true,
+          file,
+          fileName: file.name,
+          objectUrl,
+        }), true);
+      }
     }
 
     function parseExistingItems() {
       const items = Array.from(list.querySelectorAll('.media-item')).map(function (node) {
         const preview = node.querySelector('.media-item__preview');
-        const itemUrlInput = node.querySelector('.media-item__url');
-        const typeSelect = node.querySelector('.media-item__type');
+        const logoCheckbox = node.querySelector('.media-item__logo-checkbox');
         const startUrl = normalizeUrl(node.dataset.startUrl || (preview ? preview.getAttribute('href') : ''));
 
         return createStateItem({
           id: String(node.dataset.id || ''),
-          type: typeSelect ? typeSelect.value : String(node.dataset.startType || 'screenshot'),
-          startType: String(node.dataset.startType || (typeSelect ? typeSelect.value : 'screenshot')),
+          type: logoCheckbox && logoCheckbox.checked ? 'logo' : String(node.dataset.startType || 'screenshot'),
+          startType: String(node.dataset.startType || (logoCheckbox && logoCheckbox.checked ? 'logo' : 'screenshot')),
           source: String(node.dataset.source || 'url'),
           startUrl,
-          url: itemUrlInput ? normalizeUrl(itemUrlInput.value) : startUrl,
-          urlEditable: Boolean(itemUrlInput),
+          url: startUrl,
+          urlEditable: false,
           isNew: false,
         });
       });
 
       state.items = items;
+      state.activeKey = items[0] ? items[0].key : '';
+
       Array.from(list.querySelectorAll('.media-item')).forEach(function (node) {
         node.remove();
       });
+
       state.items.forEach(function (item) {
         insertNode(createMediaItemNode(item), false);
       });
+
       updateIndicators();
+      renderCarousel();
+    }
+
+    function canHandleTransfer(dataTransfer) {
+      if (!dataTransfer) return false;
+      if (dataTransfer.files && dataTransfer.files.length > 0) {
+        return true;
+      }
+      const types = dataTransfer.types ? Array.from(dataTransfer.types) : [];
+      return types.indexOf('Files') !== -1;
+    }
+
+    function setDragState(nextValue) {
+      state.isDragOver = Boolean(nextValue);
+      renderCarousel();
     }
 
     list.addEventListener('change', function (event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      if (target.classList.contains('media-item__type')) {
+      if (target.classList.contains('media-item__logo-checkbox')) {
         const node = target.closest('[data-media-key]');
         const item = node ? findItem(node.dataset.mediaKey || '') : null;
         if (!item) return;
 
-        item.type = target.value === 'logo' ? 'logo' : 'screenshot';
+        item.type = target.checked ? 'logo' : 'screenshot';
         if (item.type === 'logo') {
           enforceSingleLogo(item);
         }
         syncItemNode(item);
         notify('type');
       }
-    });
-
-    list.addEventListener('input', function (event) {
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement) || !target.classList.contains('media-item__url')) return;
-
-      const node = target.closest('[data-media-key]');
-      const item = node ? findItem(node.dataset.mediaKey || '') : null;
-      if (!item) return;
-
-      const value = normalizeUrl(target.value);
-      item.url = value;
-      item.invalidUrl = value !== '' && !isHttpUrl(value);
-      syncItemNode(item);
-      notify('url');
     });
 
     list.addEventListener('click', function (event) {
@@ -548,28 +602,26 @@
       removeItem(item);
     });
 
-    modeButtons.forEach(function (button) {
-      button.addEventListener('click', function () {
-        setMode(button.dataset.mediaMode);
-      });
-    });
+    if (pagination) {
+      pagination.addEventListener('click', function (event) {
+        const target = event.target instanceof Element ? event.target.closest('[data-media-page]') : null;
+        if (!target) return;
 
-    if (addUrlButton) {
-      addUrlButton.addEventListener('click', addUrlItem);
+        const index = Number.parseInt(target.dataset.mediaPage || '', 10);
+        if (!Number.isFinite(index)) return;
+        setActiveIndex(index);
+      });
     }
 
-    if (urlInput) {
-      urlInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          addUrlItem();
-        }
+    if (prevButton) {
+      prevButton.addEventListener('click', function () {
+        setActiveIndex(getActiveIndex() - 1);
       });
-      urlInput.addEventListener('input', function () {
-        const value = normalizeUrl(urlInput.value);
-        if (!value || isHttpUrl(value)) {
-          urlInput.classList.remove('is-invalid');
-        }
+    }
+
+    if (nextButton) {
+      nextButton.addEventListener('click', function () {
+        setActiveIndex(getActiveIndex() + 1);
       });
     }
 
@@ -581,47 +633,42 @@
 
     if (fileInput) {
       fileInput.addEventListener('change', function () {
-        if (state.mode !== 'file') return;
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        addFileItem(file);
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
+        addFileItems(files);
         fileInput.value = '';
       });
     }
 
-    if (dropzone && fileInput) {
-      dropzone.addEventListener('click', function () {
-        fileInput.click();
-      });
-      dropzone.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          fileInput.click();
-        }
-      });
+    stage.addEventListener('dragenter', function (event) {
+      if (!canHandleTransfer(event.dataTransfer)) return;
+      event.preventDefault();
+      state.dragDepth += 1;
+      setDragState(true);
+    });
 
-      ['dragenter', 'dragover'].forEach(function (eventName) {
-        dropzone.addEventListener(eventName, function (event) {
-          event.preventDefault();
-          dropzone.classList.add('is-dragover');
-        });
-      });
+    stage.addEventListener('dragover', function (event) {
+      if (!canHandleTransfer(event.dataTransfer)) return;
+      event.preventDefault();
+      setDragState(true);
+    });
 
-      ['dragleave', 'drop'].forEach(function (eventName) {
-        dropzone.addEventListener(eventName, function (event) {
-          event.preventDefault();
-          dropzone.classList.remove('is-dragover');
-        });
-      });
+    stage.addEventListener('dragleave', function (event) {
+      if (!canHandleTransfer(event.dataTransfer)) return;
+      event.preventDefault();
+      state.dragDepth = Math.max(0, state.dragDepth - 1);
+      if (state.dragDepth === 0) {
+        setDragState(false);
+      }
+    });
 
-      dropzone.addEventListener('drop', function (event) {
-        const files = event.dataTransfer ? event.dataTransfer.files : null;
-        const file = files && files.length > 0 ? files[0] : null;
-        if (file) {
-          addFileItem(file);
-        }
-      });
-    }
+    stage.addEventListener('drop', function (event) {
+      if (!canHandleTransfer(event.dataTransfer)) return;
+      event.preventDefault();
+      state.dragDepth = 0;
+      setDragState(false);
+      addFileItems(event.dataTransfer ? event.dataTransfer.files : null);
+    });
 
     window.addEventListener('beforeunload', function () {
       state.items.forEach(function (item) {
@@ -632,13 +679,12 @@
     });
 
     parseExistingItems();
-    setMode(state.mode);
 
     return {
       root,
       subscribe,
       getState,
-      setMode,
+      setActiveIndex,
     };
   });
 })();
