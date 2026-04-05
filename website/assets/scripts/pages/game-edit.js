@@ -120,6 +120,25 @@
     throw new Error('Не удалось разобрать ID для "' + entityLabel + '"');
   }
 
+  function initCatalogPreview() {
+    if (!editRuntime) return null;
+
+    const createPreview = editRuntime.requireFactory('game-edit-catalog-preview');
+    const preview = createPreview({
+      root: root.querySelector('.game-edit__catalog-cards'),
+      titleInput: root.querySelector('#game-name'),
+      descriptionRoot: root.querySelector('#game-short-desc-panel'),
+      logoImage: root.querySelector('.game-edit__logo'),
+      gameId,
+    });
+
+    if (preview && typeof preview.bind === 'function') {
+      preview.bind();
+    }
+
+    return preview;
+  }
+
   async function sendForm(endpoint, params) {
     const response = await fetch(window.OWCore.apiUrl(endpoint.path), {
       method: endpoint.method,
@@ -338,6 +357,8 @@
     editRuntime.initPage(root, { fadeInDelay: 250 });
     editRuntime.bindPager(document.querySelector('#start-page-button'));
   }
+
+  initCatalogPreview();
 
   root.addEventListener('click', function (event) {
     const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;

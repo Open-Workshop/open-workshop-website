@@ -316,11 +316,13 @@ EDIT_PAGE_CONFIGS: dict = {
         "template_nav": "html-partials/game-edit/nav.html",
         "template_pages": [
             "html-partials/game-edit/page-main.html",
+            "html-partials/game-edit/page-catalog.html",
             "html-partials/game-edit/page-params.html",
         ],
         "scripts": [
             "/assets/scripts/vendors/pager-logic.js",
             "/assets/scripts/ow-edit-runtime.js",
+            "/assets/scripts/pages/game-edit/catalog-preview.js",
             "/assets/scripts/pages/game-edit.js",
         ],
     },

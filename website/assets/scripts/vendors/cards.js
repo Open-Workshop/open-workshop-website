@@ -42,9 +42,10 @@
     }
 
 window.Cards = {
-    create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false) {
+    create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false, options = {}) {
         const allowGameEdit = document.body && document.body.dataset.userIsAdmin === 'true';
-        const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit));
+        const settings = options || {};
+        const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit && !settings.disableAutoGameEditButton));
 
         // Создаем карточку
         const card = document.createElement('div');
@@ -184,7 +185,7 @@ window.Cards = {
             toEdit.title = isGame ? "Редактировать игру" : "Редактировать мод";
             flapButtons.appendChild(toEdit);
         }
-        if (isGame) {
+        if (isGame && !settings.disableGameSelectButton) {
             const tog = document.createElement('button');
             tog.id = "togamelink"+cardData.id;
             tog.addEventListener('click', function () {

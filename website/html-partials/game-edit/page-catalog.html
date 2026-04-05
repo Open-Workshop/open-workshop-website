@@ -1,0 +1,17 @@
+<div id="page-catalog-game" class="mod-edit__page">
+  <div class="mod-edit__catalog">
+    <div
+      class="cards mod-edit__catalog-cards game-edit__catalog-cards"
+      data-game-id="{{ game['id'] }}"
+    ></div>
+
+    <div class="mod-edit__catalog-desc">
+      <div id="game-short-desc-panel" class="standart-panel mod-edit__panel">
+        <h3>Краткое описание</h3>
+        {% with limit=256, placeholder='Краткое описание игры...', init_text=game['short_description'] %}
+          {% include 'html-partials/desc-edit.html' %}
+        {% endwith %}
+      </div>
+    </div>
+  </div>
+</div>

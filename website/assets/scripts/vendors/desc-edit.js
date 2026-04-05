@@ -115,6 +115,7 @@
     if (html && html.trim() !== '') {
       editor.quill.clipboard.dangerouslyPasteHTML(html, 'silent');
     }
+    editor.textarea.defaultValue = normalizedValue;
     editor.textarea.value = normalizedValue;
     if (nextOptions.updateStart) {
       editor.textarea.setAttribute('startdata', normalizedValue);
@@ -201,7 +202,8 @@
       return null;
     }
 
-    const initialValue = normalizeText(textarea.value);
+    const initialValue = normalizeText(textarea.defaultValue);
+    textarea.defaultValue = initialValue;
     textarea.value = initialValue;
     textarea.setAttribute('startdata', initialValue);
 
