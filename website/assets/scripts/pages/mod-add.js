@@ -21,14 +21,6 @@
   const fileInput = document.querySelector('input#input-mod-file-upload');
   const gameSelector = document.querySelector('div.main-body-game-selector');
   const descriptionModules = Array.isArray(config.description_modules) ? config.description_modules : [];
-  const stageLabels = {
-    uploading: 'Загрузка файла...',
-    uploaded: 'Файл загружен',
-    repacking: 'Перепаковка файла...',
-    packed: 'Ожидание сохранения...',
-    downloading: 'Скачивание файла...',
-    downloaded: 'Файл скачан',
-  };
   let submitInProgress = false;
 
   function initDescriptionModule() {
@@ -45,59 +37,27 @@
   initDescriptionModule();
 
   function showUploadProgress() {
-    if (uploadProgress) {
-      uploadProgress.start();
-      return;
-    }
-
-    const progressRoot = root.querySelector('[data-upload-progress-root]');
-    if (progressRoot) {
-      progressRoot.hidden = false;
-      progressRoot.style.display = '';
-    }
+    if (!uploadProgress) return;
+    uploadProgress.start();
   }
 
-  function setUploadProgress(percent) {
-    if (uploadProgress) {
-      uploadProgress.setProgress(percent);
-      return;
+  function syncUploadProgress(message) {
+    if (!uploadProgress || typeof uploadProgress.applyTransferState !== 'function') {
+      return null;
     }
-
-    const bar = root.querySelector('[data-upload-progress-bar]');
-    if (bar) {
-      bar.style.width = (Number.isFinite(percent) ? percent : 0) + '%';
-    }
-  }
-
-  function setUploadStatus(text) {
-    if (uploadProgress) {
-      uploadProgress.setLabel(text);
-      return;
-    }
-
-    const status = root.querySelector('[data-upload-progress-text]');
-    if (status) {
-      status.textContent = String(text || '');
-    }
+    return uploadProgress.applyTransferState(message);
   }
 
   function hideUploadProgress() {
-    if (uploadProgress) {
-      uploadProgress.complete();
-      return;
-    }
-
-    const progressRoot = root.querySelector('[data-upload-progress-root]');
-    if (progressRoot) {
-      progressRoot.hidden = true;
-      progressRoot.style.display = 'none';
-    }
+    if (!uploadProgress) return;
+    uploadProgress.complete();
   }
 
   function updateStage(stage) {
     if (!stage) return;
-    const label = stageLabels[stage] || stage;
-    setUploadStatus(label);
+    if (uploadProgress && typeof uploadProgress.setStage === 'function') {
+      uploadProgress.setStage(stage);
+    }
   }
 
   function parseJwt(token) {
@@ -373,8 +333,6 @@
 
     setSubmitInProgress(true);
     showUploadProgress();
-    setUploadProgress(0);
-    updateStage('uploading');
 
     const formData = new FormData();
     formData.append('mod_source', 'local');
@@ -406,7 +364,17 @@
       if (fileToUpload && fileToUpload.name) {
         parsedUpload.searchParams.set('filename', fileToUpload.name);
       }
+      if (fileToUpload && Number.isFinite(fileToUpload.size) && fileToUpload.size >= 0) {
+        parsedUpload.searchParams.set('size', String(fileToUpload.size));
+      }
       const finalUploadUrl = parsedUpload.toString();
+
+      syncUploadProgress({
+        event: 'progress',
+        stage: 'uploading',
+        bytes: 0,
+        total: fileToUpload && Number.isFinite(fileToUpload.size) ? fileToUpload.size : null,
+      });
 
       let finalizeStarted = false;
       const finalizeStart = Date.now();
@@ -415,8 +383,7 @@
       function startFinalizePoll() {
         if (finalizeStarted) return;
         finalizeStarted = true;
-        setUploadProgress(100);
-        setUploadStatus('Обработка файла...');
+        updateStage('packed');
 
         if (!modId) {
           hideUploadProgress();
@@ -495,20 +462,9 @@
         ws.onmessage = function (event) {
           try {
             const msg = JSON.parse(event.data);
-            if (msg.stage) {
-              updateStage(msg.stage);
-            }
-            if (msg.event === 'stage') {
-              updateStage(msg.stage);
+            if (msg.event === 'stage' || msg.event === 'progress') {
+              syncUploadProgress(msg);
               return;
-            }
-            if (msg.event === 'progress') {
-              if (msg.total) {
-                setUploadProgress((msg.bytes / msg.total) * 100);
-              } else {
-                setUploadProgress(0);
-                updateStage(msg.stage || 'uploading');
-              }
             } else if (msg.event === 'complete') {
               startFinalizePoll();
               ws.close();

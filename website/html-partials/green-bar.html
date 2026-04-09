@@ -1,6 +1,12 @@
 <section progressuploadmod data-upload-progress-root hidden style="margin: 4pt; width: 95%;">
     <div class="progressbarWrapper">
         <span id="greenBar" data-upload-progress-bar></span>
-        <p id="greenBarText" data-upload-progress-text></p>
+        <div class="ow-upload-progress__body">
+            <p id="greenBarText" class="ow-upload-progress__text" data-upload-progress-text></p>
+            <div class="ow-upload-progress__meta" data-upload-progress-meta hidden>
+                <span class="ow-upload-progress__meta-item" data-upload-progress-meta-size></span>
+                <span class="ow-upload-progress__meta-item" data-upload-progress-meta-speed></span>
+            </div>
+        </div>
     </div>
 </section>

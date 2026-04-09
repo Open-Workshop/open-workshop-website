@@ -12,15 +12,6 @@
     const progress = window.OWUI ? window.OWUI.createUploadProgress(progressRoot) : null;
     const subscribers = new Set();
 
-    const stageLabels = {
-      uploading: 'Загрузка файла...',
-      uploaded: 'Файл загружен',
-      repacking: 'Перепаковка файла...',
-      packed: 'Ожидание сохранения...',
-      downloading: 'Скачивание файла...',
-      downloaded: 'Файл скачан',
-    };
-
     let busy = false;
 
     function notify(detail) {
@@ -70,28 +61,53 @@
       return url.toString();
     }
 
-    function setStatus(text) {
+    function setStatus(text, metaText) {
       if (progress) {
         progress.setLabel(text || '');
-      }
-      notify({ label: text || '' });
-    }
-
-    function setProgressValue(percent) {
-      if (progress) {
-        progress.setProgress(percent);
-      } else if (progressRoot) {
-        const bar = progressRoot.querySelector('[data-upload-progress-bar]');
-        if (bar) {
-          bar.style.width = (Number.isFinite(percent) ? percent : 0) + '%';
+        if (typeof progress.setMeta === 'function') {
+          progress.setMeta(metaText || '');
         }
       }
-      notify({ progress: Number.isFinite(percent) ? percent : 0 });
+      notify({ label: text || '', meta: metaText || '' });
+    }
+
+    function applyTransferState(message) {
+      if (!progress || typeof progress.applyTransferState !== 'function') {
+        return null;
+      }
+
+      const snapshot = progress.applyTransferState(message);
+      notify({
+        stage: snapshot.stage,
+        label: snapshot.label,
+        meta: snapshot.metaText,
+        progress: snapshot.percent,
+        bytes: snapshot.bytes,
+        total: snapshot.total,
+        speed: snapshot.speed,
+      });
+      return snapshot;
     }
 
     function setStage(stage) {
       if (!stage) return;
-      setStatus(stageLabels[stage] || stage);
+      const snapshot = progress && typeof progress.setStage === 'function'
+        ? progress.setStage(stage)
+        : null;
+
+      if (snapshot) {
+        notify({
+          stage: snapshot.stage,
+          label: snapshot.label,
+          meta: snapshot.metaText,
+          progress: snapshot.percent,
+          bytes: snapshot.bytes,
+          total: snapshot.total,
+          speed: snapshot.speed,
+        });
+        return;
+      }
+
       notify({ stage });
     }
 
@@ -113,8 +129,12 @@
         progressRoot.style.display = '';
       }
 
-      setProgressValue(0);
-      setStage('uploading');
+      applyTransferState({
+        event: 'progress',
+        stage: 'uploading',
+        bytes: 0,
+        total: Number.isFinite(file.size) ? file.size : null,
+      });
 
       try {
         const previousInfo = await api.fetchModInfo();
@@ -150,7 +170,6 @@
           if (finalizeStarted) return;
           finalizeStarted = true;
 
-          setProgressValue(100);
           setStage('packed');
 
           const poll = async function () {
@@ -195,18 +214,8 @@
                 return;
               }
 
-              if (data.event === 'stage') {
-                setStage(data.stage);
-              }
-
-              if (data.event === 'progress') {
-                if (data.total) {
-                  const percent = Math.min(100, Math.round((data.bytes / data.total) * 100));
-                  setProgressValue(percent);
-                }
-                if (data.stage) {
-                  setStage(data.stage);
-                }
+              if (data.event === 'stage' || data.event === 'progress') {
+                applyTransferState(data);
               }
 
               if (data.event === 'complete') {

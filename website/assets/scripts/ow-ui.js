@@ -12,6 +12,17 @@
   const DAY_MS = 24 * HOUR_MS;
   const MONTH_MS = 30 * DAY_MS;
   const YEAR_MS = 365 * DAY_MS;
+  const UPLOAD_STAGE_LABELS = Object.freeze({
+    starting: 'Начинаем...',
+    uploading: 'Загрузка файла...',
+    uploaded: 'Файл загружен',
+    repacking: 'Перепаковка файла...',
+    packed: 'Ожидание сохранения...',
+    downloading: 'Скачивание файла...',
+    downloaded: 'Файл скачан',
+    processing: 'Обработка файла...',
+  });
+  const BYTE_UNITS = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
 
   function resolveElement(target, selector) {
     if (!target) return selector ? document.querySelector(selector) : null;
@@ -42,6 +53,93 @@
   function parseDate(value) {
     const date = new Date(String(value || ''));
     return Number.isFinite(date.getTime()) ? date : null;
+  }
+
+  function toFiniteNumber(value) {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+  }
+
+  function clampNumber(value, minValue, maxValue) {
+    return Math.min(maxValue, Math.max(minValue, value));
+  }
+
+  function formatNumber(value, maximumFractionDigits) {
+    return new Intl.NumberFormat('ru-RU', {
+      maximumFractionDigits,
+    }).format(value);
+  }
+
+  function formatBytes(value) {
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null) return '';
+
+    let scaledValue = Math.max(0, numericValue);
+    let unitIndex = 0;
+    while (scaledValue >= 1024 && unitIndex < BYTE_UNITS.length - 1) {
+      scaledValue /= 1024;
+      unitIndex += 1;
+    }
+
+    let digits = 0;
+    if (unitIndex > 0 && scaledValue < 100) {
+      digits = scaledValue >= 10 ? 1 : 2;
+    }
+
+    return `${formatNumber(scaledValue, digits)} ${BYTE_UNITS[unitIndex]}`;
+  }
+
+  function formatSpeed(value) {
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null || numericValue <= 0) return '';
+    return `${formatBytes(numericValue)}/с`;
+  }
+
+  function formatTransferSize(bytes, total) {
+    const currentSize = formatBytes(bytes);
+    const totalSize = formatBytes(total);
+    if (currentSize && totalSize) {
+      return `${currentSize} / ${totalSize}`;
+    }
+    return currentSize || totalSize || '';
+  }
+
+  function getUploadStageLabel(stage) {
+    const normalizedStage = String(stage || '').trim().toLowerCase();
+    return UPLOAD_STAGE_LABELS[normalizedStage] || String(stage || '').trim();
+  }
+
+  function resolveTransferPercent(message, previousState) {
+    const currentState = message && typeof message === 'object' ? message : {};
+    const previous = previousState && typeof previousState === 'object' ? previousState : {};
+    const stage = String(currentState.stage || previous.stage || '').trim().toLowerCase();
+    const explicitPercent = toFiniteNumber(currentState.percent);
+    const bytes = toFiniteNumber(currentState.bytes);
+    const total = toFiniteNumber(currentState.total);
+
+    if (stage === 'repacking') {
+      if (explicitPercent !== null) {
+        return clampNumber(Math.round(explicitPercent), 0, 100);
+      }
+      if (String(previous.stage || '').trim().toLowerCase() === 'repacking') {
+        return clampNumber(Math.round(toFiniteNumber(previous.percent) || 0), 0, 100);
+      }
+      return 0;
+    }
+
+    if (bytes !== null && total !== null && total > 0) {
+      return clampNumber(Math.round((bytes / total) * 100), 0, 100);
+    }
+
+    if (stage === 'uploaded' || stage === 'packed' || stage === 'downloaded') {
+      return 100;
+    }
+
+    if (toFiniteNumber(previous.percent) !== null) {
+      return clampNumber(Math.round(previous.percent), 0, 100);
+    }
+
+    return 0;
   }
 
   function getRussianPlural(value, oneWord, twoWord, fiveWord) {
@@ -224,27 +322,183 @@
     const text = root.querySelector('[data-upload-progress-text]');
     if (!bar || !text) return null;
 
+    let meta = root.querySelector('[data-upload-progress-meta]');
+    if (!meta) {
+      meta = createElement('div', 'ow-upload-progress__meta');
+      meta.dataset.uploadProgressMeta = 'true';
+      const metaParent = text.parentNode || root;
+      metaParent.appendChild(meta);
+    }
+    const metaSize = meta.querySelector('[data-upload-progress-meta-size]') || createElement('span', 'ow-upload-progress__meta-item');
+    const metaSpeed = meta.querySelector('[data-upload-progress-meta-speed]') || createElement('span', 'ow-upload-progress__meta-item');
+
+    if (!metaSize.parentNode) {
+      metaSize.dataset.uploadProgressMetaSize = 'true';
+      meta.appendChild(metaSize);
+    }
+    if (!metaSpeed.parentNode) {
+      metaSpeed.dataset.uploadProgressMetaSpeed = 'true';
+      meta.appendChild(metaSpeed);
+    }
+
+    const transferState = {
+      stage: '',
+      bytes: null,
+      total: null,
+      percent: 0,
+      speed: null,
+      lastProgressBytes: null,
+      lastProgressAt: 0,
+    };
+
+    function resetTransferState() {
+      transferState.stage = '';
+      transferState.bytes = null;
+      transferState.total = null;
+      transferState.percent = 0;
+      transferState.speed = null;
+      transferState.lastProgressBytes = null;
+      transferState.lastProgressAt = 0;
+    }
+
+    function setMetaText(value) {
+      if (value && typeof value === 'object') {
+        const sizeText = String(value.size || '');
+        const speedText = String(value.speed || '');
+
+        metaSize.textContent = sizeText;
+        metaSpeed.textContent = speedText;
+
+        metaSize.hidden = sizeText === '';
+        metaSpeed.hidden = speedText === '';
+        meta.hidden = sizeText === '' && speedText === '';
+        return;
+      }
+
+      const nextValue = String(value || '');
+      metaSize.textContent = '';
+      metaSpeed.textContent = '';
+      metaSize.hidden = true;
+      metaSpeed.hidden = true;
+      meta.hidden = nextValue === '';
+    }
+
+    function buildTransferSnapshot(message) {
+      const nextState = message && typeof message === 'object' ? message : {};
+      const previousStage = transferState.stage;
+      const stage = String(nextState.stage || previousStage || '').trim().toLowerCase();
+      const bytes = toFiniteNumber(nextState.bytes);
+      const total = toFiniteNumber(nextState.total);
+      const stageChanged = stage !== previousStage;
+
+      if (bytes !== null) {
+        transferState.bytes = Math.max(0, bytes);
+      }
+      if (total !== null) {
+        transferState.total = Math.max(0, total);
+      }
+
+      if (stageChanged) {
+        transferState.lastProgressAt = 0;
+        transferState.lastProgressBytes = transferState.bytes;
+        transferState.speed = null;
+      }
+      transferState.stage = stage;
+
+      if (stage === 'uploading' && nextState.event === 'progress' && transferState.bytes !== null) {
+        const now = Date.now();
+        if (
+          transferState.lastProgressAt > 0 &&
+          transferState.lastProgressBytes !== null &&
+          transferState.bytes >= transferState.lastProgressBytes
+        ) {
+          const deltaBytes = transferState.bytes - transferState.lastProgressBytes;
+          const deltaSeconds = (now - transferState.lastProgressAt) / 1000;
+          if (deltaBytes > 0 && deltaSeconds > 0.05) {
+            const instantSpeed = deltaBytes / deltaSeconds;
+            transferState.speed = toFiniteNumber(transferState.speed) !== null
+              ? (transferState.speed * 0.65) + (instantSpeed * 0.35)
+              : instantSpeed;
+          }
+        }
+        transferState.lastProgressAt = now;
+        transferState.lastProgressBytes = transferState.bytes;
+      }
+
+      if (stage && stage !== 'uploading') {
+        transferState.speed = null;
+      }
+
+      transferState.percent = resolveTransferPercent(
+        {
+          stage,
+          percent: nextState.percent,
+          bytes: transferState.bytes,
+          total: transferState.total,
+        },
+        {
+          stage: previousStage,
+          percent: transferState.percent,
+        },
+      );
+
+      const stageLabel = getUploadStageLabel(stage);
+      const sizeText = formatTransferSize(transferState.bytes, transferState.total);
+      const speedText = stage === 'uploading' ? formatSpeed(transferState.speed) : '';
+
+      return {
+        stage,
+        label: stageLabel
+          ? `${stageLabel}${stage === 'processing' ? '' : ` ${transferState.percent}%`}`.trim()
+          : `${transferState.percent}%`,
+        metaText: {
+          size: sizeText || '',
+          speed: speedText || '',
+        },
+        percent: transferState.percent,
+        bytes: transferState.bytes,
+        total: transferState.total,
+        speed: transferState.speed,
+      };
+    }
+
     const controller = {
       root,
       start(label) {
         root.hidden = false;
         root.style.display = '';
+        resetTransferState();
         controller.setProgress(0);
         controller.setLabel(label || 'Начинаем...');
+        setMetaText('');
       },
       setLabel(label) {
         text.textContent = String(label || '');
       },
+      setMeta(metaText) {
+        setMetaText(metaText);
+      },
       setProgress(percent) {
         const numericPercent = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
         bar.style.width = numericPercent + '%';
-        if (numericPercent >= 100) {
-          text.textContent = 'Ещё мгновение...';
-        } else {
-          text.textContent = Math.round(numericPercent) + '%';
-        }
+      },
+      setStage(stage) {
+        const snapshot = buildTransferSnapshot({ event: 'stage', stage });
+        controller.setProgress(snapshot.percent);
+        controller.setLabel(snapshot.label);
+        setMetaText(snapshot.metaText);
+        return snapshot;
+      },
+      applyTransferState(message) {
+        const snapshot = buildTransferSnapshot(message);
+        controller.setProgress(snapshot.percent);
+        controller.setLabel(snapshot.label);
+        setMetaText(snapshot.metaText);
+        return snapshot;
       },
       complete() {
+        resetTransferState();
+        setMetaText('');
         root.hidden = true;
         root.style.display = 'none';
       },
@@ -257,5 +511,8 @@
   window.OWUI = {
     initRelativeTime,
     createUploadProgress,
+    getUploadStageLabel,
+    resolveTransferPercent,
+    formatBytes,
   };
 })();
