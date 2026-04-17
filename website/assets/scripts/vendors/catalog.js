@@ -181,7 +181,10 @@
         .split(',')
         .map((id) => String(id).trim())
         .filter((id) => /^\d+$/.test(id));
-      if (dependencies.length > 0) {
+      const independentMode = String(settings.get('independents', 'no')) === 'yes';
+      if (independentMode) {
+        settings.pop('dependencies');
+      } else if (dependencies.length > 0) {
         settings.set('dependencies', '[' + dependencies.join(',') + ']');
         settings.set('sgame', 'no');
         settings.set('independents', 'no');

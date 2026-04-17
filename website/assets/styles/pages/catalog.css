@@ -132,8 +132,26 @@ div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting 
     font-size: initial;
     cursor: default;
 }
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting.is-disabled {
+    cursor: default;
+}
 div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting > .dependence-edit {
     width: 100%;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting > .picker-editor {
+    transition: opacity 0.14s ease, filter 0.14s ease;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting.is-disabled > .picker-editor {
+    opacity: 0.5;
+    filter: saturate(0.45) brightness(0.7);
+    pointer-events: none;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting.is-disabled > .picker-editor .picker-editor__shell {
+    border-radius: var(--radius-md);
+    background: rgba(9, 11, 18, 0.72);
+}
+div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting.is-disabled > .picker-editor .picker-editor__toggle {
+    background: var(--interactive-element-dark-background-disabled);
 }
 div#settings-catalog > div#settings-menu > setting.catalog-dependencies-setting .popup-dependence-select {
     margin-top: 6px;

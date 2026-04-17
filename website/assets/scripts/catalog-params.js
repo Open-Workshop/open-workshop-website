@@ -14,6 +14,8 @@
   let pendingTagSync = false;
   let infiniteScrollObserver = null;
   let infiniteScrollSentinel = null;
+  let pendingInfiniteScrollCheck = 0;
+  const INFINITE_SCROLL_ROOT_MARGIN_PX = 2500;
 
   function getTagsEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
@@ -21,6 +23,10 @@
 
   function getDependenciesEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-dependencies-editor') : null;
+  }
+
+  function getDependenciesEditorRoot() {
+    return document.getElementById('catalog-dependencies-editor');
   }
 
   function sortOptionsList(mode) {
@@ -36,6 +42,10 @@
 
   function getDependencySetting() {
     return document.querySelector('setting#depen');
+  }
+
+  function getDependencyEditorSetting() {
+    return document.querySelector('setting.catalog-dependencies-setting');
   }
 
   function setSettingChecked(setting, checked) {
@@ -107,6 +117,30 @@
       editor.clearVisibleSelection();
     } finally {
       suppressDependencySync = false;
+    }
+  }
+
+  function setDependenciesEditorDisabled(disabled) {
+    const setting = getDependencyEditorSetting();
+    if (setting) {
+      setting.classList.toggle('is-disabled', disabled);
+    }
+
+    const root = getDependenciesEditorRoot();
+    if (!root) return;
+
+    root.classList.toggle('is-disabled', disabled);
+    root.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+
+    root.querySelectorAll('[data-picker-toggle], [data-picker-search], [data-picker-create]').forEach(function (control) {
+      if ('disabled' in control) {
+        control.disabled = disabled;
+      }
+    });
+
+    const editor = getDependenciesEditor();
+    if (disabled && editor && editor.isOpen()) {
+      editor.close();
     }
   }
 
@@ -191,17 +225,25 @@
       input.checked = checked;
     }
 
-    const updates = [
-      new Dictionary({ key: 'depen', value: checked ? 'yes' : 'no', default: 'no' }),
-      new Dictionary({ key: 'page', value: 0 }),
-    ];
+    const selectedDependencyIds = getSelectedDependencyIds();
+    const updates = [];
 
-    if (checked && getSelectedDependencyIds().length > 0) {
-      clearSelectedDependencies();
+    if (checked) {
+      updates.push(new Dictionary({ key: 'depen', value: 'yes', default: 'no' }));
       updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+    } else {
+      updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
+      if (selectedDependencyIds.length > 0) {
+        updates.push(new Dictionary({ key: 'dependencies', value: selectedDependencyIds.join('_'), default: '' }));
+        updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
+        setSettingChecked(getGameSetting(), false);
+        sortOptionsList(false);
+      }
     }
 
+    updates.push(new Dictionary({ key: 'page', value: 0 }));
     URLManager.updateParams(updates);
+    setDependenciesEditorDisabled(checked);
     resetCatalog();
   }
 
@@ -372,6 +414,11 @@
   }
 
   async function resetCatalog() {
+    if (pendingInfiniteScrollCheck) {
+      cancelAnimationFrame(pendingInfiniteScrollCheck);
+      pendingInfiniteScrollCheck = 0;
+    }
+
     blocking = false;
     outOfCards = false;
     warns = [false, false, false];
@@ -383,7 +430,10 @@
       setEndOfCardsVisible(false);
       outOfCards = true;
       Catalog.notFound();
+      return;
     }
+
+    queueInfiniteScrollCheck();
   }
 
   function warnAboutCardCount(countElems) {
@@ -429,7 +479,30 @@
       }
     } finally {
       blocking = false;
+      if (!outOfCards) {
+        queueInfiniteScrollCheck();
+      }
     }
+  }
+
+  function shouldLoadNextPageImmediately() {
+    const sentinel = ensureInfiniteScrollSentinel();
+    if (!sentinel) return false;
+
+    const rect = sentinel.getBoundingClientRect();
+    return rect.top <= window.innerHeight + INFINITE_SCROLL_ROOT_MARGIN_PX;
+  }
+
+  function queueInfiniteScrollCheck() {
+    if (pendingInfiniteScrollCheck) return;
+
+    pendingInfiniteScrollCheck = requestAnimationFrame(function () {
+      pendingInfiniteScrollCheck = 0;
+
+      if (shouldLoadNextPageImmediately()) {
+        loadNextPage();
+      }
+    });
   }
 
   function ensureInfiniteScrollSentinel() {
@@ -466,7 +539,7 @@
       });
     }, {
       root: null,
-      rootMargin: '0px 0px 2500px 0px',
+      rootMargin: '0px 0px ' + INFINITE_SCROLL_ROOT_MARGIN_PX + 'px 0px',
       threshold: 0,
     });
 
@@ -494,6 +567,7 @@
 
   function handleDependenciesSelectionChange() {
     if (suppressDependencySync) return;
+    if (URLManager.getParams().get('depen', 'no') === 'yes') return;
     syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
   }
 
@@ -532,16 +606,20 @@
     const dependencyIds = parseDependenciesParam(params.get('dependencies', ''));
     const dependencyUpdates = [];
     const normalizedDependenciesValue = dependencyIds.join('_');
-    if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
-      dependencyUpdates.push(
-        new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }),
-      );
-    }
-    if (dependencyIds.length > 0 && params.get('sgame', 'yes') !== 'no') {
-      dependencyUpdates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
-    }
-    if (dependencyIds.length > 0 && params.get('depen', 'no') === 'yes') {
-      dependencyUpdates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
+    const independentMode = params.get('depen', 'no') === 'yes';
+    if (independentMode) {
+      if (String(params.get('dependencies', '') || '') !== '') {
+        dependencyUpdates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+      }
+    } else {
+      if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
+        dependencyUpdates.push(
+          new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }),
+        );
+      }
+      if (dependencyIds.length > 0 && params.get('sgame', 'yes') !== 'no') {
+        dependencyUpdates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
+      }
     }
     if (dependencyUpdates.length > 0) {
       dependencyUpdates.push(new Dictionary({ key: 'page', value: 0 }));
@@ -557,7 +635,8 @@
     syncTagsSearchGame(params.get('game', ''));
     syncDependenceSearchGame(params.get('game', ''));
 
-    await hydrateDependenciesFilter(parseDependenciesParam(params.get('dependencies', '')));
+    await hydrateDependenciesFilter(dependencyIds);
+    setDependenciesEditorDisabled(params.get('depen', 'no') === 'yes');
 
     URLManager.updateParam('page', Number(params.get('page', 0)));
 
