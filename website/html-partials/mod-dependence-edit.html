@@ -1,4 +1,4 @@
-{% from 'html-partials/macros/taglike-editor.html' import render_dependencies_editor %}
+{% from 'html-partials/macros/taglike-editor.html' import render_dependencies_editor with context %}
 
 {% set dependence_items = dependencies.values() if dependencies is defined else [] %}
 {% set dependence_game_id = game if game is defined else info["result"]["game"]["id"] %}

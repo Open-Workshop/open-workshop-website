@@ -7,6 +7,7 @@
   runtime.define('mod-edit-media-manager', function createModEditMediaManager(options) {
     const root = runtime.resolveElement(options && options.root);
     if (!root) return null;
+    const fallbackImage = window.OWCore.getImageFallback();
 
     const stage = root.querySelector('[data-media-stage]');
     const list = root.querySelector('.media-manager__list');
@@ -71,13 +72,13 @@
 
     function getResolvedUrl(item) {
       if (item.source === 'file') {
-        return item.objectUrl || '/assets/images/image-not-found.webp';
+        return item.objectUrl || fallbackImage;
       }
 
       const currentUrl = normalizeUrl(item.url);
       if (currentUrl) return currentUrl;
       if (item.startUrl) return item.startUrl;
-      return '/assets/images/image-not-found.webp';
+      return fallbackImage;
     }
 
     function findItem(key) {
@@ -163,13 +164,13 @@
       backdrop.src = getResolvedUrl(item);
       backdrop.alt = '';
       backdrop.setAttribute('aria-hidden', 'true');
-      backdrop.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
+      backdrop.dataset.fallbackSrc = fallbackImage;
 
       const image = document.createElement('img');
       image.className = 'media-item__image';
       image.src = getResolvedUrl(item);
       image.alt = 'Изображение мода';
-      image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
+      image.dataset.fallbackSrc = fallbackImage;
 
       preview.appendChild(backdrop);
       preview.appendChild(image);

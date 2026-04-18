@@ -13,6 +13,7 @@
     const logoImage = runtime.resolveElement(settings.logoImage);
     const mediaManager = settings.mediaManager || null;
     const gameId = Number(settings.gameId || 0);
+    const fallbackImage = window.OWCore.getImageFallback();
 
     if (!container || !window.Cards || typeof window.Cards.create !== 'function') {
       return null;
@@ -42,7 +43,7 @@
       if (logoImage instanceof HTMLImageElement && logoImage.getAttribute('src')) {
         return String(logoImage.getAttribute('src') || '');
       }
-      return '/assets/images/image-not-found.webp';
+      return fallbackImage;
     }
 
     function ensureCard() {

@@ -17,6 +17,8 @@ from telemetry import setup_uptrace_telemetry
 app = Flask(__name__, template_folder='website')
 setup_uptrace_telemetry(app)
 
+DEFAULT_IMAGE_FALLBACK = app_config.PUBLIC_CONFIG["assets"]["images"]["fallback"]
+
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
@@ -147,7 +149,7 @@ async def _load_mod_cards_by_ids(
 
         cards[mod_id] = {
             "id": mod_id,
-            "img": images_by_id.get(mod_id, ""),
+            "img": images_by_id.get(mod_id) or DEFAULT_IMAGE_FALLBACK,
             "name": names_by_id[mod_id],
         }
 
@@ -341,7 +343,7 @@ async def mod_view_and_edit(mod_id):
                 plugin_ids.append(plugin_id)
                 plugins[plugin_key] = {
                     'id': plugin_id,
-                    'img': '',
+                    'img': DEFAULT_IMAGE_FALLBACK,
                     'name': plugin.get('name', '')
                 }
 
@@ -586,7 +588,7 @@ async def user(user_id):
                 {
                     'id': int(i['id']),
                     'name': i['name'],
-                    'img': ''
+                    'img': DEFAULT_IMAGE_FALLBACK
                 }
                 for i in user_mods['results']
             ]
@@ -596,7 +598,7 @@ async def user(user_id):
             for resource in resources_mods.get('results', []):
                 mod_entry = mods_by_id.get(int(resource.get('owner_id', -1)))
                 if mod_entry:
-                    mod_entry['img'] = resource.get('url', '')
+                    mod_entry['img'] = resource.get('url') or DEFAULT_IMAGE_FALLBACK
 
             user_mods = {
                 'not_show_all': len(user_mods['results']) > 3,

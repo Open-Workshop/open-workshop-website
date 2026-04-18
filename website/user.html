@@ -92,7 +92,7 @@
     </h3>
     {% for item in user_mods['mods_data'] %}
     <a class="element user-mod" href="/mod/{{ item.id }}">
-      <img src="{{ item.img }}" data-fallback-src="/assets/images/image-not-found.webp" alt="Логотип мода">
+      <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
       <p translate="no">{{ item.name }}</p>
     </a>
     {% endfor %}

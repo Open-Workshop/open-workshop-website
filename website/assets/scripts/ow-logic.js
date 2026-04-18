@@ -50,13 +50,39 @@ class Dictionary {
 function handlerImgErrorLoad(element) {
     if (!(element instanceof HTMLImageElement)) return;
 
-    const fallbackSrc = element.dataset.fallbackSrc || '/assets/images/image-not-found.webp';
-    if (element.dataset.owFallbackApplied === fallbackSrc || element.getAttribute('src') === fallbackSrc) {
+    const fallbackSrc = element.dataset.fallbackSrc || (window.OWCore && typeof window.OWCore.getImageFallback === 'function'
+        ? window.OWCore.getImageFallback()
+        : '');
+    const currentSrc = element.getAttribute('src') || '';
+
+    if (!fallbackSrc || currentSrc === fallbackSrc) {
         return;
     }
 
-    element.dataset.owFallbackApplied = fallbackSrc;
+    element.removeAttribute('srcset');
+    element.removeAttribute('sizes');
     element.setAttribute('src', fallbackSrc);
+}
+
+function refreshImageFallbacks(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+
+    const images = [];
+    if (root instanceof HTMLImageElement && root.matches('img[data-fallback-src]')) {
+        images.push(root);
+    }
+    root.querySelectorAll('img[data-fallback-src]').forEach(function (element) {
+        images.push(element);
+    });
+
+    images.forEach(function (element) {
+        if (!(element instanceof HTMLImageElement)) return;
+
+        const currentSrc = (element.getAttribute('src') || '').trim();
+        if (!currentSrc || (element.complete && element.naturalWidth === 0)) {
+            handlerImgErrorLoad(element);
+        }
+    });
 }
 
 
@@ -146,10 +172,10 @@ function observeDomChanges() {
         mutations.forEach(function (mutation) {
             mutation.addedNodes.forEach(function (node) {
                 if (!(node instanceof Element)) return;
-                if (node.matches && node.matches('input[dynamlen], input[displaylimit], [import-height]')) {
+                if (node.matches && node.matches('input[dynamlen], input[displaylimit], [import-height], img[data-fallback-src]')) {
                     found = true;
                 } else if (node.querySelector) {
-                    if (node.querySelector('input[dynamlen], input[displaylimit], [import-height]')) {
+                    if (node.querySelector('input[dynamlen], input[displaylimit], [import-height], img[data-fallback-src]')) {
                         found = true;
                     }
                 }
@@ -159,6 +185,7 @@ function observeDomChanges() {
         if (!found) return;
         bindDynamicInputs(document);
         bindImportHeight(document);
+        refreshImageFallbacks(document);
         scheduleImportHeightUpdate();
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -190,6 +217,7 @@ function initOWLogic() {
 
     bindDynamicInputs(document);
     bindImportHeight(document);
+    refreshImageFallbacks(document);
     scheduleImportHeightUpdate();
     observeDomChanges();
 }

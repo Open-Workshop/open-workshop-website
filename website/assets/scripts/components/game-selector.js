@@ -13,6 +13,7 @@
     const applyButton = root.querySelector('[data-action="legacy-game-selector-apply"]');
     const logo = root.querySelector('#logo-game-select');
     const unlockButton = root.querySelector('[data-action="legacy-game-selector-unlock"]');
+    const fallbackImage = window.OWCore.getImageFallback();
     let searchTimer = 0;
 
     if (!idInput || !namePreview || !nameInput || !applyButton || !logo) return;
@@ -34,7 +35,7 @@
         namePreview.textContent = '';
         nameInput.value = '';
         nameInput.setAttribute('lastval', '');
-        logo.setAttribute('src', '/assets/images/image-not-found.webp');
+        logo.setAttribute('src', fallbackImage);
         idInput.removeAttribute('found');
         triggerDynamLen();
         return;
@@ -50,7 +51,7 @@
         nameInput.value = json.result.name;
         nameInput.setAttribute('lastval', json.result.name);
         nameInput.style.color = 'gray';
-        logo.setAttribute('src', json.result.logo + ' ');
+        logo.setAttribute('src', String(json.result.logo || '').trim() || fallbackImage);
         idInput.setAttribute('found', 'true');
       } else {
         namePreview.textContent = '';
@@ -58,7 +59,7 @@
         nameInput.value = '';
         nameInput.setAttribute('lastval', '');
         nameInput.style.color = 'red';
-        logo.setAttribute('src', '/assets/images/image-not-found.webp');
+        logo.setAttribute('src', fallbackImage);
         idInput.removeAttribute('found');
       }
       triggerDynamLen();

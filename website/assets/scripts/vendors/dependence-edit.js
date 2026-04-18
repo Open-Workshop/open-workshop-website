@@ -7,6 +7,7 @@
   const apiPaths = getApiPaths();
   const modsPath = apiPaths.mod.list.path;
   const resourcesPath = apiPaths.resource.list.path;
+  const fallbackImage = window.OWCore.getImageFallback();
 
   function parseResponseMessage(text, fallback) {
     if (!text) return fallback;
@@ -79,7 +80,7 @@
           return {
             id: item.id,
             name: item.name,
-            img: logosById[String(item.id)] || '/assets/images/image-not-found.webp',
+            img: logosById[String(item.id)] || fallbackImage,
           };
         })
         : [],
@@ -125,7 +126,7 @@
           return {
             id: item.id,
             name: item.name,
-            img: logosById[String(item.id)] || '/assets/images/image-not-found.webp',
+            img: logosById[String(item.id)] || fallbackImage,
           };
         })
         : [],
@@ -139,7 +140,7 @@
 
     const media = document.createElement('img');
     media.className = 'picker-editor__item-media';
-    media.src = (options.data && options.data.img) || '/assets/images/image-not-found.webp';
+    media.src = (options.data && options.data.img) || fallbackImage;
     media.alt = 'Логотип мода';
     media.setAttribute('errorcap', '');
     element.appendChild(media);

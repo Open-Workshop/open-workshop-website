@@ -43,6 +43,11 @@
     return base || document.body.getAttribute('manager-url') || '';
   }
 
+  function getImageFallback() {
+    const cfg = getConfig();
+    return (cfg.assets && cfg.assets.images && cfg.assets.images.fallback) || '';
+  }
+
   function isAbsoluteUrl(url) {
     return /^https?:\/\//i.test(url);
   }
@@ -111,6 +116,7 @@
     getConfig,
     getApiPaths,
     getApiBase,
+    getImageFallback,
     apiUrl,
     formatPath,
     request,

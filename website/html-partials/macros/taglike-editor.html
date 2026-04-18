@@ -21,7 +21,7 @@
   {% if saved %}data-picker-saved="true"{% endif %}
   {% if pending %}data-picker-pending="true"{% endif %}
 >
-  <img class="picker-editor__item-media" src="{{ item_img }}" alt="{{ image_alt }}" errorcap>
+  <img class="picker-editor__item-media" src="{{ item_img or ow.assets.images.fallback }}" alt="{{ image_alt }}" errorcap>
   <div class="picker-editor__item-content">
     <h3 class="picker-editor__item-title" translate="no">{{ item_name }}</h3>
     {% if show_action %}

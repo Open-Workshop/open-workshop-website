@@ -41,6 +41,8 @@
         }));
     }
 
+    const fallbackImage = window.OWCore.getImageFallback();
+
 window.Cards = {
     create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false, options = {}) {
         const allowGameEdit = document.body && document.body.dataset.userIsAdmin === 'true';
@@ -72,7 +74,7 @@ window.Cards = {
 
         image.alt = "Здесь должен быть логотип мода";
         image.id = "preview-logo-card-"+cardData.id
-        image.dataset.fallbackSrc = '/assets/images/image-not-found.webp';
+        image.dataset.fallbackSrc = fallbackImage;
         image.addEventListener('error', function () { handlerImgErrorLoad(this) });
         image.addEventListener('load', function () {
             callCatalogMethod('masonry', function () {}, []);
@@ -258,7 +260,7 @@ window.Cards = {
         for (const id of ids) {
             const img = document.getElementById("preview-logo-card-"+id)
             if (img) {
-                changeImage(img, "/assets/images/image-not-found.webp");
+                changeImage(img, fallbackImage);
             }
         }
     },
