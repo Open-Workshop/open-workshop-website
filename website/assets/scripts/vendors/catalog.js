@@ -217,6 +217,10 @@
         settings.set('tags', '[' + String(settings.get('tags').split('_')) + ']');
       }
 
+      if (settings.get('genres', '').length > 0) {
+        settings.set('genres', '[' + String(settings.get('genres').split('_')) + ']');
+      }
+
       const gamesPath = apiPaths.game.list.path;
       const modsPath = apiPaths.mod.list.path;
       const path =

@@ -5,6 +5,7 @@
 
   const apiPaths = window.OWCore.getApiPaths();
   const genresPath = apiPaths.genre.list.path;
+  let allGenresPromise = null;
 
   function parseResponseMessage(text, fallback) {
     if (!text) return fallback;
@@ -52,6 +53,73 @@
     });
   }
 
+  async function fetchAllGenres() {
+    if (!allGenresPromise) {
+      allGenresPromise = (async function () {
+        const firstPage = await fetchGenres({
+          page_size: 50,
+        });
+
+        const results = Array.isArray(firstPage.results) ? firstPage.results.slice() : [];
+        const totalSize = Number(firstPage.database_size);
+        if (!Number.isFinite(totalSize) || results.length >= totalSize) {
+          return results;
+        }
+
+        const pageCount = Math.ceil(totalSize / 50);
+        const pageRequests = [];
+        for (let page = 1; page < pageCount; page += 1) {
+          pageRequests.push(fetchGenres({
+            page_size: 50,
+            page,
+          }));
+        }
+
+        const pageResults = await Promise.all(pageRequests);
+        pageResults.forEach(function (pageData) {
+          if (Array.isArray(pageData.results)) {
+            results.push(...pageData.results);
+          }
+        });
+
+        return results;
+      })().catch(function (error) {
+        allGenresPromise = null;
+        throw error;
+      });
+    }
+
+    return allGenresPromise;
+  }
+
+  async function fetchGenresByIds(ids) {
+    const requestedIds = Array.isArray(ids)
+      ? ids
+        .map(function (id) {
+          return String(id);
+        })
+        .filter(function (id) {
+          return id.length > 0;
+        })
+      : [];
+
+    if (requestedIds.length === 0) {
+      return [];
+    }
+
+    const lookup = new Map(
+      (await fetchAllGenres()).map(function (item) {
+        return [String(item.id), item];
+      }),
+    );
+
+    return requestedIds
+      .map(function (id) {
+        return lookup.get(id) || null;
+      })
+      .filter(Boolean);
+  }
+
   function createGenreItemElement(options) {
     const element = document.createElement('div');
     element.className = 'picker-editor__item picker-editor__item--chip';
@@ -87,7 +155,7 @@
         renderItem: createGenreItemElement,
         async fetchSearchResults(queryValue) {
           const data = await fetchGenres({
-            page_size: 30,
+            page_size: 50,
             name: queryValue,
           });
 
@@ -95,6 +163,9 @@
             results: Array.isArray(data.results) ? data.results : [],
             databaseSize: Number(data.database_size),
           };
+        },
+        async fetchItemsByIds(ids) {
+          return fetchGenresByIds(ids);
         },
       });
     });

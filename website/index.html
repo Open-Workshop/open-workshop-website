@@ -1,5 +1,5 @@
 {% extends 'html-partials/standart.html' %}
-{% from 'html-partials/macros/taglike-editor.html' import render_tags_editor with context %}
+{% from 'html-partials/macros/taglike-editor.html' import render_genres_editor, render_tags_editor with context %}
 
 {% block content %}
 <link href="/assets/styles/pages/catalog.css" rel="stylesheet"/>
@@ -48,6 +48,12 @@
         <input type="checkbox" hidden>
         <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
         <label>Выбрать игру</label>
+      </setting>
+
+      <hr class="catalog-game-select-filter">
+
+      <setting class="with-events catalog-genres-setting catalog-game-select-filter">
+        {{ render_genres_editor({}, 'catalog-genres-editor', false, 'Выбрать жанры') }}
       </setting>
 
       <hr class="catalog-game-filter">

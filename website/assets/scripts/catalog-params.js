@@ -11,7 +11,9 @@
   let outOfCards = false;
   let warns = [false, false, false];
   let suppressDependencySync = false;
+  let suppressGenreSync = false;
   let pendingTagSync = false;
+  let pendingGenreSync = false;
   let infiniteScrollObserver = null;
   let infiniteScrollSentinel = null;
   let pendingInfiniteScrollCheck = 0;
@@ -19,6 +21,10 @@
 
   function getTagsEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
+  }
+
+  function getGenresEditor() {
+    return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-genres-editor') : null;
   }
 
   function getDependenciesEditor() {
@@ -86,7 +92,37 @@
     }
   }
 
+  function setCatalogGameSelectionFiltersVisible(visible) {
+    document.querySelectorAll('#settings-catalog .catalog-game-select-filter').forEach(function (element) {
+      element.hidden = !visible;
+    });
+
+    if (visible) return;
+
+    const genresEditor = getGenresEditor();
+    if (genresEditor && typeof genresEditor.close === 'function') {
+      suppressGenreSync = true;
+      pendingGenreSync = false;
+      genresEditor.close();
+      suppressGenreSync = false;
+    }
+  }
+
   function parseDependenciesParam(value) {
+    return String(value || '')
+      .replaceAll('[', '')
+      .replaceAll(']', '')
+      .replaceAll('_', ',')
+      .split(',')
+      .map(function (id) {
+        return String(id).trim();
+      })
+      .filter(function (id) {
+        return /^\d+$/.test(id);
+      });
+  }
+
+  function parseGenresParam(value) {
     return String(value || '')
       .replaceAll('[', '')
       .replaceAll(']', '')
@@ -115,6 +151,19 @@
 
   function getSelectedTagIds() {
     const editor = getTagsEditor();
+    if (!editor) return [];
+
+    return editor.getState().visible
+      .map(function (item) {
+        return String(item.id);
+      })
+      .filter(function (id) {
+        return id.length > 0;
+      });
+  }
+
+  function getSelectedGenreIds() {
+    const editor = getGenresEditor();
     if (!editor) return [];
 
     return editor.getState().visible
@@ -223,6 +272,23 @@
     return true;
   }
 
+  function syncGenresUrlFromSelected(selectedIds, triggerReset) {
+    const genresValue = selectedIds.join('_');
+    const params = URLManager.getParams();
+    if (genresValue === String(params.get('genres', '') || '')) return false;
+
+    URLManager.updateParams([
+      new Dictionary({ key: 'genres', value: genresValue, default: '' }),
+      new Dictionary({ key: 'sgame', value: 'yes', default: 'yes' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+
+    if (triggerReset) {
+      resetCatalog();
+    }
+    return true;
+  }
+
   async function hydrateDependenciesFilter(ids) {
     const editor = getDependenciesEditor();
     if (!ids.length || !editor) return;
@@ -233,6 +299,13 @@
     } finally {
       suppressDependencySync = false;
     }
+  }
+
+  async function hydrateGenresFilter(ids) {
+    const editor = getGenresEditor();
+    if (!ids.length || !editor) return;
+
+    await editor.setDefaultSelected(ids);
   }
 
   function toggleIndependent(settingElement) {
@@ -299,6 +372,7 @@
     URLManager.updateParams(updates);
     syncDependenceSearchGame(checked ? '' : params.get('game', ''));
     setCatalogGameSpecificFiltersVisible(!checked);
+    setCatalogGameSelectionFiltersVisible(checked);
 
     const settingsCatalog = document.getElementById('settings-catalog');
     if (settingsCatalog) {
@@ -340,6 +414,7 @@
     }
 
     setCatalogGameSpecificFiltersVisible(true);
+    setCatalogGameSelectionFiltersVisible(false);
 
     resetCatalog();
   }
@@ -586,6 +661,27 @@
     syncTagsUrlFromSelected(getSelectedTagIds(), true);
   }
 
+  function handleGenresSelectionChange() {
+    const editor = getGenresEditor();
+    if (!editor) return;
+    if (suppressGenreSync) return;
+
+    if (editor.isOpen()) {
+      pendingGenreSync = true;
+      return;
+    }
+
+    pendingGenreSync = false;
+    syncGenresUrlFromSelected(getSelectedGenreIds(), true);
+  }
+
+  function handleGenresOpenChange(event) {
+    if (suppressGenreSync) return;
+    if (!event.detail || event.detail.open !== false || !pendingGenreSync) return;
+    pendingGenreSync = false;
+    syncGenresUrlFromSelected(getSelectedGenreIds(), true);
+  }
+
   function handleDependenciesSelectionChange() {
     if (suppressDependencySync) return;
     if (URLManager.getParams().get('depen', 'no') === 'yes') return;
@@ -598,6 +694,13 @@
       tagsRoot.dataset.catalogBound = '1';
       tagsRoot.addEventListener('ow:picker-selection-change', handleTagsSelectionChange);
       tagsRoot.addEventListener('ow:picker-open-change', handleTagsOpenChange);
+    }
+
+    const genresRoot = document.getElementById('catalog-genres-editor');
+    if (genresRoot && genresRoot.dataset.catalogBound !== '1') {
+      genresRoot.dataset.catalogBound = '1';
+      genresRoot.addEventListener('ow:picker-selection-change', handleGenresSelectionChange);
+      genresRoot.addEventListener('ow:picker-open-change', handleGenresOpenChange);
     }
 
     const dependenciesRoot = document.getElementById('catalog-dependencies-editor');
@@ -625,26 +728,32 @@
     }
 
     const dependencyIds = parseDependenciesParam(params.get('dependencies', ''));
-    const dependencyUpdates = [];
+    const genreIds = parseGenresParam(params.get('genres', ''));
+    const updates = [];
     const normalizedDependenciesValue = dependencyIds.join('_');
+    const normalizedGenresValue = genreIds.join('_');
     const independentMode = params.get('depen', 'no') === 'yes';
     if (independentMode) {
       if (String(params.get('dependencies', '') || '') !== '') {
-        dependencyUpdates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+        updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
       }
     } else {
       if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
-        dependencyUpdates.push(
-          new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }),
-        );
+        updates.push(new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }));
       }
       if (dependencyIds.length > 0 && params.get('sgame', 'yes') !== 'no') {
-        dependencyUpdates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
+        updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
       }
     }
-    if (dependencyUpdates.length > 0) {
-      dependencyUpdates.push(new Dictionary({ key: 'page', value: 0 }));
-      URLManager.updateParams(dependencyUpdates);
+    if (normalizedGenresValue !== String(params.get('genres', '') || '')) {
+      updates.push(new Dictionary({ key: 'genres', value: normalizedGenresValue, default: '' }));
+    }
+    if (genreIds.length > 0 && params.get('sgame', 'yes') !== 'yes') {
+      updates.push(new Dictionary({ key: 'sgame', value: 'yes', default: 'yes' }));
+    }
+    if (updates.length > 0) {
+      updates.push(new Dictionary({ key: 'page', value: 0 }));
+      URLManager.updateParams(updates);
       params = URLManager.getParams();
     }
 
@@ -657,6 +766,7 @@
     syncDependenceSearchGame(params.get('game', ''));
 
     await hydrateDependenciesFilter(dependencyIds);
+    await hydrateGenresFilter(genreIds);
     setDependenciesEditorDisabled(params.get('depen', 'no') === 'yes');
 
     URLManager.updateParam('page', Number(params.get('page', 0)));
@@ -678,6 +788,7 @@
     }
 
     setCatalogGameSpecificFiltersVisible(!sgame);
+    setCatalogGameSelectionFiltersVisible(sgame);
 
     const sortMode = params.get('sort', 'iDOWNLOADS');
     const invertButton = document.querySelector('button#sort-select-invert');
