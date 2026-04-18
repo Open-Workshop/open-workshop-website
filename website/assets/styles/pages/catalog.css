@@ -118,6 +118,9 @@ div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.wi
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls > button {
     flex-shrink: 0;
 }
+div#settings-catalog > div#settings-menu > .catalog-game-filter[hidden] {
+    display: none !important;
+}
 div#settings-catalog > div#settings-menu > .catalog-dependencies-title {
     width: 100%;
     max-width: 400px;

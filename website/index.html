@@ -50,22 +50,22 @@
         <label>Выбрать игру</label>
       </setting>
 
-      <hr>
+      <hr class="catalog-game-filter">
 
-      <setting id="depen" data-action="catalog-toggle-independent">
+      <setting id="depen" class="catalog-game-filter" data-action="catalog-toggle-independent">
         <input type="checkbox">
         <label>Независимые моды</label>
       </setting>
       
-      <setting class="with-events catalog-dependencies-setting">
+      <setting class="with-events catalog-dependencies-setting catalog-game-filter">
         {% with dependencies={}, game=0, dependence_button_text='Плагины для модов', editor_id='catalog-dependencies-editor' %}
           {% include 'html-partials/mod-dependence-edit.html' %}
         {% endwith %}
       </setting>
 
-      <hr>
+      <hr class="catalog-game-filter">
 
-      <setting class="with-events">
+      <setting class="with-events catalog-tags-setting catalog-game-filter">
         {{ render_tags_editor({}, 0, false, 'catalog-tags-editor') }}
       </setting>
     </div>

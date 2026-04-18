@@ -68,6 +68,24 @@
     label.style.display = visible ? '' : 'none';
   }
 
+  function setCatalogGameSpecificFiltersVisible(visible) {
+    document.querySelectorAll('#settings-catalog .catalog-game-filter').forEach(function (element) {
+      element.hidden = !visible;
+    });
+
+    if (visible) return;
+
+    const dependenciesEditor = getDependenciesEditor();
+    if (dependenciesEditor && typeof dependenciesEditor.close === 'function') {
+      dependenciesEditor.close();
+    }
+
+    const tagsEditor = getTagsEditor();
+    if (tagsEditor && typeof tagsEditor.close === 'function') {
+      tagsEditor.close();
+    }
+  }
+
   function parseDependenciesParam(value) {
     return String(value || '')
       .replaceAll('[', '')
@@ -280,6 +298,7 @@
 
     URLManager.updateParams(updates);
     syncDependenceSearchGame(checked ? '' : params.get('game', ''));
+    setCatalogGameSpecificFiltersVisible(!checked);
 
     const settingsCatalog = document.getElementById('settings-catalog');
     if (settingsCatalog) {
@@ -319,6 +338,8 @@
     if (tagsEditor) {
       tagsEditor.clearVisibleSelection();
     }
+
+    setCatalogGameSpecificFiltersVisible(true);
 
     resetCatalog();
   }
@@ -655,6 +676,8 @@
           }),
       );
     }
+
+    setCatalogGameSpecificFiltersVisible(!sgame);
 
     const sortMode = params.get('sort', 'iDOWNLOADS');
     const invertButton = document.querySelector('button#sort-select-invert');
