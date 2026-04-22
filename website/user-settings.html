@@ -30,22 +30,24 @@
 <main class="user settings" data-user-id="{{ user_data.general.id }}" data-username="{{ user_data.general.username }}">
   {% if not user_access.any %}
   <h1 style="text-align: center;">
-    {% if user_access.my %}Похоже к вам применены временные санкции и вы не можете редактировать оформление своего профиля :({% endif %}
-    {% if not user_access.my %}Этот профиль удален!{% endif %}
+    Этот профиль удален!
   </h1>
   {% endif %}
 
-  {% if (not user_data.delete_user and (user_access.any or user_access.my)) or (user_data.delete_user and user_access.admin) %}
+  {% if user_access.any %}
   {% include 'html-partials/user-settings/nav.html' %}
   <hr id="mobile-hr-user-settings">
   <div style="width: 100%;">
     {% if not user_data.delete_user %}
       {% include 'html-partials/user-settings/profile.html' %}
     {% endif %}
-    {% if user_access.my or user_access.admin %}
+    {% if user_access.my or user_access.edit.rights.value %}
       {% if not user_data.delete_user %}
         {% include 'html-partials/user-settings/integrations.html' %}
       {% endif %}
+    {% endif %}
+
+    {% if user_access.edit.rights.value %}
       {% include 'html-partials/user-settings/rights.html' %}
     {% endif %}
     {% if user_access.my %}

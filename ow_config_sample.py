@@ -1,6 +1,7 @@
 
 MANAGER_ADDRESS = "https://api.openworkshop.miskler.ru"
 STORAGE_ADDRESS = "https://storage.openworkshop.miskler.ru"
+ACCESS_SERVICE_URL = "https://access.openworkshop.miskler.ru"
 
 user_sql = "root"
 password_sql = "???"

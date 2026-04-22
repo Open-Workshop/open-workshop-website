@@ -1,5 +1,6 @@
 <div id="page-params-mod" class="mod-edit__page">
   <div class="mod-edit__params">
+    {% if right_edit.new_version %}
     <div class="standart-panel mod-edit__panel">
       <h3>Новая версия мода</h3>
       <p class="ow-muted">Загрузите новый архив. Лимит 10 GB.</p>
@@ -9,9 +10,13 @@
       </div>
       {% include "html-partials/green-bar.html" %}
     </div>
+    {% endif %}
 
+    {% if right_edit.authors %}
     {% include 'html-partials/mod-authors-edit.html' %}
+    {% endif %}
 
+    {% if right_edit.delete %}
     <div class="standart-panel mod-edit__panel mod-edit__panel--danger">
       <h3>Удаление мода</h3>
       <p class="ow-muted">Действие необратимо. Мод и ресурсы будут удалены.</p>
@@ -21,5 +26,6 @@
       </label>
       <button id="delete-mod-button" class="button-style" type="button" data-action="mod-delete" disabled>Удалить мод</button>
     </div>
+    {% endif %}
   </div>
 </div>

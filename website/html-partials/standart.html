@@ -72,7 +72,13 @@
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
     <script id="ow-config" type="application/json">{{ ow | tojson }}</script>
   </head>
-	  <body manager-url="{{ ow.api.base }}" data-user-is-admin="{{ 'true' if user_rights and user_rights.get('admin') else 'false' }}">
+	  <body
+      manager-url="{{ ow.api.base }}"
+      data-session-authenticated="{{ 'true' if session_access and session_access.authenticated else 'false' }}"
+      data-can-add-mod="{{ 'true' if session_access and session_access.can_add_mod else 'false' }}"
+      data-can-add-game="{{ 'true' if session_access and session_access.can_add_game else 'false' }}"
+      data-can-edit-game="{{ 'true' if session_access and session_access.can_edit_game else 'false' }}"
+    >
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript">
         (function(m,e,t,r,i,k,a){

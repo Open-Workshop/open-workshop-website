@@ -3,11 +3,13 @@
   {% if not user_data.delete_user %}
   <button id="page-profile-button" active-in-variant="page-save-button" variant="profile" data-action="pager-change">Профиль</button>
   {% endif %}
-  {% if user_access.my or user_access.admin %}
+  {% if user_access.my or user_access.edit.rights.value %}
   {% if not user_data.delete_user %}
   <button id="page-integrate-button" disabled-in-variant="page-save-button" variant="integrate" data-action="pager-change">Интеграция</button>
   {% endif %}
+  {% if user_access.edit.rights.value %}
   <button id="page-rights-button" active-in-variant="page-save-button" variant="rights" data-action="pager-change">Права</button>
+  {% endif %}
   {% endif %}
 
   {% if user_access.my %}

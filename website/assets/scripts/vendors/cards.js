@@ -45,7 +45,7 @@
 
 window.Cards = {
     create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false, options = {}) {
-        const allowGameEdit = document.body && document.body.dataset.userIsAdmin === 'true';
+        const allowGameEdit = document.body && document.body.dataset.canEditGame === 'true';
         const settings = options || {};
         const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit && !settings.disableAutoGameEditButton));
 

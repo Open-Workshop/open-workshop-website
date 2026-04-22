@@ -8,6 +8,7 @@ import json
 import tool
 import os
 import sitemapper as sitemapper
+from access_policy import build_mod_rights
 from user_manager import UserHandler
 import ow_config
 import app_config
@@ -31,6 +32,73 @@ def _compact_json_list(values) -> str:
 def _chunked(values, chunk_size: int):
     for index in range(0, len(values), chunk_size):
         yield values[index:index + chunk_size]
+
+
+def _stringify_error_value(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            item_text = _stringify_error_value(item)
+            if item_text:
+                parts.append(item_text)
+        return "; ".join(parts)
+    if isinstance(value, dict):
+        for key in ("detail", "message", "error", "msg", "description", "title"):
+            item_text = _stringify_error_value(value.get(key))
+            if item_text:
+                return item_text
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return str(value)
+
+
+def _extract_error_info(payload, status_code: int | None = None) -> tuple[str, str, int]:
+    fallback_code = status_code if status_code is not None else 500
+    fallback_title = "Доступ запрещен" if fallback_code == 403 else "Ошибка"
+
+    if isinstance(payload, dict):
+        title = _stringify_error_value(payload.get("title")) or fallback_title
+        detail = _stringify_error_value(payload.get("detail"))
+        if not detail:
+            for key in ("message", "error", "description"):
+                detail = _stringify_error_value(payload.get(key))
+                if detail:
+                    break
+        if not detail:
+            detail = title
+
+        status_value = payload.get("status")
+        try:
+            code = int(status_value) if status_value is not None else fallback_code
+        except (TypeError, ValueError):
+            code = fallback_code
+
+        return title, detail, code
+
+    if isinstance(payload, str):
+        text = payload.strip()
+        if text[:1] in {"{", "["}:
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                parsed = None
+            if parsed is not None:
+                return _extract_error_info(parsed, fallback_code)
+        if not text:
+            return fallback_title, fallback_title, fallback_code
+        return fallback_title, text, fallback_code
+
+    detail = _stringify_error_value(payload) or fallback_title
+    return fallback_title, detail, fallback_code
+
+
+def _render_api_error(handler: UserHandler, payload, status_code: int | None = None):
+    error_title, error_body, error_code = _extract_error_info(payload, status_code)
+    page = handler.render("error.html", error=error_body, error_title=error_title)
+    return handler.finish(page), error_code
 
 
 async def _load_paged_results(handler: UserHandler, base_url: str, *, page_size: int = 50) -> list:
@@ -197,6 +265,30 @@ async def mod_view_and_edit(mod_id):
     launge = "ru"
 
     async with UserHandler() as handler:
+        mod_access = await handler.get_mod_access(mod_id)
+        right_edit_mod = build_mod_rights(mod_access)
+
+        if not mod_access["info"]["value"]:
+            page = handler.render(
+                "error.html",
+                error=mod_access["info"]["reason"],
+                error_title="Отказано в доступе",
+            )
+            return handler.finish(page), 403
+
+        edit_page = "/edit" in request.path
+        if edit_page and not right_edit_mod["edit"]:
+            if not handler.authenticated:
+                page = handler.render("error.html", error="Войдите или создайте аккаунт", error_title="Не авторизован")
+            else:
+                page = handler.render(
+                    "error.html",
+                    error=mod_access["edit"]["title"]["reason"],
+                    error_title="Отказано в доступе",
+                )
+
+            return handler.finish(page), 403
+
         # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
         resources_path = app_config.api_path("mod", "resources").format(mod_id=mod_id)
@@ -221,22 +313,22 @@ async def mod_view_and_edit(mod_id):
         tags_code, tags = tags_result
 
         # Проверка результатов
-        if type(info) is str:
-            # Сервер ответил на информацию о моде ошибкой (возврашаем ошибку пользователю)
-            return handler.finish(handler.render("error.html", error=info, error_title='Ошибка')), info_code
-        else:
-            # Вторичная (косметическая на самом деле) распаковка
-            if isinstance(tags, dict):
-                if str(mod_id) in tags:
-                    tags = tags[str(mod_id)]
-                elif "results" in tags:
-                    tags = tags["results"]
-                elif "tags" in tags:
-                    tags = tags["tags"]
-                else:
-                    tags = []
-            elif tags is None:
+        if info_code != 200 or not isinstance(info, dict):
+            # Сервер ответил на информацию о моде ошибкой, показываем человекочитаемую страницу.
+            return _render_api_error(handler, info, info_code)
+
+        # Вторичная (косметическая на самом деле) распаковка
+        if isinstance(tags, dict):
+            if str(mod_id) in tags:
+                tags = tags[str(mod_id)]
+            elif "results" in tags:
+                tags = tags["results"]
+            elif "tags" in tags:
+                tags = tags["tags"]
+            else:
                 tags = []
+        elif tags is None:
+            tags = []
 
         user_is_author = False
         user_is_owner = False
@@ -257,23 +349,6 @@ async def mod_view_and_edit(mod_id):
                         user_is_owner = author_to_add['owner']
 
                 authors.append(author_to_add)
-
-        right_edit_mod = handler.access_to_mod(my_mod=user_is_author, owner_mod=user_is_owner)
-
-        edit_page = '/edit' in request.path
-        if edit_page and not right_edit_mod['edit']:
-            if not handler.profile:
-                page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
-            elif right_edit_mod['in_mute']:
-                page = handler.render("error.html", error='Вы во временном муте', error_title='В муте')
-            else:
-                page = handler.render(
-                    "error.html",
-                    error='Вы не имеете прав на редактирование чужих модов' if right_edit_mod['is_my_mod'] == 2 else 'Вы не имеете прав на редактирование своих модов',
-                    error_title='Отказано в доступе'
-                )
-
-            return handler.finish(page), 403
 
         info['result']['size'] = await tool.size_format(info['result']['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
         info['result']['size_unpacked'] = await tool.size_format(info['result']['size_unpacked'])
@@ -379,6 +454,7 @@ async def mod_view_and_edit(mod_id):
                 dependencies=dependencies,
                 plugins=plugins,
                 plugins_more_count=plugins_more_count,
+                mod_access=mod_access,
                 right_edit=right_edit_mod,
                 authors=authors,
                 is_mod_data=False,
@@ -393,6 +469,7 @@ async def mod_view_and_edit(mod_id):
                 dependencies=dependencies,
                 plugins=plugins,
                 plugins_more_count=plugins_more_count,
+                mod_access=mod_access,
                 right_edit=right_edit_mod,
                 authors=authors,
                 is_mod_data=True,
@@ -403,15 +480,17 @@ async def mod_view_and_edit(mod_id):
 
 async def add_mod():
     async with UserHandler() as handler:
-        access = handler.access_to_mod()
+        access = await handler.get_mod_add_access()
 
-        if not access['add']:
-            if not handler.profile:
+        if not access['add']['value']:
+            if not handler.authenticated:
                 page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
-            elif access['in_mute']:
-                page = handler.render("error.html", error='Вы во временном муте', error_title='В муте')
             else:
-                page = handler.render("error.html", error='Вы не можете публиковать моды', error_title='Отказано в доступе')
+                page = handler.render(
+                    "error.html",
+                    error=access['add']['reason'],
+                    error_title='Отказано в доступе',
+                )
 
             return handler.finish(page), 403
 
@@ -421,13 +500,15 @@ async def add_mod():
 
 async def add_game():
     async with UserHandler() as handler:
-        if not handler.rights.get("admin", False):
-            if not handler.profile:
+        access = await handler.get_game_add_access()
+
+        if not access['add']['value']:
+            if not handler.authenticated:
                 page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
             else:
                 page = handler.render(
                     "error.html",
-                    error='Панель добавления игр доступна только администраторам',
+                    error=access['add']['reason'],
                     error_title='Отказано в доступе'
                 )
             return handler.finish(page), 403
@@ -440,13 +521,15 @@ async def game_edit(game_id):
     launge = "ru"
 
     async with UserHandler() as handler:
-        if not handler.rights.get("admin", False):
-            if not handler.profile:
+        game_access = await handler.get_game_access(game_id)
+
+        if not game_access['edit']['title']['value']:
+            if not handler.authenticated:
                 page = handler.render("error.html", error='Войдите или создайте аккаунт', error_title='Не авторизован')
             else:
                 page = handler.render(
                     "error.html",
-                    error='Панель редактирования игр доступна только администраторам',
+                    error=game_access['edit']['title']['reason'],
                     error_title='Отказано в доступе'
                 )
             return handler.finish(page), 403
@@ -471,11 +554,7 @@ async def game_edit(game_id):
 
         game_info_code, game_info = game_info_result
         if game_info_code != 200 or not isinstance(game_info, dict):
-            return handler.finish(handler.render(
-                "error.html",
-                error=game_info,
-                error_title=f'Ошибка ({game_info_code})')
-            ), game_info_code
+            return _render_api_error(handler, game_info, game_info_code)
 
         _, all_genres = all_genres_result
         _, game_genres = game_genres_result
@@ -539,6 +618,7 @@ async def user(user_id):
     launge = "ru"
 
     async with UserHandler() as handler:
+        profile_access = await handler.get_profile_access(user_id)
         profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
         mods_list_path = app_config.api_path("mod", "list")
         profile_info, user_mods = await asyncio.gather(
@@ -550,7 +630,7 @@ async def user(user_id):
         user_mods_code, user_mods = user_mods
 
         if profile_info_code != 200:
-            return handler.finish(handler.render("error.html", error=profile_info, error_title=f'Ошибка ({profile_info_code})')), profile_info_code
+            return _render_api_error(handler, profile_info, profile_info_code)
 
         profile_info['delete_user'] = profile_info['general']['username'] is None
 
@@ -607,9 +687,9 @@ async def user(user_id):
         else:
             user_mods = False
         
-        profile_info['general']['editable'] = handler.access_to_mod()
+        profile_info['general']['editable'] = profile_access
 
-        page = handler.render("user.html", user_data=profile_info, user_mods=user_mods)
+        page = handler.render("user.html", user_data=profile_info, user_mods=user_mods, profile_access=profile_access)
 
         return handler.finish(page)
 
@@ -617,20 +697,20 @@ async def user_settings(user_id):
     launge = "ru"
 
     async with UserHandler() as handler:
-        editable = handler.access_to_profile(user_id)
+        editable = await handler.get_profile_access(user_id)
 
         if not editable['any']:
             return handler.finish(handler.render("error.html", error=f"Вы не имеете прав редактировать этот профиль!", error_title='Отказано в доступе!')), 403
 
-        if handler.id == user_id:
+        include_rights = bool(editable["edit"]["rights"]["value"])
+        include_private = bool(editable["my"] or include_rights)
+
+        if handler.id == user_id and handler.response and not include_rights:
             info_profile_code = handler.response_code
             info_profile = handler.response
         else:
             profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
-            include_general = True
-            include_rights = editable["admin"] or editable["my"]
-            include_private = editable["admin"] or editable["my"]
-            query = f"?general={'true' if include_general else 'false'}"
+            query = f"?general=true"
             query += f"&rights={'true' if include_rights else 'false'}"
             query += f"&private={'true' if include_private else 'false'}"
             info_profile_code, info_profile = await handler.fetch(
@@ -638,11 +718,7 @@ async def user_settings(user_id):
             )
 
         if info_profile_code != 200:
-            return handler.finish(handler.render(
-                "error.html",
-                error=info_profile,
-                error_title=f'Ошибка ({info_profile_code})')
-            ), info_profile_code
+            return _render_api_error(handler, info_profile, info_profile_code)
 
         if info_profile["general"]["mute"]:
             input_date = parse_api_datetime(info_profile["general"]["mute"])
@@ -667,7 +743,7 @@ async def user_settings(user_id):
 
         info_profile['delete_user'] = info_profile['general']['username'] is None
 
-        return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable))
+        return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable, profile_access=editable))
 
 async def user_mods(user_id):
     async with UserHandler() as handler:
@@ -675,11 +751,7 @@ async def user_mods(user_id):
         profile_code, profile_info = await handler.fetch(profile_info_path)
 
         if profile_code != 200:
-            return handler.finish(handler.render(
-                "error.html",
-                error=profile_info,
-                error_title=f'Ошибка ({profile_code})')
-            ), profile_code
+            return _render_api_error(handler, profile_info, profile_code)
 
         username = profile_info.get("general", {}).get("username") or f"Пользователь {user_id}"
         catalog_user = {

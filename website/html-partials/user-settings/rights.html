@@ -5,7 +5,7 @@
       <input type="checkbox"
         id="checkbox-rights-edit-{{ right_id }}"
         {% if user_data.rights[right_id] %}startdata checked{% endif %}
-        {% if right_id == 'admin' %}disabled{% elif not user_access.admin %}disabled{% endif %} />
+        {% if right_id == 'admin' or not user_access.edit.rights.value %}disabled{% endif %} />
       <p>{{ rights_labels[right_id] }}</p>
     </div>
     {% endfor %}
