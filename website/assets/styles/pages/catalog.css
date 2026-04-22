@@ -118,6 +118,22 @@ div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.wi
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls > button {
     flex-shrink: 0;
 }
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 6px 2px 2px;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting > .catalog-types-setting__label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting > select {
+    width: 100%;
+    margin: 0;
+}
 div#settings-catalog > div#settings-menu > setting.catalog-range-setting {
     display: block;
     padding: 0;

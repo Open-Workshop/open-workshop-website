@@ -18,6 +18,14 @@
   let infiniteScrollSentinel = null;
   let pendingInfiniteScrollCheck = 0;
   const INFINITE_SCROLL_ROOT_MARGIN_PX = 2500;
+  const CATALOG_MOD_TYPE_CONFIGS = {
+    all: { min: null, max: null },
+    mods: { min: 0, max: 0 },
+    framework: { min: 1, max: null },
+    'notable-framework': { min: 5, max: null },
+    'popular-framework': { min: 10, max: null },
+    'framework-standard': { min: 50, max: null },
+  };
 
   function getTagsEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
@@ -33,6 +41,66 @@
 
   function getDependenciesEditorRoot() {
     return document.getElementById('catalog-dependencies-editor');
+  }
+
+  function getCatalogModTypeSelect() {
+    return document.getElementById('mod-type-select');
+  }
+
+  function normalizeCatalogModType(value) {
+    const normalized = String(value || 'all');
+    return Object.prototype.hasOwnProperty.call(CATALOG_MOD_TYPE_CONFIGS, normalized)
+      ? normalized
+      : 'all';
+  }
+
+  function getCatalogModTypeConfig(value) {
+    return CATALOG_MOD_TYPE_CONFIGS[normalizeCatalogModType(value)] || CATALOG_MOD_TYPE_CONFIGS.all;
+  }
+
+  function resolveCatalogModTypeFromParams(params) {
+    const rawMin = parseNumericValue(params.get('dependents_count_min', ''), null);
+    const rawMax = parseNumericValue(params.get('dependents_count_max', ''), null);
+
+    for (const key in CATALOG_MOD_TYPE_CONFIGS) {
+      const config = CATALOG_MOD_TYPE_CONFIGS[key];
+      if (config.min === rawMin && config.max === rawMax) {
+        return key;
+      }
+    }
+
+    return 'all';
+  }
+
+  function syncCatalogModTypeSelect() {
+    const select = getCatalogModTypeSelect();
+    if (!select) return;
+
+    select.value = resolveCatalogModTypeFromParams(URLManager.getParams());
+  }
+
+  function applyCatalogModTypeSelect(input) {
+    const select = input instanceof Element ? input : getCatalogModTypeSelect();
+    if (!select) return;
+
+    const modType = normalizeCatalogModType(select.value);
+    const config = getCatalogModTypeConfig(modType);
+    const updates = [
+      new Dictionary({
+        key: 'dependents_count_min',
+        value: config.min === null ? null : config.min,
+        default: null,
+      }),
+      new Dictionary({
+        key: 'dependents_count_max',
+        value: config.max === null ? null : config.max,
+        default: null,
+      }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ];
+
+    URLManager.updateParams(updates);
+    resetCatalog();
   }
 
   const CATALOG_RANGE_CONFIGS = {
@@ -1299,6 +1367,7 @@
     URLManager.updateParam('page', Number(params.get('page', 0)));
 
     sortOptionsList(sgame);
+    syncCatalogModTypeSelect();
     const tagsEditor = getTagsEditor();
     if (tagsEditor) {
       await tagsEditor.setDefaultSelected(
@@ -1433,6 +1502,11 @@
 
     if (target.matches('[data-action="catalog-search"]')) {
       searchByName(target);
+      return;
+    }
+
+    if (target.matches('[data-action="catalog-mod-type-select"]')) {
+      applyCatalogModTypeSelect(target);
       return;
     }
 

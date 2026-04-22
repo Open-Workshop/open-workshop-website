@@ -44,6 +44,20 @@
 
       <hr>
 
+      <setting class="with-events catalog-types-setting catalog-game-filter">
+        <label class="catalog-types-setting__label" for="mod-type-select">Тип модов</label>
+        <select id="mod-type-select" title="Тип модов" data-action="catalog-mod-type-select">
+          <option value="all" selected>Все</option>
+          <option value="mods">Моды</option>
+          <option value="framework">Фреймворк</option>
+          <option value="notable-framework">Заметный фреймворк</option>
+          <option value="popular-framework">Популярный фреймворк</option>
+          <option value="framework-standard">Фреймворк-стандарт</option>
+        </select>
+      </setting>
+
+      <hr class="catalog-game-filter">
+
       <setting id="game-select" data-action="catalog-toggle-game-mode">
         <input type="checkbox" hidden>
         <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
