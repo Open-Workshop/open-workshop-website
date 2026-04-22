@@ -2,3 +2,112 @@
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+.picker-editor--rows .picker-editor__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.picker-editor--rows .picker-editor__item-mode-actions {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid rgba(151, 162, 190, 0.28);
+  border-radius: var(--radius-md);
+  background: rgba(29, 33, 47, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.picker-editor--rows .picker-editor__mode-button {
+  display: inline-flex;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  cursor: pointer;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 10px;
+  margin: 0 !important;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 0 !important;
+  box-shadow: none;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
+  transition:
+    transform 0.14s ease,
+    filter 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.picker-editor--rows .picker-editor__mode-button--include {
+  background-color: rgb(0, 94, 0) !important;
+  color: #f2fff5 !important;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.picker-editor--rows .picker-editor__mode-button--include:hover,
+.picker-editor--rows .picker-editor__mode-button--include:focus-visible {
+  background-color: rgb(0, 80, 0) !important;
+  color: #f2fff5 !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button--include:active {
+  background-color: rgb(0, 68, 30) !important;
+  color: #f2fff5 !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button--exclude {
+  background-color: rgb(194, 0, 0) !important;
+  color: #fff4f4 !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button--exclude:hover,
+.picker-editor--rows .picker-editor__mode-button--exclude:focus-visible {
+  background-color: rgb(168, 0, 0) !important;
+  color: #fff4f4 !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button--exclude:active {
+  background-color: rgb(145, 0, 0) !important;
+  color: #fff4f4 !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button:disabled {
+  background-color: var(--interactive-element-background-disabled) !important;
+  color: var(--interactive-element-text-disabled) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  cursor: default !important;
+}
+
+.picker-editor--rows .picker-editor__mode-button:hover,
+.picker-editor--rows .picker-editor__mode-button:focus-visible {
+  transform: translateY(-1px);
+  filter: brightness(1.06) saturate(1.04);
+}
+
+.picker-editor--rows .picker-editor__mode-button:not(.is-active) {
+  filter: brightness(0.7) saturate(0.96);
+}
+
+.picker-editor--rows .picker-editor__mode-button:not(.is-active):hover,
+.picker-editor--rows .picker-editor__mode-button:not(.is-active):focus-visible {
+  filter: brightness(0.76) saturate(0.98);
+}
+
+.picker-editor--rows .picker-editor__mode-button.is-active {
+  filter: brightness(1.08) saturate(1.08);
+}
+
+.picker-editor--rows .picker-editor__mode-button.is-active:hover,
+.picker-editor--rows .picker-editor__mode-button.is-active:focus-visible,
+.picker-editor--rows .picker-editor__mode-button.is-active:active {
+  filter: brightness(1.08) saturate(1.08);
+}

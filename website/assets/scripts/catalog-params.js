@@ -26,6 +26,10 @@
     'popular-framework': { min: 10, max: null },
     'framework-standard': { min: 50, max: null },
   };
+  const CATALOG_DEPENDENCY_FILTER_MODES = {
+    dependencies: 'dependencies',
+    excluded_dependencies: 'excluded_dependencies',
+  };
 
   function getTagsEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
@@ -42,6 +46,124 @@
   function getDependenciesEditorRoot() {
     return document.getElementById('catalog-dependencies-editor');
   }
+
+  const dependencyItemModes = new Map();
+
+  function normalizeDependencyFilterMode(value) {
+    const normalized = String(value || '').trim();
+    return normalized === CATALOG_DEPENDENCY_FILTER_MODES.excluded_dependencies
+      ? CATALOG_DEPENDENCY_FILTER_MODES.excluded_dependencies
+      : CATALOG_DEPENDENCY_FILTER_MODES.dependencies;
+  }
+
+  function getDependencyItemId(itemNode) {
+    if (!(itemNode instanceof Element)) return '';
+    return String(itemNode.dataset.pickerId || '').trim();
+  }
+
+  function getDependencyItemNodes(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    const root = getDependenciesEditorRoot();
+    if (!root || normalizedId === '') return [];
+
+    return Array.from(root.querySelectorAll('[data-picker-id="' + normalizedId + '"]'));
+  }
+
+  function applyDependencyItemModeToNode(itemNode, mode, selected) {
+    if (!(itemNode instanceof Element)) return;
+
+    const normalizedMode = normalizeDependencyFilterMode(mode);
+    const isSelected = typeof selected === 'boolean'
+      ? selected
+      : itemNode.classList.contains('is-selected') || itemNode.dataset.pickerSlot === 'selected';
+
+    itemNode.dataset.catalogDependenciesMode = normalizedMode;
+    itemNode.dataset.catalogDependenciesSelected = isSelected ? 'true' : 'false';
+
+    itemNode.querySelectorAll('[data-action="catalog-dependencies-mode"]').forEach(function (button) {
+      const buttonMode = normalizeDependencyFilterMode(button.dataset.dependenciesMode);
+      const isActive = buttonMode === normalizedMode;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function syncDependencyItemModeState(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return;
+
+    const mode = getDependencyItemMode(normalizedId);
+    getDependencyItemNodes(normalizedId).forEach(function (itemNode) {
+      applyDependencyItemModeToNode(itemNode, mode);
+    });
+  }
+
+  function getDependencyItemMode(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return CATALOG_DEPENDENCY_FILTER_MODES.dependencies;
+
+    if (dependencyItemModes.has(normalizedId)) {
+      return normalizeDependencyFilterMode(dependencyItemModes.get(normalizedId));
+    }
+
+    const itemNodes = getDependencyItemNodes(normalizedId);
+    const selectedNode = itemNodes.find(function (node) {
+      return node.dataset.pickerSlot === 'selected' || node.classList.contains('is-selected');
+    });
+    const node = selectedNode || itemNodes[0] || null;
+    if (node && node.dataset.catalogDependenciesMode) {
+      const mode = normalizeDependencyFilterMode(node.dataset.catalogDependenciesMode);
+      dependencyItemModes.set(normalizedId, mode);
+      return mode;
+    }
+
+    return CATALOG_DEPENDENCY_FILTER_MODES.dependencies;
+  }
+
+  function setDependencyItemMode(itemId, mode, skipSync = false) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return CATALOG_DEPENDENCY_FILTER_MODES.dependencies;
+
+    const normalizedMode = normalizeDependencyFilterMode(mode);
+    dependencyItemModes.set(normalizedId, normalizedMode);
+    if (!skipSync) {
+      syncDependencyItemModeState(normalizedId);
+    }
+    return normalizedMode;
+  }
+
+  window.OWCatalogDependencies = window.OWCatalogDependencies || {};
+  window.OWCatalogDependencies.getItemMode = getDependencyItemMode;
+  window.OWCatalogDependencies.setItemMode = setDependencyItemMode;
+  window.OWCatalogDependencies.decorateItemModeControls = function decorateDependencyItemModeControls(itemNode, itemId, selected) {
+    const normalizedId = String(itemId || '').trim();
+    const mode = getDependencyItemMode(normalizedId);
+    applyDependencyItemModeToNode(itemNode, mode, selected);
+  };
+  window.OWCatalogDependencies.applyCardMode = function applyCatalogDependencyCardMode(mode, editor, itemNode) {
+    const normalizedMode = normalizeDependencyFilterMode(mode);
+    const pickerEditor = editor && typeof editor.toggle === 'function' ? editor : null;
+    const itemId = getDependencyItemId(itemNode);
+    if (!itemId) return;
+    const selectedIds = getSelectedDependencyIds();
+    const isAlreadySelected = itemId !== ''
+      && selectedIds.some(function (selectedId) {
+        return String(selectedId) === itemId;
+      });
+
+    setDependencyItemMode(itemId, normalizedMode, true);
+    if (pickerEditor && itemNode instanceof Element && !isAlreadySelected) {
+      suppressDependencySync = true;
+      try {
+        pickerEditor.toggle(itemNode);
+      } finally {
+        suppressDependencySync = false;
+      }
+    }
+
+    syncDependencyItemModeState(itemId);
+    syncDependenciesUrlFromSelection(true);
+  };
 
   function getCatalogModTypeSelect() {
     return document.getElementById('mod-type-select');
@@ -739,6 +861,26 @@
       });
   }
 
+  function getSelectedDependencySelection() {
+    const editor = getDependenciesEditor();
+    const selection = {
+      dependencies: [],
+      excluded_dependencies: [],
+    };
+
+    if (!editor) return selection;
+
+    editor.getState().visible.forEach(function (item) {
+      const itemId = String(item.id || '').trim();
+      if (!itemId) return;
+
+      const mode = getDependencyItemMode(itemId);
+      selection[mode].push(itemId);
+    });
+
+    return selection;
+  }
+
   function getSelectedTagIds() {
     const editor = getTagsEditor();
     if (!editor) return [];
@@ -795,6 +937,14 @@
       }
     });
 
+    if (setting) {
+      setting.querySelectorAll('[data-action="catalog-dependencies-mode"]').forEach(function (control) {
+        if ('disabled' in control) {
+          control.disabled = disabled;
+        }
+      });
+    }
+
     const editor = getDependenciesEditor();
     if (disabled && editor && editor.isOpen()) {
       editor.close();
@@ -819,19 +969,32 @@
     }
   }
 
-  function syncDependenciesUrlFromSelected(selectedIds, triggerReset) {
+  function syncDependenciesUrlFromSelection(triggerReset) {
     const params = URLManager.getParams();
-    const dependenciesValue = selectedIds.join('_');
+    const selection = getSelectedDependencySelection();
+    const dependenciesValue = selection.dependencies.join('_');
+    const excludedDependenciesValue = selection.excluded_dependencies.join('_');
     const currentDependenciesValue = parseDependenciesParam(params.get('dependencies', '')).join('_');
+    const currentExcludedDependenciesValue = parseDependenciesParam(params.get('excluded_dependencies', '')).join('_');
+    const legacyModeValue = String(params.get('dependencies_mode', '') || '').trim();
 
-    if (dependenciesValue === currentDependenciesValue) return false;
+    if (
+      currentDependenciesValue === dependenciesValue
+      && currentExcludedDependenciesValue === excludedDependenciesValue
+      && legacyModeValue === ''
+    ) {
+      return false;
+    }
 
+    const hasDependencies = selection.dependencies.length > 0 || selection.excluded_dependencies.length > 0;
     const updates = [
       new Dictionary({ key: 'dependencies', value: dependenciesValue, default: '' }),
+      new Dictionary({ key: 'excluded_dependencies', value: excludedDependenciesValue, default: '' }),
+      new Dictionary({ key: 'dependencies_mode', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ];
 
-    if (selectedIds.length > 0) {
+    if (hasDependencies) {
       updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
       updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
       setSettingChecked(getDependencySetting(), false);
@@ -906,22 +1069,28 @@
       input.checked = checked;
     }
 
-    const selectedDependencyIds = getSelectedDependencyIds();
+    const selectedDependencySelection = getSelectedDependencySelection();
     const updates = [];
 
     if (checked) {
       updates.push(new Dictionary({ key: 'depen', value: 'yes', default: 'no' }));
       updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+      updates.push(new Dictionary({ key: 'excluded_dependencies', value: '', default: '' }));
+      clearSelectedDependencies();
     } else {
       updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
-      if (selectedDependencyIds.length > 0) {
-        updates.push(new Dictionary({ key: 'dependencies', value: selectedDependencyIds.join('_'), default: '' }));
+      const dependenciesValue = selectedDependencySelection.dependencies.join('_');
+      const excludedDependenciesValue = selectedDependencySelection.excluded_dependencies.join('_');
+      if (dependenciesValue !== '' || excludedDependenciesValue !== '') {
+        updates.push(new Dictionary({ key: 'dependencies', value: dependenciesValue, default: '' }));
+        updates.push(new Dictionary({ key: 'excluded_dependencies', value: excludedDependenciesValue, default: '' }));
         updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
         setSettingChecked(getGameSetting(), false);
         sortOptionsList(false);
       }
     }
 
+    updates.push(new Dictionary({ key: 'dependencies_mode', value: '', default: '' }));
     updates.push(new Dictionary({ key: 'page', value: 0 }));
     URLManager.updateParams(updates);
     setDependenciesEditorDisabled(checked);
@@ -934,7 +1103,9 @@
     const params = URLManager.getParams();
     const checked = !(input && input.checked);
     const hasDependencies =
-      getSelectedDependencyIds().length > 0 || parseDependenciesParam(params.get('dependencies', '')).length > 0;
+      getSelectedDependencyIds().length > 0
+      || parseDependenciesParam(params.get('dependencies', '')).length > 0
+      || parseDependenciesParam(params.get('excluded_dependencies', '')).length > 0;
 
     if (!checked && params.get('game', '') === '' && !hasDependencies) {
       const label = setting ? setting.querySelector('label') : null;
@@ -951,12 +1122,14 @@
     sortOptionsList(checked);
     const updates = [
       new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
+      new Dictionary({ key: 'dependencies_mode', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ];
 
     if (checked) {
       clearSelectedDependencies();
       updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
+      updates.push(new Dictionary({ key: 'excluded_dependencies', value: '', default: '' }));
     }
 
     URLManager.updateParams(updates);
@@ -1276,7 +1449,7 @@
   function handleDependenciesSelectionChange() {
     if (suppressDependencySync) return;
     if (URLManager.getParams().get('depen', 'no') === 'yes') return;
-    syncDependenciesUrlFromSelected(getSelectedDependencyIds(), true);
+    syncDependenciesUrlFromSelection(true);
   }
 
   function bindPickerEvents() {
@@ -1319,20 +1492,55 @@
     }
 
     const dependencyIds = parseDependenciesParam(params.get('dependencies', ''));
+    const excludedDependencyIds = parseDependenciesParam(params.get('excluded_dependencies', ''));
     const genreIds = parseGenresParam(params.get('genres', ''));
     const updates = [];
     const normalizedDependenciesValue = dependencyIds.join('_');
+    const normalizedExcludedDependenciesValue = excludedDependencyIds.join('_');
     const normalizedGenresValue = genreIds.join('_');
     const independentMode = params.get('depen', 'no') === 'yes';
+    const dependencyHydrationIds = independentMode
+      ? []
+      : Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
+
+    dependencyIds.forEach(function (id) {
+      dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.dependencies);
+    });
+    excludedDependencyIds.forEach(function (id) {
+      dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.excluded_dependencies);
+    });
+
+    if (String(params.get('dependencies_mode', '') || '') !== '') {
+      updates.push(new Dictionary({
+        key: 'dependencies_mode',
+        value: '',
+        default: '',
+      }));
+    }
+
     if (independentMode) {
       if (String(params.get('dependencies', '') || '') !== '') {
         updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
       }
+      if (String(params.get('excluded_dependencies', '') || '') !== '') {
+        updates.push(new Dictionary({ key: 'excluded_dependencies', value: '', default: '' }));
+      }
     } else {
       if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
-        updates.push(new Dictionary({ key: 'dependencies', value: normalizedDependenciesValue, default: '' }));
+        updates.push(new Dictionary({
+          key: 'dependencies',
+          value: normalizedDependenciesValue,
+          default: '',
+        }));
       }
-      if (dependencyIds.length > 0 && params.get('sgame', 'yes') !== 'no') {
+      if (normalizedExcludedDependenciesValue !== String(params.get('excluded_dependencies', '') || '')) {
+        updates.push(new Dictionary({
+          key: 'excluded_dependencies',
+          value: normalizedExcludedDependenciesValue,
+          default: '',
+        }));
+      }
+      if ((dependencyIds.length > 0 || excludedDependencyIds.length > 0) && params.get('sgame', 'yes') !== 'no') {
         updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
       }
     }
@@ -1356,7 +1564,7 @@
     syncTagsSearchGame(params.get('game', ''));
     syncDependenceSearchGame(params.get('game', ''));
 
-    await hydrateDependenciesFilter(dependencyIds);
+    await hydrateDependenciesFilter(dependencyHydrationIds);
     await hydrateGenresFilter(genreIds);
     setDependenciesEditorDisabled(params.get('depen', 'no') === 'yes');
     setCatalogRangeControlsDisabled(true);

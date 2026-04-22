@@ -134,7 +134,7 @@
     };
   }
 
-  function createDependencyItemElement(options) {
+  function createDependencyItemElement(options, isCatalogEditor) {
     const element = document.createElement('div');
     element.className = 'picker-editor__item picker-editor__item--row';
 
@@ -154,15 +154,71 @@
     title.textContent = String(options.name || '');
     content.appendChild(title);
 
+    const actions = document.createElement('div');
+    actions.className = 'picker-editor__item-actions';
+
+    if (isCatalogEditor) {
+      const modeActions = document.createElement('div');
+      modeActions.className = 'picker-editor__item-mode-actions';
+      modeActions.setAttribute('role', 'group');
+      modeActions.setAttribute('aria-label', 'Режим фильтра по зависимости');
+
+      const includeButton = document.createElement('button');
+      includeButton.type = 'button';
+      includeButton.className = 'tag-link-green picker-editor__mode-button picker-editor__mode-button--include';
+      includeButton.textContent = '+';
+      includeButton.title = 'Применить как обычный фильтр';
+      includeButton.setAttribute('aria-label', 'Применить как обычный фильтр');
+      includeButton.setAttribute('data-action', 'catalog-dependencies-mode');
+      includeButton.setAttribute('data-dependencies-mode', 'dependencies');
+      modeActions.appendChild(includeButton);
+
+      const excludeButton = document.createElement('button');
+      excludeButton.type = 'button';
+      excludeButton.className = 'tag-link-red picker-editor__mode-button picker-editor__mode-button--exclude';
+      excludeButton.textContent = '-';
+      excludeButton.title = 'Применить как антифильтр';
+      excludeButton.setAttribute('aria-label', 'Применить как антифильтр');
+      excludeButton.setAttribute('data-action', 'catalog-dependencies-mode');
+      excludeButton.setAttribute('data-dependencies-mode', 'excluded_dependencies');
+      modeActions.appendChild(excludeButton);
+
+      actions.appendChild(modeActions);
+    }
+
     if (options.showRemoveIcon !== false) {
       const removeIcon = document.createElement('img');
       removeIcon.className = 'picker-editor__item-action';
       removeIcon.src = '/assets/images/removal-triangle.svg';
       removeIcon.alt = 'Убрать зависимость';
-      content.appendChild(removeIcon);
+      actions.appendChild(removeIcon);
+    }
+
+    if (actions.childNodes.length > 0) {
+      content.appendChild(actions);
     }
 
     element.appendChild(content);
+
+    if (isCatalogEditor) {
+      const itemMode = window.OWCatalogDependencies
+        && typeof window.OWCatalogDependencies.getItemMode === 'function'
+        ? window.OWCatalogDependencies.getItemMode(String(options.id || ''))
+        : 'dependencies';
+      const isSelected = Boolean(options.selected) || options.slot === 'selected';
+
+      element.dataset.catalogDependenciesMode = itemMode;
+      element.dataset.catalogDependenciesSelected = isSelected ? 'true' : 'false';
+      element.querySelectorAll('[data-action="catalog-dependencies-mode"]').forEach(function (button) {
+        const buttonMode = button.dataset.dependenciesMode === 'excluded_dependencies'
+          ? 'excluded_dependencies'
+          : 'dependencies';
+        const isActive = buttonMode === itemMode;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    }
+
     return element;
   }
 
@@ -171,13 +227,16 @@
       if (root.dataset.owDependencyEditorBound === 'true') return;
       root.dataset.owDependencyEditorBound = 'true';
 
-      window.OWPickerEditors.create({
+      const isCatalogEditor = root.id === 'catalog-dependencies-editor';
+      const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
         context: {
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
         },
-        renderItem: createDependencyItemElement,
+        renderItem: function renderDependencyItem(options) {
+          return createDependencyItemElement(options, isCatalogEditor);
+        },
         async fetchSearchResults(queryValue, editor) {
           return searchDependencies(queryValue, editor.getContext().gameId);
         },
@@ -190,6 +249,23 @@
           return data.results;
         },
       });
+
+      if (isCatalogEditor) {
+        root.addEventListener('click', function (event) {
+          const button = event.target instanceof Element
+            ? event.target.closest('[data-action="catalog-dependencies-mode"]')
+            : null;
+          if (!button || !root.contains(button)) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          const item = button.closest('[data-picker-id]');
+          if (window.OWCatalogDependencies && typeof window.OWCatalogDependencies.applyCardMode === 'function') {
+            window.OWCatalogDependencies.applyCardMode(button.dataset.dependenciesMode, editor, item);
+          }
+        }, true);
+      }
     });
   }
 
