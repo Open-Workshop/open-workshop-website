@@ -109,6 +109,10 @@
     if (!Number.isFinite(value)) return bounds.min;
 
     const safeStep = Math.max(1, step || 1);
+    // Snap to the exact ends so the slider can reach the feed bounds.
+    if (value <= bounds.min + safeStep / 2) return bounds.min;
+    if (value >= bounds.max - safeStep / 2) return bounds.max;
+
     const snapped = bounds.min + Math.round((value - bounds.min) / safeStep) * safeStep;
     return clampNumericValue(snapped, bounds.min, bounds.max);
   }
@@ -369,17 +373,17 @@
     const minValue = clampNumericValue(parseNumericValue(values.min, bounds.min), bounds.min, bounds.max);
     const maxValue = clampNumericValue(parseNumericValue(values.max, bounds.max), bounds.min, bounds.max);
     const normalized = normalizeRangeBounds(minValue, maxValue, bounds.min, bounds.max);
-    const step = computeCatalogRangeStep(bounds.min, bounds.max);
+    const touchStep = computeCatalogRangeStep(bounds.min, bounds.max);
     const denominator = Math.max(bounds.max - bounds.min, 1);
     const minPercent = Math.max(0, Math.min(100, ((normalized.min - bounds.min) / denominator) * 100));
     const maxPercent = Math.max(0, Math.min(100, ((normalized.max - bounds.min) / denominator) * 100));
     const fillWidth = Math.max(0, maxPercent - minPercent);
-    const touching = Math.abs(normalized.max - normalized.min) <= step;
+    const touching = Math.abs(normalized.max - normalized.min) <= touchStep;
 
     [minInput, maxInput].forEach(function (input) {
       input.min = String(bounds.min);
       input.max = String(bounds.max);
-      input.step = String(step);
+      input.step = '1';
       input.disabled = false;
     });
 
