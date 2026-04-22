@@ -944,11 +944,6 @@
         }
       });
     }
-
-    const editor = getDependenciesEditor();
-    if (disabled && editor && editor.isOpen()) {
-      editor.close();
-    }
   }
 
   function syncDependenceSearchGame(gameID) {
@@ -1069,25 +1064,12 @@
       input.checked = checked;
     }
 
-    const selectedDependencySelection = getSelectedDependencySelection();
     const updates = [];
 
     if (checked) {
       updates.push(new Dictionary({ key: 'depen', value: 'yes', default: 'no' }));
-      updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
-      updates.push(new Dictionary({ key: 'excluded_dependencies', value: '', default: '' }));
-      clearSelectedDependencies();
     } else {
       updates.push(new Dictionary({ key: 'depen', value: 'no', default: 'no' }));
-      const dependenciesValue = selectedDependencySelection.dependencies.join('_');
-      const excludedDependenciesValue = selectedDependencySelection.excluded_dependencies.join('_');
-      if (dependenciesValue !== '' || excludedDependenciesValue !== '') {
-        updates.push(new Dictionary({ key: 'dependencies', value: dependenciesValue, default: '' }));
-        updates.push(new Dictionary({ key: 'excluded_dependencies', value: excludedDependenciesValue, default: '' }));
-        updates.push(new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }));
-        setSettingChecked(getGameSetting(), false);
-        sortOptionsList(false);
-      }
     }
 
     updates.push(new Dictionary({ key: 'dependencies_mode', value: '', default: '' }));
@@ -1499,9 +1481,7 @@
     const normalizedExcludedDependenciesValue = excludedDependencyIds.join('_');
     const normalizedGenresValue = genreIds.join('_');
     const independentMode = params.get('depen', 'no') === 'yes';
-    const dependencyHydrationIds = independentMode
-      ? []
-      : Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
+    const dependencyHydrationIds = Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
 
     dependencyIds.forEach(function (id) {
       dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.dependencies);
@@ -1518,14 +1498,7 @@
       }));
     }
 
-    if (independentMode) {
-      if (String(params.get('dependencies', '') || '') !== '') {
-        updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
-      }
-      if (String(params.get('excluded_dependencies', '') || '') !== '') {
-        updates.push(new Dictionary({ key: 'excluded_dependencies', value: '', default: '' }));
-      }
-    } else {
+    if (!independentMode) {
       if (normalizedDependenciesValue !== String(params.get('dependencies', '') || '')) {
         updates.push(new Dictionary({
           key: 'dependencies',
