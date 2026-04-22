@@ -65,6 +65,7 @@ PUBLIC_CONFIG: dict = {
             },
             "mod": {
                 "list": {"method": "GET", "path": "/mods"},
+                "feed": {"method": "GET", "path": "/mods/feed"},
                 "add": {"method": "POST", "path": "/mods/from-file"},
                 "file": {"method": "POST", "path": "/mods/{mod_id}/file"},
                 "edit": {"method": "PATCH", "path": "/mods/{mod_id}"},

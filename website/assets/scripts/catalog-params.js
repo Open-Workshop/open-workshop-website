@@ -35,6 +35,524 @@
     return document.getElementById('catalog-dependencies-editor');
   }
 
+  const CATALOG_RANGE_CONFIGS = {
+    size: {
+      minParam: 'size_min',
+      maxParam: 'size_max',
+    },
+    size_unpacked: {
+      minParam: 'size_unpacked_min',
+      maxParam: 'size_unpacked_max',
+    },
+  };
+
+  let catalogRangeFeed = null;
+  let catalogRangeDrag = null;
+
+  function getCatalogRangeFeedUrl() {
+    const feedPath = apiPaths.mod.feed.path;
+    const params = URLManager.getParams();
+    const gameId = parseNumericValue(params.get('game', ''), null);
+
+    if (gameId === null || gameId <= 0) {
+      return apiUrl(feedPath);
+    }
+
+    return apiUrl(feedPath) + '?game=' + encodeURIComponent(String(gameId));
+  }
+
+  function getCatalogRangeSetting() {
+    return document.querySelector('setting.catalog-range-setting');
+  }
+
+  function getCatalogRangeGroup(key) {
+    return document.querySelector('setting.catalog-range-setting .catalog-range-group[data-range-key="' + key + '"]');
+  }
+
+  function getCatalogRangeInput(key, role) {
+    const group = getCatalogRangeGroup(key);
+    if (!group) return null;
+    return group.querySelector('input[data-action="catalog-range"][data-range-role="' + role + '"]');
+  }
+
+  function getCatalogRangeCurrentNode(key) {
+    return document.querySelector('[data-range-current="' + key + '"]');
+  }
+
+  function getCatalogRangeSliderNode(key) {
+    const group = getCatalogRangeGroup(key);
+    if (!group) return null;
+    return group.querySelector('.catalog-range-slider');
+  }
+
+  function getCatalogRangeFillNode(key) {
+    const slider = getCatalogRangeSliderNode(key);
+    if (!slider) return null;
+    return slider.querySelector('.catalog-range-slider__fill');
+  }
+
+  function getCatalogRangeSliderRect(slider) {
+    const track = slider.querySelector('.catalog-range-slider__track');
+    const target = track || slider;
+    return target.getBoundingClientRect();
+  }
+
+  function getCatalogRangePercentFromClientX(slider, clientX) {
+    const rect = getCatalogRangeSliderRect(slider);
+    if (!rect.width) return 0;
+
+    const percent = ((clientX - rect.left) / rect.width) * 100;
+    return Math.max(0, Math.min(100, percent));
+  }
+
+  function snapCatalogRangeValue(value, bounds, step) {
+    if (!Number.isFinite(value)) return bounds.min;
+
+    const safeStep = Math.max(1, step || 1);
+    const snapped = bounds.min + Math.round((value - bounds.min) / safeStep) * safeStep;
+    return clampNumericValue(snapped, bounds.min, bounds.max);
+  }
+
+  function resolveCatalogRangeRoleFromPointer(key, percent, bounds) {
+    const minInput = getCatalogRangeInput(key, 'min');
+    const maxInput = getCatalogRangeInput(key, 'max');
+    if (!minInput || !maxInput) return 'min';
+
+    const minValue = clampNumericValue(parseNumericValue(minInput.value, bounds.min), bounds.min, bounds.max);
+    const maxValue = clampNumericValue(parseNumericValue(maxInput.value, bounds.max), bounds.min, bounds.max);
+    const denominator = Math.max(bounds.max - bounds.min, 1);
+    const minPercent = ((minValue - bounds.min) / denominator) * 100;
+    const maxPercent = ((maxValue - bounds.min) / denominator) * 100;
+    const minDistance = Math.abs(percent - minPercent);
+    const maxDistance = Math.abs(percent - maxPercent);
+
+    if (Math.abs(minDistance - maxDistance) < 0.0001) {
+      return percent <= (minPercent + maxPercent) / 2 ? 'min' : 'max';
+    }
+
+    return minDistance < maxDistance ? 'min' : 'max';
+  }
+
+  function updateCatalogRangePointerValue(key, clientX, role, triggerReset) {
+    const slider = getCatalogRangeSliderNode(key);
+    const bounds = getCatalogRangeBounds(key);
+    const minInput = getCatalogRangeInput(key, 'min');
+    const maxInput = getCatalogRangeInput(key, 'max');
+
+    if (!slider || !minInput || !maxInput || bounds.min === null || bounds.max === null) {
+      return false;
+    }
+
+    const percent = getCatalogRangePercentFromClientX(slider, clientX);
+    const step = computeCatalogRangeStep(bounds.min, bounds.max);
+    const rawValue = bounds.min + ((bounds.max - bounds.min) * percent) / 100;
+    const snappedValue = snapCatalogRangeValue(rawValue, bounds, step);
+
+    if (role === 'min') {
+      minInput.value = String(Math.min(snappedValue, parseNumericValue(maxInput.value, bounds.max)));
+    } else {
+      maxInput.value = String(Math.max(snappedValue, parseNumericValue(minInput.value, bounds.min)));
+    }
+
+    return syncCatalogRangeGroupFromInputs(key, triggerReset, role);
+  }
+
+  function handleCatalogRangePointerDown(event) {
+    if (!(event.target instanceof Element)) return;
+    if (event.button !== 0) return;
+
+    const slider = event.target.closest('.catalog-range-slider');
+    if (!slider) return;
+
+    const key = slider.dataset.rangeSlider || '';
+    const bounds = getCatalogRangeBounds(key);
+    const minInput = getCatalogRangeInput(key, 'min');
+    const maxInput = getCatalogRangeInput(key, 'max');
+    if (!key || !minInput || !maxInput || minInput.disabled || maxInput.disabled || bounds.min === null || bounds.max === null) {
+      return;
+    }
+
+    const percent = getCatalogRangePercentFromClientX(slider, event.clientX);
+    const role = resolveCatalogRangeRoleFromPointer(key, percent, bounds);
+
+    catalogRangeDrag = {
+      key,
+      pointerId: event.pointerId,
+      role,
+    };
+
+    slider.classList.add('is-dragging');
+    if (typeof slider.setPointerCapture === 'function') {
+      try {
+        slider.setPointerCapture(event.pointerId);
+      } catch (error) {
+        // Ignore pointer capture failures; dragging still works via the document handlers.
+      }
+    }
+
+    updateCatalogRangePointerValue(key, event.clientX, role, false);
+
+    const activeInput = getCatalogRangeInput(key, role);
+    if (activeInput && typeof activeInput.focus === 'function') {
+      try {
+        activeInput.focus({ preventScroll: true });
+      } catch (error) {
+        activeInput.focus();
+      }
+    }
+
+    event.preventDefault();
+  }
+
+  function finishCatalogRangeDrag(event, triggerReset) {
+    if (!catalogRangeDrag) return;
+    if (event.pointerId !== undefined && event.pointerId !== null && catalogRangeDrag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const { key, pointerId, role } = catalogRangeDrag;
+    const slider = getCatalogRangeSliderNode(key);
+    if (slider) {
+      slider.classList.remove('is-dragging');
+      if (typeof slider.releasePointerCapture === 'function') {
+        try {
+          slider.releasePointerCapture(pointerId);
+        } catch (error) {
+          // Ignore release errors when capture was never established.
+        }
+      }
+    }
+
+    syncCatalogRangeGroupFromInputs(key, triggerReset, role);
+    catalogRangeDrag = null;
+    event.preventDefault();
+  }
+
+  function handleCatalogRangePointerMove(event) {
+    if (!catalogRangeDrag) return;
+    if (event.pointerId !== catalogRangeDrag.pointerId) return;
+
+    updateCatalogRangePointerValue(catalogRangeDrag.key, event.clientX, catalogRangeDrag.role, false);
+    event.preventDefault();
+  }
+
+  function handleCatalogRangePointerUp(event) {
+    finishCatalogRangeDrag(event, true);
+  }
+
+  function handleCatalogRangePointerCancel(event) {
+    finishCatalogRangeDrag(event, true);
+  }
+
+  function parseNumericValue(value, fallback = null) {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'string' && value.trim() === '') return fallback;
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : fallback;
+  }
+
+  function clampNumericValue(value, min, max) {
+    if (!Number.isFinite(value)) return value;
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function normalizeRangeBounds(minValue, maxValue, fallbackMin = null, fallbackMax = null) {
+    let min = parseNumericValue(minValue, fallbackMin);
+    let max = parseNumericValue(maxValue, fallbackMax);
+
+    if (min === null && max === null) {
+      return { min: fallbackMin, max: fallbackMax };
+    }
+
+    if (min === null) {
+      min = max;
+    }
+    if (max === null) {
+      max = min;
+    }
+
+    if (min === null || max === null) {
+      return { min: fallbackMin, max: fallbackMax };
+    }
+
+    if (min > max) {
+      const swap = min;
+      min = max;
+      max = swap;
+    }
+
+    return { min, max };
+  }
+
+  function formatCatalogSize(value) {
+    const numericValue = parseNumericValue(value, null);
+    if (numericValue === null) return '—';
+
+    const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ'];
+    let size = Math.abs(numericValue);
+    let unitIndex = 0;
+
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+
+    const formattedSize = size.toLocaleString('ru-RU', {
+      maximumFractionDigits: 1,
+    });
+    const prefix = numericValue < 0 ? '-' : '';
+    return prefix + formattedSize + ' ' + units[unitIndex];
+  }
+
+  function formatCatalogRangeSummary(minValue, maxValue) {
+    const minText = formatCatalogSize(minValue);
+    const maxText = formatCatalogSize(maxValue);
+    if (minText === maxText) return minText;
+    return minText + ' — ' + maxText;
+  }
+
+  function computeCatalogRangeStep(minValue, maxValue) {
+    const range = Math.abs(parseNumericValue(maxValue, 0) - parseNumericValue(minValue, 0));
+    if (!Number.isFinite(range) || range <= 1) return 1;
+
+    const roughStep = range / 200;
+    if (roughStep < 1) return 1;
+
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+    let nice = 10;
+
+    if (normalized <= 1) {
+      nice = 1;
+    } else if (normalized <= 2) {
+      nice = 2;
+    } else if (normalized <= 5) {
+      nice = 5;
+    }
+
+    return Math.max(1, Math.round(nice * magnitude));
+  }
+
+  function getCatalogRangeBounds(key) {
+    const range = catalogRangeFeed && catalogRangeFeed[key] ? catalogRangeFeed[key] : null;
+    return {
+      min: range ? parseNumericValue(range.min, null) : null,
+      max: range ? parseNumericValue(range.max, null) : null,
+    };
+  }
+
+  function setCatalogRangeControlsDisabled(disabled) {
+    const setting = getCatalogRangeSetting();
+    if (setting) {
+      setting.setAttribute('aria-busy', disabled ? 'true' : 'false');
+    }
+
+    document.querySelectorAll('input[data-action="catalog-range"]').forEach(function (input) {
+      if ('disabled' in input) {
+        input.disabled = disabled;
+      }
+    });
+  }
+
+  function updateCatalogRangeGroupState(key, values, bounds, activeRole = '') {
+    const group = getCatalogRangeGroup(key);
+    const slider = getCatalogRangeSliderNode(key);
+    const fillNode = getCatalogRangeFillNode(key);
+    const minInput = getCatalogRangeInput(key, 'min');
+    const maxInput = getCatalogRangeInput(key, 'max');
+    const currentNode = getCatalogRangeCurrentNode(key);
+
+    if (!group || !slider || !minInput || !maxInput || !currentNode || bounds.min === null || bounds.max === null) {
+      return;
+    }
+
+    const minValue = clampNumericValue(parseNumericValue(values.min, bounds.min), bounds.min, bounds.max);
+    const maxValue = clampNumericValue(parseNumericValue(values.max, bounds.max), bounds.min, bounds.max);
+    const normalized = normalizeRangeBounds(minValue, maxValue, bounds.min, bounds.max);
+    const step = computeCatalogRangeStep(bounds.min, bounds.max);
+    const denominator = Math.max(bounds.max - bounds.min, 1);
+    const minPercent = Math.max(0, Math.min(100, ((normalized.min - bounds.min) / denominator) * 100));
+    const maxPercent = Math.max(0, Math.min(100, ((normalized.max - bounds.min) / denominator) * 100));
+    const fillWidth = Math.max(0, maxPercent - minPercent);
+    const touching = Math.abs(normalized.max - normalized.min) <= step;
+
+    [minInput, maxInput].forEach(function (input) {
+      input.min = String(bounds.min);
+      input.max = String(bounds.max);
+      input.step = String(step);
+      input.disabled = false;
+    });
+
+    let minZIndex = touching ? 3 : 2;
+    let maxZIndex = touching ? 4 : 3;
+    if (activeRole === 'min') {
+      minZIndex = 4;
+      maxZIndex = 3;
+    } else if (activeRole === 'max') {
+      minZIndex = 3;
+      maxZIndex = 4;
+    }
+
+    minInput.style.zIndex = String(minZIndex);
+    maxInput.style.zIndex = String(maxZIndex);
+
+    minInput.value = String(normalized.min);
+    maxInput.value = String(normalized.max);
+
+    currentNode.textContent = formatCatalogRangeSummary(normalized.min, normalized.max);
+
+    slider.style.setProperty('--range-fill-left', minPercent.toFixed(3) + '%');
+    slider.style.setProperty('--range-fill-width', fillWidth.toFixed(3) + '%');
+    if (fillNode) {
+      fillNode.setAttribute('aria-hidden', 'true');
+    }
+
+    minInput.setAttribute('aria-valuemin', String(bounds.min));
+    minInput.setAttribute('aria-valuemax', String(bounds.max));
+    minInput.setAttribute('aria-valuenow', String(normalized.min));
+    minInput.setAttribute('aria-valuetext', formatCatalogSize(normalized.min));
+    maxInput.setAttribute('aria-valuemin', String(bounds.min));
+    maxInput.setAttribute('aria-valuemax', String(bounds.max));
+    maxInput.setAttribute('aria-valuenow', String(normalized.max));
+    maxInput.setAttribute('aria-valuetext', formatCatalogSize(normalized.max));
+  }
+
+  function getCatalogRangeValuesFromParams(params, key, bounds) {
+    const config = CATALOG_RANGE_CONFIGS[key];
+    if (!config) return { min: bounds.min, max: bounds.max };
+
+    const rawMin = parseNumericValue(params.get(config.minParam, ''), bounds.min);
+    const rawMax = parseNumericValue(params.get(config.maxParam, ''), bounds.max);
+    return normalizeRangeBounds(rawMin, rawMax, bounds.min, bounds.max);
+  }
+
+  function syncCatalogRangeUrl(key, values, bounds, triggerReset) {
+    const config = CATALOG_RANGE_CONFIGS[key];
+    if (!config || bounds.min === null || bounds.max === null) return false;
+
+    const params = URLManager.getParams();
+    const currentValues = getCatalogRangeValuesFromParams(params, key, bounds);
+    if (currentValues.min === values.min && currentValues.max === values.max) {
+      return false;
+    }
+
+    URLManager.updateParams([
+      new Dictionary({ key: config.minParam, value: values.min, default: bounds.min }),
+      new Dictionary({ key: config.maxParam, value: values.max, default: bounds.max }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+
+    if (triggerReset) {
+      resetCatalog();
+    }
+    return true;
+  }
+
+  function syncCatalogRangeGroupFromInputs(key, triggerReset, changedRole = '') {
+    const bounds = getCatalogRangeBounds(key);
+    const config = CATALOG_RANGE_CONFIGS[key];
+    const minInput = getCatalogRangeInput(key, 'min');
+    const maxInput = getCatalogRangeInput(key, 'max');
+
+    if (!config || !minInput || !maxInput || bounds.min === null || bounds.max === null) {
+      return false;
+    }
+
+    let minValue = parseNumericValue(minInput.value, bounds.min);
+    let maxValue = parseNumericValue(maxInput.value, bounds.max);
+    const activeRole = changedRole || (document.activeElement === minInput ? 'min' : (document.activeElement === maxInput ? 'max' : ''));
+
+    if (activeRole === 'min' && minValue > maxValue) {
+      maxValue = minValue;
+    } else if (activeRole === 'max' && maxValue < minValue) {
+      minValue = maxValue;
+    } else if (minValue > maxValue) {
+      const swap = minValue;
+      minValue = maxValue;
+      maxValue = swap;
+    }
+
+    const normalized = normalizeRangeBounds(minValue, maxValue, bounds.min, bounds.max);
+    updateCatalogRangeGroupState(key, normalized, bounds, activeRole);
+    if (triggerReset) {
+      return syncCatalogRangeUrl(key, normalized, bounds, true);
+    }
+    return true;
+  }
+
+  async function loadCatalogRangeFeed() {
+    const feedUrl = getCatalogRangeFeedUrl();
+    setCatalogRangeControlsDisabled(true);
+
+    try {
+      const response = await fetch(feedUrl, {
+        method: 'GET',
+        redirect: 'follow',
+        credentials: 'include',
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload || typeof payload !== 'object') {
+        throw new Error('Invalid catalog range feed response');
+      }
+
+      const databaseSize = parseNumericValue(payload.database_size, 0) || 0;
+      const sizeBounds = normalizeRangeBounds(payload.size_min, payload.size_max, null, null);
+      const unpackedBounds = normalizeRangeBounds(
+        payload.size_unpacked_min,
+        payload.size_unpacked_max,
+        sizeBounds.min,
+        sizeBounds.max,
+      );
+
+      catalogRangeFeed = {
+        database_size: databaseSize,
+        size: sizeBounds,
+        size_unpacked: unpackedBounds,
+      };
+
+      const hasSizeBounds = sizeBounds.min !== null && sizeBounds.max !== null;
+      const hasUnpackedBounds = unpackedBounds.min !== null && unpackedBounds.max !== null;
+      const hasValidBounds = hasSizeBounds && hasUnpackedBounds;
+      setCatalogRangeControlsDisabled(!hasValidBounds);
+
+      if (!hasValidBounds) {
+        return true;
+      }
+
+      const params = URLManager.getParams();
+      const updates = [];
+      Object.keys(CATALOG_RANGE_CONFIGS).forEach(function (key) {
+        const bounds = getCatalogRangeBounds(key);
+        if (bounds.min === null || bounds.max === null) {
+          return;
+        }
+
+        const values = getCatalogRangeValuesFromParams(params, key, bounds);
+        updateCatalogRangeGroupState(key, values, bounds);
+
+        const config = CATALOG_RANGE_CONFIGS[key];
+        const currentMin = parseNumericValue(params.get(config.minParam, ''), bounds.min);
+        const currentMax = parseNumericValue(params.get(config.maxParam, ''), bounds.max);
+        if (currentMin !== values.min || currentMax !== values.max) {
+          updates.push(new Dictionary({ key: config.minParam, value: values.min, default: bounds.min }));
+          updates.push(new Dictionary({ key: config.maxParam, value: values.max, default: bounds.max }));
+        }
+      });
+
+      if (updates.length > 0) {
+        updates.push(new Dictionary({ key: 'page', value: 0 }));
+        URLManager.updateParams(updates);
+      }
+
+      return true;
+    } catch (error) {
+      catalogRangeFeed = null;
+      setCatalogRangeControlsDisabled(true);
+      return false;
+    }
+  }
+
   function sortOptionsList(mode) {
     const select = document.querySelector('select#sort-select');
     if (!select) return;
@@ -382,7 +900,7 @@
     resetCatalog();
   }
 
-  function selectGame(gameID) {
+  async function selectGame(gameID) {
     sortOptionsList(false);
     URLManager.updateParams([
       new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
@@ -416,6 +934,7 @@
     setCatalogGameSpecificFiltersVisible(true);
     setCatalogGameSelectionFiltersVisible(false);
 
+    await loadCatalogRangeFeed();
     resetCatalog();
   }
 
@@ -768,6 +1287,10 @@
     await hydrateDependenciesFilter(dependencyIds);
     await hydrateGenresFilter(genreIds);
     setDependenciesEditorDisabled(params.get('depen', 'no') === 'yes');
+    setCatalogRangeControlsDisabled(true);
+
+    await loadCatalogRangeFeed();
+    params = URLManager.getParams();
 
     URLManager.updateParam('page', Number(params.get('page', 0)));
 
@@ -836,7 +1359,7 @@
   document.addEventListener('ow:catalog-game-select', function (event) {
     const gameId = event.detail && event.detail.gameId ? String(event.detail.gameId) : '';
     if (gameId) {
-      selectGame(gameId);
+      void selectGame(gameId);
     }
   });
 
@@ -881,9 +1404,28 @@
     }
   });
 
+  document.addEventListener('input', function (event) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="catalog-range"]')) {
+      syncCatalogRangeGroupFromInputs(target.dataset.rangeKey || '', false, target.dataset.rangeRole || '');
+    }
+  });
+
+  document.addEventListener('pointerdown', handleCatalogRangePointerDown);
+  document.addEventListener('pointermove', handleCatalogRangePointerMove);
+  document.addEventListener('pointerup', handleCatalogRangePointerUp);
+  document.addEventListener('pointercancel', handleCatalogRangePointerCancel);
+
   document.addEventListener('change', function (event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
+
+    if (target.matches('[data-action="catalog-range"]')) {
+      syncCatalogRangeGroupFromInputs(target.dataset.rangeKey || '', true, target.dataset.rangeRole || '');
+      return;
+    }
 
     if (target.matches('[data-action="catalog-search"]')) {
       searchByName(target);

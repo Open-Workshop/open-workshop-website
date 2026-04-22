@@ -58,6 +58,40 @@
 
       <hr class="catalog-game-filter">
 
+      <setting class="with-events catalog-range-setting catalog-game-filter">
+        <div class="catalog-range-panel">
+          <div class="catalog-range-group" data-range-key="size">
+            <div class="catalog-range-group__header">
+              <span class="catalog-range-group__title">Вес архива</span>
+              <span class="catalog-range-group__value" data-range-current="size">—</span>
+            </div>
+            <div class="catalog-range-slider" data-range-slider="size">
+              <div class="catalog-range-slider__track">
+                <div class="catalog-range-slider__fill" data-range-fill="size"></div>
+              </div>
+              <input id="catalog-size-min" type="range" data-action="catalog-range" data-range-key="size" data-range-role="min" aria-label="Минимальный вес архива" disabled>
+              <input id="catalog-size-max" type="range" data-action="catalog-range" data-range-key="size" data-range-role="max" aria-label="Максимальный вес архива" disabled>
+            </div>
+          </div>
+
+          <div class="catalog-range-group" data-range-key="size_unpacked">
+            <div class="catalog-range-group__header">
+              <span class="catalog-range-group__title">Вес мода</span>
+              <span class="catalog-range-group__value" data-range-current="size_unpacked">—</span>
+            </div>
+            <div class="catalog-range-slider" data-range-slider="size_unpacked">
+              <div class="catalog-range-slider__track">
+                <div class="catalog-range-slider__fill" data-range-fill="size_unpacked"></div>
+              </div>
+              <input id="catalog-size-unpacked-min" type="range" data-action="catalog-range" data-range-key="size_unpacked" data-range-role="min" aria-label="Минимальный вес мода" disabled>
+              <input id="catalog-size-unpacked-max" type="range" data-action="catalog-range" data-range-key="size_unpacked" data-range-role="max" aria-label="Максимальный вес мода" disabled>
+            </div>
+          </div>
+        </div>
+      </setting>
+
+      <hr class="catalog-game-filter">
+
       <setting id="depen" class="catalog-game-filter" data-action="catalog-toggle-independent">
         <input type="checkbox">
         <label>Независимые моды</label>
