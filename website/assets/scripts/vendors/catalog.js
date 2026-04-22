@@ -221,6 +221,8 @@
         sort: {
           DOWNLOADS: 'MOD_DOWNLOADS',
           iDOWNLOADS: 'iMOD_DOWNLOADS',
+          PLUGINS_COUNT: 'PLUGINS_COUNT',
+          iPLUGINS_COUNT: 'iPLUGINS_COUNT',
           CREATION: 'CREATION_DATE',
           iCREATION: 'iCREATION_DATE',
           UPDATE: 'UPDATE_DATE',

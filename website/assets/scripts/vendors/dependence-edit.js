@@ -88,11 +88,15 @@
     };
   }
 
-  async function searchDependencies(queryValue, gameId) {
+  async function searchDependencies(queryValue, gameId, useDependentsCountSort) {
     const searchParams = {
       page_size: 5,
       name: queryValue,
     };
+
+    if (useDependentsCountSort) {
+      searchParams.sort = 'iPLUGINS_COUNT';
+    }
 
     const normalizedGameId = normalizeGameId(gameId);
     if (normalizedGameId !== '') {
@@ -238,7 +242,7 @@
           return createDependencyItemElement(options, isCatalogEditor);
         },
         async fetchSearchResults(queryValue, editor) {
-          return searchDependencies(queryValue, editor.getContext().gameId);
+          return searchDependencies(queryValue, editor.getContext().gameId, isCatalogEditor);
         },
         async fetchItemsByIds(ids) {
           if (!Array.isArray(ids) || ids.length === 0) return [];
