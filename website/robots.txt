@@ -7,6 +7,7 @@ Clean-param: sgame /
 Clean-param: depen /
 Clean-param: sort /
 Clean-param: tags /
+Clean-param: excluded_tags /
 Clean-param: genres /
 Clean-param: size_min /
 Clean-param: size_max /

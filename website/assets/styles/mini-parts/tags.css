@@ -39,3 +39,151 @@
 .tag-link-orange {
     background-color: rgb(194, 126, 0);
 }
+
+.picker-editor--chips .picker-editor__item--tag-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    background: transparent;
+    border-color: transparent;
+    outline: none;
+    cursor: pointer;
+}
+
+.picker-editor--chips .picker-editor__item--tag-filter:focus,
+.picker-editor--chips .picker-editor__item--tag-filter:focus-visible {
+    outline: none;
+}
+
+.picker-editor--chips .picker-editor__item--tag-filter:hover,
+.picker-editor--chips .picker-editor__item--tag-filter:active,
+.picker-editor--chips .picker-editor__item--tag-filter.is-selected,
+.picker-editor--chips .picker-editor__item--tag-filter.is-selected:hover,
+.picker-editor--chips .picker-editor__item--tag-filter.is-selected:active {
+    background: transparent;
+    transform: none;
+}
+
+.picker-editor--chips .picker-editor__item--tag-filter .picker-editor__tag-mode {
+    display: inline-grid;
+    grid-template-columns: 25px auto 25px;
+    align-items: center;
+    height: 30px;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    border: 0;
+    background: rgba(29, 33, 47, 0.92);
+    box-shadow: none;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button {
+    display: inline-flex;
+    appearance: none;
+    -webkit-appearance: none;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    line-height: 1;
+    font-weight: 800;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.24);
+    transition:
+        transform 0.14s ease,
+        filter 0.14s ease,
+        background-color 0.14s ease;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--exclude {
+    background: linear-gradient(180deg, rgb(194, 0, 0), rgb(155, 0, 0));
+    color: #fff4f4;
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--exclude:hover,
+.picker-editor--chips .picker-editor__tag-mode-button--exclude:focus-visible {
+    background: linear-gradient(180deg, rgb(168, 0, 0), rgb(145, 0, 0));
+    color: #fff4f4;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--exclude:active {
+    background: linear-gradient(180deg, rgb(145, 0, 0), rgb(120, 0, 0));
+    color: #fff4f4;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--include {
+    background: linear-gradient(180deg, rgb(0, 94, 0), rgb(0, 80, 0));
+    color: #f2fff5;
+    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--include:hover,
+.picker-editor--chips .picker-editor__tag-mode-button--include:focus-visible {
+    background: linear-gradient(180deg, rgb(0, 80, 0), rgb(0, 68, 30));
+    color: #f2fff5;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button--include:active {
+    background: linear-gradient(180deg, rgb(0, 68, 30), rgb(0, 56, 24));
+    color: #f2fff5;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button:hover,
+.picker-editor--chips .picker-editor__tag-mode-button:focus-visible {
+    filter: brightness(1.05) saturate(1.03);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button:not(.is-active) {
+    filter: brightness(0.74) saturate(0.94);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button.is-active {
+    filter: brightness(1.08) saturate(1.06);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-button.is-active:hover,
+.picker-editor--chips .picker-editor__tag-mode-button.is-active:focus-visible,
+.picker-editor--chips .picker-editor__tag-mode-button.is-active:active {
+    filter: brightness(1.08) saturate(1.06);
+}
+
+.picker-editor--chips .picker-editor__tag-mode-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    height: 100%;
+    min-width: 0;
+    padding: 0 10px;
+    color: #f3f6ff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: visible;
+    pointer-events: auto;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-label .picker-editor__item-title {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.picker-editor--chips .picker-editor__tag-mode-label .picker-editor__item-action {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    display: block;
+    flex: none;
+}

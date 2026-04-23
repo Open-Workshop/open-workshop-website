@@ -12,6 +12,7 @@
   let warns = [false, false, false];
   let suppressDependencySync = false;
   let suppressGenreSync = false;
+  let suppressTagSync = false;
   let pendingTagSync = false;
   let pendingGenreSync = false;
   let infiniteScrollObserver = null;
@@ -35,6 +36,10 @@
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-tags-editor') : null;
   }
 
+  function getTagsEditorRoot() {
+    return document.getElementById('catalog-tags-editor');
+  }
+
   function getGenresEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-genres-editor') : null;
   }
@@ -48,6 +53,12 @@
   }
 
   const dependencyItemModes = new Map();
+  const tagItemModes = new Map();
+
+  const CATALOG_TAG_FILTER_MODES = {
+    tags: 'tags',
+    excluded_tags: 'excluded_tags',
+  };
 
   function normalizeDependencyFilterMode(value) {
     const normalized = String(value || '').trim();
@@ -163,6 +174,126 @@
 
     syncDependencyItemModeState(itemId);
     syncDependenciesUrlFromSelection(true);
+  };
+
+  function normalizeTagFilterMode(value) {
+    const normalized = String(value || '').trim();
+    return normalized === CATALOG_TAG_FILTER_MODES.excluded_tags
+      ? CATALOG_TAG_FILTER_MODES.excluded_tags
+      : CATALOG_TAG_FILTER_MODES.tags;
+  }
+
+  function getTagItemId(itemNode) {
+    if (!(itemNode instanceof Element)) return '';
+    return String(itemNode.dataset.pickerId || '').trim();
+  }
+
+  function getTagItemNodes(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    const root = getTagsEditorRoot();
+    if (!root || normalizedId === '') return [];
+
+    return Array.from(root.querySelectorAll('[data-picker-id="' + normalizedId + '"]'));
+  }
+
+  function applyTagItemModeToNode(itemNode, mode, selected) {
+    if (!(itemNode instanceof Element)) return;
+
+    const normalizedMode = normalizeTagFilterMode(mode);
+    const isSelected = typeof selected === 'boolean'
+      ? selected
+      : itemNode.classList.contains('is-selected') || itemNode.dataset.pickerSlot === 'selected';
+
+    itemNode.dataset.catalogTagFilterMode = normalizedMode;
+    itemNode.dataset.catalogTagFilterSelected = isSelected ? 'true' : 'false';
+
+    itemNode.querySelectorAll('[data-action="catalog-tags-mode"]').forEach(function (button) {
+      const buttonMode = normalizeTagFilterMode(button.dataset.tagMode);
+      const isActive = buttonMode === normalizedMode;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+  }
+
+  function syncTagItemModeState(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return;
+
+    const mode = getTagItemMode(normalizedId);
+    getTagItemNodes(normalizedId).forEach(function (itemNode) {
+      applyTagItemModeToNode(itemNode, mode);
+    });
+  }
+
+  function getTagItemMode(itemId) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return CATALOG_TAG_FILTER_MODES.tags;
+
+    if (tagItemModes.has(normalizedId)) {
+      return normalizeTagFilterMode(tagItemModes.get(normalizedId));
+    }
+
+    const itemNodes = getTagItemNodes(normalizedId);
+    const selectedNode = itemNodes.find(function (node) {
+      return node.dataset.pickerSlot === 'selected' || node.classList.contains('is-selected');
+    });
+    const node = selectedNode || itemNodes[0] || null;
+    if (node && node.dataset.catalogTagFilterMode) {
+      const mode = normalizeTagFilterMode(node.dataset.catalogTagFilterMode);
+      tagItemModes.set(normalizedId, mode);
+      return mode;
+    }
+
+    return CATALOG_TAG_FILTER_MODES.tags;
+  }
+
+  function setTagItemMode(itemId, mode, skipSync = false) {
+    const normalizedId = String(itemId || '').trim();
+    if (!normalizedId) return CATALOG_TAG_FILTER_MODES.tags;
+
+    const normalizedMode = normalizeTagFilterMode(mode);
+    tagItemModes.set(normalizedId, normalizedMode);
+    if (!skipSync) {
+      syncTagItemModeState(normalizedId);
+    }
+    return normalizedMode;
+  }
+
+  window.OWCatalogTags = window.OWCatalogTags || {};
+  window.OWCatalogTags.getItemMode = getTagItemMode;
+  window.OWCatalogTags.setItemMode = setTagItemMode;
+  window.OWCatalogTags.clearItemModes = function clearTagItemModes() {
+    tagItemModes.clear();
+  };
+  window.OWCatalogTags.applyCardMode = function applyCatalogTagCardMode(mode, editor, itemNode) {
+    const normalizedMode = normalizeTagFilterMode(mode);
+    const pickerEditor = editor && typeof editor.toggle === 'function' ? editor : null;
+    const itemId = getTagItemId(itemNode);
+    if (!itemId) return;
+    const selectedIds = getSelectedTagIds();
+    const isAlreadySelected = itemId !== ''
+      && selectedIds.some(function (selectedId) {
+        return String(selectedId) === itemId;
+      });
+
+    setTagItemMode(itemId, normalizedMode, true);
+    if (pickerEditor && itemNode instanceof Element && !isAlreadySelected) {
+      suppressTagSync = true;
+      try {
+        pickerEditor.toggle(itemNode);
+      } finally {
+        suppressTagSync = false;
+      }
+    }
+
+    syncTagItemModeState(itemId);
+
+    if (pickerEditor && typeof pickerEditor.isOpen === 'function' && pickerEditor.isOpen()) {
+      pendingTagSync = true;
+      return;
+    }
+
+    syncTagsUrlFromSelection(getSelectedTagSelection(), true);
   };
 
   function getCatalogModTypeSelect() {
@@ -834,6 +965,20 @@
       });
   }
 
+  function parseTagsParam(value) {
+    return String(value || '')
+      .replaceAll('[', '')
+      .replaceAll(']', '')
+      .replaceAll('_', ',')
+      .split(',')
+      .map(function (id) {
+        return String(id).trim();
+      })
+      .filter(function (id) {
+        return /^\d+$/.test(id);
+      });
+  }
+
   function parseGenresParam(value) {
     return String(value || '')
       .replaceAll('[', '')
@@ -894,6 +1039,26 @@
       });
   }
 
+  function getSelectedTagSelection() {
+    const editor = getTagsEditor();
+    const selection = {
+      tags: [],
+      excluded_tags: [],
+    };
+
+    if (!editor) return selection;
+
+    editor.getState().visible.forEach(function (item) {
+      const itemId = String(item.id || '').trim();
+      if (!itemId) return;
+
+      const mode = getTagItemMode(itemId);
+      selection[mode].push(itemId);
+    });
+
+    return selection;
+  }
+
   function getSelectedGenreIds() {
     const editor = getGenresEditor();
     if (!editor) return [];
@@ -916,6 +1081,31 @@
       editor.clearVisibleSelection();
     } finally {
       suppressDependencySync = false;
+    }
+  }
+
+  function clearSelectedTags() {
+    const editor = getTagsEditor();
+    const root = getTagsEditorRoot();
+    if (!editor) {
+      tagItemModes.clear();
+      return;
+    }
+
+    suppressTagSync = true;
+    try {
+      editor.clearVisibleSelection();
+    } finally {
+      suppressTagSync = false;
+      pendingTagSync = false;
+    }
+
+    tagItemModes.clear();
+
+    if (root) {
+      root.querySelectorAll('[data-picker-id]').forEach(function (itemNode) {
+        applyTagItemModeToNode(itemNode, CATALOG_TAG_FILTER_MODES.tags);
+      });
     }
   }
 
@@ -1004,13 +1194,19 @@
     return true;
   }
 
-  function syncTagsUrlFromSelected(selectedIds, triggerReset) {
-    const tagsValue = selectedIds.join('_');
+  function syncTagsUrlFromSelection(selection, triggerReset) {
+    const selectedTags = Array.isArray(selection && selection.tags) ? selection.tags : [];
+    const excludedTags = Array.isArray(selection && selection.excluded_tags) ? selection.excluded_tags : [];
+    const tagsValue = selectedTags.join('_');
+    const excludedTagsValue = excludedTags.join('_');
     const params = URLManager.getParams();
-    if (tagsValue === String(params.get('tags', '') || '')) return false;
+    const currentTagsValue = parseTagsParam(params.get('tags', '')).join('_');
+    const currentExcludedTagsValue = parseTagsParam(params.get('excluded_tags', '')).join('_');
+    if (tagsValue === currentTagsValue && excludedTagsValue === currentExcludedTagsValue) return false;
 
     URLManager.updateParams([
       new Dictionary({ key: 'tags', value: tagsValue, default: '' }),
+      new Dictionary({ key: 'excluded_tags', value: excludedTagsValue, default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
@@ -1046,6 +1242,18 @@
       await editor.setDefaultSelected(ids);
     } finally {
       suppressDependencySync = false;
+    }
+  }
+
+  async function hydrateTagsFilter(ids) {
+    const editor = getTagsEditor();
+    if (!ids.length || !editor) return;
+
+    suppressTagSync = true;
+    try {
+      await editor.setDefaultSelected(ids);
+    } finally {
+      suppressTagSync = false;
     }
   }
 
@@ -1132,6 +1340,8 @@
     URLManager.updateParams([
       new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
       new Dictionary({ key: 'game', value: gameID, default: '' }),
+      new Dictionary({ key: 'tags', value: '', default: '' }),
+      new Dictionary({ key: 'excluded_tags', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
@@ -1152,11 +1362,7 @@
     syncTagsSearchGame(gameID);
     syncDependenceSearchGame(gameID);
     pendingTagSync = false;
-
-    const tagsEditor = getTagsEditor();
-    if (tagsEditor) {
-      tagsEditor.clearVisibleSelection();
-    }
+    clearSelectedTags();
 
     setCatalogGameSpecificFiltersVisible(true);
     setCatalogGameSelectionFiltersVisible(false);
@@ -1391,6 +1597,7 @@
   function handleTagsSelectionChange() {
     const editor = getTagsEditor();
     if (!editor) return;
+    if (suppressTagSync) return;
 
     if (editor.isOpen()) {
       pendingTagSync = true;
@@ -1398,13 +1605,14 @@
     }
 
     pendingTagSync = false;
-    syncTagsUrlFromSelected(getSelectedTagIds(), true);
+    syncTagsUrlFromSelection(getSelectedTagSelection(), true);
   }
 
   function handleTagsOpenChange(event) {
+    if (suppressTagSync) return;
     if (!event.detail || event.detail.open !== false || !pendingTagSync) return;
     pendingTagSync = false;
-    syncTagsUrlFromSelected(getSelectedTagIds(), true);
+    syncTagsUrlFromSelection(getSelectedTagSelection(), true);
   }
 
   function handleGenresSelectionChange() {
@@ -1475,19 +1683,30 @@
 
     const dependencyIds = parseDependenciesParam(params.get('dependencies', ''));
     const excludedDependencyIds = parseDependenciesParam(params.get('excluded_dependencies', ''));
+    const tagIds = parseTagsParam(params.get('tags', ''));
+    const excludedTagIds = parseTagsParam(params.get('excluded_tags', ''));
     const genreIds = parseGenresParam(params.get('genres', ''));
     const updates = [];
     const normalizedDependenciesValue = dependencyIds.join('_');
     const normalizedExcludedDependenciesValue = excludedDependencyIds.join('_');
+    const normalizedTagsValue = tagIds.join('_');
+    const normalizedExcludedTagsValue = excludedTagIds.join('_');
     const normalizedGenresValue = genreIds.join('_');
     const independentMode = params.get('depen', 'no') === 'yes';
     const dependencyHydrationIds = Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
+    const tagHydrationIds = Array.from(new Set([...tagIds, ...excludedTagIds]));
 
     dependencyIds.forEach(function (id) {
       dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.dependencies);
     });
     excludedDependencyIds.forEach(function (id) {
       dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.excluded_dependencies);
+    });
+    tagIds.forEach(function (id) {
+      tagItemModes.set(String(id), CATALOG_TAG_FILTER_MODES.tags);
+    });
+    excludedTagIds.forEach(function (id) {
+      tagItemModes.set(String(id), CATALOG_TAG_FILTER_MODES.excluded_tags);
     });
 
     if (String(params.get('dependencies_mode', '') || '') !== '') {
@@ -1520,6 +1739,12 @@
     if (normalizedGenresValue !== String(params.get('genres', '') || '')) {
       updates.push(new Dictionary({ key: 'genres', value: normalizedGenresValue, default: '' }));
     }
+    if (normalizedTagsValue !== String(params.get('tags', '') || '')) {
+      updates.push(new Dictionary({ key: 'tags', value: normalizedTagsValue, default: '' }));
+    }
+    if (normalizedExcludedTagsValue !== String(params.get('excluded_tags', '') || '')) {
+      updates.push(new Dictionary({ key: 'excluded_tags', value: normalizedExcludedTagsValue, default: '' }));
+    }
     if (genreIds.length > 0 && params.get('sgame', 'yes') !== 'yes') {
       updates.push(new Dictionary({ key: 'sgame', value: 'yes', default: 'yes' }));
     }
@@ -1538,6 +1763,7 @@
     syncDependenceSearchGame(params.get('game', ''));
 
     await hydrateDependenciesFilter(dependencyHydrationIds);
+    await hydrateTagsFilter(tagHydrationIds);
     await hydrateGenresFilter(genreIds);
     setDependenciesEditorDisabled(params.get('depen', 'no') === 'yes');
     setCatalogRangeControlsDisabled(true);
@@ -1549,20 +1775,6 @@
 
     sortOptionsList(sgame);
     syncCatalogModTypeSelect();
-    const tagsEditor = getTagsEditor();
-    if (tagsEditor) {
-      await tagsEditor.setDefaultSelected(
-        params.get('tags', '')
-          .replaceAll('_', ',')
-          .split(',')
-          .map(function (item) {
-            return String(item).trim();
-          })
-          .filter(function (item) {
-            return /^\d+$/.test(item);
-          }),
-      );
-    }
 
     setCatalogGameSpecificFiltersVisible(!sgame);
     setCatalogGameSelectionFiltersVisible(sgame);

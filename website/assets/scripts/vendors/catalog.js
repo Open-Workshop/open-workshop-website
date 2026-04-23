@@ -241,6 +241,10 @@
         settings.set('tags', '[' + String(settings.get('tags').split('_')) + ']');
       }
 
+      if (settings.get('excluded_tags', '').length > 0) {
+        settings.set('excluded_tags', '[' + String(settings.get('excluded_tags').split('_')) + ']');
+      }
+
       if (settings.get('genres', '').length > 0) {
         settings.set('genres', '[' + String(settings.get('genres').split('_')) + ']');
       }
