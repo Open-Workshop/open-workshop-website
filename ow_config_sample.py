@@ -12,8 +12,7 @@ url_sql = "localhost"
 TIMEZONE = "UTC"
 
 # NATS JetStream events from open-workshop-manager for sitemap/index updates.
-# Disabled by default; set NATS_URL or NATS_URLS here to enable.
-NATS_URL = ""
+# Disabled by default; set NATS_URLS here to enable.
 NATS_URLS = []
 MOD_EVENTS_STREAM = "MOD_EVENTS"
 MOD_EVENTS_SUBJECT = "mods.*"

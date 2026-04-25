@@ -164,12 +164,7 @@ def is_enabled() -> bool:
 
 
 def _nats_servers() -> list[str]:
-    servers = []
-    url = str(_read_setting("NATS_URL", "") or "").strip()
-    if url:
-        servers.append(url)
-    servers.extend(_read_list("NATS_URLS", []))
-    return list(dict.fromkeys(servers))
+    return list(dict.fromkeys(_read_list("NATS_URLS", [])))
 
 
 def record_mod_event(payload: dict[str, Any]) -> bool:
@@ -280,7 +275,7 @@ async def _consume_events() -> None:
 
     servers = _nats_servers()
     if not servers:
-        logger.warning("NATS_URL/NATS_URLS is empty; mod event consumer is disabled")
+        logger.warning("NATS_URLS is empty; mod event consumer is disabled")
         return
 
     stream = str(_read_setting("MOD_EVENTS_STREAM", "MOD_EVENTS"))
