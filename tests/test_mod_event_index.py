@@ -28,7 +28,7 @@ class FakeQuery:
         return self
 
     def all(self):
-        rows = [row for row in self.store.values() if not row.deleted]
+        rows = list(self.store.values())
         rows.sort(key=lambda row: row.id)
         if self.row_limit is not None:
             return rows[: self.row_limit]
@@ -44,6 +44,9 @@ class FakeSession:
 
     def add(self, row):
         self.store[row.id] = row
+
+    def delete(self, row):
+        self.store.pop(row.id, None)
 
     def query(self, _model):
         return FakeQuery(self.store)
@@ -71,8 +74,7 @@ class ModEventIndexTests(unittest.TestCase):
                 {
                     "event": "mod.added",
                     "id": 42,
-                    "title": "First title",
-                    "full_description": "First description",
+                    "public": 0,
                     "occurred_at": "2026-04-25T10:00:00+00:00",
                 }
             )
@@ -81,16 +83,13 @@ class ModEventIndexTests(unittest.TestCase):
             rows = mod_event_index.list_sitemap_mods()
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0]["id"], 42)
-            self.assertEqual(rows[0]["title"], "First title")
-            self.assertEqual(rows[0]["full_description"], "First description")
             self.assertEqual(rows[0]["date_update_file"].strftime("%Y-%m-%d"), "2026-04-25")
 
             changed = mod_event_index.record_mod_event(
                 {
                     "event": "mod.changed",
                     "id": 42,
-                    "title": "Changed title",
-                    "full_description": "Changed description",
+                    "public": 0,
                     "occurred_at": "2026-04-26T11:00:00+00:00",
                 }
             )
@@ -98,22 +97,45 @@ class ModEventIndexTests(unittest.TestCase):
             self.assertTrue(changed)
             rows = mod_event_index.list_sitemap_mods()
             self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0]["title"], "Changed title")
-            self.assertEqual(rows[0]["full_description"], "Changed description")
             self.assertEqual(rows[0]["date_update_file"].strftime("%Y-%m-%d"), "2026-04-26")
+
+            hidden = mod_event_index.record_mod_event(
+                {
+                    "event": "mod.changed",
+                    "id": 42,
+                    "public": 2,
+                    "occurred_at": "2026-04-27T12:00:00+00:00",
+                }
+            )
+
+            self.assertTrue(hidden)
+            self.assertEqual(mod_event_index.list_sitemap_mods(), [])
+            self.assertEqual(store, {})
+
+            restored = mod_event_index.record_mod_event(
+                {
+                    "event": "mod.changed",
+                    "id": 42,
+                    "public": 0,
+                    "occurred_at": "2026-04-28T12:00:00+00:00",
+                }
+            )
+
+            self.assertTrue(restored)
+            self.assertEqual(len(mod_event_index.list_sitemap_mods()), 1)
 
             deleted = mod_event_index.record_mod_event(
                 {
                     "event": "mod.deleted",
                     "id": 42,
-                    "title": "Changed title",
-                    "full_description": "Changed description",
-                    "occurred_at": "2026-04-27T12:00:00+00:00",
+                    "public": 0,
+                    "occurred_at": "2026-04-29T12:00:00+00:00",
                 }
             )
 
             self.assertTrue(deleted)
             self.assertEqual(mod_event_index.list_sitemap_mods(), [])
+            self.assertEqual(store, {})
 
 
 if __name__ == "__main__":  # pragma: no cover

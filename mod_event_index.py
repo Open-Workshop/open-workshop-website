@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import ow_config
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text, create_engine, text
+from sqlalchemy import Column, DateTime, Integer, create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -35,10 +35,7 @@ class KnownMod(Base):
     __tablename__ = str(getattr(ow_config, "MOD_EVENTS_INDEX_TABLE", "known_mods"))
 
     id = Column(Integer, primary_key=True)
-    title = Column(String(255), nullable=False, default="")
-    full_description = Column(Text, nullable=False, default="")
     date_update_file = Column(DateTime, nullable=False)
-    deleted = Column(Boolean, nullable=False, default=False, index=True)
 
 
 def _read_setting(name: str, default: object = None) -> object:
@@ -131,9 +128,26 @@ def _get_session_factory() -> sessionmaker:
         _create_index_database_if_needed()
         _engine = create_engine(_mysql_url(_index_database()), pool_pre_ping=True)
         Base.metadata.create_all(_engine)
+        _drop_unused_columns(_engine)
         _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
 
     return _SessionLocal
+
+
+def _drop_unused_columns(engine: Engine) -> None:
+    columns = {
+        column["name"] for column in inspect(engine).get_columns(KnownMod.__tablename__)
+    }
+    unused_columns = columns.intersection({"title", "full_description", "deleted"})
+    if not unused_columns:
+        return
+
+    table = _quote_mysql_identifier(KnownMod.__tablename__)
+    with engine.begin() as connection:
+        for column in sorted(unused_columns):
+            connection.execute(
+                text(f"ALTER TABLE {table} DROP COLUMN {_quote_mysql_identifier(column)}")
+            )
 
 
 def _normalize_event_name(value: object) -> str:
@@ -177,25 +191,31 @@ def record_mod_event(payload: dict[str, Any]) -> bool:
     except (KeyError, TypeError, ValueError):
         return False
 
-    if "title" not in payload or "full_description" not in payload:
+    try:
+        public = int(payload["public"])
+    except (KeyError, TypeError, ValueError):
         return False
 
-    title = str(payload.get("title") or "")
-    full_description = str(payload.get("full_description") or "")
     occurred_at = _parse_event_time(payload.get("occurred_at"))
-    deleted = event_name == EVENT_DELETED
+    should_index = event_name != EVENT_DELETED and public == 0
 
     session = _get_session_factory()()
+    changed = False
     try:
         mod = session.get(KnownMod, mod_id)
-        if mod is None:
+        if not should_index:
+            if mod is not None:
+                session.delete(mod)
+                changed = True
+        elif mod is None:
             mod = KnownMod(id=mod_id)
             session.add(mod)
+            changed = True
 
-        mod.title = title
-        mod.full_description = full_description
-        mod.date_update_file = occurred_at
-        mod.deleted = deleted
+        if should_index:
+            if mod.date_update_file != occurred_at:
+                changed = True
+            mod.date_update_file = occurred_at
         session.commit()
     except Exception:
         session.rollback()
@@ -203,7 +223,8 @@ def record_mod_event(payload: dict[str, Any]) -> bool:
     finally:
         session.close()
 
-    invalidate_sitemap_cache()
+    if changed:
+        invalidate_sitemap_cache()
     return True
 
 
@@ -212,7 +233,6 @@ def list_sitemap_mods(limit: int = 49000) -> list[dict[str, Any]]:
     try:
         rows = (
             session.query(KnownMod)
-            .filter(KnownMod.deleted.is_(False))
             .order_by(KnownMod.id)
             .limit(int(limit))
             .all()
@@ -225,8 +245,6 @@ def list_sitemap_mods(limit: int = 49000) -> list[dict[str, Any]]:
             result.append(
                 {
                     "id": int(row.id),
-                    "title": row.title,
-                    "full_description": row.full_description,
                     "date_update_file": update_time,
                 }
             )
