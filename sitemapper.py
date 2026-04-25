@@ -1,27 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, DateTime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from flask import render_template
 from pathlib import Path
-import ow_config as config
 import tempfile
 import os
 import time
-
-
-engine = create_engine(f'mysql+mysqldb://{config.user_sql}:{config.password_sql}@{config.url_sql}/catalog')
-#engine = create_engine(f'sqlite:///catalog.db') # Для тестов sqlite
-base = declarative_base()
-
-
-class Mod(base): # Таблица "моды"
-    __tablename__ = 'mods'
-    id = Column(Integer, primary_key=True)
-    
-    condition = Column(Integer) #0 - загружен, 1 - загружается
-    public = Column(Integer) #0 - публичен, 1 - публичен, не встречается в каталоге, не индексируется, 2 - доступен с предоставлением токена
-
-    date_update_file = Column(DateTime)
+import mod_event_index
 
 
 async def generate(file_path: str, site_host: str) -> str:
@@ -39,14 +21,7 @@ async def generate(file_path: str, site_host: str) -> str:
 
     start = time.time()
 
-    # Создание сессии
-    session = sessionmaker(bind=engine)()
-    try:
-        # Выполнение запроса
-        query = session.query(Mod).filter(Mod.condition == 0, Mod.public == 0)
-        result = [{"id": obj.id, "date_update_file": obj.date_update_file} for obj in query.limit(49000).all()]
-    finally:
-        session.close()
+    result = mod_event_index.list_sitemap_mods(limit=49000)
 
     print("SITEMAP RENDER START FROM: " + str(time.time() - start))
 

@@ -4,6 +4,7 @@ SQLAlchemy
 babel
 mysqlclient
 waitress
+nats-py
 opentelemetry-sdk
 opentelemetry-exporter-otlp-proto-http
 opentelemetry-exporter-otlp-proto-grpc

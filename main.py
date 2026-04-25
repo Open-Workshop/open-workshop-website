@@ -8,6 +8,7 @@ import json
 import tool
 import os
 import sitemapper as sitemapper
+import mod_event_index
 from access_policy import build_mod_rights
 from user_manager import UserHandler
 import ow_config
@@ -785,6 +786,7 @@ def register_routes() -> None:
 
 
 register_routes()
+mod_event_index.start_background_consumer()
 
 
 @app.route('/api/login-popup')
