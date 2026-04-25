@@ -72,12 +72,20 @@
 
         const banners = [
             {
-                title: 'Партнерский сервер по Хойке (РМК)',
-                text: 'Перейти в Discord ✅',
+                title: 'Дискорд бот',
+                text: 'Запустить ✅',
                 theme: 'dark',
                 autohide: true,
                 interval: 18000,
-                link: 'https://discord.gg/tqdw6wS6nX'
+                link: 'https://discord.com/oauth2/authorize?client_id=1497192227686842549'
+            },
+            {
+                title: 'Телеграм бот',
+                text: 'Запустить ✅',
+                theme: 'dark',
+                autohide: true,
+                interval: 18000,
+                link: 'https://t.me/get_from_steam_bot'
             }
         ];
 
