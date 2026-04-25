@@ -22,7 +22,9 @@ async def size_format(size:int) -> str:
     def size_set(bites:int = 1, digit:str = "") -> str:
         return f"{str(round(size/bites, 1)).removesuffix('.0')} {digit}B"
 
-    if size > 1000000000:
+    if size is None:
+        return "ZERO"
+    elif size > 1000000000:
         text_size = size_set(1073741824, "G")
     elif size > 1000000:
         text_size = size_set(1048576, "M")
