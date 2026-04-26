@@ -167,16 +167,6 @@
       modeActions.setAttribute('role', 'group');
       modeActions.setAttribute('aria-label', 'Режим фильтра по зависимости');
 
-      const includeButton = document.createElement('button');
-      includeButton.type = 'button';
-      includeButton.className = 'tag-link-green picker-editor__mode-button picker-editor__mode-button--include';
-      includeButton.textContent = '+';
-      includeButton.title = 'Применить как обычный фильтр';
-      includeButton.setAttribute('aria-label', 'Применить как обычный фильтр');
-      includeButton.setAttribute('data-action', 'catalog-dependencies-mode');
-      includeButton.setAttribute('data-dependencies-mode', 'dependencies');
-      modeActions.appendChild(includeButton);
-
       const excludeButton = document.createElement('button');
       excludeButton.type = 'button';
       excludeButton.className = 'tag-link-red picker-editor__mode-button picker-editor__mode-button--exclude';
@@ -186,6 +176,16 @@
       excludeButton.setAttribute('data-action', 'catalog-dependencies-mode');
       excludeButton.setAttribute('data-dependencies-mode', 'excluded_dependencies');
       modeActions.appendChild(excludeButton);
+
+      const includeButton = document.createElement('button');
+      includeButton.type = 'button';
+      includeButton.className = 'tag-link-green picker-editor__mode-button picker-editor__mode-button--include';
+      includeButton.textContent = '+';
+      includeButton.title = 'Применить как обычный фильтр';
+      includeButton.setAttribute('aria-label', 'Применить как обычный фильтр');
+      includeButton.setAttribute('data-action', 'catalog-dependencies-mode');
+      includeButton.setAttribute('data-dependencies-mode', 'dependencies');
+      modeActions.appendChild(includeButton);
 
       actions.appendChild(modeActions);
     }
