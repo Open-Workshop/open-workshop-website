@@ -253,10 +253,10 @@
       : 'game';
 
     const formData = new URLSearchParams();
-    formData.set('game_name', name);
-    formData.set('game_short_desc', shortText);
-    formData.set('game_desc', shortText);
-    formData.set('game_type', gameType);
+    formData.set('name', name);
+    formData.set('short_description', shortText);
+    formData.set('description', shortText);
+    formData.set('type', gameType);
 
     setSubmitInProgress(true);
 

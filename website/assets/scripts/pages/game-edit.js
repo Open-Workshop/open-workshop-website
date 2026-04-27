@@ -139,8 +139,11 @@
     return preview;
   }
 
-  async function sendForm(endpoint, params) {
-    const response = await fetch(window.OWCore.apiUrl(endpoint.path), {
+  async function sendForm(endpoint, params, pathParams) {
+    const url = pathParams
+      ? window.OWCore.formatPath(endpoint.path, pathParams)
+      : endpoint.path;
+    const response = await fetch(window.OWCore.apiUrl(url), {
       method: endpoint.method,
       credentials: 'include',
       headers: {
@@ -199,22 +202,22 @@
     }
 
     if (nameValue !== getStartValue('#game-name')) {
-      params.set('game_name', nameValue);
+      params.set('name', nameValue);
       changed = true;
     }
 
     if (typeValue !== getStartValue('#game-type')) {
-      params.set('game_type', typeValue);
+      params.set('type', typeValue);
       changed = true;
     }
 
     if (shortDescValue !== getEditorStartValue('#game-short-desc-panel')) {
-      params.set('game_short_desc', shortDescValue);
+      params.set('short_description', shortDescValue);
       changed = true;
     }
 
     if (descValue !== getEditorStartValue('#game-full-desc-panel')) {
-      params.set('game_desc', descValue);
+      params.set('description', descValue);
       changed = true;
     }
 
@@ -233,8 +236,8 @@
         throw new Error('source_id должен быть целым числом');
       }
 
-      params.set('game_source', sourceValue);
-      params.set('game_source_id', sourceIdValue);
+      params.set('source', sourceValue);
+      params.set('source_id', sourceIdValue);
       changed = true;
     }
 
@@ -243,11 +246,15 @@
 
   async function syncAssociations(endpoint, ids, idField, mode) {
     for (const relationId of ids) {
+      const pathParams = { game_id: String(gameId) };
+      pathParams[idField] = String(relationId);
+      const action = mode ? 'add' : 'delete';
+      const assocEndpoint = {
+        ...endpoint,
+        path: endpoint.path.replace('_association', `_${action}`),
+      };
       const params = new URLSearchParams();
-      params.set('game_id', String(gameId));
-      params.set('mode', mode ? 'true' : 'false');
-      params.set(idField, String(relationId));
-      await sendForm(endpoint, params);
+      await sendForm(assocEndpoint, params, pathParams);
     }
   }
 
@@ -344,7 +351,7 @@
       await syncMedia(mediaState.changes);
 
       const createdTagIds = createdTagDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.tag.add, 'tag_name', createdTagDefinitions, function (tempId, realId) {
+        ? await createNamedEntities(apiPaths.tag.add, 'name', createdTagDefinitions, function (tempId, realId) {
           if (tagsEditor) {
             tagsEditor.finalizeCreated(tempId, realId);
           }
@@ -361,7 +368,7 @@
       }
 
       const createdGenreIds = createdGenreDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.genre.add, 'genre_name', createdGenreDefinitions, function (tempId, realId) {
+        ? await createNamedEntities(apiPaths.genre.add, 'name', createdGenreDefinitions, function (tempId, realId) {
           if (genresEditor) {
             genresEditor.finalizeCreated(tempId, realId);
           }
