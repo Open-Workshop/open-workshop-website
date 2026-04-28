@@ -189,8 +189,9 @@
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
 
-      settings.set('description', true);
-      settings.set('short_description', true);
+      if (settings.get('sgame', 'yes') !== 'yes') {
+        settings.set('short_description', true);
+      }
       settings.set('page_size', 30);
       settings.set('statistics', true);
       settings.set('dates', true);
