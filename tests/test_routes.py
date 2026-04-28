@@ -487,6 +487,17 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][2]["img"], "https://cdn.example/92406.webp")
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][3]["img"], "https://cdn.example/92405.webp")
 
+    def test_user_route_accepts_trailing_slash(self) -> None:
+        adapter = main.app.url_map.bind("example.com")
+
+        endpoint, values = adapter.match("/user/3", method="GET")
+        self.assertEqual(endpoint, "user")
+        self.assertEqual(values["user_id"], 3)
+
+        endpoint, values = adapter.match("/user/3/", method="GET")
+        self.assertEqual(endpoint, "user")
+        self.assertEqual(values["user_id"], 3)
+
     async def test_user_settings_admin_fetches_rights_and_private_data(self) -> None:
         profile_access = build_profile_access(_profile_access_source("admin", rights_value=True))
         handler = StubHandler(

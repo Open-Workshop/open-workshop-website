@@ -985,11 +985,11 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=game_edit)
 
     for route in app_config.ROUTES["user"]["view"]:
-        app.add_url_rule(route, view_func=user)
+        app.add_url_rule(route, view_func=user, strict_slashes=False)
     for route in app_config.ROUTES["user"]["settings"]:
-        app.add_url_rule(route, view_func=user_settings)
+        app.add_url_rule(route, view_func=user_settings, strict_slashes=False)
     for route in app_config.ROUTES["user"]["mods"]:
-        app.add_url_rule(route, view_func=user_mods)
+        app.add_url_rule(route, view_func=user_mods, strict_slashes=False)
 
 
 register_routes()
