@@ -500,6 +500,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(endpoint, "user")
         self.assertEqual(values["user_id"], 3)
 
+    def test_game_edit_patch_uses_game_id_path_param(self) -> None:
+        script = (ROOT / "website/assets/scripts/pages/game-edit.js").read_text(encoding="utf-8")
+        self.assertIn(
+            "await sendJson(apiPaths.game.edit, base.payload, { game_id: String(gameId) });",
+            script,
+        )
+
     async def test_user_settings_admin_fetches_rights_and_private_data(self) -> None:
         profile_access = build_profile_access(_profile_access_source("admin", rights_value=True))
         handler = StubHandler(

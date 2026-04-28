@@ -341,7 +341,7 @@
       setButtonBusy(saveButton, true);
 
       if (base.changed) {
-        await sendJson(apiPaths.game.edit, base.payload);
+        await sendJson(apiPaths.game.edit, base.payload, { game_id: String(gameId) });
       }
 
       await syncMedia(mediaState.changes);

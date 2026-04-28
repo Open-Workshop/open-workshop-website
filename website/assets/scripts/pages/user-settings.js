@@ -151,6 +151,24 @@
     return result.data;
   }
 
+  async function deleteAvatar() {
+    const endpoint = apiPaths.profile.avatar_delete;
+    const url = window.OWCore.apiUrl(
+      window.OWCore.formatPath(endpoint.path, { user_id: userId }),
+    );
+    const response = await fetch(url, {
+      method: endpoint.method,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(function () {
+        return '';
+      });
+      throw new Error(text || `Ошибка (${response.status})`);
+    }
+  }
+
   async function uploadAvatar(file) {
     if (!avatarUploadEndpoint) {
       throw new Error('В приложении не настроен endpoint для загрузки аватара');
@@ -200,6 +218,19 @@
         return '';
       });
       throw new Error(text || `Ошибка (${response.status})`);
+    }
+  }
+
+  function clearAvatarSelection() {
+    if (avatarInput) {
+      avatarInput.value = '';
+    }
+
+    if (avatarImg) {
+      const startData = avatarImg.getAttribute('startdata');
+      if (startData) {
+        avatarImg.src = startData;
+      }
     }
   }
 
@@ -302,7 +333,21 @@
     }
 
     let avatarSaved = !avatarFile && !resetAvatar;
-    if (avatarFile) {
+    if (resetAvatar) {
+      try {
+        await deleteAvatar();
+        avatarSaved = true;
+      } catch (error) {
+        new Toast({
+          title: 'Аватар',
+          text: error && error.message ? error.message : 'Не удалось сбросить аватар',
+          theme: 'warning',
+          autohide: true,
+          interval: 6000,
+        });
+        avatarSaved = false;
+      }
+    } else if (avatarFile) {
       try {
         await uploadAvatar(avatarFile);
         avatarSaved = true;
@@ -310,26 +355,6 @@
         new Toast({
           title: 'Аватар',
           text: error && error.message ? error.message : 'Не удалось загрузить аватар',
-          theme: 'warning',
-          autohide: true,
-          interval: 6000,
-        });
-        avatarSaved = false;
-      }
-    } else if (resetAvatar) {
-      try {
-        await requestJson(
-          window.OWCore.apiUrl(window.OWCore.formatPath(apiPaths.profile.avatar_delete.path, { user_id: userId })),
-          {
-            method: 'DELETE',
-          },
-          'Аватар',
-        );
-        avatarSaved = true;
-      } catch (error) {
-        new Toast({
-          title: 'Аватар',
-          text: error && error.message ? error.message : 'Не удалось сбросить аватар',
           theme: 'warning',
           autohide: true,
           interval: 6000,
@@ -373,6 +398,9 @@
 
     if (action === 'user-avatar-reset-toggle') {
       actionNode.classList.toggle('toggled');
+      if (actionNode.classList.contains('toggled')) {
+        clearAvatarSelection();
+      }
       return;
     }
 
