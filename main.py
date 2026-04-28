@@ -806,8 +806,8 @@ async def user(user_id):
                 _build_query_url(
                     mods_list_path,
                     {
-                        "page_size": 50,
-                        "include": ["authors"],
+                        "page_size": 5,
+                        "author_id": user_id,
                         "sort": "-created_at",
                     },
                 )
@@ -848,11 +848,7 @@ async def user(user_id):
             profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }{avatar_path}"
 
         user_mods_items = _collection_items(user_mods) if isinstance(user_mods, dict) else []
-        user_mods_items = [
-            mod
-            for mod in user_mods_items
-            if isinstance(mod, dict) and isinstance(mod.get("authors"), dict) and str(user_id) in mod["authors"]
-        ]
+        user_mods_items = [mod for mod in user_mods_items if isinstance(mod, dict)]
         visible_mods_items = user_mods_items[:4]
 
         if len(visible_mods_items) > 0:
@@ -885,7 +881,7 @@ async def user(user_id):
                     mod_entry['img'] = resource.get('url') or DEFAULT_IMAGE_FALLBACK
 
             user_mods = {
-                'not_show_all': len(user_mods_items) > 3,
+                'not_show_all': len(user_mods_items) > len(visible_mods_items),
                 'mods_data': mods_data
             }
         else:

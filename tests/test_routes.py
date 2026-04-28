@@ -422,7 +422,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             profile_access=profile_access,
             fetch_results=[
                 (200, _profile_payload(7, "Alice")),
-                (200, {"results": []}),
+                (200, {"items": []}),
             ],
         )
 
@@ -434,6 +434,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.render_calls[0][0], "user.html")
         self.assertIs(handler.render_calls[0][1]["profile_access"], profile_access)
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
+        self.assertEqual(handler.fetch_calls[1][0], "/mods?page_size=5&author_id=7&sort=-created_at")
         self.assertEqual(len(handler.fetch_calls), 2)
 
     async def test_user_page_fetches_images_only_for_visible_mods(self) -> None:
@@ -449,11 +450,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     200,
                     {
                         "items": [
-                            {"id": 92408, "name": "The Lone Ranger", "authors": {"2": {"owner": True}}},
-                            {"id": 92407, "name": "Extinction Colonists", "authors": {"2": {"owner": True}}},
-                            {"id": 92406, "name": "Thinking Spot", "authors": {"2": {"owner": True}}},
-                            {"id": 92405, "name": "No vanilla apparel", "authors": {"2": {"owner": True}}},
-                            {"id": 92404, "name": "Hardcore Naked Brutality", "authors": {"2": {"owner": True}}},
+                            {"id": 92408, "name": "The Lone Ranger"},
+                            {"id": 92407, "name": "Extinction Colonists"},
+                            {"id": 92406, "name": "Thinking Spot"},
+                            {"id": 92405, "name": "No vanilla apparel"},
+                            {"id": 92404, "name": "Hardcore Naked Brutality"},
                         ],
                     },
                 ),
@@ -475,6 +476,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                 result = await main.user(2)
 
         self.assertEqual(result["template"], "user.html")
+        self.assertEqual(handler.fetch_calls[1][0], "/mods?page_size=5&author_id=2&sort=-created_at")
         self.assertEqual(
             handler.fetch_calls[2][0],
             "/resources?page_size=10&owner_type=mods&owner_ids=92408&owner_ids=92407&owner_ids=92406&owner_ids=92405&types=logo",
