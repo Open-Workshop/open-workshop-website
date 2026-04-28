@@ -70,7 +70,7 @@ PUBLIC_CONFIG: dict = {
                 "file": {"method": "POST", "path": "/uploads"},
                 "edit": {"method": "PATCH", "path": "/mods/{mod_id}"},
                 "info": {"method": "GET", "path": "/mods/{mod_id}"},
-                "download": {"method": "GET", "path": "/mods/{mod_id}/download-url"},
+                "download": {"method": "POST", "path": "/mods/{mod_id}/download-url"},
                 "delete": {"method": "DELETE", "path": "/mods/{mod_id}"},
                 "authors": {"method": "PATCH", "path": "/mods/{mod_id}/authors"},
                 "resources": {"method": "GET", "path": "/mods/{mod_id}/resources"},

@@ -626,9 +626,10 @@ async def mod_download(mod_id):
             return handler.finish(page), 403
 
         download_path = app_config.api_path("mod", "download").format(mod_id=mod_id)
-        download_code, download_info = await handler.fetch(download_path)
+        download_method = app_config.api_method("mod", "download")
+        download_code, download_info = await handler.fetch(download_path, method=download_method)
 
-        if download_code != 200 or not isinstance(download_info, dict):
+        if download_code not in {200, 201} or not isinstance(download_info, dict):
             return _render_api_error(handler, download_info, download_code)
 
         download_url = str(download_info.get("download_url") or "").strip()

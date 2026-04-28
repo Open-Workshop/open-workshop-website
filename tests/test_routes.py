@@ -392,7 +392,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             },
             fetch_results=[
                 (
-                    200,
+                    201,
                     {
                         "mod_id": 42,
                         "download_url": "https://storage.example/archive/mods/42/main.zip?filename=Example.zip",
@@ -411,7 +411,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             result.headers["Location"],
             "https://storage.example/archive/mods/42/main.zip?filename=Example.zip",
         )
-        self.assertEqual(handler.fetch_calls[0][0], "/mods/42/download-url")
+        self.assertEqual(handler.fetch_calls[0], ("/mods/42/download-url", "POST"))
 
     async def test_user_page_uses_profile_access_only(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
