@@ -26,8 +26,8 @@
             <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['date_creation_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">📝{{ info['date_creation'] }}</a>
         </div>
 
-        <article id="mod-description">
-        {{ info['description'] }}
+        <article id="mod-description" class="ow-description-content">
+        {{ info['description_html']|safe }}
         </article>
         <script src="/assets/scripts/mod.js"></script>
     </div>
@@ -74,7 +74,7 @@
         </div>
         {% endif %}
 
-        {% if info['dependencies_count'] > 0 %}
+        {% if info['dependencies']['count'] > 0 %}
         <div class="outline-container">
         <h2>Зависимости мода</h2>
         {% for item in dependencies.values() %}

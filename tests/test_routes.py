@@ -313,7 +313,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "id": 42,
                         "name": "Example Mod",
                         "short_description": "Short",
-                        "description": "Long",
+                        "description": "[b]Long[/b]",
                         "source": "local",
                         "source_id": None,
                         "game_id": 5,
@@ -327,9 +327,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "file_updated_at": "2026-04-23T10:00:00+00:00",
                         "updated_at": "2026-04-24T10:00:00+00:00",
                         "file": None,
+                        "dependencies": {"count": 0, "items": []},
                         "game": {"id": 5, "name": "Game"},
                         "authors": {},
-                        "dependencies_count": 0,
                     },
                 ),
                 (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
@@ -344,9 +344,15 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["template"], "mod.html")
         self.assertEqual(handler.render_calls[0][0], "mod.html")
+        self.assertEqual(
+            handler.fetch_calls[0][0],
+            "/mods/42?include=dependencies&include=description&include=short_description&include=dates&include=game&include=authors",
+        )
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["info"]["id"], 42)
         self.assertEqual(render_kwargs["info"]["name"], "Example Mod")
+        self.assertEqual(render_kwargs["info"]["description"], "[b]Long[/b]")
+        self.assertEqual(render_kwargs["info"]["description_html"], "<p><strong>Long</strong></p>")
         self.assertIs(render_kwargs["data"][0], render_kwargs["info"])
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])

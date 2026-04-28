@@ -2,7 +2,17 @@
 class Dictionary {
     constructor(old = {}) {
         for (const key in old) {
-            if (old[key] instanceof Object) {
+            if (Array.isArray(old[key])) {
+                this[key] = old[key].map(function (item) {
+                    if (Array.isArray(item)) {
+                        return item.slice();
+                    }
+                    if (item instanceof Object) {
+                        return new Dictionary(item);
+                    }
+                    return item;
+                });
+            } else if (old[key] instanceof Object) {
                 this[key] = new Dictionary(old[key]);
             } else {
                 this[key] = old[key];

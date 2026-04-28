@@ -940,6 +940,10 @@
     label.style.display = visible ? '' : 'none';
   }
 
+  function hasNextPage(response) {
+    return Boolean(response && response.pagination && response.pagination.has_next);
+  }
+
   function setCatalogGameSpecificFiltersVisible(visible) {
     document.querySelectorAll('#settings-catalog .catalog-game-filter').forEach(function (element) {
       element.hidden = !visible;
@@ -1473,14 +1477,14 @@
   async function render(params) {
     const res = await Catalog.addPage(params);
     try {
-      if (res.results && res.results.length > 0) {
+      if (Array.isArray(res.items) && res.items.length > 0) {
         const ownerType = params.get('sgame', 'yes') === 'yes' ? 'games' : 'mods';
         await Cards.setterImgs(params.get('page', 0), ownerType);
-        return true;
+        return res;
       }
-      return false;
+      return null;
     } catch (error) {
-      return false;
+      return null;
     }
   }
 
@@ -1504,7 +1508,12 @@
       return;
     }
 
-    queueInfiniteScrollCheck();
+    outOfCards = !hasNextPage(renderRes);
+    setEndOfCardsVisible(outOfCards);
+
+    if (!outOfCards) {
+      queueInfiniteScrollCheck();
+    }
   }
 
   function warnAboutCardCount(countElems) {
@@ -1544,6 +1553,8 @@
       if (renderRes) {
         URLManager.updateParam('page', Number(params.get('page', 0)));
         warnAboutCardCount(document.querySelectorAll('.card').length);
+        outOfCards = !hasNextPage(renderRes);
+        setEndOfCardsVisible(outOfCards);
       } else {
         outOfCards = true;
         setEndOfCardsVisible(true);

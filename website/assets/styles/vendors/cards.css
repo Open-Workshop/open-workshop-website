@@ -27,6 +27,32 @@ div.card-click {
     background: rgba(0, 0, 0, 0.4);
 }
 
+div.card-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+div.card-media canvas.card-blurhash,
+div.card-media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+div.card-media canvas.card-blurhash {
+    image-rendering: auto;
+}
+
+div.card-media img {
+    object-fit: cover;
+    transition: opacity 0.2s ease;
+}
+
 svg.card-hover-outline {
     position: absolute;
     --outline-margin: 10px;
@@ -53,11 +79,6 @@ svg.card-hover-outline rect {
     animation-play-state: paused;
 }
   
-div.card-click img {
-    width: 100%;
-    max-height: 400px;
-}
-
 .card-params-list {
     height: 26px;
     margin-top: -30px;

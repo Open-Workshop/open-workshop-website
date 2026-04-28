@@ -11,6 +11,7 @@ import os
 import sitemapper as sitemapper
 import mod_event_index
 from access_policy import build_mod_rights
+from description_renderer import render_description_html
 from user_manager import UserHandler
 import ow_config
 import app_config
@@ -367,7 +368,6 @@ async def mod_view_and_edit(mod_id):
                         "description",
                         "short_description",
                         "dates",
-                        "general",
                         "game",
                         "authors",
                     ],
@@ -468,21 +468,39 @@ async def mod_view_and_edit(mod_id):
 
         info_result["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
+        dependencies_payload = info_result.get("dependencies")
+        if isinstance(dependencies_payload, dict):
+            dependency_items = [
+                int(item)
+                for item in dependencies_payload.get("items", [])
+                if isinstance(item, (int, str)) and str(item).strip()
+            ]
+            dependencies_payload = {
+                "count": int(dependencies_payload.get("count", len(dependency_items)) or 0),
+                "items": dependency_items,
+            }
+        else:
+            dependencies_payload = {"count": 0, "items": []}
+        info_result["dependencies"] = dependencies_payload
+
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
             input_date = parse_api_datetime(info_result[key])
             info_result[f'{key}_js'] = format_js_datetime(input_date)
             info_result[key] = dates.format_date(input_date, locale=launge)
 
         info_result['id'] = mod_id # Фиксируем для рендера шаблона id мода
+        info_result["short_description"] = str(info_result.get("short_description") or "")
+        info_result["description"] = str(info_result.get("description") or "")
+        info_result["description_html"] = render_description_html(info_result["description"])
 
         mods_list_path = app_config.api_path("mod", "list")
         resources_list_path = app_config.api_path("resource", "list")
 
         dependencies = {}
-        if info_result.get('dependencies_count', 0) > 0: # Чекаем, есть ли зависимости
+        if info_result["dependencies"]["count"] > 0: # Чекаем, есть ли зависимости
             dependencies = await _load_mod_cards_by_ids(
                 handler,
-                info_result["dependencies"],
+                info_result["dependencies"]["items"],
                 mods_list_path,
                 resources_list_path,
             )

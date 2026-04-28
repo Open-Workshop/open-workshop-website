@@ -188,13 +188,15 @@
       const editTrigger = String(settings.get('trigger', '')).toLowerCase() === 'edit';
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
+      const includeFields = ['short_description', 'dates'];
 
-      if (settings.get('sgame', 'yes') !== 'yes') {
-        settings.set('short_description', true);
+      if (settings.get('sgame', 'yes') === 'yes') {
+        includeFields.push('statistics');
       }
+      settings.set('include', includeFields);
       settings.set('page_size', 30);
-      settings.set('statistics', true);
-      settings.set('dates', true);
+      settings.pop('statistics');
+      settings.pop('dates');
       settings.pop('trigger');
 
       const keys = [['depen', 'independents']];

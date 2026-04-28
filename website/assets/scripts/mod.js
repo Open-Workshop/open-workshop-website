@@ -19,7 +19,7 @@
   function initModPage() {
     const description = document.getElementById('mod-description');
     if (description) {
-      Formating.renderInto(description, description.innerHTML);
+      description.classList.add('ow-description-content');
     }
 
     const currentParams = new URLSearchParams(window.location.search);
