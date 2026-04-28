@@ -356,7 +356,7 @@ async def mod_view_and_edit(mod_id):
 
         # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
-        resources_path = app_config.api_path("mod", "resources").format(mod_id=mod_id)
+        resources_list_path = app_config.api_path("resource", "list")
         tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
 
         api_urls = {
@@ -373,7 +373,15 @@ async def mod_view_and_edit(mod_id):
                     ],
                 },
             ),
-            "resources": f"{resources_path}?page_size=30",
+            "resources": _build_query_url(
+                resources_list_path,
+                {
+                    "page_size": 30,
+                    "owner_type": "mods",
+                    "owner_ids": [mod_id],
+                    "types": ["logo", "screenshot"],
+                },
+            ),
             "tags": f"{tags_path}"
         }
 

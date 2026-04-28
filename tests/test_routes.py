@@ -348,6 +348,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             handler.fetch_calls[0][0],
             "/mods/42?include=dependencies&include=description&include=short_description&include=dates&include=game&include=authors",
         )
+        self.assertEqual(
+            handler.fetch_calls[1][0],
+            "/resources?page_size=30&owner_type=mods&owner_ids=42&types=logo&types=screenshot",
+        )
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["info"]["id"], 42)
         self.assertEqual(render_kwargs["info"]["name"], "Example Mod")
