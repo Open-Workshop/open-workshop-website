@@ -1,6 +1,6 @@
 {% set media_title = media_title if media_title is defined else 'Логотип и скриншоты мода' %}
 {% set media_image_alt = media_image_alt if media_image_alt is defined else 'Изображение мода' %}
-{% set media_items = resources['results'] if resources is defined and resources and resources['results'] is defined else [] %}
+{% set media_items = resources['items'] if resources is defined and resources and resources['items'] is defined else [] %}
 
 <div class="standart-panel screenshots-edit">
     <div class="media-manager" id="media-manager" data-storage-origin="{{ storage_address }}">

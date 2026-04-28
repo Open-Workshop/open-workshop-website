@@ -46,7 +46,7 @@
       const json = response ? await response.json().catch(function () { return null; }) : null;
 
       const data = window.OWCore.normalizeCollectionResponse(json);
-      const result = data && data.result ? data.result : data;
+      const result = data && typeof data === 'object' ? data : null;
 
       if (result) {
         namePreview.textContent = result.name;

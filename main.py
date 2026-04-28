@@ -84,14 +84,6 @@ def _collection_total(payload, default: int | None = None) -> int:
     return len(_collection_items(payload))
 
 
-def _ensure_result_payload(payload):
-    if isinstance(payload, dict) and "result" in payload:
-        return payload
-    if isinstance(payload, dict):
-        return {"result": payload}
-    return {"result": payload}
-
-
 def _ensure_profile_payload(payload):
     if isinstance(payload, dict) and "general" in payload:
         return payload
@@ -402,8 +394,7 @@ async def mod_view_and_edit(mod_id):
             # Сервер ответил на информацию о моде ошибкой, показываем человекочитаемую страницу.
             return _render_api_error(handler, info, info_code)
 
-        info = _ensure_result_payload(info)
-        info_result = info["result"]
+        info_result = info
         if "created_at" in info_result and "date_creation" not in info_result:
             info_result["date_creation"] = info_result["created_at"]
         if "file_updated_at" in info_result and "date_update_file" not in info_result:
@@ -449,9 +440,9 @@ async def mod_view_and_edit(mod_id):
 
         resources_results = _collection_items(resources) if isinstance(resources, dict) else []
         if isinstance(resources, dict):
-            resources = {**resources, "results": resources_results}
+            resources = {**resources, "items": resources_results}
         else:
-            resources = {"results": resources_results}
+            resources = {"items": resources_results}
 
         logo_item = None
         logo_url = str(info_result.get("logo", "") or "")
@@ -473,9 +464,9 @@ async def mod_view_and_edit(mod_id):
 
         # На странице просмотра держим логотип в списке и выводим его первым
         if logo_item and not edit_page:
-            resources["results"] = [logo_item] + [item for item in resources_results if item is not logo_item]
+            resources["items"] = [logo_item] + [item for item in resources_results if item is not logo_item]
 
-        info["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
+        info_result["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
             input_date = parse_api_datetime(info_result[key])
@@ -561,7 +552,7 @@ async def mod_view_and_edit(mod_id):
                 edit_page=edit_page_config,
                 edit_title=f"{info_result['name']} - edit Open Mod",
                 edit_description=info_result["short_description"],
-                info=info,
+                info=info_result,
                 tags=tags,
                 resources=resources,
                 dependencies=dependencies,
@@ -571,12 +562,12 @@ async def mod_view_and_edit(mod_id):
                 right_edit=right_edit_mod,
                 authors=authors,
                 is_mod_data=False,
-                data=[info],
+                data=[info_result],
             )
         else:
             page_html = handler.render(
                 "mod.html",
-                info=info,
+                info=info_result,
                 tags=tags,
                 resources=resources,
                 dependencies=dependencies,
@@ -586,7 +577,7 @@ async def mod_view_and_edit(mod_id):
                 right_edit=right_edit_mod,
                 authors=authors,
                 is_mod_data=True,
-                data=[info],
+                data=[info_result],
             )
 
         return handler.finish(page_html)
@@ -697,16 +688,19 @@ async def game_edit(game_id):
         game_info["source_id"] = "" if game_info.get("source_id") is None else str(game_info.get("source_id"))
 
         game_resources_items = _collection_items(game_resources) if isinstance(game_resources, dict) else []
-        game_resources = {**game_resources, "results": game_resources_items} if isinstance(game_resources, dict) else {"results": game_resources_items}
+        if isinstance(game_resources, dict):
+            game_resources = {**game_resources, "items": game_resources_items}
+        else:
+            game_resources = {"items": game_resources_items}
 
         game_logo_url = ""
-        for resource in game_resources.get("results", []):
-                if isinstance(resource, dict) and resource.get("url"):
-                    if resource.get("type") == "logo":
-                        game_logo_url = resource["url"]
-                        break
-                    if not game_logo_url:
-                        game_logo_url = resource["url"]
+        for resource in game_resources.get("items", []):
+            if isinstance(resource, dict) and resource.get("url"):
+                if resource.get("type") == "logo":
+                    game_logo_url = resource["url"]
+                    break
+                if not game_logo_url:
+                    game_logo_url = resource["url"]
         game_info["logo"] = game_logo_url
 
         selected_genres = []

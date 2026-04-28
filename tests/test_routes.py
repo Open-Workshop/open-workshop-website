@@ -277,6 +277,80 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.render_calls[0][1]["error_title"], "Доступ запрещен")
         self.assertEqual(handler.render_calls[0][1]["error"], "Заблокировано!")
 
+    async def test_mod_view_uses_direct_mod_payload_and_items_resources(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            profile={"id": 1, "username": "Alice"},
+            mod_access={
+                "authenticated": True,
+                "owner_id": 1,
+                "login_method": "google",
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "authors": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "new_version": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+                "download": {
+                    "value": True,
+                    "reason": "Мод можно скачать",
+                    "reason_code": "public",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 42,
+                        "name": "Example Mod",
+                        "short_description": "Short",
+                        "description": "Long",
+                        "source": "local",
+                        "source_id": None,
+                        "game_id": 5,
+                        "public": 0,
+                        "adult": False,
+                        "condition": "published",
+                        "downloads": 3,
+                        "size": 2048,
+                        "size_unpacked": 4096,
+                        "created_at": "2026-04-22T10:00:00+00:00",
+                        "file_updated_at": "2026-04-23T10:00:00+00:00",
+                        "updated_at": "2026-04-24T10:00:00+00:00",
+                        "file": None,
+                        "game": {"id": 5, "name": "Game"},
+                        "authors": {},
+                        "dependencies_count": 0,
+                    },
+                ),
+                (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
+                (200, {"items": []}),
+                (200, {"items": []}),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/mod/42"):
+                result = await main.mod_view_and_edit(42)
+
+        self.assertEqual(result["template"], "mod.html")
+        self.assertEqual(handler.render_calls[0][0], "mod.html")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertEqual(render_kwargs["info"]["id"], 42)
+        self.assertEqual(render_kwargs["info"]["name"], "Example Mod")
+        self.assertIs(render_kwargs["data"][0], render_kwargs["info"])
+        self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
+        self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
+
     async def test_user_page_uses_profile_access_only(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
         handler = StubHandler(
@@ -319,7 +393,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["template"], "user-settings.html")
         self.assertEqual(handler.render_calls[0][0], "user-settings.html")
         self.assertIs(handler.render_calls[0][1]["user_access"], profile_access)
-        self.assertEqual(handler.fetch_calls[0][0], "/profiles/2?general=true&rights=true&private=true")
+        self.assertEqual(handler.fetch_calls[0][0], "/profiles/2?include=general&include=rights&include=private")
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
 
     async def test_user_settings_self_reuses_cached_profile_without_extra_fetch(self) -> None:

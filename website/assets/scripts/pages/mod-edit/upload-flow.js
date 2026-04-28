@@ -138,7 +138,7 @@
 
       try {
         const previousInfo = await api.fetchModInfo();
-        const previousResult = previousInfo && previousInfo.result ? previousInfo.result : previousInfo;
+        const previousResult = previousInfo || null;
         const previousDate = previousResult ? previousResult.file_updated_at : null;
         const uploadMode = previousResult && previousResult.condition === 'published' ? 'replace' : 'create';
 
@@ -193,7 +193,7 @@
             }
 
             const info = await api.fetchModInfo().catch(function () { return null; });
-            const nextResult = info && info.result ? info.result : info;
+            const nextResult = info || null;
             const nextDate = nextResult ? nextResult.file_updated_at : null;
             if (nextDate && nextDate !== previousDate) {
               setStatus('Новая версия сохранена');

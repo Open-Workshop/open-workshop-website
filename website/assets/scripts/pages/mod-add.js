@@ -212,7 +212,7 @@
       if (value !== null) return value;
     }
 
-    const nestedContainers = ['result', 'data', 'game', 'mod'];
+    const nestedContainers = ['data', 'game', 'mod'];
     for (const key of nestedContainers) {
       if (payload[key] === undefined) continue;
       const nestedId = extractCreatedId(payload[key], kind);
@@ -442,7 +442,7 @@
           const resp = await fetch(url, { credentials: 'include' }).catch(() => null);
           if (resp && resp.ok) {
             const data = await resp.json().catch(() => null);
-            const condition = data && data.result ? data.result.condition : data ? data.condition : null;
+            const condition = data ? data.condition : null;
             if (condition === 'published') {
               hideUploadProgress();
               window.location.href = `/mod/${modId}/edit`;

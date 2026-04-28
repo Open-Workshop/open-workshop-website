@@ -5,38 +5,38 @@
 <main class="mod">
     <div class="info-text">
         <div id="title-bar">
-            <h1 id="mod-name-title" translate="no">{{ info['result']['name'] }} {% if info['result']['public'] != 0 %}<a title="Тип публичности" class="tag-link-red" translate="no">{% if info['result']['public'] == 2 %}непубличен{% endif %}{% if info['result']['public'] == 1 %}по ссылке{% endif %}</a>{% endif %}</h1> 
+            <h1 id="mod-name-title" translate="no">{{ info['name'] }} {% if info['public'] != 0 %}<a title="Тип публичности" class="tag-link-red" translate="no">{% if info['public'] == 2 %}непубличен{% endif %}{% if info['public'] == 1 %}по ссылке{% endif %}</a>{% endif %}</h1> 
             
             {% if right_edit['edit'] %}
-            <a href="/mod/{{ info['result']['id'] }}/edit" id="mod-setting-gear">
+            <a href="/mod/{{ info['id'] }}/edit" id="mod-setting-gear">
                 <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
             </a>
             {% endif %}
         </div>
 
         <div id="mod-tags-title">
-            <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ info['result']['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ info['result']['game']['name'] }}</a>
-            <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ info['result']['size_unpacked'] }}</a>
-            <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ info['result']['downloads'] }}</a>
+            <a id="mod-for-game-label" title="Мод для этой игры" href="/?game={{ info['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ info['game']['name'] }}</a>
+            <a title="Размер мода" class="tag-link-blue" translate="no">📦{{ info['size_unpacked'] }}</a>
+            <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ info['downloads'] }}</a>
 
-            {% if info['result']['date_update_file_js'] != info['result']['date_creation_js'] %}
-            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ info['result']['date_update_file_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">⏳{{ info['result']['date_update_file'] }}</a>
+            {% if info['date_update_file_js'] != info['date_creation_js'] %}
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ info['date_update_file_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">⏳{{ info['date_update_file'] }}</a>
             {% endif %}
 
-            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['result']['date_creation_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">📝{{ info['result']['date_creation'] }}</a>
+            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['date_creation_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">📝{{ info['date_creation'] }}</a>
         </div>
 
         <article id="mod-description">
-        {{ info['result']['description'] }}
+        {{ info['description'] }}
         </article>
         <script src="/assets/scripts/mod.js"></script>
     </div>
 
     <div class="right-bar">
-        {% if resources['results']|length >0 %}
+        {% if resources['items']|length >0 %}
         <div class="slider{% if info['no_many_screenshots'] %} one_slider{% endif %}">
             <ul class="js__slider__images slider__images" data-photoswipe-gallery>
-            {% for item in resources['results'] %}
+            {% for item in resources['items'] %}
                 <a href="{{ item['url'] or ow.assets.images.fallback }}" class="slider__images-item without-caption image-link">
                 <img src="{{ item['url'] or ow.assets.images.fallback }}" alt="Скриншот мода" class="slider__images-image" data-fallback-src="{{ ow.assets.images.fallback }}" />
                 </a>
@@ -93,7 +93,7 @@
             {% if plugins_more_count > 0 %}
             <a
                 class="mod-plugins-link"
-                href="/?sgame=no&dependencies={{ info['result']['id'] }}"
+                href="/?sgame=no&dependencies={{ info['id'] }}"
                 title="Открыть плагины в каталоге"
             >
                 <img src="/assets/images/svg/white/arrow-to.svg" alt="Перейти в каталог плагинов">
@@ -113,29 +113,29 @@
         {% endif %}
         
         {% if mod_access.download.value %}
-        <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['result']['id']) }}">Загрузить {{ info['result']['size'] }}</a>
+        <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['id']) }}">Загрузить {{ info['size'] }}</a>
         {% endif %}
     </div>
 </main>
 {% endblock %}
 
 {% block title %}
-{{ info['result']['name'] }} - Open Work для {{ info['result']['game']['name'] }}
+{{ info['name'] }} - Open Work для {{ info['game']['name'] }}
 {% endblock %}
 
 {% block description %}
-{{ info['result']['short_description'] }}
+{{ info['short_description'] }}
 {% endblock %}
 
 
 {% block metaimage %}
-{{ info["result"]["logo"] }}
+{{ info["logo"] }}
 {% endblock %}
 
 {% block published_time %}
-{{ info["result"]["date_creation"] }}
+{{ info["date_creation"] }}
 {% endblock %}
 
 {% block modified_time %}
-{{ info["result"]["date_update_file"] }}
+{{ info["date_update_file"] }}
 {% endblock %}

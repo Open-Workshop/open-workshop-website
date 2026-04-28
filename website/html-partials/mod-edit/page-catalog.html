@@ -2,13 +2,13 @@
   <div class="mod-edit__catalog">
     <div
       class="cards mod-edit__catalog-cards"
-      data-mod-id="{{ info['result']['id'] }}"
-      data-mod-size="{{ info['result']['size'] }}"
-      data-game-id="{{ info['result']['game']['id'] }}"
+      data-mod-id="{{ info['id'] }}"
+      data-mod-size="{{ info['size'] }}"
+      data-game-id="{{ info['game']['id'] }}"
     ></div>
 
     <div class="mod-edit__catalog-desc">
-      {% with module_key='catalog', aria_label='Режим короткого описания', limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['result']['short_description'] %}
+      {% with module_key='catalog', aria_label='Режим короткого описания', limit=256, placeholder='Короткое описание не может быть пустым!(', init_text=info['short_description'] %}
         {% include 'html-partials/mod-edit/description-module.html' %}
       {% endwith %} 
     </div>

@@ -100,12 +100,6 @@
       if (typeof text.id === 'number' && Number.isFinite(text.id)) {
         return text.id;
       }
-      if (typeof text.result === 'number' && Number.isFinite(text.result)) {
-        return text.result;
-      }
-      if (text.result && typeof text.result === 'object' && typeof text.result.id === 'number') {
-        return text.result.id;
-      }
     }
 
     try {
@@ -118,9 +112,6 @@
       }
       if (parsed && typeof parsed.id === 'number') {
         return parsed.id;
-      }
-      if (parsed && typeof parsed.result === 'number') {
-        return parsed.result;
       }
     } catch (error) {
       const numericMatch = String(text).match(/\d+/);

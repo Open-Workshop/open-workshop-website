@@ -1,7 +1,7 @@
 {% from 'html-partials/macros/taglike-editor.html' import render_dependencies_editor with context %}
 
 {% set dependence_items = dependencies.values() if dependencies is defined else [] %}
-{% set dependence_game_id = game if game is defined else info["result"]["game"]["id"] %}
+{% set dependence_game_id = game if game is defined else info["game"]["id"] %}
 {% set dependence_button_text = dependence_button_text if dependence_button_text is defined else 'Добавить зависимость' %}
 {% set dependence_editor_id = editor_id if editor_id is defined else 'mod-dependencies-editor' %}
 
