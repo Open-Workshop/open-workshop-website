@@ -74,6 +74,13 @@
     const query = new URLSearchParams();
 
     Object.entries(params || {}).forEach(function ([key, value]) {
+      if (Array.isArray(value)) {
+        value.forEach(function (item) {
+          if (item === undefined || item === null || item === '') return;
+          query.append(key, String(item));
+        });
+        return;
+      }
       if (value === undefined || value === null || value === '') return;
       query.set(key, String(value));
     });
@@ -89,9 +96,10 @@
       throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
     }
 
-    return response.json().catch(function () {
+    const data = await response.json().catch(function () {
       return {};
     });
+    return window.OWCore.normalizeCollectionResponse(data);
   }
 
   function createTagItemElement(options, catalogEditorEnabled) {
@@ -202,14 +210,15 @@
           }
 
           const data = await fetchTags(params);
+          const normalized = window.OWCore.normalizeCollectionResponse(data);
           return {
-            results: Array.isArray(data.results) ? data.results : [],
-            databaseSize: Number(data.database_size),
+            results: Array.isArray(normalized.items) ? normalized.items : [],
+            databaseSize: Number(normalized.database_size),
           };
         },
         async fetchItemsByIds(ids, editor) {
           const params = {
-            tags_ids: '[' + ids.join(',') + ']',
+            ids,
           };
           const gameId = normalizeGameId(editor.getContext().gameId);
           if (gameId !== '') {
@@ -217,7 +226,8 @@
           }
 
           const data = await fetchTags(params);
-          return Array.isArray(data.results) ? data.results : [];
+          const normalized = window.OWCore.normalizeCollectionResponse(data);
+          return Array.isArray(normalized.items) ? normalized.items : [];
         },
       });
 

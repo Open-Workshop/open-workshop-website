@@ -30,6 +30,13 @@
     const query = new URLSearchParams();
 
     Object.entries(params || {}).forEach(function ([key, value]) {
+      if (Array.isArray(value)) {
+        value.forEach(function (item) {
+          if (item === undefined || item === null || item === '') return;
+          query.append(key, String(item));
+        });
+        return;
+      }
       if (value === undefined || value === null || value === '') return;
       query.set(key, String(value));
     });
@@ -48,9 +55,10 @@
       throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
     }
 
-    return response.json().catch(function () {
+    const data = await response.json().catch(function () {
       return {};
     });
+    return window.OWCore.normalizeCollectionResponse(data);
   }
 
   async function fetchAllGenres() {
@@ -60,8 +68,9 @@
           page_size: 50,
         });
 
-        const results = Array.isArray(firstPage.results) ? firstPage.results.slice() : [];
-        const totalSize = Number(firstPage.database_size);
+        const firstPageData = window.OWCore.normalizeCollectionResponse(firstPage);
+        const results = Array.isArray(firstPageData.items) ? firstPageData.items.slice() : [];
+        const totalSize = Number(firstPageData.database_size);
         if (!Number.isFinite(totalSize) || results.length >= totalSize) {
           return results;
         }
@@ -77,8 +86,9 @@
 
         const pageResults = await Promise.all(pageRequests);
         pageResults.forEach(function (pageData) {
-          if (Array.isArray(pageData.results)) {
-            results.push(...pageData.results);
+          const normalizedPage = window.OWCore.normalizeCollectionResponse(pageData);
+          if (Array.isArray(normalizedPage.items)) {
+            results.push(...normalizedPage.items);
           }
         });
 
@@ -158,10 +168,11 @@
             page_size: 50,
             name: queryValue,
           });
+          const normalized = window.OWCore.normalizeCollectionResponse(data);
 
           return {
-            results: Array.isArray(data.results) ? data.results : [],
-            databaseSize: Number(data.database_size),
+            results: Array.isArray(normalized.items) ? normalized.items : [],
+            databaseSize: Number(normalized.database_size),
           };
         },
         async fetchItemsByIds(ids) {

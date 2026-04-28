@@ -108,6 +108,16 @@
     const apiPaths = window.OWCore.getApiPaths();
     const apiBase = window.OWCore.getApiBase();
     const disconnectEndpoint = apiPaths.oauth.disconnect;
+    if (!disconnectEndpoint || !disconnectEndpoint.path) {
+      new Toast({
+        title: 'Отвязка недоступна',
+        text: 'Сейчас manager не поддерживает отвязку этого сервиса.',
+        theme: 'warning',
+        autohide: true,
+        interval: 6000
+      });
+      return;
+    }
     const url = `${apiBase}${disconnectEndpoint.path.replace('{service}', service)}`;
 
     try {

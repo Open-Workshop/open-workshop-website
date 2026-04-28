@@ -13,6 +13,7 @@
   const apiPaths = window.OWCore.getApiPaths();
   const addModEndpoint = apiPaths.mod && apiPaths.mod.add ? apiPaths.mod.add : null;
   const addGameEndpoint = apiPaths.game && apiPaths.game.add ? apiPaths.game.add : null;
+  const uploadEndpoint = apiPaths.mod && apiPaths.mod.file ? apiPaths.mod.file : null;
   const uploadProgress = window.OWUI
     ? window.OWUI.createUploadProgress(root.querySelector('[data-upload-progress-root]'))
     : null;
@@ -83,35 +84,40 @@
     return url.toString();
   }
 
-  async function startTransferViaManager(formData) {
-    const managerResp = await fetch(apiBase + addModEndpoint.path, {
-      method: addModEndpoint.method,
-      body: formData,
+  async function startTransferViaManager(payload) {
+    if (!uploadEndpoint) {
+      throw new Error('В приложении не настроен endpoint для загрузки модов');
+    }
+
+    const response = await window.OWCore.request(apiBase + uploadEndpoint.path, {
+      method: uploadEndpoint.method,
+      data: payload,
       credentials: 'include',
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
         Accept: 'application/json',
       },
+      parseAs: 'json',
     });
 
-    if (managerResp.ok) {
-      const payload = await managerResp.json().catch(() => ({}));
-      if (payload && payload.transfer_url) {
-        return payload;
+    if (response.ok) {
+      if (response.data && response.data.transfer_url) {
+        return response.data;
       }
       throw new Error('Ответ менеджера некорректен');
     }
 
-    if (managerResp.status === 307 || managerResp.status === 302) {
-      const redirectUrl = managerResp.headers.get('Location');
+    if (response.status === 307 || response.status === 302) {
+      const redirectUrl = response.response && typeof response.response.headers.get === 'function'
+        ? response.response.headers.get('Location')
+        : null;
       if (!redirectUrl) {
         throw new Error('Redirect URL не получен');
       }
       return { transfer_url: redirectUrl };
     }
 
-    const text = await managerResp.text();
-    throw new Error(text || `Ошибка (${managerResp.status})`);
+    throw new Error(extractErrorText(response, `Ошибка (${response.status})`));
   }
 
   function printError(targetText) {
@@ -146,6 +152,15 @@
       return text.replace(/^"(.*)"$/, '$1');
     }
 
+    return fallback;
+  }
+
+  function extractErrorText(result, fallback) {
+    const payload = result ? result.data : null;
+    if (typeof payload === 'string') return payload;
+    if (payload && typeof payload === 'object') {
+      return payload.detail || payload.message || payload.error || payload.title || fallback;
+    }
     return fallback;
   }
 
@@ -252,34 +267,29 @@
       ? String(typeSelect.value || config.type_select.default || 'game')
       : 'game';
 
-    const formData = new URLSearchParams();
-    formData.set('name', name);
-    formData.set('short_description', shortText);
-    formData.set('description', shortText);
-    formData.set('type', gameType);
-
     setSubmitInProgress(true);
 
     try {
-      const response = await fetch(apiBase + addGameEndpoint.path, {
+      const response = await window.OWCore.request(apiBase + addGameEndpoint.path, {
         method: addGameEndpoint.method,
-        body: formData.toString(),
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          Accept: 'application/json, text/plain, */*',
+        data: {
+          name,
+          short_description: shortText,
+          description: shortText,
+          type: gameType,
         },
+        credentials: 'include',
+        parseAs: 'json',
       });
 
       if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(parseResponseMessage(text, `Ошибка (${response.status})`));
+        throw new Error(extractErrorText(response, `Ошибка (${response.status})`));
       }
 
-      const payload = await response.json().catch(() => null);
+      const payload = response.data;
       const gameId =
         extractCreatedId(payload, 'game') ||
-        extractIdFromLocation(response.headers.get('Location') || response.headers.get('location'));
+        extractIdFromLocation(response.response.headers.get('Location') || response.response.headers.get('location'));
 
       if (gameId !== null) {
         window.location.href = `/game/${gameId}/edit`;
@@ -332,20 +342,49 @@
     }
 
     setSubmitInProgress(true);
-    showUploadProgress();
-
-    const formData = new FormData();
-    formData.append('mod_source', 'local');
-    formData.append('mod_game', selectedGameId);
-    formData.append('mod_name', getNameValue());
-    formData.append('mod_short_description', textDesc);
-    formData.append('mod_description', textDesc);
-    formData.append('mod_public', '2');
-    formData.append('pack_format', 'zip');
-    formData.append('pack_level', '3');
 
     try {
-      const transfer = await startTransferViaManager(formData);
+      const createdModResponse = await window.OWCore.request(apiBase + addModEndpoint.path, {
+        method: addModEndpoint.method,
+        data: {
+          name: getNameValue(),
+          short_description: textDesc,
+          description: textDesc,
+          source: 'local',
+          source_id: null,
+          game_id: Number(selectedGameId),
+          public: 2,
+          adult: false,
+          without_author: false,
+        },
+        credentials: 'include',
+        parseAs: 'json',
+      });
+
+      if (!createdModResponse.ok) {
+        throw new Error(extractErrorText(createdModResponse, `Ошибка (${createdModResponse.status})`));
+      }
+
+      const createdModId =
+        extractCreatedId(createdModResponse.data, 'mod') ||
+        extractIdFromLocation(
+          createdModResponse.response.headers.get('Location') || createdModResponse.response.headers.get('location'),
+        );
+
+      if (createdModId === null) {
+        throw new Error('Не удалось получить ID мода');
+      }
+
+      showUploadProgress();
+
+      const transfer = await startTransferViaManager({
+        kind: 'mod_archive',
+        owner_type: 'mod',
+        owner_id: createdModId,
+        mode: 'create',
+        format: 'zip',
+        compression_level: 3,
+      });
 
       const uploadUrl = transfer.transfer_url;
       if (!uploadUrl) {
@@ -354,13 +393,8 @@
 
       const parsedUpload = new URL(uploadUrl);
       const fileToUpload = fileInput.files[0];
-      const token = parsedUpload.searchParams.get('token');
-      const tokenPayload = token ? parseJwt(token) : null;
-      const modId = transfer.mod_id || (tokenPayload ? tokenPayload.mod_id : null);
-      const jobId = tokenPayload ? tokenPayload.job_id : null;
-      const wsUrl =
-        transfer.ws_url ||
-        (jobId && token ? getWebSocketUrl(parsedUpload.origin, `/transfer/ws/${jobId}`, token) : null);
+      const modId = createdModId;
+      const wsUrl = transfer.ws_url || null;
       if (fileToUpload && fileToUpload.name) {
         parsedUpload.searchParams.set('filename', fileToUpload.name);
       }
@@ -408,8 +442,8 @@
           const resp = await fetch(url, { credentials: 'include' }).catch(() => null);
           if (resp && resp.ok) {
             const data = await resp.json().catch(() => null);
-            const condition = data && data.result ? data.result.condition : null;
-            if (condition === 0) {
+            const condition = data && data.result ? data.result.condition : data ? data.condition : null;
+            if (condition === 'published') {
               hideUploadProgress();
               window.location.href = `/mod/${modId}/edit`;
               return;

@@ -138,13 +138,18 @@
 
       try {
         const previousInfo = await api.fetchModInfo();
-        const previousDate = previousInfo && previousInfo.result ? previousInfo.result.date_update_file : null;
+        const previousResult = previousInfo && previousInfo.result ? previousInfo.result : previousInfo;
+        const previousDate = previousResult ? previousResult.file_updated_at : null;
+        const uploadMode = previousResult && previousResult.condition === 'published' ? 'replace' : 'create';
 
-        const formData = new FormData();
-        formData.append('pack_format', 'zip');
-        formData.append('pack_level', '3');
-
-        const transfer = await api.startVersionTransfer(formData);
+        const transfer = await api.startVersionTransfer({
+          kind: 'mod_archive',
+          owner_type: 'mod',
+          owner_id: previousResult ? previousResult.id : 0,
+          mode: uploadMode,
+          format: 'zip',
+          compression_level: 3,
+        });
         const uploadUrl = transfer && transfer.transfer_url;
         if (!uploadUrl) {
           throw new Error('Не удалось получить ссылку загрузки');
@@ -188,7 +193,8 @@
             }
 
             const info = await api.fetchModInfo().catch(function () { return null; });
-            const nextDate = info && info.result ? info.result.date_update_file : null;
+            const nextResult = info && info.result ? info.result : info;
+            const nextDate = nextResult ? nextResult.file_updated_at : null;
             if (nextDate && nextDate !== previousDate) {
               setStatus('Новая версия сохранена');
               runtime.showToast('Готово', 'Новая версия загружена', 'success');

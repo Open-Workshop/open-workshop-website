@@ -27,11 +27,12 @@
       });
     if (!ids.length) return {};
 
-    const resourcesParams = new URLSearchParams({
-      owner_type: 'games',
-      owner_ids: `[${ids.join(',')}]`,
-      types_resources: '["logo"]',
+    const resourcesParams = new URLSearchParams();
+    resourcesParams.set('owner_type', 'games');
+    ids.forEach(function (id) {
+      resourcesParams.append('owner_ids', String(id));
     });
+    resourcesParams.append('types', 'logo');
 
     try {
       const response = await fetch(`${window.OWCore.apiUrl(resourcesPath)}?${resourcesParams.toString()}`, {
@@ -39,8 +40,8 @@
       });
       if (!response.ok) return {};
 
-      const data = await response.json();
-      return (Array.isArray(data.results) ? data.results : []).reduce(function (acc, item) {
+      const data = window.OWCore.normalizeCollectionResponse(await response.json());
+      return (Array.isArray(data.items) ? data.items : []).reduce(function (acc, item) {
         if (!item || item.owner_id === undefined || item.owner_id === null || !item.url) return acc;
         acc[String(item.owner_id)] = item.url;
         return acc;
@@ -125,24 +126,24 @@
         name: String(searchInput.value || ''),
       });
 
-      let data = { database_size: 0, results: [] };
+      let data = { database_size: 0, items: [] };
       try {
         const response = await fetch(`${window.OWCore.apiUrl(listPath)}?${gamesParams.toString()}`, {
           credentials: 'include',
         });
-        data = await response.json();
+        data = window.OWCore.normalizeCollectionResponse(await response.json());
       } catch (error) {
-        data = { database_size: 0, results: [] };
+        data = { database_size: 0, items: [] };
       }
 
       if (requestId !== requestCounter) return;
 
-      const safeResults = Array.isArray(data.results) ? data.results : [];
+      const safeResults = Array.isArray(data.items) ? data.items : [];
       const logosMap = await fetchGameLogos(safeResults);
       if (requestId !== requestCounter) return;
 
       clearSearchResults();
-      updateOverflowCount((Number(data.database_size) || 0) - safeResults.length);
+      updateOverflowCount((Number(data.database_size || (data.pagination && data.pagination.total)) || 0) - safeResults.length);
 
       safeResults.forEach(function (item) {
         resultsRoot.appendChild(createResultCard({

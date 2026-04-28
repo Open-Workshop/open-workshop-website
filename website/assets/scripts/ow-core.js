@@ -37,6 +37,41 @@
     return (cfg.api && cfg.api.paths) || {};
   }
 
+  function normalizeCollectionResponse(payload) {
+    if (!payload || typeof payload !== 'object') {
+      return payload;
+    }
+
+    const items = Array.isArray(payload.items)
+      ? payload.items
+      : Array.isArray(payload.results)
+        ? payload.results
+        : [];
+    const pagination = payload.pagination && typeof payload.pagination === 'object'
+      ? payload.pagination
+      : {};
+    const total = Number.isFinite(Number(pagination.total))
+      ? Number(pagination.total)
+      : Number.isFinite(Number(payload.database_size))
+        ? Number(payload.database_size)
+        : items.length;
+
+    return {
+      ...payload,
+      items,
+      results: items,
+      pagination: {
+        page: Number.isFinite(Number(pagination.page)) ? Number(pagination.page) : 0,
+        page_size: Number.isFinite(Number(pagination.page_size)) ? Number(pagination.page_size) : items.length,
+        offset: Number.isFinite(Number(pagination.offset)) ? Number(pagination.offset) : 0,
+        total,
+        has_next: Boolean(pagination.has_next),
+        has_previous: Boolean(pagination.has_previous),
+      },
+      database_size: total,
+    };
+  }
+
   function getApiBase() {
     const cfg = getConfig();
     const base = (cfg.api && cfg.api.base) || '';
@@ -101,7 +136,7 @@
     } else if (parseAs === 'blob') {
       payload = await response.blob();
     } else {
-      payload = await response.json().catch(() => null);
+      payload = normalizeCollectionResponse(await response.json().catch(() => null));
     }
 
     return {
@@ -119,6 +154,7 @@
     getImageFallback,
     apiUrl,
     formatPath,
+    normalizeCollectionResponse,
     request,
   };
 })();

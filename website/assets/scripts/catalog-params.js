@@ -1411,7 +1411,7 @@
       new Dictionary({
         key: 'sort',
         value: invertMode + select.value,
-        default: 'iDOWNLOADS',
+        default: '-downloads',
       }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
@@ -1429,7 +1429,7 @@
       new Dictionary({
         key: 'sort',
         value: invertMode + select.value,
-        default: 'iDOWNLOADS',
+        default: '-downloads',
       }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
@@ -1779,39 +1779,44 @@
     setCatalogGameSpecificFiltersVisible(!sgame);
     setCatalogGameSelectionFiltersVisible(sgame);
 
-    const sortMode = params.get('sort', 'iDOWNLOADS');
+    const sortMode = params.get('sort', '-downloads');
     const invertButton = document.querySelector('button#sort-select-invert');
     if (invertButton) {
-      invertButton.classList.toggle('toggled', sortMode.startsWith('i'));
+      invertButton.classList.toggle('toggled', String(sortMode || '').startsWith('-'));
     }
     const sortSelectInput = document.querySelector('select#sort-select');
     if (sortSelectInput) {
-      sortSelectInput.value = sortMode.replace('i', '');
+      sortSelectInput.value = String(sortMode || '').replace(/^-/, '').replace(/^i/, '');
     }
 
     if (params.get('game', '') !== '') {
       const gameListPath = apiPaths.game.list.path;
       const resourcesPath = apiPaths.resource.list.path;
-      const gameIds = '[' + params.get('game', '') + ']';
+      const gameIds = [params.get('game', '')].filter(Boolean);
+      const gameParams = new URLSearchParams();
+      gameIds.forEach(function (id) {
+        gameParams.append('ids', id);
+      });
+      gameParams.append('page_size', '1');
 
       const [gameResponse, logoResponse] = await Promise.all([
-        fetch(`${apiUrl(gameListPath)}?allowed_ids=${gameIds}`),
-        fetch(
-          `${apiUrl(resourcesPath)}?owner_type=games&owner_ids=${gameIds}&types_resources=["logo"]&only_urls=true`,
-        ),
+        fetch(`${apiUrl(gameListPath)}?${gameParams.toString()}`),
+        fetch(`${apiUrl(resourcesPath)}?owner_type=games&owner_ids=${gameIds.join('&owner_ids=')}&types=logo&only_urls=true`),
       ]);
 
       if (gameResponse.ok && logoResponse.ok) {
         const [data, logo] = await Promise.all([gameResponse.json(), logoResponse.json()]);
+        const normalizedData = window.OWCore.normalizeCollectionResponse(data);
+        const normalizedLogo = window.OWCore.normalizeCollectionResponse(logo);
         const setting = getGameSetting();
         if (setting) {
           const img = setting.querySelector('img');
           const label = setting.querySelector('label');
-          if (img && Array.isArray(logo.results) && logo.results[0]) {
-            img.setAttribute('src', logo.results[0]);
+          if (img && Array.isArray(normalizedLogo.items) && normalizedLogo.items[0]) {
+            img.setAttribute('src', normalizedLogo.items[0].url || normalizedLogo.items[0]);
           }
-          if (label && data.results && data.results[0]) {
-            label.textContent = data.results[0].name;
+          if (label && normalizedData.items && normalizedData.items[0]) {
+            label.textContent = normalizedData.items[0].name;
           }
         }
       }

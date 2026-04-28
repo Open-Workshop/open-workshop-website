@@ -70,7 +70,7 @@ class UserHandler:
         self.session_access = await self.get_session_access()
 
         profile_info_path = app_config.api_path("profile", "info").format(user_id=self.id)
-        code, result = await self.fetch(f"{profile_info_path}?general=true&private=true")
+        code, result = await self.fetch(f"{profile_info_path}?include=general&include=private")
         self.response = result
         self.response_code = code
 

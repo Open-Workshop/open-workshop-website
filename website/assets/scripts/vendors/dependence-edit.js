@@ -33,6 +33,13 @@
     const query = new URLSearchParams();
 
     Object.entries(params || {}).forEach(function ([key, value]) {
+      if (Array.isArray(value)) {
+        value.forEach(function (item) {
+          if (item === undefined || item === null || item === '') return;
+          query.append(key, String(item));
+        });
+        return;
+      }
       if (value === undefined || value === null || value === '') return;
       query.set(key, String(value));
     });
@@ -51,9 +58,10 @@
       throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
     }
 
-    return response.json().catch(function () {
+    const data = await response.json().catch(function () {
       return {};
     });
+    return window.OWCore.normalizeCollectionResponse(data);
   }
 
   async function fetchModItems(params) {
@@ -61,22 +69,22 @@
       fetchJson(modsPath, params),
       fetchJson(resourcesPath, {
         owner_type: 'mods',
-        owner_ids: params.allowed_ids || '[]',
-        types_resources: '["logo"]',
+        owner_ids: params.allowed_ids || [],
+        types: ['logo'],
       }).catch(function () {
-        return { results: [] };
+        return { items: [] };
       }),
     ]);
 
     const logosById = {};
-    (resourcesData.results || []).forEach(function (resource) {
+    (resourcesData.items || []).forEach(function (resource) {
       if (!resource || resource.owner_id === undefined || !resource.url) return;
       logosById[String(resource.owner_id)] = resource.url;
     });
 
     return {
-      results: Array.isArray(modsData.results)
-        ? modsData.results.map(function (item) {
+      results: Array.isArray(modsData.items)
+        ? modsData.items.map(function (item) {
           return {
             id: item.id,
             name: item.name,
@@ -95,38 +103,38 @@
     };
 
     if (useDependentsCountSort) {
-      searchParams.sort = 'iPLUGINS_COUNT';
+      searchParams.sort = 'dependents_count';
     }
 
     const normalizedGameId = normalizeGameId(gameId);
     if (normalizedGameId !== '') {
-      searchParams.game = normalizedGameId;
+      searchParams.game_id = normalizedGameId;
     }
 
     const modsData = await fetchJson(modsPath, searchParams);
-    const modIds = Array.isArray(modsData.results)
-      ? modsData.results.map(function (item) { return item.id; }).filter(function (item) { return item !== undefined; })
+    const modIds = Array.isArray(modsData.items)
+      ? modsData.items.map(function (item) { return item.id; }).filter(function (item) { return item !== undefined; })
       : [];
 
     const resourcesData = modIds.length > 0
       ? await fetchJson(resourcesPath, {
         owner_type: 'mods',
-        owner_ids: '[' + modIds.join(',') + ']',
-        types_resources: '["logo"]',
+        owner_ids: modIds,
+        types: ['logo'],
       }).catch(function () {
-        return { results: [] };
+        return { items: [] };
       })
-      : { results: [] };
+      : { items: [] };
 
     const logosById = {};
-    (resourcesData.results || []).forEach(function (resource) {
+    (resourcesData.items || []).forEach(function (resource) {
       if (!resource || resource.owner_id === undefined || !resource.url) return;
       logosById[String(resource.owner_id)] = resource.url;
     });
 
     return {
-      results: Array.isArray(modsData.results)
-        ? modsData.results.map(function (item) {
+      results: Array.isArray(modsData.items)
+        ? modsData.items.map(function (item) {
           return {
             id: item.id,
             name: item.name,
@@ -247,7 +255,7 @@
         async fetchItemsByIds(ids) {
           if (!Array.isArray(ids) || ids.length === 0) return [];
           const data = await fetchModItems({
-            allowed_ids: '[' + ids.join(',') + ']',
+            allowed_ids: ids,
             page_size: 50,
           });
           return data.results;

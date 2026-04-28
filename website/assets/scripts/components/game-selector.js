@@ -45,13 +45,16 @@
       const response = await fetch(gameInfoUrl, { method: 'GET' }).catch(function () { return null; });
       const json = response ? await response.json().catch(function () { return null; }) : null;
 
-      if (json && json.result) {
-        namePreview.textContent = json.result.name;
+      const data = window.OWCore.normalizeCollectionResponse(json);
+      const result = data && data.result ? data.result : data;
+
+      if (result) {
+        namePreview.textContent = result.name;
         namePreview.style.color = 'darkgray';
-        nameInput.value = json.result.name;
-        nameInput.setAttribute('lastval', json.result.name);
+        nameInput.value = result.name;
+        nameInput.setAttribute('lastval', result.name);
         nameInput.style.color = 'gray';
-        logo.setAttribute('src', String(json.result.logo || '').trim() || fallbackImage);
+        logo.setAttribute('src', String(result.logo || '').trim() || fallbackImage);
         idInput.setAttribute('found', 'true');
       } else {
         namePreview.textContent = '';
@@ -80,20 +83,22 @@
         namePreview.textContent = ' ';
       }
 
-      const response = await fetch(apiBase + listPath + '?page_size=1&sort=iNAME&name=' + encodeURIComponent(currentValue), {
+      const response = await fetch(apiBase + listPath + '?page_size=1&sort=name&name=' + encodeURIComponent(currentValue), {
         method: 'GET',
         credentials: 'include',
       }).catch(function () { return null; });
-      const data = response ? await response.json().catch(function () { return { results: [] }; }) : { results: [] };
+      const data = window.OWCore.normalizeCollectionResponse(
+        response ? await response.json().catch(function () { return { items: [] }; }) : { items: [] },
+      );
 
-      if (Array.isArray(data.results) && data.results.length) {
+      if (Array.isArray(data.items) && data.items.length) {
         setColor('grey');
-        const serverName = String(data.results[0].name || '').toUpperCase();
+        const serverName = String(data.items[0].name || '').toUpperCase();
         const userName = currentValue.toUpperCase();
 
         if (serverName.startsWith(userName)) {
           applyButton.disabled = false;
-          applyButton.setAttribute('gameid', data.results[0].id);
+          applyButton.setAttribute('gameid', data.items[0].id);
           namePreview.textContent = serverName;
         } else {
           applyButton.disabled = true;

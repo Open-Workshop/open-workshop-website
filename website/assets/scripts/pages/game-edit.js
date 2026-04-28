@@ -96,6 +96,18 @@
       throw new Error('API не вернул ID для "' + entityLabel + '"');
     }
 
+    if (typeof text === 'object') {
+      if (typeof text.id === 'number' && Number.isFinite(text.id)) {
+        return text.id;
+      }
+      if (typeof text.result === 'number' && Number.isFinite(text.result)) {
+        return text.result;
+      }
+      if (text.result && typeof text.result === 'object' && typeof text.result.id === 'number') {
+        return text.result.id;
+      }
+    }
+
     try {
       const parsed = JSON.parse(text);
       if (typeof parsed === 'number' && Number.isFinite(parsed)) {
@@ -139,26 +151,26 @@
     return preview;
   }
 
-  async function sendForm(endpoint, params, pathParams) {
+  async function sendJson(endpoint, data, pathParams) {
     const url = pathParams
       ? window.OWCore.formatPath(endpoint.path, pathParams)
       : endpoint.path;
-    const response = await fetch(window.OWCore.apiUrl(url), {
+    const response = await window.OWCore.request(window.OWCore.apiUrl(url), {
       method: endpoint.method,
+      data,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        Accept: 'application/json, text/plain, */*',
-      },
-      body: params.toString(),
+      parseAs: 'json',
     });
 
     if (response.ok) {
       return response;
     }
 
-    const responseText = await response.text().catch(function () { return ''; });
-    throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
+    const payload = response.data;
+    const errorText = payload && typeof payload === 'object'
+      ? (payload.detail || payload.message || payload.error || payload.title || '')
+      : String(payload || '');
+    throw new Error(parseResponseMessage(errorText, `Ошибка (${response.status})`));
   }
 
   async function createNamedEntities(endpoint, fieldName, items, finalizeCallback) {
@@ -168,12 +180,8 @@
       const entityName = normalizeEntityName(item.name);
       if (entityName === '') continue;
 
-      const params = new URLSearchParams();
-      params.set(fieldName, entityName);
-
-      const response = await sendForm(endpoint, params);
-      const responseText = await response.text().catch(function () { return ''; });
-      const createdId = parseCreatedEntityId(responseText, entityName);
+      const response = await sendJson(endpoint, { [fieldName]: entityName });
+      const createdId = parseCreatedEntityId(response.data, entityName);
 
       finalizeCallback(item.tempId, createdId);
       createdIds.push(createdId);
@@ -183,9 +191,6 @@
   }
 
   function collectBaseChanges() {
-    const params = new URLSearchParams();
-    params.set('game_id', String(gameId));
-
     const nameValue = getTextValue('#game-name');
     const typeValue = getTextValue('#game-type');
     const shortDescValue = getEditorValue('#game-short-desc-panel');
@@ -197,27 +202,23 @@
 
     let changed = false;
 
-    if (nameValue.trim() === '') {
+      if (nameValue.trim() === '') {
       throw new Error('Название игры не может быть пустым');
     }
 
     if (nameValue !== getStartValue('#game-name')) {
-      params.set('name', nameValue);
       changed = true;
     }
 
     if (typeValue !== getStartValue('#game-type')) {
-      params.set('type', typeValue);
       changed = true;
     }
 
     if (shortDescValue !== getEditorStartValue('#game-short-desc-panel')) {
-      params.set('short_description', shortDescValue);
       changed = true;
     }
 
     if (descValue !== getEditorStartValue('#game-full-desc-panel')) {
-      params.set('description', descValue);
       changed = true;
     }
 
@@ -236,12 +237,19 @@
         throw new Error('source_id должен быть целым числом');
       }
 
-      params.set('source', sourceValue);
-      params.set('source_id', sourceIdValue);
       changed = true;
     }
 
-    return { changed, params };
+    return {
+      changed,
+      payload: {
+        ...(nameValue !== getStartValue('#game-name') ? { name: nameValue } : {}),
+        ...(typeValue !== getStartValue('#game-type') ? { type: typeValue } : {}),
+        ...(shortDescValue !== getEditorStartValue('#game-short-desc-panel') ? { short_description: shortDescValue } : {}),
+        ...(descValue !== getEditorStartValue('#game-full-desc-panel') ? { description: descValue } : {}),
+        ...(sourcePairChanged ? { source: sourceValue, source_id: Number(sourceIdValue) } : {}),
+      },
+    };
   }
 
   async function syncAssociations(endpoint, ids, idField, mode) {
@@ -253,8 +261,7 @@
         ...endpoint,
         path: endpoint.path.replace('_association', `_${action}`),
       };
-      const params = new URLSearchParams();
-      await sendForm(assocEndpoint, params, pathParams);
+      await sendJson(assocEndpoint, {}, pathParams);
     }
   }
 
@@ -293,9 +300,7 @@
     setButtonBusy(deleteButton, true);
 
     try {
-      const params = new URLSearchParams();
-      params.set('game_id', String(gameId));
-      await sendForm(apiPaths.game.delete, params);
+      await sendJson(apiPaths.game.delete, {}, { game_id: String(gameId) });
       showToast('Удалено', 'Игра удалена', 'success');
       window.location.href = '/?sgame=yes';
     } catch (error) {
@@ -345,7 +350,7 @@
       setButtonBusy(saveButton, true);
 
       if (base.changed) {
-        await sendForm(apiPaths.game.edit, base.params);
+        await sendJson(apiPaths.game.edit, base.payload);
       }
 
       await syncMedia(mediaState.changes);

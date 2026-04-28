@@ -232,11 +232,18 @@ window.Cards = {
         const { getApiPaths, apiUrl } = window.OWCore;
         const apiPaths = getApiPaths();
         const resourcesPath = apiPaths.resource.list.path;
-        const ownerType = owner_type === 'games' ? 'games' : 'mods'
-        const response = await fetch(`${apiUrl(resourcesPath)}?owner_type=${ownerType}&owner_ids=[${ids}]&page_size=50&types_resources=[\"logo\"]`, {
+        const ownerType = owner_type === 'games' ? 'games' : 'mods';
+        const resourcesParams = new URLSearchParams();
+        resourcesParams.set('owner_type', ownerType);
+        resourcesParams.set('page_size', '50');
+        resourcesParams.append('types', 'logo');
+        ids.forEach(function (id) {
+            resourcesParams.append('owner_ids', String(id));
+        });
+        const response = await fetch(`${apiUrl(resourcesPath)}?${resourcesParams.toString()}`, {
             credentials: 'include'
         });
-        const data = await response.json();
+        const data = window.OWCore.normalizeCollectionResponse(await response.json());
 
         function changeImage(img, pic) {
             img.src = pic;
@@ -244,8 +251,8 @@ window.Cards = {
             img.classList.add("show");
         }
 
-        for (let i = 0; i < data.results.length; i++) {
-            const result = data.results[i];
+        for (let i = 0; i < data.items.length; i++) {
+            const result = data.items[i];
             const img = document.getElementById("preview-logo-card-"+result.owner_id)
 
             if (img) {

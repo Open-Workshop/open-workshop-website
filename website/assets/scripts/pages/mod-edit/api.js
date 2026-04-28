@@ -33,13 +33,19 @@
 
       if (query instanceof URLSearchParams) {
         query.forEach(function (value, key) {
-          url.searchParams.set(key, value);
+          url.searchParams.append(key, value);
         });
       } else if (query && typeof query === 'object') {
         Object.entries(query).forEach(function (entry) {
           const key = entry[0];
           const value = entry[1];
-          if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            value.forEach(function (item) {
+              if (item !== undefined && item !== null && item !== '') {
+                url.searchParams.append(key, String(item));
+              }
+            });
+          } else if (value !== undefined && value !== null && value !== '') {
             url.searchParams.set(key, String(value));
           }
         });
@@ -71,7 +77,7 @@
     async function fetchModInfo() {
       const result = await requestEndpoint(apiPaths.mod.info, {
         pathParams: { mod_id: modId },
-        query: { dates: 'true', authors: 'true' },
+        query: { include: ['dates', 'authors', 'game', 'short_description', 'description', 'resources'] },
         parseAs: 'json',
         fallbackError: 'Не удалось получить информацию о моде',
       });
@@ -82,7 +88,7 @@
     async function fetchProfile(userId) {
       const result = await requestEndpoint(apiPaths.profile.info, {
         pathParams: { user_id: userId },
-        query: { general: 'true' },
+        query: { include: ['general'] },
         parseAs: 'json',
         fallbackError: 'Не удалось получить профиль пользователя',
       });
@@ -98,12 +104,21 @@
     }
 
     async function updateMod(formData) {
-      if (!(formData instanceof FormData) || Array.from(formData.keys()).length === 0) return null;
+      if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return null;
+      const payload = {};
+      Object.entries(formData).forEach(function (entry) {
+        const key = entry[0];
+        const value = entry[1];
+        if (value !== undefined) {
+          payload[key] = value;
+        }
+      });
+      if (Object.keys(payload).length === 0) return null;
 
       return requestEndpoint(apiPaths.mod.edit, {
         pathParams: { mod_id: modId },
-        data: formData,
-        parseAs: 'text',
+        data: payload,
+        parseAs: 'json',
         fallbackError: 'Не удалось сохранить изменения мода',
       });
     }
@@ -120,55 +135,46 @@
     async function updateDependency(dependencyId, add) {
       const endpoint = add ? apiPaths.mod.dependencies_add : apiPaths.mod.dependencies_delete;
       return requestEndpoint(endpoint, {
-        pathParams: { mod_id: modId, dependencie_id: dependencyId },
+        pathParams: { mod_id: modId, dependency_mod_id: dependencyId },
         parseAs: 'text',
         fallbackError: add ? 'Не удалось добавить зависимость' : 'Не удалось удалить зависимость',
       });
     }
 
     async function updateAuthor(authorId, mode, owner) {
-      const formData = new FormData();
-      formData.append('mode', String(Boolean(mode)));
-      formData.append('author', String(authorId));
-      if (owner !== undefined) {
-        formData.append('owner', String(Boolean(owner)));
-      }
-
       return requestEndpoint(apiPaths.mod.authors, {
         pathParams: { mod_id: modId },
-        data: formData,
-        parseAs: 'text',
+        data: {
+          mode: Boolean(mode),
+          author: authorId,
+          ...(owner !== undefined ? { owner: Boolean(owner) } : {}),
+        },
+        parseAs: 'json',
         fallbackError: 'Не удалось обновить список авторов',
       });
     }
 
     async function addResourceUrl(resource) {
-      const formData = new FormData();
-      formData.append('owner_type', resourceOwnerType);
-      formData.append('resource_type', resource.type);
-      formData.append('resource_owner_id', String(entityId));
-      formData.append('resource_url', resource.url);
-
       return requestEndpoint(apiPaths.resource.add, {
-        data: formData,
-        parseAs: 'text',
+        data: {
+          owner_type: resourceOwnerType,
+          owner_id: entityId,
+          type: resource.type,
+          url: resource.url,
+        },
+        parseAs: 'json',
         fallbackError: 'Не удалось добавить изображение',
       });
     }
 
     async function editResource(resourceChange) {
-      const formData = new FormData();
-      if (resourceChange.type) {
-        formData.append('resource_type', resourceChange.type);
-      }
-      if (resourceChange.url) {
-        formData.append('resource_url', resourceChange.url);
-      }
-
       return requestEndpoint(apiPaths.resource.edit, {
         pathParams: { resource_id: resourceChange.id },
-        data: formData,
-        parseAs: 'text',
+        data: {
+          ...(resourceChange.type ? { type: resourceChange.type } : {}),
+          ...(resourceChange.url ? { url: resourceChange.url } : {}),
+        },
+        parseAs: 'json',
         fallbackError: 'Не удалось обновить изображение',
       });
     }
@@ -191,34 +197,35 @@
 
     async function startTransferRequest(endpoint, formData, pathParams, fallbackError) {
       const url = formatEndpoint(endpoint, pathParams);
-      const response = await fetch(url, {
+      const response = await window.OWCore.request(url, {
         method: endpoint.method,
-        body: formData,
         credentials: 'include',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
           Accept: 'application/json',
         },
+        data: formData,
+        parseAs: 'json',
       });
 
       if (response.ok) {
-        const payload = await response.json().catch(function () { return {}; });
-        if (payload && payload.transfer_url) {
-          return payload;
+        if (response.data && response.data.transfer_url) {
+          return response.data;
         }
         throw new Error('Ответ менеджера некорректен');
       }
 
       if (response.status === 307 || response.status === 302) {
-        const redirectUrl = response.headers.get('Location');
+        const redirectUrl = response.response && response.response.headers
+          ? response.response.headers.get('Location')
+          : null;
         if (!redirectUrl) {
           throw new Error('Redirect URL не получен');
         }
         return { transfer_url: redirectUrl };
       }
 
-      const text = await response.text().catch(function () { return ''; });
-      throw new Error(runtime.parseResponseMessage(text, fallbackError || `Ошибка (${response.status})`));
+      throw new Error(extractErrorMessage(response, fallbackError || `Ошибка (${response.status})`));
     }
 
     async function startVersionTransfer(formData) {
@@ -231,13 +238,13 @@
     }
 
     async function startResourceTransfer(formData, resourceId) {
-      const endpoint = resourceId ? apiPaths.resource.upload_init_edit : apiPaths.resource.upload_init;
-      const pathParams = resourceId ? { resource_id: resourceId } : {};
-
       return startTransferRequest(
-        endpoint,
-        formData,
-        pathParams,
+        apiPaths.resource.upload_init,
+        {
+          ...formData,
+          ...(resourceId ? { owner_id: resourceId, mode: 'replace' } : { mode: 'create' }),
+        },
+        {},
         'Не удалось инициализировать загрузку изображения',
       );
     }
@@ -269,12 +276,13 @@
     }
 
     async function uploadNewResourceFile(resource) {
-      const transferData = new FormData();
-      transferData.append('owner_type', resourceOwnerType);
-      transferData.append('resource_type', resource.type);
-      transferData.append('resource_owner_id', String(entityId));
-
-      const transfer = await startResourceTransfer(transferData);
+      const transfer = await startResourceTransfer({
+        kind: 'resource_image',
+        owner_type: 'resource',
+        resource_owner_type: resourceOwnerType,
+        resource_owner_id: entityId,
+        resource_type: resource.type,
+      });
       await uploadBinaryToTransfer(transfer.transfer_url, resource.file);
     }
 

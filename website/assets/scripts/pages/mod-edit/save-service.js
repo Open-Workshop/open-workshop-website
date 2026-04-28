@@ -41,35 +41,35 @@
 
     function collectBaseChanges() {
       return {
-        mod_name: runtime.diffValue(
+        name: runtime.diffValue(
           runtime.getTextValue(titleInput),
           runtime.getStartValue(titleInput),
         ),
-        mod_short_description: runtime.diffValue(
+        short_description: runtime.diffValue(
           runtime.getEditorValue(catalogDescriptionRoot),
           runtime.getEditorStartValue(catalogDescriptionRoot),
         ),
-        mod_description: runtime.diffValue(
+        description: runtime.diffValue(
           runtime.getEditorValue(fullDescriptionRoot),
           runtime.getEditorStartValue(fullDescriptionRoot),
         ),
-        mod_public: runtime.diffValue(
+        public: runtime.diffValue(
           runtime.getAttributeValue(publicButton, 'public-mode'),
           runtime.getStartValue(publicButton),
         ),
       };
     }
 
-    function buildFormData(changes) {
-      const formData = new FormData();
+    function buildPatchPayload(changes) {
+      const payload = {};
       Object.entries(changes).forEach(function (entry) {
         const key = entry[0];
         const value = entry[1];
         if (value.changed) {
-          formData.append(key, value.value);
+          payload[key] = key === 'public' ? Number(value.value) : value.value;
         }
       });
-      return formData;
+      return payload;
     }
 
     function collectChanges() {
@@ -201,7 +201,7 @@
       runtime.setButtonBusy(saveButton, true);
 
       try {
-        await api.updateMod(buildFormData(changes.base));
+        await api.updateMod(buildPatchPayload(changes.base));
         await syncAuthors(changes.authors);
         await syncMedia(changes.media);
         await syncTags(changes.tags);

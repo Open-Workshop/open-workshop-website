@@ -46,15 +46,19 @@
 
   function getContextSortMode(sortMode) {
     const normalizedSort = String(sortMode || '')
+      .replace(/^-/, '')
       .replace(/^i/, '')
-      .toUpperCase();
+      .toLowerCase();
     const aliases = {
-      MOD_DOWNLOADS: 'DOWNLOADS',
-      CREATION_DATE: 'CREATION',
-      UPDATE_DATE: 'UPDATE',
-      MODS_COUNT: 'MODS',
+      downloads: 'DOWNLOADS',
+      created_at: 'CREATION',
+      file_updated_at: 'UPDATE',
+      updated_at: 'UPDATE',
+      mods_count: 'MODS',
+      dependents_count: 'DEPENDENTS',
+      size: 'SIZE',
     };
-    return aliases[normalizedSort] || normalizedSort;
+    return aliases[normalizedSort] || normalizedSort.toUpperCase();
   }
 
   function buildContextTag(element, isGameMode, contextSortMode) {
@@ -158,7 +162,7 @@
     addPage: async function (settings) {
       const editTrigger = String(settings.get('trigger', '')).toLowerCase() === 'edit';
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
-      const contextSortMode = getContextSortMode(settings.get('sort', 'iDOWNLOADS'));
+      const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
 
       settings.set('description', true);
       settings.set('short_description', true);
@@ -219,16 +223,16 @@
       const values = new Dictionary({
         independents: { yes: 'true', no: 'false' },
         sort: {
-          DOWNLOADS: 'MOD_DOWNLOADS',
-          iDOWNLOADS: 'iMOD_DOWNLOADS',
-          PLUGINS_COUNT: 'PLUGINS_COUNT',
-          iPLUGINS_COUNT: 'iPLUGINS_COUNT',
-          CREATION: 'CREATION_DATE',
-          iCREATION: 'iCREATION_DATE',
-          UPDATE: 'UPDATE_DATE',
-          iUPDATE: 'iUPDATE_DATE',
-          MODS: 'MODS_COUNT',
-          iMODS: 'iMODS_COUNT',
+          DOWNLOADS: 'downloads',
+          iDOWNLOADS: '-downloads',
+          PLUGINS_COUNT: 'dependents_count',
+          iPLUGINS_COUNT: '-dependents_count',
+          CREATION: 'created_at',
+          iCREATION: '-created_at',
+          UPDATE: 'file_updated_at',
+          iUPDATE: '-file_updated_at',
+          MODS: 'mods_count',
+          iMODS: '-mods_count',
         },
       });
       for (const key in values) {
@@ -238,15 +242,15 @@
       }
 
       if (settings.get('tags', '').length > 0) {
-        settings.set('tags', '[' + String(settings.get('tags').split('_')) + ']');
+        settings.set('tags', settings.get('tags').split('_').filter(Boolean));
       }
 
       if (settings.get('excluded_tags', '').length > 0) {
-        settings.set('excluded_tags', '[' + String(settings.get('excluded_tags').split('_')) + ']');
+        settings.set('excluded_tags', settings.get('excluded_tags').split('_').filter(Boolean));
       }
 
       if (settings.get('genres', '').length > 0) {
-        settings.set('genres', '[' + String(settings.get('genres').split('_')) + ']');
+        settings.set('genres', settings.get('genres').split('_').filter(Boolean));
       }
 
       const gamesPath = apiPaths.game.list.path;
@@ -262,10 +266,10 @@
         redirect: 'follow',
         credentials: 'include',
       });
-      const data = await response.json();
+      const data = window.OWCore.normalizeCollectionResponse(await response.json());
 
       if (response.status == 200) {
-        data.results.forEach((element) => {
+        data.items.forEach((element) => {
           const existingCard = cardsRoot ? cardsRoot.querySelector('div.card[id="' + String(element.id) + '"]') : null;
           if (!cardsRoot || existingCard) {
             return;

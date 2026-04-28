@@ -34,10 +34,23 @@ window.URLManager = {
         window.history.pushState('', '', window.location.pathname + '?' + urlParams.toString());
     },
     genString: function(params, replaceKeyMap = new Dictionary) {
-        let result = "?";
+        const query = new URLSearchParams();
         for (const key in params) {
-            result += replaceKeyMap.get(key, key) + "=" + params[key] + "&";
+            const value = params[key];
+            const outputKey = replaceKeyMap.get(key, key);
+            if (Array.isArray(value)) {
+                value.forEach(function (item) {
+                    if (item !== undefined && item !== null && item !== '') {
+                        query.append(outputKey, item);
+                    }
+                });
+                continue;
+            }
+            if (value !== undefined && value !== null && value !== '') {
+                query.append(outputKey, value);
+            }
         }
-        return result.slice(0, -1);
+        const queryString = query.toString();
+        return queryString ? `?${queryString}` : '';
     }
 }
