@@ -47,10 +47,10 @@
   function getContextSortMode(sortMode) {
     const normalizedSort = String(sortMode || '')
       .replace(/^-/, '')
-      .replace(/^i/, '')
       .toLowerCase();
     const aliases = {
       downloads: 'DOWNLOADS',
+      mods_downloads: 'DOWNLOADS',
       created_at: 'CREATION',
       file_updated_at: 'UPDATE',
       updated_at: 'UPDATE',
@@ -59,6 +59,31 @@
       size: 'SIZE',
     };
     return aliases[normalizedSort] || normalizedSort.toUpperCase();
+  }
+
+  function normalizeCatalogSortForManager(sortMode, isGameMode) {
+    const rawSort = String(sortMode || '').trim();
+    const descending = rawSort.startsWith('-');
+    const normalizedSort = rawSort
+      .replace(/^-/, '')
+      .toLowerCase();
+
+    let managerSort = normalizedSort;
+    if (normalizedSort === 'downloads') {
+      managerSort = isGameMode ? 'mods_downloads' : 'downloads';
+    } else if (normalizedSort === 'mods_downloads') {
+      managerSort = 'mods_downloads';
+    } else if (normalizedSort === 'creation') {
+      managerSort = 'created_at';
+    } else if (normalizedSort === 'update') {
+      managerSort = 'file_updated_at';
+    } else if (normalizedSort === 'plugins_count') {
+      managerSort = 'dependents_count';
+    } else if (normalizedSort === 'mods') {
+      managerSort = 'mods_count';
+    }
+
+    return descending ? '-' + managerSort : managerSort;
   }
 
   function buildContextTag(element, isGameMode, contextSortMode) {
@@ -219,26 +244,18 @@
       }
 
       const isGameMode = settings.get('sgame', 'yes') == 'yes';
-
-      const values = new Dictionary({
-        independents: { yes: 'true', no: 'false' },
-        sort: {
-          DOWNLOADS: 'downloads',
-          iDOWNLOADS: '-downloads',
-          PLUGINS_COUNT: 'dependents_count',
-          iPLUGINS_COUNT: '-dependents_count',
-          CREATION: 'created_at',
-          iCREATION: '-created_at',
-          UPDATE: 'file_updated_at',
-          iUPDATE: '-file_updated_at',
-          MODS: 'mods_count',
-          iMODS: '-mods_count',
-        },
-      });
-      for (const key in values) {
-        if (settings.get(key) != undefined && values[key].get(settings.get(key)) != undefined) {
-          settings.set(key, values[key][settings.get(key)]);
-        }
+      const requestSettings = settings.duplicate();
+      requestSettings.pop('dependencies_mode');
+      requestSettings.pop('independents');
+      requestSettings.pop('sgame');
+      requestSettings.set(
+        'sort',
+        normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), isGameMode),
+      );
+      if (isGameMode) {
+        requestSettings.pop('game');
+      } else if (requestSettings.get('game') != undefined) {
+        requestSettings.replaceKey('game', 'game_id');
       }
 
       if (settings.get('tags', '').length > 0) {
@@ -259,7 +276,7 @@
         settings.get('sgame', 'yes') == 'yes' ? gamesPath : modsPath;
       const url =
         apiUrl(path) +
-        URLManager.genString(settings, new Dictionary({ size: 'page_size' }));
+        URLManager.genString(requestSettings, new Dictionary({ size: 'page_size' }));
 
       const response = await fetch(url, {
         method: 'GET',

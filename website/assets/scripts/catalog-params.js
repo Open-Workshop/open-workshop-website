@@ -371,7 +371,11 @@
   let catalogRangeDrag = null;
 
   function getCatalogRangeFeedUrl() {
-    const feedPath = apiPaths.mod.feed.path;
+    const feedPath = apiPaths.mod && apiPaths.mod.feed
+      ? apiPaths.mod.feed.path
+      : '';
+    if (!feedPath) return '';
+
     const params = URLManager.getParams();
     const gameId = parseNumericValue(params.get('game', ''), null);
 
@@ -809,6 +813,11 @@
     const feedUrl = getCatalogRangeFeedUrl();
     setCatalogRangeControlsDisabled(true);
 
+    if (!feedUrl) {
+      catalogRangeFeed = null;
+      return false;
+    }
+
     try {
       const response = await fetch(feedUrl, {
         method: 'GET',
@@ -821,17 +830,31 @@
         throw new Error('Invalid catalog range feed response');
       }
 
-      const databaseSize = parseNumericValue(payload.database_size, 0) || 0;
-      const sizeBounds = normalizeRangeBounds(payload.size_min, payload.size_max, null, null);
+      if (
+        !Object.prototype.hasOwnProperty.call(payload, 'count')
+        || !payload.size
+        || typeof payload.size !== 'object'
+        || !payload.size_unpacked
+        || typeof payload.size_unpacked !== 'object'
+      ) {
+        throw new Error('Invalid catalog range feed response');
+      }
+
+      const feedCount = parseNumericValue(payload.count, null);
+      if (feedCount === null) {
+        throw new Error('Invalid catalog range feed response');
+      }
+
+      const sizeBounds = normalizeRangeBounds(payload.size.min, payload.size.max, null, null);
       const unpackedBounds = normalizeRangeBounds(
-        payload.size_unpacked_min,
-        payload.size_unpacked_max,
+        payload.size_unpacked.min,
+        payload.size_unpacked.max,
         sizeBounds.min,
         sizeBounds.max,
       );
 
       catalogRangeFeed = {
-        database_size: databaseSize,
+        count: feedCount,
         size: sizeBounds,
         size_unpacked: unpackedBounds,
       };
@@ -1406,7 +1429,7 @@
     if (!select) return;
 
     const invertButton = document.querySelector('button#sort-select-invert');
-    const invertMode = invertButton && invertButton.classList.contains('toggled') ? 'i' : '';
+    const invertMode = invertButton && invertButton.classList.contains('toggled') ? '-' : '';
     URLManager.updateParams([
       new Dictionary({
         key: 'sort',
@@ -1424,7 +1447,7 @@
     const select = document.querySelector('select#sort-select');
     if (!toggleButton || !select) return;
 
-    const invertMode = toggleButton.classList.contains('toggled') ? 'i' : '';
+    const invertMode = toggleButton.classList.contains('toggled') ? '-' : '';
     URLManager.updateParams([
       new Dictionary({
         key: 'sort',
@@ -1780,13 +1803,15 @@
     setCatalogGameSelectionFiltersVisible(sgame);
 
     const sortMode = params.get('sort', '-downloads');
+    const sortModeText = String(sortMode || '');
+    const sortSelectValue = sortModeText.replace(/^-/, '');
     const invertButton = document.querySelector('button#sort-select-invert');
     if (invertButton) {
-      invertButton.classList.toggle('toggled', String(sortMode || '').startsWith('-'));
+      invertButton.classList.toggle('toggled', sortModeText.startsWith('-'));
     }
     const sortSelectInput = document.querySelector('select#sort-select');
     if (sortSelectInput) {
-      sortSelectInput.value = String(sortMode || '').replace(/^-/, '').replace(/^i/, '');
+      sortSelectInput.value = sortSelectValue === 'mods_downloads' ? 'downloads' : sortSelectValue;
     }
 
     if (params.get('game', '') !== '') {
