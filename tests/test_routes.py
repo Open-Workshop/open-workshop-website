@@ -361,6 +361,58 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
 
+    async def test_mod_download_redirects_to_storage_url(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            profile={"id": 1, "username": "Alice"},
+            mod_access={
+                "authenticated": True,
+                "owner_id": 1,
+                "login_method": "google",
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "authors": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "new_version": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+                "download": {
+                    "value": True,
+                    "reason": "Мод можно скачать",
+                    "reason_code": "public",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "mod_id": 42,
+                        "download_url": "https://storage.example/archive/mods/42/main.zip?filename=Example.zip",
+                        "filename": "Example.zip",
+                    },
+                ),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/mod/42/download"):
+                result = await main.mod_download(42)
+
+        self.assertEqual(result.status_code, 302)
+        self.assertEqual(
+            result.headers["Location"],
+            "https://storage.example/archive/mods/42/main.zip?filename=Example.zip",
+        )
+        self.assertEqual(handler.fetch_calls[0][0], "/mods/42/download-url")
+
     async def test_user_page_uses_profile_access_only(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
         handler = StubHandler(
@@ -383,6 +435,57 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(handler.render_calls[0][1]["profile_access"], profile_access)
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
         self.assertEqual(len(handler.fetch_calls), 2)
+
+    async def test_user_page_fetches_images_only_for_visible_mods(self) -> None:
+        profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=2,
+            profile={"id": 2, "username": "Bob"},
+            profile_access=profile_access,
+            fetch_results=[
+                (200, _profile_payload(2, "Bob")),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 92408, "name": "The Lone Ranger", "authors": {"2": {"owner": True}}},
+                            {"id": 92407, "name": "Extinction Colonists", "authors": {"2": {"owner": True}}},
+                            {"id": 92406, "name": "Thinking Spot", "authors": {"2": {"owner": True}}},
+                            {"id": 92405, "name": "No vanilla apparel", "authors": {"2": {"owner": True}}},
+                            {"id": 92404, "name": "Hardcore Naked Brutality", "authors": {"2": {"owner": True}}},
+                        ],
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 1, "owner_id": 92405, "type": "logo", "url": "https://cdn.example/92405.webp"},
+                            {"id": 2, "owner_id": 92406, "type": "logo", "url": "https://cdn.example/92406.webp"},
+                            {"id": 3, "owner_id": 92407, "type": "logo", "url": "https://cdn.example/92407.webp"},
+                        ],
+                    },
+                ),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/user/2"):
+                result = await main.user(2)
+
+        self.assertEqual(result["template"], "user.html")
+        self.assertEqual(
+            handler.fetch_calls[2][0],
+            "/resources?page_size=10&owner_type=mods&owner_ids=92408&owner_ids=92407&owner_ids=92406&owner_ids=92405&types=logo",
+        )
+        render_kwargs = handler.render_calls[0][1]
+        self.assertTrue(render_kwargs["user_mods"]["not_show_all"])
+        self.assertEqual([item["id"] for item in render_kwargs["user_mods"]["mods_data"]], [92408, 92407, 92406, 92405])
+        self.assertEqual(render_kwargs["user_mods"]["mods_data"][0]["img"], main.DEFAULT_IMAGE_FALLBACK)
+        self.assertEqual(render_kwargs["user_mods"]["mods_data"][1]["img"], "https://cdn.example/92407.webp")
+        self.assertEqual(render_kwargs["user_mods"]["mods_data"][2]["img"], "https://cdn.example/92406.webp")
+        self.assertEqual(render_kwargs["user_mods"]["mods_data"][3]["img"], "https://cdn.example/92405.webp")
 
     async def test_user_settings_admin_fetches_rights_and_private_data(self) -> None:
         profile_access = build_profile_access(_profile_access_source("admin", rights_value=True))

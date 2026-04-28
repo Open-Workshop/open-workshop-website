@@ -113,7 +113,7 @@
         {% endif %}
         
         {% if mod_access.download.value %}
-        <a class="download-button" href="{{ ow.api.base }}{{ ow.api.paths.mod.download.path.format(mod_id=info['id']) }}">Загрузить {{ info['size'] }}</a>
+        <a class="download-button" href="/mod/{{ info['id'] }}/download">Загрузить {{ info['size'] }}</a>
         {% endif %}
     </div>
 </main>

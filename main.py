@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request, make_response
+from flask import Flask, render_template, send_from_directory, request, make_response, redirect
 from pathlib import Path
 from babel import dates
 import datetime
@@ -608,6 +608,35 @@ async def mod_view_and_edit(mod_id):
 
         return handler.finish(page_html)
 
+
+@app.route('/mod/<int:mod_id>/download')
+async def mod_download(mod_id):
+    async with UserHandler() as handler:
+        mod_access = await handler.get_mod_access(mod_id)
+
+        if not mod_access["download"]["value"]:
+            if not handler.authenticated:
+                page = handler.render("error.html", error="Войдите или создайте аккаунт", error_title="Не авторизован")
+            else:
+                page = handler.render(
+                    "error.html",
+                    error=mod_access["download"]["reason"],
+                    error_title="Отказано в доступе",
+                )
+            return handler.finish(page), 403
+
+        download_path = app_config.api_path("mod", "download").format(mod_id=mod_id)
+        download_code, download_info = await handler.fetch(download_path)
+
+        if download_code != 200 or not isinstance(download_info, dict):
+            return _render_api_error(handler, download_info, download_code)
+
+        download_url = str(download_info.get("download_url") or "").strip()
+        if not download_url:
+            return _render_api_error(handler, {"title": "Ошибка", "detail": "Сервер не вернул ссылку на скачивание"}, 500)
+
+        return redirect(download_url, code=302)
+
 async def add_mod():
     async with UserHandler() as handler:
         access = await handler.get_mod_add_access()
@@ -823,8 +852,9 @@ async def user(user_id):
             for mod in user_mods_items
             if isinstance(mod, dict) and isinstance(mod.get("authors"), dict) and str(user_id) in mod["authors"]
         ]
+        visible_mods_items = user_mods_items[:4]
 
-        if len(user_mods_items) > 0:
+        if len(visible_mods_items) > 0:
             resources_mods_path = app_config.api_path("resource", "list")
             resources_mods_code, resources_mods = await handler.fetch(
                 _build_query_url(
@@ -832,7 +862,7 @@ async def user(user_id):
                     {
                         "page_size": 10,
                         "owner_type": "mods",
-                        "owner_ids": [item["id"] for item in user_mods_items],
+                        "owner_ids": [item["id"] for item in visible_mods_items],
                         "types": ["logo"],
                     },
                 )
@@ -844,7 +874,7 @@ async def user(user_id):
                     'name': i['name'],
                     'img': DEFAULT_IMAGE_FALLBACK
                 }
-                for i in user_mods_items[:4]
+                for i in visible_mods_items
             ]
             mods_by_id = {item["id"]: item for item in mods_data}
 
