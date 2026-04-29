@@ -119,6 +119,11 @@ def build_mod_access(source: Any) -> dict[str, Any]:
         default_reason="Мод скрыт",
         default_reason_code="hidden",
     )
+    catalog = _right(
+        _mapping_value(source, "catalog", None),
+        default_reason="Мод скрыт из каталога",
+        default_reason_code="hidden",
+    )
     edit_source = _mapping_value(source, "edit", {})
     edit = {
         "title": _right(_mapping_value(edit_source, "title", None)),
@@ -148,6 +153,7 @@ def build_mod_access(source: Any) -> dict[str, Any]:
     payload = {
         **context,
         "info": info,
+        "catalog": catalog,
         "edit": edit,
         "delete": delete,
         "download": download,

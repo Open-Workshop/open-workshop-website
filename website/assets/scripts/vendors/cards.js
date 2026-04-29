@@ -159,6 +159,9 @@ window.Cards = {
         card.setAttribute('pageOwner', page);
 
         card.classList.add('card');
+        if (cardData && cardData.adult) {
+            card.classList.add('card--adult');
+        }
         card.id = cardData.id
 
         // Создаем кликабельную часть

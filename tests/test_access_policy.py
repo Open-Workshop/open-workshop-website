@@ -104,6 +104,11 @@ class AccessPolicyTests(unittest.TestCase):
                 "reason": "Мод доступен для просмотра",
                 "reason_code": "public",
             },
+            "catalog": {
+                "value": True,
+                "reason": "Мод можно показывать в каталоге",
+                "reason_code": "catalog",
+            },
             "edit": {
                 "title": {
                     "value": False,
@@ -144,3 +149,4 @@ class AccessPolicyTests(unittest.TestCase):
         mod_access = build_mod_access(source)
         self.assertTrue(mod_access["edit"]["authors"]["value"])
         self.assertTrue(mod_access["download"]["value"])
+        self.assertTrue(mod_access["catalog"]["value"])

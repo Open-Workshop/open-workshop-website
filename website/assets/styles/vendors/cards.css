@@ -50,7 +50,21 @@ div.card-media canvas.card-blurhash {
 
 div.card-media img {
     object-fit: cover;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+div.card.card--adult div.card-media canvas.card-blurhash,
+div.card.card--adult div.card-media img {
+    filter: blur(18px) saturate(0.8);
+    transform: scale(1.08);
+}
+
+div.card.card--adult:hover div.card-media canvas.card-blurhash,
+div.card.card--adult:hover div.card-media img,
+div.card.card--adult.show div.card-media canvas.card-blurhash,
+div.card.card--adult.show div.card-media img {
+    filter: none;
+    transform: scale(1);
 }
 
 svg.card-hover-outline {

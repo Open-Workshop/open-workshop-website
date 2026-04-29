@@ -12,6 +12,7 @@
     const deleteConfirmInput = runtime.resolveElement(settings.deleteConfirmInput);
     const titleInput = runtime.resolveElement(settings.titleInput);
     const publicButton = runtime.resolveElement(settings.publicButton);
+    const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);
     const fullDescriptionRoot = runtime.resolveElement(settings.fullDescriptionRoot);
     const catalogDescriptionRoot = runtime.resolveElement(settings.catalogDescriptionRoot);
     const mediaManager = settings.mediaManager || null;
@@ -40,6 +41,11 @@
     }
 
     function collectBaseChanges() {
+      const adultStartValue = adultCheckbox instanceof HTMLInputElement && adultCheckbox.hasAttribute('startdata')
+        ? String(adultCheckbox.getAttribute('startdata') || '')
+        : '';
+      const adultCurrentValue = adultCheckbox instanceof HTMLInputElement && adultCheckbox.checked ? 'checked' : '';
+
       return {
         name: runtime.diffValue(
           runtime.getTextValue(titleInput),
@@ -57,6 +63,7 @@
           runtime.getAttributeValue(publicButton, 'public-mode'),
           runtime.getStartValue(publicButton),
         ),
+        adult: runtime.diffValue(adultCurrentValue, adultStartValue),
       };
     }
 
@@ -66,7 +73,13 @@
         const key = entry[0];
         const value = entry[1];
         if (value.changed) {
-          payload[key] = key === 'public' ? Number(value.value) : value.value;
+          if (key === 'public') {
+            payload[key] = Number(value.value);
+          } else if (key === 'adult') {
+            payload[key] = value.value === 'checked';
+          } else {
+            payload[key] = value.value;
+          }
         }
       });
       return payload;

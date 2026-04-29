@@ -109,6 +109,7 @@
       deleteConfirmInput: root.querySelector('#delete-mod-confirm'),
       titleInput: root.querySelector('.title-mod'),
       publicButton: root.querySelector('[data-action="mod-toggle-public"]'),
+      adultCheckbox: root.querySelector('#mod-adult'),
       fullDescriptionRoot: getDescRoot('full'),
       catalogDescriptionRoot: getDescRoot('catalog'),
       mediaManager,

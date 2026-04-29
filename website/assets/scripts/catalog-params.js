@@ -378,12 +378,21 @@
 
     const params = URLManager.getParams();
     const gameId = parseNumericValue(params.get('game', ''), null);
+    const userId = parseNumericValue(params.get('user', ''), null);
+    const showNotPublic = params.get('show_not_public', 'false') === 'true';
+    const query = new URLSearchParams();
 
-    if (gameId === null || gameId <= 0) {
-      return apiUrl(feedPath);
+    if (gameId !== null && gameId > 0) {
+      query.set('game', String(gameId));
     }
 
-    return apiUrl(feedPath) + '?game=' + encodeURIComponent(String(gameId));
+    if (showNotPublic && userId !== null && userId > 0) {
+      query.set('user', String(userId));
+      query.set('show_not_public', 'true');
+    }
+
+    const queryString = query.toString();
+    return queryString ? apiUrl(feedPath) + '?' + queryString : apiUrl(feedPath);
   }
 
   function getCatalogRangeSetting() {
@@ -1467,6 +1476,7 @@
   function clearUserFilter() {
     URLManager.updateParams([
       new Dictionary({ key: 'user', value: '', default: '' }),
+      new Dictionary({ key: 'show_not_public', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
     const filterEl = document.getElementById('catalog-user-filter');
@@ -1705,10 +1715,12 @@
       const userId = filterEl.getAttribute('data-user-id');
       const currentUser = params.get('user', '');
       const currentSGame = params.get('sgame', 'yes');
-      if (currentUser !== String(userId) || currentSGame !== 'no') {
+      const currentShowNotPublic = params.get('show_not_public', 'false');
+      if (currentUser !== String(userId) || currentSGame !== 'no' || currentShowNotPublic !== 'true') {
         URLManager.updateParams([
           new Dictionary({ key: 'user', value: String(userId), default: '' }),
           new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
+          new Dictionary({ key: 'show_not_public', value: 'true', default: 'false' }),
           new Dictionary({ key: 'page', value: 0 }),
         ]);
         params = URLManager.getParams();

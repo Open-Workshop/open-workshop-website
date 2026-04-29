@@ -20,6 +20,7 @@
 
   const titleInput = document.querySelector('input#entity-name-title');
   const fileInput = document.querySelector('input#input-mod-file-upload');
+  const adultCheckbox = document.querySelector('input#mod-adult');
   const gameSelector = document.querySelector('div.main-body-game-selector');
   const descriptionModules = Array.isArray(config.description_modules) ? config.description_modules : [];
   let submitInProgress = false;
@@ -354,7 +355,7 @@
           source_id: null,
           game_id: Number(selectedGameId),
           public: 2,
-          adult: false,
+          adult: Boolean(adultCheckbox && adultCheckbox.checked),
           without_author: false,
         },
         credentials: 'include',

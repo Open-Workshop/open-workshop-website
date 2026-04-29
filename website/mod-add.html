@@ -48,6 +48,19 @@
       </section>
       {% endfor %}
 
+      {% if add_page.kind == 'mod' %}
+      <section class="entity-add__group">
+        <h2 class="entity-add__section-title">Возрастное ограничение</h2>
+        <label class="entity-add__field entity-add__field--toggle">
+          <input id="mod-adult" name="adult" type="checkbox">
+          <div class="entity-add__field-copy">
+            <span>Контент 18+</span>
+            <small>Помечает мод как взрослый и позволяет скрывать его через фильтры каталога.</small>
+          </div>
+        </label>
+      </section>
+      {% endif %}
+
       {% if add_page.show_game_selector %}
         <section class="entity-add__group">
           <h2 class="entity-add__section-title">Игра-владелец</h2>

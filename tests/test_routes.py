@@ -361,6 +361,39 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
 
+    def test_mod_add_template_exposes_adult_toggle(self) -> None:
+        mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
+        self.assertIn('id="mod-adult"', mod_add)
+        self.assertIn('Контент 18+', mod_add)
+        self.assertIn("add_page.kind == 'mod'", mod_add)
+
+    def test_mod_edit_params_template_exposes_adult_toggle(self) -> None:
+        mod_params = (ROOT / "website/html-partials/mod-edit/page-params.html").read_text(encoding="utf-8")
+        self.assertIn('id="mod-adult"', mod_params)
+        self.assertIn("startdata", mod_params)
+        self.assertIn('Контент 18+', mod_params)
+        self.assertNotIn("Можно включить или снять пометку 18+ без изменения других параметров мода.", mod_params)
+
+    def test_mod_add_script_sends_adult_flag(self) -> None:
+        script = (ROOT / "website/assets/scripts/pages/mod-add.js").read_text(encoding="utf-8")
+        self.assertIn("const adultCheckbox = document.querySelector('input#mod-adult');", script)
+        self.assertIn("adult: Boolean(adultCheckbox && adultCheckbox.checked),", script)
+
+    def test_mod_edit_save_service_sends_adult_flag(self) -> None:
+        script = (ROOT / "website/assets/scripts/pages/mod-edit/save-service.js").read_text(encoding="utf-8")
+        self.assertIn("const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);", script)
+        self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
+        self.assertIn("payload[key] = value.value === 'checked';", script)
+
+    def test_catalog_cards_blur_adult_logos_until_hover(self) -> None:
+        script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
+        styles = (ROOT / "website/assets/styles/vendors/cards.css").read_text(encoding="utf-8")
+        self.assertIn("card--adult", script)
+        self.assertIn("div.card.card--adult div.card-media canvas.card-blurhash", styles)
+        self.assertIn("div.card.card--adult div.card-media img", styles)
+        self.assertIn("div.card.card--adult:hover div.card-media canvas.card-blurhash", styles)
+        self.assertIn("div.card.card--adult:hover div.card-media img", styles)
+
     async def test_mod_download_redirects_to_storage_url(self) -> None:
         handler = StubHandler(
             authenticated=True,

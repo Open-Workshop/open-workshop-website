@@ -1,5 +1,22 @@
 <div id="page-params-mod" class="mod-edit__page">
   <div class="mod-edit__params">
+    <div class="standart-panel mod-edit__panel">
+      <h3>Возрастное ограничение</h3>
+      <label class="mod-edit__field mod-edit__field--toggle">
+        <input
+          id="mod-adult"
+          name="adult"
+          type="checkbox"
+          startdata="{% if info['adult'] %}checked{% else %}{% endif %}"
+          {% if info['adult'] %}checked{% endif %}
+        >
+        <div class="mod-edit__field-copy">
+          <span>Контент 18+</span>
+          <small>Такой мод можно скрывать через фильтр по возрастному ограничению.</small>
+        </div>
+      </label>
+    </div>
+
     {% if right_edit.new_version %}
     <div class="standart-panel mod-edit__panel">
       <h3>Новая версия мода</h3>
