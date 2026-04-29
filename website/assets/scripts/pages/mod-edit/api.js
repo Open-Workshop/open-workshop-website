@@ -255,6 +255,86 @@
       throw new Error(extractErrorMessage(response, fallbackError || `Ошибка (${response.status})`));
     }
 
+    function normalizeWebSocketUrl(value) {
+      return String(value || '').trim().replace(/^http/, 'ws');
+    }
+
+    function watchTransferProgress(transfer, progress) {
+      const wsUrl = normalizeWebSocketUrl(transfer && transfer.ws_url ? transfer.ws_url : '');
+      if (!wsUrl || !progress || typeof progress.applyTransferState !== 'function') {
+        return {
+          wait: Promise.resolve(),
+          close: function () {},
+        };
+      }
+
+      let ws = null;
+      let settled = false;
+
+      const wait = new Promise(function (resolve, reject) {
+        try {
+          ws = new WebSocket(wsUrl);
+        } catch (error) {
+          settled = true;
+          resolve();
+          return;
+        }
+
+        ws.onmessage = function (event) {
+          let data = null;
+          try {
+            data = JSON.parse(event.data);
+          } catch (parseError) {
+            return;
+          }
+
+          if (data.event === 'stage' || data.event === 'progress') {
+            progress.applyTransferState(data);
+            return;
+          }
+
+          if (data.event === 'error') {
+            settled = true;
+            if (ws && ws.readyState <= WebSocket.OPEN) {
+              ws.close();
+            }
+            reject(new Error(data.message || 'Ошибка загрузки изображения'));
+            return;
+          }
+
+          if (data.event === 'complete') {
+            settled = true;
+            if (ws && ws.readyState <= WebSocket.OPEN) {
+              ws.close();
+            }
+            resolve();
+          }
+        };
+
+        ws.onerror = function () {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+
+        ws.onclose = function () {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+      });
+
+      return {
+        wait,
+        close: function () {
+          if (!ws) return;
+          if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
+          }
+        },
+      };
+    }
+
     async function startVersionTransfer(formData) {
       return startTransferRequest(
         apiPaths.mod.file,
@@ -302,7 +382,7 @@
       return response;
     }
 
-    async function uploadNewResourceFile(resource) {
+    async function uploadNewResourceFile(resource, progress) {
       const sortOrder = Number(resource && resource.sortOrder !== undefined ? resource.sortOrder : 0);
       const transfer = await startResourceTransfer({
         kind: 'resource_image',
@@ -312,7 +392,20 @@
         resource_type: resource.type,
         ...(Number.isFinite(sortOrder) ? { resource_sort_order: sortOrder } : {}),
       });
-      await uploadBinaryToTransfer(transfer.transfer_url, resource.file);
+      const watcher = watchTransferProgress(transfer, progress);
+
+      if (progress && typeof progress.setTransferStage === 'function') {
+        progress.setTransferStage('uploading');
+      } else if (progress && typeof progress.setStage === 'function') {
+        progress.setStage('uploading');
+      }
+
+      try {
+        await uploadBinaryToTransfer(transfer.transfer_url, resource.file);
+        await watcher.wait;
+      } finally {
+        watcher.close();
+      }
     }
 
     return {

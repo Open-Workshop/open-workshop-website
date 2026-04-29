@@ -116,6 +116,7 @@
       authorsManager,
       tagsEditorId: 'mod-tags-editor',
       dependenciesEditorId: 'mod-dependencies-editor',
+      progressRoot: root.querySelector('[data-save-progress-root]'),
     });
 
     const publicController = bindPublicToggle(root.querySelector('[data-action="mod-toggle-public"]'));

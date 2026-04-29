@@ -15,6 +15,9 @@
   let saveInProgress = false;
   let deleteInProgress = false;
   let unloadGuard = null;
+  const saveProgress = window.OWUI && typeof window.OWUI.createSaveProgress === 'function'
+    ? window.OWUI.createSaveProgress(document.querySelector('[data-save-progress-root]'))
+    : null;
 
   function showToast(title, text, theme) {
     if (editRuntime) {
@@ -216,15 +219,29 @@
     throw new Error(parseResponseMessage(errorText, `Ошибка (${response.status})`));
   }
 
-  async function createNamedEntities(endpoint, fieldName, items, finalizeCallback) {
+  async function createNamedEntities(endpoint, fieldName, items, finalizeCallback, progress, stepKey, label) {
     const createdIds = [];
+    const normalizedItems = Array.isArray(items)
+      ? items.map(function (item) {
+        return {
+          tempId: item.tempId,
+          name: normalizeEntityName(item.name),
+        };
+      }).filter(function (item) {
+        return item.name !== '';
+      })
+      : [];
+    const total = normalizedItems.length;
+    let index = 0;
 
-    for (const item of items) {
-      const entityName = normalizeEntityName(item.name);
-      if (entityName === '') continue;
+    for (const item of normalizedItems) {
+      index += 1;
+      if (progress && typeof progress.setStep === 'function' && stepKey) {
+        progress.setStep(stepKey, 'active', `${label} ${index}/${total}`);
+      }
 
-      const response = await sendJson(endpoint, { [fieldName]: entityName });
-      const createdId = parseCreatedEntityId(response.data, entityName);
+      const response = await sendJson(endpoint, { [fieldName]: item.name });
+      const createdId = parseCreatedEntityId(response.data, item.name);
 
       finalizeCallback(item.tempId, createdId);
       createdIds.push(createdId);
@@ -330,6 +347,78 @@
     };
   }
 
+  function buildSavePlan(changes) {
+    const steps = [];
+    const baseChanged = Boolean(changes.base && changes.base.changed);
+    const mediaChanged = Boolean(
+      changes.mediaState &&
+      changes.mediaState.changes &&
+      (
+        changes.mediaState.changes.new.length > 0 ||
+        changes.mediaState.changes.changed.length > 0 ||
+        changes.mediaState.changes.deleted.length > 0
+      ),
+    );
+    const tagCreateChanged = Array.isArray(changes.createdTagDefinitions) && changes.createdTagDefinitions.length > 0;
+    const tagsChanged = Boolean(
+      changes.tags &&
+      (
+        changes.tags.add.length > 0 ||
+        changes.tags.remove.length > 0 ||
+        tagCreateChanged
+      ),
+    );
+    const genreCreateChanged = Array.isArray(changes.createdGenreDefinitions) && changes.createdGenreDefinitions.length > 0;
+    const genresChanged = Boolean(
+      changes.genres &&
+      (
+        changes.genres.add.length > 0 ||
+        changes.genres.remove.length > 0 ||
+        genreCreateChanged
+      ),
+    );
+
+    if (baseChanged) {
+      steps.push({ key: 'base', label: 'Сохраняем основные поля' });
+    }
+    if (mediaChanged) {
+      steps.push({ key: 'media', label: 'Обновляем изображения' });
+    }
+    if (tagCreateChanged) {
+      steps.push({ key: 'tag-create', label: 'Создаем теги' });
+    }
+    if (tagsChanged) {
+      steps.push({ key: 'tags', label: 'Синхронизируем теги' });
+    }
+    if (genreCreateChanged) {
+      steps.push({ key: 'genre-create', label: 'Создаем жанры' });
+    }
+    if (genresChanged) {
+      steps.push({ key: 'genres', label: 'Синхронизируем жанры' });
+    }
+
+    steps.push({ key: 'finish', label: 'Завершаем сохранение' });
+    steps.push({ key: 'reloading', label: 'Перезагружаем страницу' });
+    return steps;
+  }
+
+  function waitForReloadPaint() {
+    return new Promise(function (resolve) {
+      window.requestAnimationFrame(function () {
+        window.requestAnimationFrame(resolve);
+      });
+    });
+  }
+
+  function getMediaOperationLabel(entry) {
+    if (!entry) return 'Обновляем изображения';
+    if (entry.kind === 'deleted') return 'Удаляем изображение';
+    if (entry.kind === 'changed') return 'Обновляем изображение';
+    if (entry.item && entry.item.file) return 'Загружаем изображение';
+    if (entry.item && entry.item.url) return 'Сохраняем ссылку';
+    return 'Обновляем изображения';
+  }
+
   function hasUnsavedChanges() {
     if (saveInProgress || deleteInProgress) {
       return true;
@@ -342,31 +431,60 @@
     }
   }
 
-  async function syncAssociations(endpoint, ids, idField) {
+  async function syncAssociations(endpoint, ids, idField, progress, stepKey, label) {
+    const total = Array.isArray(ids) ? ids.length : 0;
+    let index = 0;
+
     for (const relationId of ids) {
+      index += 1;
+      if (progress && typeof progress.setStep === 'function' && stepKey) {
+        progress.setStep(stepKey, 'active', `${label} ${index}/${total}`);
+      }
+
       const pathParams = { game_id: String(gameId) };
       pathParams[idField] = String(relationId);
       await sendJson(endpoint, {}, pathParams);
     }
   }
 
-  async function syncMedia(changes) {
+  async function syncMedia(changes, progress) {
     if (!resourceApi || !changes) return;
 
-    for (const item of changes.new) {
-      if (item.file) {
-        await resourceApi.uploadNewResourceFile(item);
-      } else if (item.url) {
-        await resourceApi.addResourceUrl(item);
+    const operations = [];
+    changes.new.forEach(function (item) {
+      operations.push({ kind: 'new', item });
+    });
+    changes.changed.forEach(function (item) {
+      operations.push({ kind: 'changed', item });
+    });
+    changes.deleted.forEach(function (id) {
+      operations.push({ kind: 'deleted', id });
+    });
+
+    const total = operations.length;
+    let index = 0;
+
+    for (const entry of operations) {
+      index += 1;
+      if (progress && typeof progress.setStep === 'function') {
+        progress.setStep('media', 'active', `${getMediaOperationLabel(entry)} ${index}/${total}`);
       }
-    }
 
-    for (const item of changes.changed) {
-      await resourceApi.editResource(item);
-    }
+      if (entry.kind === 'new') {
+        if (entry.item.file) {
+          await resourceApi.uploadNewResourceFile(entry.item, progress);
+        } else if (entry.item.url) {
+          await resourceApi.addResourceUrl(entry.item);
+        }
+        continue;
+      }
 
-    for (const id of changes.deleted) {
-      await resourceApi.deleteResource(id);
+      if (entry.kind === 'changed') {
+        await resourceApi.editResource(entry.item);
+        continue;
+      }
+
+      await resourceApi.deleteResource(entry.id);
     }
   }
 
@@ -401,9 +519,17 @@
   async function saveGameChanges() {
     if (saveInProgress) return;
 
+    let saveCompleted = false;
+
     try {
       const changes = collectGameChanges();
       const base = changes.base;
+      const savePlan = buildSavePlan(changes);
+      const hasStep = function (stepKey) {
+        return savePlan.some(function (step) {
+          return step.key === stepKey;
+        });
+      };
 
       if (!changes.hasChanges) {
         showToast('Нечего сохранять', 'Нет изменений', 'info');
@@ -418,55 +544,123 @@
       saveInProgress = true;
       setButtonBusy(saveButton, true);
 
-      if (base.changed) {
+      if (saveProgress) {
+        saveProgress.start({
+          title: 'Сохраняем игру',
+          message: 'Не закрывайте страницу до завершения сохранения.',
+          steps: savePlan,
+        });
+      }
+
+      if (hasStep('base')) {
+        if (saveProgress) {
+          saveProgress.setStep('base', 'active');
+        }
         await sendJson(apiPaths.game.edit, base.payload, { game_id: String(gameId) });
       }
 
-      await syncMedia(changes.mediaState.changes);
+      if (hasStep('media')) {
+        if (saveProgress) {
+          saveProgress.setStep('media', 'active');
+        }
+        await syncMedia(changes.mediaState.changes, saveProgress);
+      }
 
-      const createdTagIds = changes.createdTagDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.tag.add, 'name', changes.createdTagDefinitions, function (tempId, realId) {
-          if (changes.tagsEditor) {
-            changes.tagsEditor.finalizeCreated(tempId, realId);
-          }
-        })
-        : [];
+      let createdTagIds = [];
+      if (hasStep('tag-create')) {
+        if (saveProgress) {
+          saveProgress.setStep('tag-create', 'active');
+        }
+        createdTagIds = changes.createdTagDefinitions.length > 0
+          ? await createNamedEntities(
+            apiPaths.tag.add,
+            'name',
+            changes.createdTagDefinitions,
+            function (tempId, realId) {
+              if (changes.tagsEditor) {
+                changes.tagsEditor.finalizeCreated(tempId, realId);
+              }
+            },
+            saveProgress,
+            'tag-create',
+            'Создаем теги',
+          )
+          : [];
+      }
 
       const tagIdsToAdd = changes.tags.add.concat(createdTagIds);
-      if (tagIdsToAdd.length > 0) {
-        await syncAssociations(apiPaths.game.tags_add, tagIdsToAdd, 'tag_id');
+      if (hasStep('tags')) {
+        if (saveProgress) {
+          saveProgress.setStep('tags', 'active');
+        }
+        if (tagIdsToAdd.length > 0) {
+          await syncAssociations(apiPaths.game.tags_add, tagIdsToAdd, 'tag_id', saveProgress, 'tags', 'Привязываем теги');
+        }
+        if (changes.tags.remove.length > 0) {
+          await syncAssociations(apiPaths.game.tags_delete, changes.tags.remove, 'tag_id', saveProgress, 'tags', 'Удаляем теги');
+        }
       }
 
-      if (changes.tags.remove.length > 0) {
-        await syncAssociations(apiPaths.game.tags_delete, changes.tags.remove, 'tag_id');
+      let createdGenreIds = [];
+      if (hasStep('genre-create')) {
+        if (saveProgress) {
+          saveProgress.setStep('genre-create', 'active');
+        }
+        createdGenreIds = changes.createdGenreDefinitions.length > 0
+          ? await createNamedEntities(
+            apiPaths.genre.add,
+            'name',
+            changes.createdGenreDefinitions,
+            function (tempId, realId) {
+              if (changes.genresEditor) {
+                changes.genresEditor.finalizeCreated(tempId, realId);
+              }
+            },
+            saveProgress,
+            'genre-create',
+            'Создаем жанры',
+          )
+          : [];
       }
-
-      const createdGenreIds = changes.createdGenreDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.genre.add, 'name', changes.createdGenreDefinitions, function (tempId, realId) {
-          if (changes.genresEditor) {
-            changes.genresEditor.finalizeCreated(tempId, realId);
-          }
-        })
-        : [];
 
       const genreIdsToAdd = changes.genres.add.concat(createdGenreIds);
-      if (genreIdsToAdd.length > 0) {
-        await syncAssociations(apiPaths.game.genres_add, genreIdsToAdd, 'genre_id');
+      if (hasStep('genres')) {
+        if (saveProgress) {
+          saveProgress.setStep('genres', 'active');
+        }
+        if (genreIdsToAdd.length > 0) {
+          await syncAssociations(apiPaths.game.genres_add, genreIdsToAdd, 'genre_id', saveProgress, 'genres', 'Привязываем жанры');
+        }
+        if (changes.genres.remove.length > 0) {
+          await syncAssociations(apiPaths.game.genres_delete, changes.genres.remove, 'genre_id', saveProgress, 'genres', 'Удаляем жанры');
+        }
       }
 
-      if (changes.genres.remove.length > 0) {
-        await syncAssociations(apiPaths.game.genres_delete, changes.genres.remove, 'genre_id');
+      if (saveProgress) {
+        saveProgress.setStep('finish', 'active', 'Подготовка к перезагрузке...');
+        saveProgress.setStep('finish', 'complete', 'Изменения сохранены');
+        saveProgress.setStep('reloading', 'active', 'Перезагружаем страницу...');
+        saveProgress.setProgress(100);
       }
 
       showToast('Готово', 'Изменения игры сохранены', 'success');
+      saveCompleted = true;
+      await waitForReloadPaint();
       if (unloadGuard) {
         unloadGuard.suppressOnce();
       }
       window.location.reload();
     } catch (error) {
+      if (saveProgress) {
+        saveProgress.fail(error && error.message ? error.message : 'Не удалось сохранить изменения игры');
+      }
       showToast('Ошибка', error.message || String(error), 'danger');
+    } finally {
       saveInProgress = false;
       setButtonBusy(saveButton, false);
+      if (saveProgress && !saveCompleted) {
+        saveProgress.close();
+      }
     }
   }
 

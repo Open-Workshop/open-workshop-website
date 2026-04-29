@@ -73,6 +73,144 @@ body.ow-modal-open #standart-container {
     z-index: 10001;
 }
 
+html.ow-save-progress-open,
+body.ow-save-progress-open {
+    overflow: hidden;
+}
+
+.ow-save-progress {
+    z-index: 1010;
+}
+
+.ow-save-progress[hidden] {
+    display: none;
+}
+
+.ow-save-progress__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.ow-save-progress__message {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.ow-save-progress__hint {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: #b6b9c9;
+}
+
+.ow-save-progress__steps {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ow-save-progress__step {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 10px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    border: var(--panel-border);
+    background: rgba(255, 255, 255, 0.025);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
+}
+
+.ow-save-progress__step-marker {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2b2d38;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #eef1f7;
+    font-weight: 700;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+}
+
+.ow-save-progress__step-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ow-save-progress__step-label {
+    font-weight: 600;
+    color: #eef1f7;
+}
+
+.ow-save-progress__step-detail {
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: #b6b9c9;
+}
+
+.ow-save-progress__step.is-active {
+    border-color: var(--interactive-element-background-hover);
+    background: var(--interactive-element-background);
+}
+
+.ow-save-progress__step.is-active .ow-save-progress__step-marker {
+    background: var(--interactive-element-dark-background);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.ow-save-progress__step.is-complete {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--interactive-element-dark-background-disabled);
+}
+
+.ow-save-progress__step.is-complete .ow-save-progress__step-marker {
+    background: var(--interactive-element-dark-background-active);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #eef1f7;
+}
+
+.ow-save-progress__step.is-complete .ow-save-progress__step-label {
+    color: #c7ccda;
+}
+
+.ow-save-progress__step.is-complete .ow-save-progress__step-detail {
+    color: #9ea6b8;
+}
+
+.ow-save-progress__step.is-active .ow-save-progress__step-label,
+.ow-save-progress__step.is-active .ow-save-progress__step-detail {
+    color: #fff;
+}
+
+.ow-save-progress__step.is-error {
+    border-color: rgba(112, 0, 0, 0.6);
+    background: rgba(112, 0, 0, 0.28);
+}
+
+.ow-save-progress__step.is-error .ow-save-progress__step-marker {
+    background: rgba(112, 0, 0, 0.7);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.ow-save-progress__transfer {
+    margin-top: var(--space-1);
+}
+
+.ow-save-progress__bar {
+    width: 100%;
+}
+
 .ow-modal {
     position: fixed;
     inset: 0;
@@ -174,5 +312,17 @@ body.ow-modal-open #standart-container {
 
     .ow-modal__button {
         width: 100%;
+    }
+
+    .ow-save-progress__step {
+        grid-template-columns: 1.35rem minmax(0, 1fr);
+        gap: 10px;
+        padding: 8px 10px;
+    }
+
+    .ow-save-progress__step-marker {
+        width: 1.35rem;
+        height: 1.35rem;
+        font-size: 0.82rem;
     }
 }

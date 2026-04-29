@@ -4,6 +4,7 @@
   if (window.OWUI) return;
 
   const uploadRegistry = new WeakMap();
+  const saveRegistry = new WeakMap();
   const relativeRegistry = new WeakMap();
 
   const SECOND_MS = 1000;
@@ -508,6 +509,365 @@
     return controller;
   }
 
+  const SAVE_STEP_STATUS = Object.freeze({
+    pending: 'pending',
+    active: 'active',
+    complete: 'complete',
+    error: 'error',
+  });
+
+  function resolveSaveProgressRoot(target) {
+    const root = resolveElement(target, '[data-save-progress-root]');
+    if (root && root.matches('[data-save-progress-root]')) return root;
+    return target instanceof Element && target.matches('[data-save-progress-root]') ? target : root;
+  }
+
+  function normalizeSaveStepStatus(status) {
+    const normalized = String(status || SAVE_STEP_STATUS.pending).trim().toLowerCase();
+    if (
+      normalized === SAVE_STEP_STATUS.active ||
+      normalized === SAVE_STEP_STATUS.complete ||
+      normalized === SAVE_STEP_STATUS.error
+    ) {
+      return normalized;
+    }
+    return SAVE_STEP_STATUS.pending;
+  }
+
+  function createSaveProgress(target) {
+    const root = resolveSaveProgressRoot(target);
+    if (!root) return null;
+
+    if (saveRegistry.has(root)) {
+      return saveRegistry.get(root);
+    }
+
+    const dialog = root.querySelector('[data-save-progress-dialog]') || root;
+    const titleNode = root.querySelector('[data-save-progress-title]');
+    const messageNode = root.querySelector('[data-save-progress-message]');
+    const stepsRoot = root.querySelector('[data-save-progress-steps]');
+    const transferRoot = root.querySelector('[data-upload-progress-root]');
+    const transferProgress = transferRoot ? createUploadProgress(transferRoot) : null;
+    const stepNodes = new Map();
+
+    const steps = [];
+    let activeStepKey = '';
+    let transferActive = false;
+
+    function updateBodyLock(locked) {
+      document.documentElement.classList.toggle('ow-save-progress-open', locked);
+      if (document.body) {
+        document.body.classList.toggle('ow-save-progress-open', locked);
+      }
+    }
+
+    function setMessage(text) {
+      if (!messageNode) return;
+      const nextText = String(text || '').trim();
+      messageNode.textContent = nextText;
+      messageNode.hidden = nextText === '';
+    }
+
+    function setTitle(text) {
+      if (!titleNode) return;
+      titleNode.textContent = String(text || '');
+    }
+
+    function setTransferLabel(text) {
+      if (!transferProgress || typeof transferProgress.setLabel !== 'function') return;
+      transferProgress.setLabel(text || '');
+    }
+
+    function setTransferMeta(metaText) {
+      if (!transferProgress || typeof transferProgress.setMeta !== 'function') return;
+      transferProgress.setMeta(metaText || '');
+    }
+
+    function setTransferProgress(percent) {
+      if (!transferProgress || typeof transferProgress.setProgress !== 'function') return;
+      transferProgress.setProgress(percent);
+    }
+
+    function setTransferStage(stage) {
+      transferActive = true;
+      if (!transferProgress || typeof transferProgress.setStage !== 'function') return null;
+      return transferProgress.setStage(stage);
+    }
+
+    function applyTransferState(message) {
+      transferActive = true;
+      if (!transferProgress || typeof transferProgress.applyTransferState !== 'function') {
+        return null;
+      }
+      return transferProgress.applyTransferState(message);
+    }
+
+    function clearTransferState() {
+      transferActive = false;
+      syncProgressBar();
+    }
+
+    function syncProgressBar() {
+      if (!transferProgress || typeof transferProgress.setProgress !== 'function') return;
+      if (transferActive) return;
+
+      if (steps.length === 0) {
+        setTransferProgress(0);
+        return;
+      }
+
+      let completedCount = 0;
+      let activeIndex = -1;
+
+      steps.forEach(function (step, index) {
+        if (step.status === SAVE_STEP_STATUS.complete) {
+          completedCount += 1;
+        } else if (activeIndex === -1 && step.status === SAVE_STEP_STATUS.active) {
+          activeIndex = index;
+        }
+      });
+
+      const activeBonus = activeIndex >= 0 ? 0.35 : 0;
+      const percent = completedCount >= steps.length
+        ? 100
+        : Math.min(
+          99,
+          Math.max(0, Math.round(((completedCount + activeBonus) / Math.max(steps.length, 1)) * 100)),
+        );
+      setTransferProgress(percent);
+
+      const currentStep = activeIndex >= 0
+        ? steps[activeIndex]
+        : steps[Math.min(completedCount, steps.length - 1)] || null;
+      if (currentStep) {
+        setTransferLabel(currentStep.detail || currentStep.label || '');
+      }
+    }
+
+    function renderStepNode(step, index) {
+      let node = stepNodes.get(step.key);
+      if (!node) {
+        const item = createElement('li', 'ow-save-progress__step');
+        item.dataset.saveProgressStep = step.key;
+
+        const marker = createElement('span', 'ow-save-progress__step-marker');
+        marker.setAttribute('aria-hidden', 'true');
+
+        const copy = createElement('div', 'ow-save-progress__step-copy');
+        const label = createElement('span', 'ow-save-progress__step-label');
+        const detail = createElement('span', 'ow-save-progress__step-detail');
+
+        copy.append(label, detail);
+        item.append(marker, copy);
+
+        node = {
+          item,
+          marker,
+          label,
+          detail,
+        };
+        stepNodes.set(step.key, node);
+      }
+
+      node.marker.textContent = String(index + 1);
+      node.label.textContent = step.label;
+      node.detail.textContent = step.detail || '';
+      node.detail.hidden = String(step.detail || '').trim() === '';
+
+      node.item.classList.toggle('is-pending', step.status === SAVE_STEP_STATUS.pending);
+      node.item.classList.toggle('is-active', step.status === SAVE_STEP_STATUS.active);
+      node.item.classList.toggle('is-complete', step.status === SAVE_STEP_STATUS.complete);
+      node.item.classList.toggle('is-error', step.status === SAVE_STEP_STATUS.error);
+
+      return node.item;
+    }
+
+    function renderSteps(nextSteps) {
+      steps.length = 0;
+      stepNodes.clear();
+      if (stepsRoot) {
+        stepsRoot.replaceChildren();
+      }
+
+      const normalizedSteps = Array.isArray(nextSteps)
+        ? nextSteps.map(function (step) {
+          return {
+            key: String(step && step.key !== undefined ? step.key : '').trim(),
+            label: String(step && step.label !== undefined ? step.label : '').trim(),
+            detail: String(step && step.detail !== undefined ? step.detail : '').trim(),
+            status: normalizeSaveStepStatus(step && step.status),
+          };
+        }).filter(function (step) {
+          return step.key !== '' && step.label !== '';
+        })
+        : [];
+
+      normalizedSteps.forEach(function (step, index) {
+        steps.push(step);
+        if (stepsRoot) {
+          stepsRoot.appendChild(renderStepNode(step, index));
+        }
+      });
+    }
+
+    function setStep(stepKey, status, detail) {
+      const key = String(stepKey || '').trim();
+      if (key === '') return null;
+
+      const step = steps.find(function (item) {
+        return item.key === key;
+      });
+      if (!step) return null;
+
+      const nextStatus = normalizeSaveStepStatus(status);
+      const switchingStep = nextStatus === SAVE_STEP_STATUS.active && activeStepKey && activeStepKey !== key;
+      if (nextStatus !== SAVE_STEP_STATUS.active || switchingStep) {
+        transferActive = false;
+      }
+      if (nextStatus === SAVE_STEP_STATUS.active && activeStepKey && activeStepKey !== key) {
+        const previousStep = steps.find(function (item) {
+          return item.key === activeStepKey;
+        });
+        if (previousStep && previousStep.status === SAVE_STEP_STATUS.active) {
+          previousStep.status = SAVE_STEP_STATUS.complete;
+          renderStepNode(previousStep, steps.indexOf(previousStep));
+        }
+      }
+
+      if (detail !== undefined) {
+        step.detail = String(detail || '').trim();
+      }
+
+      step.status = nextStatus;
+      activeStepKey = nextStatus === SAVE_STEP_STATUS.active ? key : (activeStepKey === key ? '' : activeStepKey);
+
+      const index = steps.indexOf(step);
+      if (index >= 0) {
+        if (stepsRoot && stepNodes.has(step.key) === false) {
+          stepsRoot.appendChild(renderStepNode(step, index));
+        } else {
+          renderStepNode(step, index);
+        }
+      }
+
+      setMessage(step.detail || step.label);
+      setTransferLabel(step.detail || step.label || '');
+      syncProgressBar();
+      return step;
+    }
+
+    function start(options) {
+      const settings = options && typeof options === 'object' ? options : {};
+      if (settings.title !== undefined) {
+        setTitle(settings.title);
+      }
+      if (settings.message !== undefined) {
+        setMessage(settings.message);
+      }
+
+      renderSteps(settings.steps);
+      activeStepKey = '';
+      transferActive = false;
+
+      root.hidden = false;
+      root.style.display = '';
+      root.classList.add('is-open');
+      root.setAttribute('aria-hidden', 'false');
+      updateBodyLock(true);
+
+      if (transferProgress && typeof transferProgress.start === 'function') {
+        transferProgress.start(settings.transferLabel || settings.title || 'Начинаем...');
+      }
+
+      if (dialog && typeof dialog.focus === 'function') {
+        window.requestAnimationFrame(function () {
+          try {
+            dialog.focus({ preventScroll: true });
+          } catch (error) {
+            dialog.focus();
+          }
+        });
+      }
+
+      if (steps.length > 0) {
+        setStep(steps[0].key, SAVE_STEP_STATUS.active, steps[0].detail);
+      } else {
+        syncProgressBar();
+      }
+
+      return controller;
+    }
+
+    function close() {
+      transferActive = false;
+      if (transferProgress && typeof transferProgress.complete === 'function') {
+        transferProgress.complete();
+      }
+      root.classList.remove('is-open');
+      root.setAttribute('aria-hidden', 'true');
+      root.hidden = true;
+      root.style.display = 'none';
+      updateBodyLock(false);
+    }
+
+    function complete(message) {
+      if (message !== undefined) {
+        setMessage(message);
+      }
+
+      steps.forEach(function (step, index) {
+        step.status = SAVE_STEP_STATUS.complete;
+        renderStepNode(step, index);
+      });
+      activeStepKey = '';
+      syncProgressBar();
+      close();
+    }
+
+    function fail(message) {
+      if (message !== undefined) {
+        setMessage(message);
+      }
+
+      if (activeStepKey) {
+        const step = steps.find(function (item) {
+          return item.key === activeStepKey;
+        });
+        if (step) {
+          step.status = SAVE_STEP_STATUS.error;
+          renderStepNode(step, steps.indexOf(step));
+        }
+      }
+
+      transferActive = false;
+      if (transferProgress && typeof transferProgress.complete === 'function') {
+        transferProgress.complete();
+      }
+      syncProgressBar();
+    }
+
+    const controller = {
+      root,
+      start,
+      close,
+      complete,
+      fail,
+      setTitle,
+      setMessage,
+      setSteps: renderSteps,
+      setStep,
+      setProgress: setTransferProgress,
+      setLabel: setTransferLabel,
+      setMeta: setTransferMeta,
+      setTransferStage,
+      applyTransferState,
+      clearTransferState,
+    };
+
+    saveRegistry.set(root, controller);
+    return controller;
+  }
+
   const modalRegistry = new WeakMap();
   let activeModalController = null;
   let modalOpenCount = 0;
@@ -768,6 +1128,7 @@
     initRelativeTime,
     initModals,
     createUploadProgress,
+    createSaveProgress,
     openModal,
     closeModal,
     confirmModal,

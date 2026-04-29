@@ -23,6 +23,10 @@
     let saveInProgress = false;
     let deleteInProgress = false;
     let unloadGuard = null;
+    const progressRoot = runtime.resolveElement(settings.progressRoot || '[data-save-progress-root]');
+    const saveProgress = window.OWUI && typeof window.OWUI.createSaveProgress === 'function'
+      ? window.OWUI.createSaveProgress(progressRoot)
+      : null;
 
     function getPickerChanges(editorId) {
       const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
@@ -119,7 +123,70 @@
           tags.remove.length > 0 ||
           dependencies.add.length > 0 ||
           dependencies.remove.length > 0,
-      };
+        };
+    }
+
+    function buildSavePlan(changes) {
+      const steps = [];
+      const baseChanged = Object.values(changes.base || {}).some(function (item) {
+        return Boolean(item && item.changed);
+      });
+      const authorsChanged = Boolean(changes.authors && (
+        changes.authors.add.length > 0 ||
+        changes.authors.remove.length > 0 ||
+        Boolean(changes.authors.ownerChanged) ||
+        Number(changes.authors.currentOwnerId || 0) !== Number(changes.authors.initialOwnerId || 0)
+      ));
+      const mediaChanged = Boolean(
+        changes.media &&
+        (
+          changes.media.new.length > 0 ||
+          changes.media.changed.length > 0 ||
+          changes.media.deleted.length > 0
+        ),
+      );
+      const tagsChanged = Boolean(changes.tags && (changes.tags.add.length > 0 || changes.tags.remove.length > 0));
+      const dependenciesChanged = Boolean(
+        changes.dependencies &&
+        (changes.dependencies.add.length > 0 || changes.dependencies.remove.length > 0),
+      );
+
+      if (baseChanged) {
+        steps.push({ key: 'base', label: 'Сохраняем основные поля' });
+      }
+      if (authorsChanged) {
+        steps.push({ key: 'authors', label: 'Обновляем авторов' });
+      }
+      if (mediaChanged) {
+        steps.push({ key: 'media', label: 'Обновляем изображения' });
+      }
+      if (tagsChanged) {
+        steps.push({ key: 'tags', label: 'Синхронизируем теги' });
+      }
+      if (dependenciesChanged) {
+        steps.push({ key: 'dependencies', label: 'Синхронизируем зависимости' });
+      }
+
+      steps.push({ key: 'finish', label: 'Завершаем сохранение' });
+      steps.push({ key: 'reloading', label: 'Перезагружаем страницу' });
+      return steps;
+    }
+
+    function waitForReloadPaint() {
+      return new Promise(function (resolve) {
+        window.requestAnimationFrame(function () {
+          window.requestAnimationFrame(resolve);
+        });
+      });
+    }
+
+    function getMediaOperationLabel(entry) {
+      if (!entry) return 'Обновляем изображения';
+      if (entry.kind === 'deleted') return 'Удаляем изображение';
+      if (entry.kind === 'changed') return 'Обновляем изображение';
+      if (entry.item && entry.item.file) return 'Загружаем изображение';
+      if (entry.item && entry.item.url) return 'Сохраняем ссылку';
+      return 'Обновляем изображение';
     }
 
     function hasUnsavedChanges() {
@@ -182,21 +249,43 @@
       }
     }
 
-    async function syncMedia(changes) {
-      for (const item of changes.new) {
-        if (item.file) {
-          await api.uploadNewResourceFile(item);
-        } else {
-          await api.addResourceUrl(item);
+    async function syncMedia(changes, progress) {
+      const operations = [];
+
+      changes.new.forEach(function (item) {
+        operations.push({ kind: 'new', item });
+      });
+      changes.changed.forEach(function (item) {
+        operations.push({ kind: 'changed', item });
+      });
+      changes.deleted.forEach(function (id) {
+        operations.push({ kind: 'deleted', id });
+      });
+
+      const total = operations.length;
+      let index = 0;
+
+      for (const entry of operations) {
+        index += 1;
+        if (progress && typeof progress.setStep === 'function') {
+          progress.setStep('media', 'active', `${getMediaOperationLabel(entry)} ${index}/${total}`);
         }
-      }
 
-      for (const item of changes.changed) {
-        await api.editResource(item);
-      }
+        if (entry.kind === 'new') {
+          if (entry.item.file) {
+            await api.uploadNewResourceFile(entry.item, progress);
+          } else {
+            await api.addResourceUrl(entry.item);
+          }
+          continue;
+        }
 
-      for (const id of changes.deleted) {
-        await api.deleteResource(id);
+        if (entry.kind === 'changed') {
+          await api.editResource(entry.item);
+          continue;
+        }
+
+        await api.deleteResource(entry.id);
       }
     }
 
@@ -218,26 +307,87 @@
         return;
       }
 
+      const savePlan = buildSavePlan(changes);
+      const hasStep = function (stepKey) {
+        return savePlan.some(function (step) {
+          return step.key === stepKey;
+        });
+      };
+
       saveInProgress = true;
       runtime.setButtonBusy(saveButton, true);
 
+      if (saveProgress) {
+        saveProgress.start({
+          title: 'Сохраняем мод',
+          message: 'Не закрывайте страницу до завершения сохранения.',
+          steps: savePlan,
+        });
+      }
+
+      let saveCompleted = false;
+
       try {
-        await api.updateMod(buildPatchPayload(changes.base));
-        await syncAuthors(changes.authors);
-        await syncMedia(changes.media);
-        await syncTags(changes.tags);
-        await syncDependencies(changes.dependencies);
+        if (hasStep('base')) {
+          if (saveProgress) {
+            saveProgress.setStep('base', 'active');
+          }
+          await api.updateMod(buildPatchPayload(changes.base));
+        }
+
+        if (hasStep('authors')) {
+          if (saveProgress) {
+            saveProgress.setStep('authors', 'active');
+          }
+          await syncAuthors(changes.authors);
+        }
+
+        if (hasStep('media')) {
+          if (saveProgress) {
+            saveProgress.setStep('media', 'active');
+          }
+          await syncMedia(changes.media, saveProgress);
+        }
+
+        if (hasStep('tags')) {
+          if (saveProgress) {
+            saveProgress.setStep('tags', 'active');
+          }
+          await syncTags(changes.tags);
+        }
+
+        if (hasStep('dependencies')) {
+          if (saveProgress) {
+            saveProgress.setStep('dependencies', 'active');
+          }
+          await syncDependencies(changes.dependencies);
+        }
+
+        if (saveProgress) {
+          saveProgress.setStep('finish', 'active', 'Подготовка к перезагрузке...');
+          saveProgress.setStep('finish', 'complete', 'Изменения сохранены');
+          saveProgress.setStep('reloading', 'active', 'Перезагружаем страницу...');
+          saveProgress.setProgress(100);
+        }
 
         runtime.showToast('Готово', 'Изменения сохранены', 'success');
+        saveCompleted = true;
+        await waitForReloadPaint();
         if (unloadGuard) {
           unloadGuard.suppressOnce();
         }
         window.location.reload();
       } catch (error) {
+        if (saveProgress) {
+          saveProgress.fail(error && error.message ? error.message : 'Не удалось сохранить изменения мода');
+        }
         runtime.showError(error, { fallbackText: 'Не удалось сохранить изменения мода' });
       } finally {
         saveInProgress = false;
         runtime.setButtonBusy(saveButton, false);
+        if (!saveCompleted && saveProgress) {
+          saveProgress.close();
+        }
       }
     }
 
