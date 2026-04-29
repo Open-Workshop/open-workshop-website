@@ -416,6 +416,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("if (value === undefined || value === null) return 0;", catalog_script)
         self.assertIn("if (parsed === -1) return -1;", catalog_script)
         self.assertIn("new Dictionary({ key: 'adult', value: String(normalizedMode), default: '0' })", catalog_script)
+        self.assertIn('syncCatalogGameTypeSelect();', catalog_script)
         self.assertIn("requestSettings.set('adult', '0');", catalog_vendor)
         self.assertIn('data-ow-modal', modal)
         self.assertIn('data-ow-modal-backdrop', modal)
@@ -434,6 +435,30 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('small dark ow-modal__button ow-modal__button--cancel', modal)
         self.assertIn('confirmModal', ui_script)
         self.assertIn('data-ow-modal-default-action', ui_script)
+
+    def test_catalog_game_type_filter_maps_to_manager_types_query(self) -> None:
+        index = (ROOT / "website/index.html").read_text(encoding="utf-8")
+        catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        catalog_vendor = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
+        catalog_styles = (ROOT / "website/assets/styles/pages/catalog.css").read_text(encoding="utf-8")
+
+        self.assertIn('catalog-game-type-setting', index)
+        self.assertIn('catalog-game-type-select', index)
+        self.assertIn('</setting>\n\n      <hr class="catalog-game-select-filter">\n\n      <setting class="with-events catalog-game-type-setting catalog-game-select-filter">', index)
+        self.assertIn('title="Тип игр"', index)
+        self.assertIn('option value="app"', index)
+        self.assertIn('option value="game"', index)
+        self.assertIn('normalizeCatalogGameType', catalog_script)
+        self.assertIn('resolveCatalogGameTypeFromParams', catalog_script)
+        self.assertIn('syncCatalogGameTypeSelect', catalog_script)
+        self.assertIn('applyCatalogGameTypeSelect', catalog_script)
+        self.assertIn("new Dictionary({ key: 'game_type', value: gameType, default: 'all' })", catalog_script)
+        self.assertIn('normalizeCatalogGameTypeForManager', catalog_vendor)
+        self.assertIn("requestSettings.pop('game_type');", catalog_vendor)
+        self.assertIn("requestSettings.pop('types');", catalog_vendor)
+        self.assertIn("requestSettings.set('types', gameType);", catalog_vendor)
+        self.assertIn('catalog-game-type-setting', catalog_styles)
+        self.assertIn('catalog-game-select-filter', index)
 
     async def test_mod_download_redirects_to_storage_url(self) -> None:
         handler = StubHandler(

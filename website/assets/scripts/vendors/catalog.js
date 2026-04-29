@@ -86,6 +86,12 @@
     return descending ? '-' + managerSort : managerSort;
   }
 
+  function normalizeCatalogGameTypeForManager(value) {
+    const normalized = String(value || 'all').trim().toLowerCase();
+    if (normalized === 'app' || normalized === 'game') return normalized;
+    return 'all';
+  }
+
   function buildContextTag(element, isGameMode, contextSortMode) {
     if (isGameMode) {
       if (contextSortMode === 'DOWNLOADS') {
@@ -247,17 +253,25 @@
       }
 
       const isGameMode = settings.get('sgame', 'yes') == 'yes';
+      const gameType = normalizeCatalogGameTypeForManager(settings.get('game_type', settings.get('types', 'all')));
       const requestSettings = settings.duplicate();
       requestSettings.pop('dependencies_mode');
       requestSettings.pop('independents');
       requestSettings.pop('sgame');
       if (isGameMode) {
         requestSettings.pop('adult');
+        requestSettings.pop('game_type');
+        requestSettings.pop('types');
+        if (gameType !== 'all') {
+          requestSettings.set('types', gameType);
+        }
       } else {
         const adultValue = requestSettings.get('adult', '');
         if (adultValue === '' || adultValue === undefined || adultValue === null) {
           requestSettings.set('adult', '0');
         }
+        requestSettings.pop('game_type');
+        requestSettings.pop('types');
       }
       requestSettings.set(
         'sort',

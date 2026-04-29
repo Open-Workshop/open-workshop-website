@@ -79,6 +79,17 @@
 
       <hr class="catalog-game-select-filter">
 
+      <setting class="with-events catalog-game-type-setting catalog-game-select-filter">
+        <label class="catalog-game-type-setting__label" for="catalog-game-type-select">Тип игр</label>
+        <select id="catalog-game-type-select" title="Тип игр" data-action="catalog-game-type-select">
+          <option value="all" selected>Все</option>
+          <option value="app">Приложения</option>
+          <option value="game">Игры</option>
+        </select>
+      </setting>
+
+      <hr class="catalog-game-select-filter">
+
       <setting class="with-events catalog-genres-setting catalog-game-select-filter">
         {{ render_genres_editor({}, 'catalog-genres-editor', false, 'Выбрать жанры') }}
       </setting>

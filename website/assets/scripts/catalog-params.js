@@ -357,6 +357,41 @@
     resetCatalog();
   }
 
+  function getCatalogGameTypeSelect() {
+    return document.getElementById('catalog-game-type-select');
+  }
+
+  function normalizeCatalogGameType(value) {
+    const normalized = String(value || 'all').trim().toLowerCase();
+    if (normalized === 'app' || normalized === 'game') return normalized;
+    return 'all';
+  }
+
+  function resolveCatalogGameTypeFromParams(params) {
+    const rawGameType = String(params.get('game_type', '') || '');
+    const rawLegacyTypes = String(params.get('types', '') || '');
+    return normalizeCatalogGameType(rawGameType !== '' ? rawGameType : rawLegacyTypes);
+  }
+
+  function syncCatalogGameTypeSelect() {
+    const select = getCatalogGameTypeSelect();
+    if (!select) return;
+
+    select.value = resolveCatalogGameTypeFromParams(URLManager.getParams());
+  }
+
+  function applyCatalogGameTypeSelect(input) {
+    const select = input instanceof Element ? input : getCatalogGameTypeSelect();
+    if (!select) return;
+
+    const gameType = normalizeCatalogGameType(select.value);
+    URLManager.updateParams([
+      new Dictionary({ key: 'game_type', value: gameType, default: 'all' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+    resetCatalog();
+  }
+
   const CATALOG_RANGE_CONFIGS = {
     size: {
       minParam: 'size_min',
@@ -1813,6 +1848,9 @@
     const normalizedTagsValue = tagIds.join('_');
     const normalizedExcludedTagsValue = excludedTagIds.join('_');
     const normalizedGenresValue = genreIds.join('_');
+    const rawGameType = String(params.get('game_type', '') || '');
+    const rawLegacyGameTypes = String(params.get('types', '') || '');
+    const gameType = normalizeCatalogGameType(rawGameType !== '' ? rawGameType : rawLegacyGameTypes);
     const rawAdultMode = String(params.get('adult', '') || '');
     const adultMode = normalizeCatalogAdultMode(rawAdultMode);
     const independentMode = params.get('depen', 'no') === 'yes';
@@ -1862,6 +1900,15 @@
     if (normalizedGenresValue !== String(params.get('genres', '') || '')) {
       updates.push(new Dictionary({ key: 'genres', value: normalizedGenresValue, default: '' }));
     }
+    if (rawGameType === 'all' || (rawGameType !== '' && rawGameType !== String(gameType))) {
+      updates.push(new Dictionary({ key: 'game_type', value: String(gameType), default: 'all' }));
+    }
+    if (rawGameType === '' && rawLegacyGameTypes !== '') {
+      updates.push(new Dictionary({ key: 'game_type', value: String(gameType), default: 'all' }));
+    }
+    if (rawLegacyGameTypes !== '') {
+      updates.push(new Dictionary({ key: 'types', value: '', default: '' }));
+    }
     if (rawAdultMode === '-1' || (rawAdultMode !== '' && rawAdultMode !== String(adultMode))) {
       updates.push(new Dictionary({ key: 'adult', value: String(adultMode), default: '0' }));
     }
@@ -1902,6 +1949,7 @@
 
     sortOptionsList(sgame);
     syncCatalogModTypeSelect();
+    syncCatalogGameTypeSelect();
 
     setCatalogGameSpecificFiltersVisible(!sgame);
     setCatalogGameSelectionFiltersVisible(sgame);
@@ -2034,6 +2082,11 @@
 
     if (target.matches('[data-action="catalog-adult-select"]')) {
       void handleCatalogAdultModeChange(target);
+      return;
+    }
+
+    if (target.matches('[data-action="catalog-game-type-select"]')) {
+      applyCatalogGameTypeSelect(target);
       return;
     }
 

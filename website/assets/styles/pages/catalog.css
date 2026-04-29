@@ -126,7 +126,8 @@ div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.wi
     flex-shrink: 0;
 }
 div#settings-catalog > div#settings-menu > setting.catalog-types-setting,
-div#settings-catalog > div#settings-menu > setting.catalog-adult-setting {
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting,
+div#settings-catalog > div#settings-menu > setting.catalog-game-type-setting {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -134,13 +135,15 @@ div#settings-catalog > div#settings-menu > setting.catalog-adult-setting {
     padding: 6px 2px 2px;
 }
 div#settings-catalog > div#settings-menu > setting.catalog-types-setting > .catalog-types-setting__label,
-div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > .catalog-adult-setting__label {
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > .catalog-adult-setting__label,
+div#settings-catalog > div#settings-menu > setting.catalog-game-type-setting > .catalog-game-type-setting__label {
     font-size: 0.95rem;
     font-weight: 600;
     color: #ffffff;
 }
 div#settings-catalog > div#settings-menu > setting.catalog-types-setting > select,
-div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > select {
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > select,
+div#settings-catalog > div#settings-menu > setting.catalog-game-type-setting > select {
     width: 100%;
     margin: 0;
 }
