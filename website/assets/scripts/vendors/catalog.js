@@ -251,6 +251,14 @@
       requestSettings.pop('dependencies_mode');
       requestSettings.pop('independents');
       requestSettings.pop('sgame');
+      if (isGameMode) {
+        requestSettings.pop('adult');
+      } else {
+        const adultValue = requestSettings.get('adult', '');
+        if (adultValue === '' || adultValue === undefined || adultValue === null) {
+          requestSettings.set('adult', '0');
+        }
+      }
       requestSettings.set(
         'sort',
         normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), isGameMode),

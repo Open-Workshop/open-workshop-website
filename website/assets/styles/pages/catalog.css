@@ -125,19 +125,22 @@ div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.wi
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls > button {
     flex-shrink: 0;
 }
-div#settings-catalog > div#settings-menu > setting.catalog-types-setting {
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting,
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
     padding: 6px 2px 2px;
 }
-div#settings-catalog > div#settings-menu > setting.catalog-types-setting > .catalog-types-setting__label {
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting > .catalog-types-setting__label,
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > .catalog-adult-setting__label {
     font-size: 0.95rem;
     font-weight: 600;
     color: #ffffff;
 }
-div#settings-catalog > div#settings-menu > setting.catalog-types-setting > select {
+div#settings-catalog > div#settings-menu > setting.catalog-types-setting > select,
+div#settings-catalog > div#settings-menu > setting.catalog-adult-setting > select {
     width: 100%;
     margin: 0;
 }
@@ -397,6 +400,16 @@ div#settings-catalog:not(.full-screen) > div#settings-menu > .in-full {
 }
 div#settings-catalog.full-screen > div#settings-menu > .in-full {
     display: auto;
+}
+
+main.catalog.catalog-adult-mode--adult-only div.card.card--adult div.card-media canvas.card-blurhash,
+main.catalog.catalog-adult-mode--adult-only div.card.card--adult div.card-media img {
+    filter: none;
+    transform: none;
+}
+
+main.catalog.catalog-adult-mode--adult-only div.card.card--adult div.card-media::after {
+    content: none;
 }
 
 

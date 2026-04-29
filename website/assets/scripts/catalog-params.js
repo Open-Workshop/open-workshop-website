@@ -18,6 +18,7 @@
   let infiniteScrollObserver = null;
   let infiniteScrollSentinel = null;
   let pendingInfiniteScrollCheck = 0;
+  let catalogAdultMode = -1;
   const INFINITE_SCROLL_ROOT_MARGIN_PX = 2500;
   const CATALOG_MOD_TYPE_CONFIGS = {
     all: { min: null, max: null },
@@ -937,6 +938,80 @@
     }
   }
 
+  function normalizeCatalogAdultMode(value) {
+    if (value === undefined || value === null) return 0;
+    const rawValue = String(value).trim();
+    if (rawValue === '') return 0;
+
+    const parsed = Number.parseInt(rawValue, 10);
+    if (parsed === -1) return -1;
+    if (parsed === 0) return 0;
+    if (parsed === 1) return 1;
+    return 0;
+  }
+
+  function getCatalogAdultSelect() {
+    return document.getElementById('catalog-adult-select');
+  }
+
+  function getCatalogAdultConfirmModal() {
+    return document.getElementById('catalog-adult-confirm-modal');
+  }
+
+  function syncCatalogAdultMode(mode, options = {}) {
+    const normalizedMode = normalizeCatalogAdultMode(mode);
+    catalogAdultMode = normalizedMode;
+
+    const select = getCatalogAdultSelect();
+    if (select && options.syncSelect !== false) {
+      select.value = String(normalizedMode);
+    }
+
+    if (root) {
+      root.classList.toggle('catalog-adult-mode--adult-only', normalizedMode === 1);
+    }
+
+    return normalizedMode;
+  }
+
+  function applyCatalogAdultMode(mode) {
+    const normalizedMode = syncCatalogAdultMode(mode);
+    URLManager.updateParams([
+      new Dictionary({ key: 'adult', value: String(normalizedMode), default: '0' }),
+      new Dictionary({ key: 'page', value: 0 }),
+    ]);
+    resetCatalog();
+  }
+
+  async function promptCatalogAdultMode() {
+    const modal = getCatalogAdultConfirmModal();
+    if (window.OWUI && typeof window.OWUI.confirmModal === 'function' && modal) {
+      return window.OWUI.confirmModal(modal);
+    }
+
+    return window.confirm('точно хотите искать 18+ моды?');
+  }
+
+  async function handleCatalogAdultModeChange(input) {
+    const select = input instanceof Element ? input : getCatalogAdultSelect();
+    if (!select) return;
+
+    const requestedMode = normalizeCatalogAdultMode(select.value);
+    if (requestedMode === catalogAdultMode) return;
+
+    if (requestedMode === 1 && catalogAdultMode !== 1) {
+      select.value = String(catalogAdultMode);
+      const confirmed = await promptCatalogAdultMode();
+      if (!confirmed) {
+        return;
+      }
+      applyCatalogAdultMode(1);
+      return;
+    }
+
+    applyCatalogAdultMode(requestedMode);
+  }
+
   function setCatalogSearchValues(value) {
     document.querySelectorAll('#search-in-catalog-header, #search-in-catalog-menu').forEach(function (input) {
       input.value = value;
@@ -1738,6 +1813,8 @@
     const normalizedTagsValue = tagIds.join('_');
     const normalizedExcludedTagsValue = excludedTagIds.join('_');
     const normalizedGenresValue = genreIds.join('_');
+    const rawAdultMode = String(params.get('adult', '') || '');
+    const adultMode = normalizeCatalogAdultMode(rawAdultMode);
     const independentMode = params.get('depen', 'no') === 'yes';
     const dependencyHydrationIds = Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
     const tagHydrationIds = Array.from(new Set([...tagIds, ...excludedTagIds]));
@@ -1785,6 +1862,9 @@
     if (normalizedGenresValue !== String(params.get('genres', '') || '')) {
       updates.push(new Dictionary({ key: 'genres', value: normalizedGenresValue, default: '' }));
     }
+    if (rawAdultMode === '-1' || (rawAdultMode !== '' && rawAdultMode !== String(adultMode))) {
+      updates.push(new Dictionary({ key: 'adult', value: String(adultMode), default: '0' }));
+    }
     if (normalizedTagsValue !== String(params.get('tags', '') || '')) {
       updates.push(new Dictionary({ key: 'tags', value: normalizedTagsValue, default: '' }));
     }
@@ -1805,6 +1885,7 @@
     setSettingChecked(getDependencySetting(), params.get('depen', 'no') === 'yes');
     setSettingChecked(getGameSetting(), sgame);
     setCatalogSearchValues(params.get('name', ''));
+    syncCatalogAdultMode(adultMode);
     syncTagsSearchGame(params.get('game', ''));
     syncDependenceSearchGame(params.get('game', ''));
 
@@ -1948,6 +2029,11 @@
 
     if (target.matches('[data-action="catalog-search"]')) {
       searchByName(target);
+      return;
+    }
+
+    if (target.matches('[data-action="catalog-adult-select"]')) {
+      void handleCatalogAdultModeChange(target);
       return;
     }
 

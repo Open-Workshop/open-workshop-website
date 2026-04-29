@@ -62,3 +62,117 @@
     background: #2b2d38;
     font-size: 0.85rem;
 }
+
+html.ow-modal-open,
+body.ow-modal-open {
+    overflow: hidden;
+}
+
+body.ow-modal-open #standart-container {
+    position: relative;
+    z-index: 10001;
+}
+
+.ow-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    overflow: auto;
+}
+
+.ow-modal[hidden] {
+    display: none;
+}
+
+.ow-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top, rgba(95, 119, 255, 0.12), transparent 42%),
+        rgba(5, 7, 12, 0.8);
+    backdrop-filter: blur(10px) saturate(0.95);
+    -webkit-backdrop-filter: blur(10px) saturate(0.95);
+}
+
+.ow-modal__dialog {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    max-height: min(calc(100vh - (var(--space-4) * 2)), 760px);
+    overflow: auto;
+    border-radius: var(--radius-lg);
+    border: var(--surface-border);
+    box-shadow: var(--shadow-strong);
+    background:
+        linear-gradient(180deg, rgba(27, 29, 38, 0.98) 0%, rgba(19, 21, 29, 0.98) 100%);
+    color: #fff;
+}
+
+.ow-modal__surface {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: var(--space-5);
+}
+
+.ow-modal__title {
+    margin: 0;
+    font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.ow-modal__body {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #d2d7e5;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ow-modal__body > :first-child {
+    margin-top: 0;
+}
+
+.ow-modal__body > :last-child {
+    margin-bottom: 0;
+}
+
+.ow-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ow-modal__button {
+    min-width: 128px;
+    border-radius: var(--radius-md);
+}
+
+@media screen and (max-width: 640px) {
+    .ow-modal {
+        padding: var(--space-2);
+    }
+
+    .ow-modal__dialog {
+        width: 100%;
+    }
+
+    .ow-modal__surface {
+        padding: var(--space-4);
+    }
+
+    .ow-modal__actions {
+        flex-direction: column-reverse;
+    }
+
+    .ow-modal__button {
+        width: 100%;
+    }
+}

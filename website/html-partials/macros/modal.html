@@ -1,0 +1,32 @@
+{% macro render_modal(root_id, title, confirm_text='Продолжить', cancel_text='Отмена', modal_class='', default_action='confirm') -%}
+<div
+  id="{{ root_id }}"
+  class="ow-modal{% if modal_class %} {{ modal_class }}{% endif %}"
+  data-ow-modal
+  data-ow-modal-default-action="{{ default_action }}"
+  hidden
+  aria-hidden="true"
+>
+  <div class="ow-modal__backdrop" data-ow-modal-backdrop></div>
+  <div
+    class="ow-modal__dialog"
+    data-ow-modal-dialog
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="{{ root_id }}-title"
+    aria-describedby="{{ root_id }}-body"
+    tabindex="-1"
+  >
+    <div class="ow-modal__surface">
+      <h2 class="ow-modal__title" id="{{ root_id }}-title">{{ title }}</h2>
+      <div class="ow-modal__body" id="{{ root_id }}-body">
+        {{ caller() }}
+      </div>
+      <div class="ow-modal__actions">
+        <button type="button" class="small dark ow-modal__button ow-modal__button--cancel" data-ow-modal-action="cancel">{{ cancel_text }}</button>
+        <button type="button" class="small ow-modal__button ow-modal__button--confirm" data-ow-modal-action="confirm">{{ confirm_text }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{%- endmacro %}

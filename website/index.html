@@ -1,4 +1,5 @@
 {% extends 'html-partials/standart.html' %}
+{% from 'html-partials/macros/modal.html' import render_modal with context %}
 {% from 'html-partials/macros/taglike-editor.html' import render_genres_editor, render_tags_editor with context %}
 
 {% block content %}
@@ -44,6 +45,17 @@
       </setting>
 
       <hr>
+
+      <setting class="with-events catalog-adult-setting catalog-game-filter">
+        <label class="catalog-adult-setting__label" for="catalog-adult-select">Контент 18+</label>
+        <select id="catalog-adult-select" title="Фильтр 18+" data-action="catalog-adult-select">
+          <option value="-1">Без фильтра</option>
+          <option value="0" selected>Без 18+</option>
+          <option value="1">Только 18+</option>
+        </select>
+      </setting>
+
+      <hr class="catalog-game-filter">
 
       <setting class="with-events catalog-types-setting catalog-game-filter">
         <label class="catalog-types-setting__label" for="mod-type-select">Тип модов</label>
@@ -133,6 +145,16 @@
 
       <label id="end-of-cards">Вы увидели все карточки ʕᵔᴥᵔʔ</label>
   </div>
+
+  {% call render_modal(
+    'catalog-adult-confirm-modal',
+    'Подтверждение',
+    confirm_text='Искать 18+',
+    cancel_text='Отмена',
+    default_action='cancel'
+  ) %}
+    <p>точно хотите искать 18+ моды?</p>
+  {% endcall %}
 
   <script src="/assets/scripts/vendors/catalog.js"></script>
   <script src="/assets/scripts/catalog-params.js"></script>

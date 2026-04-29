@@ -508,11 +508,279 @@
     return controller;
   }
 
+  const modalRegistry = new WeakMap();
+  let activeModalController = null;
+  let modalOpenCount = 0;
+
+  function updateModalLockState() {
+    const locked = modalOpenCount > 0;
+    document.documentElement.classList.toggle('ow-modal-open', locked);
+    if (document.body) {
+      document.body.classList.toggle('ow-modal-open', locked);
+    }
+  }
+
+  function getModalFocusableElements(root) {
+    if (!(root instanceof Element)) return [];
+    return Array.from(root.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter(function (element) {
+      return element instanceof HTMLElement && !element.hidden;
+    });
+  }
+
+  function bindModalController(root) {
+    if (!(root instanceof Element)) return null;
+    if (modalRegistry.has(root)) {
+      return modalRegistry.get(root);
+    }
+
+    let previousFocus = null;
+    let pendingResolve = null;
+    let pendingPromise = null;
+
+    function getDefaultAction() {
+      const normalizedAction = String(root.dataset.owModalDefaultAction || 'confirm').trim().toLowerCase();
+      return normalizedAction === 'cancel' ? 'cancel' : 'confirm';
+    }
+
+    function getActionButton(action) {
+      return root.querySelector('[data-ow-modal-action="' + action + '"]');
+    }
+
+    function focusDefaultAction() {
+      const defaultAction = getDefaultAction();
+      const preferredButton = getActionButton(defaultAction) || getActionButton(defaultAction === 'confirm' ? 'cancel' : 'confirm');
+      const dialog = root.querySelector('[data-ow-modal-dialog]');
+      const focusTarget = preferredButton || dialog || root;
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        focusTarget.focus({ preventScroll: true });
+      }
+    }
+
+    function finish(accepted) {
+      const wasOpen = root.getAttribute('aria-hidden') === 'false';
+      root.classList.remove('is-open');
+      root.setAttribute('aria-hidden', 'true');
+      root.hidden = true;
+      if (wasOpen) {
+        modalOpenCount = Math.max(0, modalOpenCount - 1);
+        if (activeModalController === controller) {
+          activeModalController = null;
+        }
+        updateModalLockState();
+      }
+
+      const resolve = pendingResolve;
+      const restoreFocusTarget = previousFocus;
+      previousFocus = null;
+      pendingResolve = null;
+      pendingPromise = null;
+
+      if (resolve) {
+        resolve(Boolean(accepted));
+      }
+
+      if (restoreFocusTarget && typeof restoreFocusTarget.focus === 'function') {
+        try {
+          restoreFocusTarget.focus({ preventScroll: true });
+        } catch (error) {
+          restoreFocusTarget.focus();
+        }
+      }
+
+      root.dispatchEvent(new CustomEvent(Boolean(accepted) ? 'ow:modal-confirm' : 'ow:modal-cancel', {
+        bubbles: true,
+        detail: { accepted: Boolean(accepted) },
+      }));
+    }
+
+    function close(accepted = false) {
+      if (!pendingPromise && root.hidden) {
+        return Boolean(accepted);
+      }
+      finish(accepted);
+      root.dispatchEvent(new CustomEvent('ow:modal-close', {
+        bubbles: true,
+        detail: { accepted: Boolean(accepted) },
+      }));
+      return Boolean(accepted);
+    }
+
+    function open() {
+      if (pendingPromise && root.getAttribute('aria-hidden') === 'false') {
+        return pendingPromise;
+      }
+
+      if (activeModalController && activeModalController !== controller) {
+        activeModalController.close(false);
+      }
+
+      previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      root.hidden = false;
+      root.classList.add('is-open');
+      root.setAttribute('aria-hidden', 'false');
+      activeModalController = controller;
+      modalOpenCount += 1;
+      updateModalLockState();
+
+      pendingPromise = new Promise(function (resolve) {
+        pendingResolve = resolve;
+      });
+
+      window.requestAnimationFrame(function () {
+        if (pendingPromise && root.getAttribute('aria-hidden') === 'false') {
+          focusDefaultAction();
+        }
+      });
+
+      root.dispatchEvent(new CustomEvent('ow:modal-open', {
+        bubbles: true,
+      }));
+
+      return pendingPromise;
+    }
+
+    function handleClick(event) {
+      const actionNode = event.target instanceof Element ? event.target.closest('[data-ow-modal-action]') : null;
+      if (actionNode && root.contains(actionNode)) {
+        const action = String(actionNode.dataset.owModalAction || '').trim().toLowerCase();
+        event.preventDefault();
+        if (action === 'confirm') {
+          close(true);
+        } else {
+          close(false);
+        }
+        return;
+      }
+
+      const backdropNode = event.target instanceof Element ? event.target.closest('[data-ow-modal-backdrop]') : null;
+      if (backdropNode && root.contains(backdropNode)) {
+        event.preventDefault();
+        close(false);
+      }
+    }
+
+    function handleKeydown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        close(false);
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusable = getModalFocusableElements(root);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const currentIndex = focusable.indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        event.preventDefault();
+        focusDefaultAction();
+        return;
+      }
+
+      if (event.shiftKey && currentIndex === 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1].focus();
+      } else if (!event.shiftKey && currentIndex === focusable.length - 1) {
+        event.preventDefault();
+        focusable[0].focus();
+      }
+    }
+
+    const controller = {
+      root,
+      open,
+      close,
+      get isOpen() {
+        return root.getAttribute('aria-hidden') === 'false';
+      },
+    };
+
+    root.addEventListener('click', handleClick);
+    root.addEventListener('keydown', handleKeydown);
+    modalRegistry.set(root, controller);
+    return controller;
+  }
+
+  function resolveModalRoot(target) {
+    if (!target) return null;
+    if (target instanceof Element) {
+      return target.matches('[data-ow-modal]') ? target : target.closest('[data-ow-modal]');
+    }
+    if (target instanceof Document) {
+      return target.querySelector('[data-ow-modal]');
+    }
+    if (typeof target === 'string') {
+      return document.querySelector(target);
+    }
+    return resolveElement(target, '[data-ow-modal]');
+  }
+
+  function collectModalElements(rootOrDocument) {
+    const scope = rootOrDocument instanceof Element || rootOrDocument instanceof Document
+      ? rootOrDocument
+      : document;
+    const items = [];
+
+    if (scope instanceof Element && scope.matches('[data-ow-modal]')) {
+      items.push(scope);
+    }
+
+    if (scope.querySelectorAll) {
+      scope.querySelectorAll('[data-ow-modal]').forEach(function (element) {
+        items.push(element);
+      });
+    }
+
+    return items;
+  }
+
+  function initModals(rootOrDocument) {
+    collectModalElements(rootOrDocument).forEach(function (element) {
+      bindModalController(element);
+    });
+  }
+
+  function openModal(target) {
+    const controller = bindModalController(resolveModalRoot(target));
+    if (!controller) return Promise.resolve(false);
+    return controller.open();
+  }
+
+  function closeModal(target) {
+    const controller = bindModalController(resolveModalRoot(target));
+    if (!controller) return false;
+    return controller.close(false);
+  }
+
+  function confirmModal(target) {
+    const controller = bindModalController(resolveModalRoot(target));
+    if (!controller) return Promise.resolve(false);
+    return controller.open();
+  }
+
   window.OWUI = {
     initRelativeTime,
+    initModals,
     createUploadProgress,
+    openModal,
+    closeModal,
+    confirmModal,
     getUploadStageLabel,
     resolveTransferPercent,
     formatBytes,
   };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      initModals(document);
+    });
+  } else {
+    initModals(document);
+  }
 })();
