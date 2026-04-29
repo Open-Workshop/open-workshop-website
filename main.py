@@ -2,9 +2,11 @@ from flask import Flask, render_template, send_from_directory, request, make_res
 from pathlib import Path
 from babel import dates
 import datetime
+from aiohttp import ClientSession, ClientTimeout
 from zoneinfo import ZoneInfo
 import asyncio
 import json
+import time
 from urllib.parse import urlencode
 import tool
 import os
@@ -27,6 +29,17 @@ def healthz():
 
 
 DEFAULT_IMAGE_FALLBACK = app_config.PUBLIC_CONFIG["assets"]["images"]["fallback"]
+STATUS_BADGE_TARGETS = {
+    "open-workshop": {
+        "label": "Open Workshop",
+        "heartbeat_url": "https://status.miskler.ru/api/status-page/heartbeat/open-workshop",
+        "page_url": "https://status.miskler.ru/status/open-workshop",
+    },
+}
+
+# Keep the status badge snappy and avoid hammering the external status API.
+_STATUS_BADGE_CACHE: dict[str, dict[str, object]] = {}
+_STATUS_BADGE_CACHE_TTL_SECONDS = 60
 
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
@@ -319,6 +332,279 @@ def format_js_datetime(value: datetime.datetime) -> str:
         value = value.replace(tzinfo=datetime.timezone.utc)
     # ISO 8601 with timezone offset for correct client-side parsing
     return value.astimezone(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def _normalize_status_badge_state(value) -> str:
+    if value is None or isinstance(value, bool):
+        return "unknown"
+
+    if isinstance(value, (int, float)):
+        try:
+            code = int(value)
+        except (TypeError, ValueError):
+            return "unknown"
+
+        return {
+            0: "down",
+            1: "up",
+            2: "warning",
+            3: "maintenance",
+        }.get(code, "unknown")
+
+    if isinstance(value, dict):
+        for key in ("status", "state", "code", "value"):
+            state = _normalize_status_badge_state(value.get(key))
+            if state != "unknown":
+                return state
+        return "unknown"
+
+    if isinstance(value, str):
+        token = value.strip().lower()
+        if not token:
+            return "unknown"
+
+        if token.isdigit():
+            return _normalize_status_badge_state(int(token))
+
+        return {
+            "operational": "up",
+            "up": "up",
+            "online": "up",
+            "healthy": "up",
+            "ok": "up",
+            "good": "up",
+            "degraded": "warning",
+            "partial": "warning",
+            "partial_down": "warning",
+            "partial_outage": "warning",
+            "warning": "warning",
+            "issues": "warning",
+            "minor_outage": "warning",
+            "limited": "warning",
+            "pending": "warning",
+            "down": "down",
+            "outage": "down",
+            "offline": "down",
+            "major_outage": "down",
+            "critical": "down",
+            "maintenance": "maintenance",
+            "maintenance_mode": "maintenance",
+            "under_maintenance": "maintenance",
+            "scheduled_maintenance": "maintenance",
+        }.get(token, "unknown")
+
+    return "unknown"
+
+
+def _status_badge_meta(status_code: str) -> tuple[str, str]:
+    return {
+        "up": ("Работает", "#22c55e"),
+        "warning": ("Проблемы", "#f59e0b"),
+        "down": ("Сбой", "#ef4444"),
+        "maintenance": ("Обслуживание", "#3b82f6"),
+        "unknown": ("Нет данных", "#64748b"),
+    }.get(status_code, ("Нет данных", "#64748b"))
+
+
+def _aggregate_status_codes(status_codes: list[str]) -> str:
+    filtered_codes = [code for code in status_codes if code and code != "unknown"]
+    if not filtered_codes:
+        return "unknown"
+
+    code_set = set(filtered_codes)
+    if "down" in code_set:
+        return "warning" if len(code_set) > 1 else "down"
+    if "maintenance" in code_set:
+        return "maintenance"
+    if "warning" in code_set:
+        return "warning"
+    if "up" in code_set:
+        return "up"
+    return "unknown"
+
+
+def _coerce_percentage_value(value) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+
+    if isinstance(value, (int, float)):
+        return float(value)
+
+    if isinstance(value, str):
+        normalized = value.strip().replace("%", "").replace(",", ".")
+        if not normalized:
+            return None
+        try:
+            return float(normalized)
+        except ValueError:
+            return None
+
+    return None
+
+
+def _collect_uptime_values(value, *, under_uptime: bool = False) -> list[float]:
+    collected_values: list[float] = []
+
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_name = str(key).lower()
+            collected_values.extend(
+                _collect_uptime_values(
+                    item,
+                    under_uptime=under_uptime or "uptime" in key_name,
+                )
+            )
+        return collected_values
+
+    if isinstance(value, list):
+        for item in value:
+            collected_values.extend(_collect_uptime_values(item, under_uptime=under_uptime))
+        return collected_values
+
+    if under_uptime:
+        numeric_value = _coerce_percentage_value(value)
+        if numeric_value is not None:
+            collected_values.append(numeric_value)
+
+    return collected_values
+
+
+def _format_percentage_value(value: float | None) -> str:
+    if value is None:
+        return "—"
+
+    formatted = f"{value:.2f}".rstrip("0").rstrip(".")
+    return f"{formatted}%"
+
+
+def _build_status_badge_summary(slug: str, payload, *, cached: bool = False, stale: bool = False) -> dict:
+    target = STATUS_BADGE_TARGETS[slug]
+    status_code = "unknown"
+
+    if isinstance(payload, dict):
+        for key in ("status", "state", "overallStatus", "overall_status", "currentStatus", "current_status"):
+            status_code = _normalize_status_badge_state(payload.get(key))
+            if status_code != "unknown":
+                break
+
+        if status_code == "unknown":
+            heartbeat_list = payload.get("heartbeatList")
+            if isinstance(heartbeat_list, dict):
+                heartbeat_codes = []
+                for entries in heartbeat_list.values():
+                    if not isinstance(entries, list):
+                        continue
+
+                    last_heartbeat = next((entry for entry in reversed(entries) if isinstance(entry, dict)), None)
+                    if last_heartbeat is not None:
+                        heartbeat_codes.append(_normalize_status_badge_state(last_heartbeat.get("status")))
+
+                status_code = _aggregate_status_codes(heartbeat_codes)
+
+    status_label, status_color = _status_badge_meta(status_code)
+    uptime_values = _collect_uptime_values(payload)
+    if uptime_values and max(uptime_values) <= 1:
+        uptime_values = [value * 100 for value in uptime_values]
+
+    uptime_value = min(uptime_values) if uptime_values else None
+    uptime_label = _format_percentage_value(uptime_value)
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    status_text = f"{status_label}" if uptime_value is None else f"{status_label} · {uptime_label}"
+
+    return {
+        "slug": slug,
+        "label": target["label"],
+        "page_url": target["page_url"],
+        "source_url": target["heartbeat_url"],
+        "status_code": status_code,
+        "status_label": status_label,
+        "status_color": status_color,
+        "uptime_value": uptime_value,
+        "uptime_label": uptime_label,
+        "status_text": status_text,
+        "title": f"{target['label']}: {status_text}" if status_text else target["label"],
+        "cached": cached,
+        "stale": stale,
+        "updated_at": now_iso,
+    }
+
+
+async def _fetch_status_badge_payload(url: str):
+    timeout = ClientTimeout(total=4)
+    async with ClientSession(timeout=timeout) as session:
+        async with session.get(url) as response:
+            if response.status >= 400:
+                return None
+
+            try:
+                return await response.json()
+            except Exception:
+                text = await response.text()
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    return None
+
+
+async def _load_status_badge_summary(slug: str) -> dict | None:
+    normalized_slug = slug.strip().lower()
+    target = STATUS_BADGE_TARGETS.get(normalized_slug)
+    if target is None:
+        return None
+
+    cached_entry = _STATUS_BADGE_CACHE.get(normalized_slug)
+    now = time.monotonic()
+    try:
+        cache_expires_at = float(cached_entry.get("expires_at", 0.0)) if cached_entry else 0.0
+    except (TypeError, ValueError):
+        cache_expires_at = 0.0
+
+    if cached_entry and cache_expires_at > now:
+        summary = cached_entry.get("summary")
+        if isinstance(summary, dict):
+            return dict(summary)
+
+    payload = await _fetch_status_badge_payload(target["heartbeat_url"])
+    if isinstance(payload, dict):
+        summary = _build_status_badge_summary(normalized_slug, payload)
+        _STATUS_BADGE_CACHE[normalized_slug] = {
+            "expires_at": now + _STATUS_BADGE_CACHE_TTL_SECONDS,
+            "summary": summary,
+        }
+        return dict(summary)
+
+    if cached_entry:
+        summary = cached_entry.get("summary")
+        if isinstance(summary, dict):
+            stale_summary = dict(summary)
+            stale_summary["cached"] = True
+            stale_summary["stale"] = True
+            stale_summary["updated_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+            stale_summary["title"] = f"{target['label']}: {stale_summary['status_text']} (данные устарели)"
+            return stale_summary
+
+    summary = _build_status_badge_summary(normalized_slug, {}, cached=False, stale=False)
+    summary["status_code"] = "unknown"
+    summary["status_label"] = "Нет данных"
+    summary["status_color"] = "#64748b"
+    summary["uptime_value"] = None
+    summary["uptime_label"] = "—"
+    summary["status_text"] = "Нет данных"
+    summary["title"] = f"{target['label']}: нет данных"
+    summary["cached"] = False
+    summary["stale"] = False
+    return summary
+
+
+@app.route('/api/status-badge/<slug>')
+async def status_badge(slug):
+    summary = await _load_status_badge_summary(slug)
+    if summary is None:
+        return jsonify(error="Unknown status badge"), 404
+
+    response = jsonify(summary)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 async def unified_route():

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -506,6 +506,61 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             "await sendJson(apiPaths.game.edit, base.payload, { game_id: String(gameId) });",
             script,
         )
+
+    def test_status_badge_summary_uses_minimum_uptime_and_current_status(self) -> None:
+        payload = {
+            "heartbeatList": {
+                "101": [{"status": 1}, {"status": 1}, {"status": 1}],
+                "102": [{"status": 1}, {"status": 0}],
+            },
+            "uptimeList": {
+                "101_24": 99.95,
+                "101_7": 99.98,
+                "102_24": 98.4,
+            },
+        }
+
+        summary = main._build_status_badge_summary("open-workshop", payload)
+
+        self.assertEqual(summary["status_code"], "warning")
+        self.assertEqual(summary["status_label"], "Проблемы")
+        self.assertEqual(summary["uptime_value"], 98.4)
+        self.assertEqual(summary["uptime_label"], "98.4%")
+        self.assertEqual(summary["page_url"], "https://status.miskler.ru/status/open-workshop")
+
+    async def test_status_badge_route_returns_json_summary(self) -> None:
+        summary = {
+            "slug": "open-workshop",
+            "label": "Open Workshop",
+            "page_url": "https://status.miskler.ru/status/open-workshop",
+            "source_url": "https://status.miskler.ru/api/status-page/heartbeat/open-workshop",
+            "status_code": "up",
+            "status_label": "Работает",
+            "status_color": "#22c55e",
+            "uptime_value": 99.95,
+            "uptime_label": "99.95%",
+            "status_text": "Работает · 99.95%",
+            "title": "Open Workshop: Работает · 99.95%",
+            "cached": False,
+            "stale": False,
+            "updated_at": "2026-04-29T00:00:00+00:00",
+        }
+
+        with patch.object(main, "_load_status_badge_summary", new=AsyncMock(return_value=summary)):
+            with main.app.test_request_context("/api/status-badge/open-workshop"):
+                response = await main.status_badge("open-workshop")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), summary)
+
+    def test_footer_includes_status_badge_placeholder(self) -> None:
+        footer = (ROOT / "website/html-partials/footer.html").read_text(encoding="utf-8")
+        self.assertIn('data-status-badge-url="/api/status-badge/open-workshop"', footer)
+        self.assertIn('https://status.miskler.ru/status/open-workshop', footer)
+
+    def test_standard_template_loads_footer_status_script(self) -> None:
+        standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
+        self.assertIn('/assets/scripts/footer-status.js', standart)
 
     async def test_user_settings_admin_fetches_rights_and_private_data(self) -> None:
         profile_access = build_profile_access(_profile_access_source("admin", rights_value=True))
