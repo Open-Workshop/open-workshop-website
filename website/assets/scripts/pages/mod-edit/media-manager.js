@@ -886,7 +886,11 @@
       addFileItems(event.dataTransfer ? event.dataTransfer.files : null);
     });
 
-    window.addEventListener('beforeunload', function () {
+    window.addEventListener('pagehide', function (event) {
+      if (event && event.persisted) {
+        return;
+      }
+
       if (state.paginationSuppressClickTimer) {
         window.clearTimeout(state.paginationSuppressClickTimer);
       }

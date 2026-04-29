@@ -73,6 +73,49 @@
     }, delay);
   }
 
+  function bindBeforeUnload(shouldBlock) {
+    if (typeof shouldBlock !== 'function') {
+      return {
+        suppressOnce: function noop() {},
+        dispose: function noop() {},
+      };
+    }
+
+    let suppressNextUnload = false;
+
+    function handleBeforeUnload(event) {
+      if (suppressNextUnload) return;
+
+      let blocked = false;
+      try {
+        blocked = Boolean(shouldBlock());
+      } catch (error) {
+        blocked = true;
+      }
+
+      if (!blocked) return;
+
+      event.preventDefault();
+      event.returnValue = '';
+      return '';
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return {
+      suppressOnce: function suppressOnce() {
+        suppressNextUnload = true;
+        window.setTimeout(function () {
+          suppressNextUnload = false;
+        }, 0);
+      },
+      dispose: function dispose() {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        suppressNextUnload = false;
+      },
+    };
+  }
+
   function bindPager(startButton) {
     const button = resolveElement(startButton);
     if (!(button instanceof Element) || !window.Pager) {
@@ -167,6 +210,7 @@
     showError,
     setButtonBusy,
     initPage,
+    bindBeforeUnload,
     bindPager,
     getTextValue,
     getStartValue,

@@ -14,6 +14,7 @@
 
   let saveInProgress = false;
   let deleteInProgress = false;
+  let unloadGuard = null;
 
   function showToast(title, text, theme) {
     if (editRuntime) {
@@ -294,6 +295,53 @@
     };
   }
 
+  function collectGameChanges() {
+    const base = collectBaseChanges();
+    const mediaState = mediaManager && typeof mediaManager.getState === 'function'
+      ? mediaManager.getState()
+      : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
+    const tags = getPickerChangesFromState(tagsPickerState);
+    const genres = getPickerChangesFromState(genresPickerState);
+    const tagsEditor = getPickerEditor(tagsEditorId);
+    const genresEditor = getPickerEditor(genresEditorId);
+    const createdTagDefinitions = Array.isArray(tags.create) ? tags.create : [];
+    const createdGenreDefinitions = Array.isArray(genres.create) ? genres.create : [];
+
+    return {
+      base,
+      mediaState,
+      tags,
+      genres,
+      tagsEditor,
+      genresEditor,
+      createdTagDefinitions,
+      createdGenreDefinitions,
+      hasChanges:
+        base.changed ||
+        mediaState.changes.new.length > 0 ||
+        mediaState.changes.changed.length > 0 ||
+        mediaState.changes.deleted.length > 0 ||
+        tags.add.length > 0 ||
+        tags.remove.length > 0 ||
+        createdTagDefinitions.length > 0 ||
+        genres.add.length > 0 ||
+        genres.remove.length > 0 ||
+        createdGenreDefinitions.length > 0,
+    };
+  }
+
+  function hasUnsavedChanges() {
+    if (saveInProgress || deleteInProgress) {
+      return true;
+    }
+
+    try {
+      return collectGameChanges().hasChanges;
+    } catch (error) {
+      return true;
+    }
+  }
+
   async function syncAssociations(endpoint, ids, idField) {
     for (const relationId of ids) {
       const pathParams = { game_id: String(gameId) };
@@ -339,6 +387,9 @@
     try {
       await sendJson(apiPaths.game.delete, {}, { game_id: String(gameId) });
       showToast('Удалено', 'Игра удалена', 'success');
+      if (unloadGuard) {
+        unloadGuard.suppressOnce();
+      }
       window.location.href = '/?sgame=yes';
     } catch (error) {
       showToast('Ошибка', error.message || String(error), 'danger');
@@ -351,34 +402,15 @@
     if (saveInProgress) return;
 
     try {
-      const base = collectBaseChanges();
-      const mediaState = mediaManager && typeof mediaManager.getState === 'function'
-        ? mediaManager.getState()
-        : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
-      const tags = getPickerChangesFromState(tagsPickerState);
-      const genres = getPickerChangesFromState(genresPickerState);
-      const tagsEditor = getPickerEditor(tagsEditorId);
-      const genresEditor = getPickerEditor(genresEditorId);
-      const createdTagDefinitions = Array.isArray(tags.create) ? tags.create : [];
-      const createdGenreDefinitions = Array.isArray(genres.create) ? genres.create : [];
-      const hasChanges =
-        base.changed ||
-        mediaState.changes.new.length > 0 ||
-        mediaState.changes.changed.length > 0 ||
-        mediaState.changes.deleted.length > 0 ||
-        tags.add.length > 0 ||
-        tags.remove.length > 0 ||
-        createdTagDefinitions.length > 0 ||
-        genres.add.length > 0 ||
-        genres.remove.length > 0 ||
-        createdGenreDefinitions.length > 0;
+      const changes = collectGameChanges();
+      const base = changes.base;
 
-      if (!hasChanges) {
+      if (!changes.hasChanges) {
         showToast('Нечего сохранять', 'Нет изменений', 'info');
         return;
       }
 
-      if (mediaState.hasInvalidUrls) {
+      if (changes.mediaState.hasInvalidUrls) {
         showToast('Проверьте изображения', 'Исправьте некорректные данные ресурсов перед сохранением', 'warning');
         return;
       }
@@ -390,43 +422,46 @@
         await sendJson(apiPaths.game.edit, base.payload, { game_id: String(gameId) });
       }
 
-      await syncMedia(mediaState.changes);
+      await syncMedia(changes.mediaState.changes);
 
-      const createdTagIds = createdTagDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.tag.add, 'name', createdTagDefinitions, function (tempId, realId) {
-          if (tagsEditor) {
-            tagsEditor.finalizeCreated(tempId, realId);
+      const createdTagIds = changes.createdTagDefinitions.length > 0
+        ? await createNamedEntities(apiPaths.tag.add, 'name', changes.createdTagDefinitions, function (tempId, realId) {
+          if (changes.tagsEditor) {
+            changes.tagsEditor.finalizeCreated(tempId, realId);
           }
         })
         : [];
 
-      const tagIdsToAdd = tags.add.concat(createdTagIds);
+      const tagIdsToAdd = changes.tags.add.concat(createdTagIds);
       if (tagIdsToAdd.length > 0) {
         await syncAssociations(apiPaths.game.tags_add, tagIdsToAdd, 'tag_id');
       }
 
-      if (tags.remove.length > 0) {
-        await syncAssociations(apiPaths.game.tags_delete, tags.remove, 'tag_id');
+      if (changes.tags.remove.length > 0) {
+        await syncAssociations(apiPaths.game.tags_delete, changes.tags.remove, 'tag_id');
       }
 
-      const createdGenreIds = createdGenreDefinitions.length > 0
-        ? await createNamedEntities(apiPaths.genre.add, 'name', createdGenreDefinitions, function (tempId, realId) {
-          if (genresEditor) {
-            genresEditor.finalizeCreated(tempId, realId);
+      const createdGenreIds = changes.createdGenreDefinitions.length > 0
+        ? await createNamedEntities(apiPaths.genre.add, 'name', changes.createdGenreDefinitions, function (tempId, realId) {
+          if (changes.genresEditor) {
+            changes.genresEditor.finalizeCreated(tempId, realId);
           }
         })
         : [];
 
-      const genreIdsToAdd = genres.add.concat(createdGenreIds);
+      const genreIdsToAdd = changes.genres.add.concat(createdGenreIds);
       if (genreIdsToAdd.length > 0) {
         await syncAssociations(apiPaths.game.genres_add, genreIdsToAdd, 'genre_id');
       }
 
-      if (genres.remove.length > 0) {
-        await syncAssociations(apiPaths.game.genres_delete, genres.remove, 'genre_id');
+      if (changes.genres.remove.length > 0) {
+        await syncAssociations(apiPaths.game.genres_delete, changes.genres.remove, 'genre_id');
       }
 
       showToast('Готово', 'Изменения игры сохранены', 'success');
+      if (unloadGuard) {
+        unloadGuard.suppressOnce();
+      }
       window.location.reload();
     } catch (error) {
       showToast('Ошибка', error.message || String(error), 'danger');
@@ -448,6 +483,10 @@
       root: root.querySelector('#media-manager'),
     })
     : null;
+
+  if (editRuntime && typeof editRuntime.bindBeforeUnload === 'function') {
+    unloadGuard = editRuntime.bindBeforeUnload(hasUnsavedChanges);
+  }
 
   if (editRuntime) {
     editRuntime.initPage(root, { fadeInDelay: 250 });

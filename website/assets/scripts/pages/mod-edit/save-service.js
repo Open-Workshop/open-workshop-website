@@ -22,6 +22,7 @@
 
     let saveInProgress = false;
     let deleteInProgress = false;
+    let unloadGuard = null;
 
     function getPickerChanges(editorId) {
       const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
@@ -121,6 +122,18 @@
       };
     }
 
+    function hasUnsavedChanges() {
+      if (saveInProgress || deleteInProgress) {
+        return true;
+      }
+
+      return collectChanges().hasChanges;
+    }
+
+    if (typeof runtime.bindBeforeUnload === 'function') {
+      unloadGuard = runtime.bindBeforeUnload(hasUnsavedChanges);
+    }
+
     async function syncTags(changes) {
       for (const id of changes.add) {
         await api.updateTag(id, true);
@@ -216,6 +229,9 @@
         await syncDependencies(changes.dependencies);
 
         runtime.showToast('Готово', 'Изменения сохранены', 'success');
+        if (unloadGuard) {
+          unloadGuard.suppressOnce();
+        }
         window.location.reload();
       } catch (error) {
         runtime.showError(error, { fallbackText: 'Не удалось сохранить изменения мода' });
@@ -241,6 +257,9 @@
       try {
         await api.deleteMod();
         runtime.showToast('Удалено', 'Мод удален', 'success');
+        if (unloadGuard) {
+          unloadGuard.suppressOnce();
+        }
         window.location.href = '/';
       } catch (error) {
         runtime.showError(error, { fallbackText: 'Не удалось удалить мод' });
