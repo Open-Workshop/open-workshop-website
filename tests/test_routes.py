@@ -550,6 +550,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.fetch_calls, [])
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
 
+    def test_healthz_returns_ok(self) -> None:
+        with main.app.test_client() as client:
+            response = client.get("/healthz")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {"status": "ok"})
+
 
 if __name__ == "__main__":
     unittest.main()

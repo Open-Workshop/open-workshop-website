@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request, make_response, redirect
+from flask import Flask, render_template, send_from_directory, request, make_response, redirect, jsonify
 from pathlib import Path
 from babel import dates
 import datetime
@@ -20,6 +20,11 @@ from telemetry import setup_uptrace_telemetry
 
 app = Flask(__name__, template_folder='website')
 setup_uptrace_telemetry(app)
+
+@app.route('/healthz')
+def healthz():
+    return jsonify(status="ok")
+
 
 DEFAULT_IMAGE_FALLBACK = app_config.PUBLIC_CONFIG["assets"]["images"]["fallback"]
 
