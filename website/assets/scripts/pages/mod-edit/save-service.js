@@ -143,21 +143,16 @@
       const initialOwnerId = Number(changes.initialOwnerId || 0);
 
       if (currentOwnerId > 0 && currentOwnerId !== initialOwnerId) {
-        const ownerAdd = addMap.get(String(currentOwnerId));
-        if (ownerAdd) {
-          await api.updateAuthor(ownerAdd.id, true, true);
-          addMap.delete(String(currentOwnerId));
-        } else {
-          await api.updateAuthor(currentOwnerId, true, true);
-        }
+        await api.upsertAuthor(currentOwnerId, true);
+        addMap.delete(String(currentOwnerId));
       }
 
       for (const item of addMap.values()) {
-        await api.updateAuthor(item.id, true, false);
+        await api.upsertAuthor(item.id, item.owner);
       }
 
       for (const item of removeQueue) {
-        await api.updateAuthor(item.id, false, false);
+        await api.deleteAuthor(item.id);
       }
     }
 

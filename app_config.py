@@ -56,6 +56,7 @@ PUBLIC_CONFIG: dict = {
                 "authorize": {"method": "GET", "path": "/oauth/{service}/authorize"},
             },
             "profile": {
+                "list": {"method": "GET", "path": "/profiles"},
                 "info": {"method": "GET", "path": "/profiles/{user_id}"},
                 "edit": {"method": "PATCH", "path": "/profiles/{user_id}"},
                 "edit_rights": {"method": "PATCH", "path": "/profiles/{user_id}/rights"},
@@ -72,7 +73,8 @@ PUBLIC_CONFIG: dict = {
                 "info": {"method": "GET", "path": "/mods/{mod_id}"},
                 "download": {"method": "POST", "path": "/mods/{mod_id}/download-url"},
                 "delete": {"method": "DELETE", "path": "/mods/{mod_id}"},
-                "authors": {"method": "PATCH", "path": "/mods/{mod_id}/authors"},
+                "authors_upsert": {"method": "PUT", "path": "/mods/{mod_id}/authors/{author_id}"},
+                "authors_delete": {"method": "DELETE", "path": "/mods/{mod_id}/authors/{author_id}"},
                 "resources": {"method": "GET", "path": "/mods/{mod_id}/resources"},
                 "tags": {"method": "GET", "path": "/mods/{mod_id}/tags"},
                 "dependencies": {"method": "GET", "path": "/mods/{mod_id}/dependencies"},

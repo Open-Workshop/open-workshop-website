@@ -103,6 +103,23 @@
       throw new Error('Ответ сервера не содержит данных профиля');
     }
 
+    async function searchProfiles(username) {
+      const query = String(username || '').trim();
+      if (query === '') return [];
+
+      const result = await requestEndpoint(apiPaths.profile.list, {
+        query: {
+          username: query,
+          page: 0,
+          page_size: 10,
+        },
+        parseAs: 'json',
+        fallbackError: 'Не удалось найти пользователей',
+      });
+
+      return Array.isArray(result.data && result.data.items) ? result.data.items : [];
+    }
+
     async function updateMod(formData) {
       if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return null;
       const payload = {};
@@ -141,16 +158,22 @@
       });
     }
 
-    async function updateAuthor(authorId, mode, owner) {
-      return requestEndpoint(apiPaths.mod.authors, {
-        pathParams: { mod_id: modId },
+    async function upsertAuthor(authorId, owner) {
+      return requestEndpoint(apiPaths.mod.authors_upsert, {
+        pathParams: { mod_id: modId, author_id: authorId },
         data: {
-          mode: Boolean(mode),
-          author: authorId,
-          ...(owner !== undefined ? { owner: Boolean(owner) } : {}),
+          owner: Boolean(owner),
         },
-        parseAs: 'json',
+        parseAs: 'text',
         fallbackError: 'Не удалось обновить список авторов',
+      });
+    }
+
+    async function deleteAuthor(authorId) {
+      return requestEndpoint(apiPaths.mod.authors_delete, {
+        pathParams: { mod_id: modId, author_id: authorId },
+        parseAs: 'text',
+        fallbackError: 'Не удалось удалить автора',
       });
     }
 
@@ -290,10 +313,12 @@
       modId,
       fetchModInfo,
       fetchProfile,
+      searchProfiles,
       updateMod,
       updateTag,
       updateDependency,
-      updateAuthor,
+      upsertAuthor,
+      deleteAuthor,
       addResourceUrl,
       editResource,
       deleteResource,

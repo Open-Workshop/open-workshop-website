@@ -11,18 +11,34 @@
   </div>
 
   <div class="outline-container mod-authors__list" data-authors-list></div>
-  <p class="mod-authors__empty ow-muted" data-authors-empty hidden>Список авторов пуст</p>
+  <p class="mod-authors__empty ow-muted" data-authors-list-empty hidden>Список авторов пуст</p>
 
   <div class="mod-authors__add">
-    <input
-      type="text"
-      class="mod-authors__input"
-      data-authors-input
-      placeholder="ID пользователя или /user/123"
-      inputmode="numeric"
-    >
+    <div class="mod-authors__search" data-authors-search>
+      <input
+        type="text"
+        class="mod-authors__input"
+        data-authors-input
+        placeholder="Ник, ID или /user/123"
+        autocomplete="off"
+        spellcheck="false"
+        aria-autocomplete="list"
+        aria-expanded="false"
+        aria-controls="mod-authors-suggestions"
+      >
+      <div
+        class="picker-editor__results-list mod-authors__dropdown"
+        id="mod-authors-suggestions"
+        data-authors-suggestions
+        role="listbox"
+        aria-live="polite"
+        aria-label="Подсказки по пользователям"
+      >
+        <p class="picker-editor__empty mod-authors__dropdown-empty" data-authors-suggestions-empty>Введите ник для поиска</p>
+      </div>
+    </div>
     <button type="button" class="button-style button-style-small" data-action="authors-add">Добавить</button>
   </div>
 
-  <p class="mod-authors__hint ow-muted">Добавление по ID профиля или ссылке `/user/123`. Кнопка `Владелец` передаёт владение выбранному автору.</p>
+  <p class="mod-authors__hint ow-muted">При вводе ника появляется выпадающий список. Добавление по ID профиля, нику или ссылке `/user/123`. Кнопка `Владелец` передаёт владение выбранному автору.</p>
 </div>
