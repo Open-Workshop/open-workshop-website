@@ -141,6 +141,11 @@
     pointer-events: none;
 }
 
+.toast_temporary:hover .toast__header::after,
+.toast_temporary.toast_paused .toast__header::after {
+    animation-play-state: paused;
+}
+
 .toast__close {
     position: absolute;
     z-index: 2;
