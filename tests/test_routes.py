@@ -385,12 +385,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
         self.assertIn("payload[key] = value.value === 'checked';", script)
 
-    def test_catalog_cards_blur_adult_logos_until_hover(self) -> None:
+    def test_catalog_cards_blur_adult_logos_show_18_plus_until_hover(self) -> None:
         script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
         styles = (ROOT / "website/assets/styles/vendors/cards.css").read_text(encoding="utf-8")
         self.assertIn("card--adult", script)
         self.assertIn("div.card.card--adult div.card-media canvas.card-blurhash", styles)
         self.assertIn("div.card.card--adult div.card-media img", styles)
+        self.assertIn('div.card.card--adult div.card-media::after', styles)
+        self.assertIn('content: "18+";', styles)
         self.assertIn("div.card.card--adult:hover div.card-media canvas.card-blurhash", styles)
         self.assertIn("div.card.card--adult:hover div.card-media img", styles)
 
