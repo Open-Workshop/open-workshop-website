@@ -72,17 +72,54 @@
     return window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
   }
 
-  function getPickerChanges(editorId) {
-    const editor = getPickerEditor(editorId);
-    if (!editor) {
-      return { add: [], remove: [], create: [] };
+  function emptyPickerState() {
+    return {
+      savedHidden: [],
+      unsavedVisible: [],
+      pendingVisible: [],
+    };
+  }
+
+  function clonePickerItems(items) {
+    return Array.isArray(items)
+      ? items.map(function (item) {
+        return {
+          id: String(item && item.id !== undefined ? item.id : ''),
+          name: String(item && item.name !== undefined ? item.name : ''),
+        };
+      }).filter(function (item) {
+        return item.id !== '';
+      })
+      : [];
+  }
+
+  function clonePickerState(state) {
+    if (!state || typeof state !== 'object') {
+      return emptyPickerState();
     }
 
-    const state = editor.getState();
     return {
-      add: parseNumericIds(state.unsavedVisible),
-      remove: parseNumericIds(state.savedHidden),
-      create: state.pendingVisible.map(function (item) {
+      savedHidden: clonePickerItems(state.savedHidden),
+      unsavedVisible: clonePickerItems(state.unsavedVisible),
+      pendingVisible: clonePickerItems(state.pendingVisible),
+    };
+  }
+
+  function readPickerState(editorId) {
+    const editor = getPickerEditor(editorId);
+    if (!editor || typeof editor.getState !== 'function') {
+      return emptyPickerState();
+    }
+
+    return clonePickerState(editor.getState());
+  }
+
+  function getPickerChangesFromState(state) {
+    const currentState = state || emptyPickerState();
+    return {
+      add: parseNumericIds(currentState.unsavedVisible),
+      remove: parseNumericIds(currentState.savedHidden),
+      create: currentState.pendingVisible.map(function (item) {
         return {
           tempId: item.id,
           name: item.name,
@@ -121,6 +158,20 @@
     }
 
     throw new Error('Не удалось разобрать ID для "' + entityLabel + '"');
+  }
+
+  let tagsPickerState = readPickerState(tagsEditorId);
+  let genresPickerState = readPickerState(genresEditorId);
+
+  function bindPickerState(editorId, setState) {
+    const editorRoot = document.getElementById(editorId);
+    if (!(editorRoot instanceof Element)) return;
+
+    editorRoot.addEventListener('ow:picker-selection-change', function (event) {
+      if (!event.detail || event.detail.key !== editorId || !event.detail.state) return;
+      const nextState = clonePickerState(event.detail.state);
+      setState(nextState);
+    });
   }
 
   function initCatalogPreview() {
@@ -243,16 +294,11 @@
     };
   }
 
-  async function syncAssociations(endpoint, ids, idField, mode) {
+  async function syncAssociations(endpoint, ids, idField) {
     for (const relationId of ids) {
       const pathParams = { game_id: String(gameId) };
       pathParams[idField] = String(relationId);
-      const action = mode ? 'add' : 'delete';
-      const assocEndpoint = {
-        ...endpoint,
-        path: endpoint.path.replace('_association', `_${action}`),
-      };
-      await sendJson(assocEndpoint, {}, pathParams);
+      await sendJson(endpoint, {}, pathParams);
     }
   }
 
@@ -309,8 +355,8 @@
       const mediaState = mediaManager && typeof mediaManager.getState === 'function'
         ? mediaManager.getState()
         : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
-      const tags = getPickerChanges(tagsEditorId);
-      const genres = getPickerChanges(genresEditorId);
+      const tags = getPickerChangesFromState(tagsPickerState);
+      const genres = getPickerChangesFromState(genresPickerState);
       const tagsEditor = getPickerEditor(tagsEditorId);
       const genresEditor = getPickerEditor(genresEditorId);
       const createdTagDefinitions = Array.isArray(tags.create) ? tags.create : [];
@@ -356,11 +402,11 @@
 
       const tagIdsToAdd = tags.add.concat(createdTagIds);
       if (tagIdsToAdd.length > 0) {
-        await syncAssociations(apiPaths.game.tag_association, tagIdsToAdd, 'tag_id', true);
+        await syncAssociations(apiPaths.game.tags_add, tagIdsToAdd, 'tag_id');
       }
 
       if (tags.remove.length > 0) {
-        await syncAssociations(apiPaths.game.tag_association, tags.remove, 'tag_id', false);
+        await syncAssociations(apiPaths.game.tags_delete, tags.remove, 'tag_id');
       }
 
       const createdGenreIds = createdGenreDefinitions.length > 0
@@ -373,11 +419,11 @@
 
       const genreIdsToAdd = genres.add.concat(createdGenreIds);
       if (genreIdsToAdd.length > 0) {
-        await syncAssociations(apiPaths.game.genre_association, genreIdsToAdd, 'genre_id', true);
+        await syncAssociations(apiPaths.game.genres_add, genreIdsToAdd, 'genre_id');
       }
 
       if (genres.remove.length > 0) {
-        await syncAssociations(apiPaths.game.genre_association, genres.remove, 'genre_id', false);
+        await syncAssociations(apiPaths.game.genres_delete, genres.remove, 'genre_id');
       }
 
       showToast('Готово', 'Изменения игры сохранены', 'success');
@@ -409,6 +455,12 @@
   }
 
   initCatalogPreview();
+  bindPickerState(tagsEditorId, function (state) {
+    tagsPickerState = state;
+  });
+  bindPickerState(genresEditorId, function (state) {
+    genresPickerState = state;
+  });
 
   root.addEventListener('click', function (event) {
     const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;

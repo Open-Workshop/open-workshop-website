@@ -27,7 +27,7 @@
 .toast-container {
     position: fixed;
     top: 81px;
-    z-index: 0;
+    z-index: 10000;
     top: calc(var(--header-height) + 14px);
     right: 16px;
     width: min(360px, 92vw);
