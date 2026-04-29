@@ -710,6 +710,8 @@
 }
 
 .media-manager__page {
+  position: relative;
+  overflow: hidden;
   min-width: 32px;
   height: 32px;
   padding: 0 6px;
@@ -719,10 +721,51 @@
   color: #f4f6fb;
   font-size: 1.15rem;
   font-weight: 300;
+  user-select: none;
+  transition: background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease, transform 0.14s ease;
+}
+
+.media-manager__page.is-draggable {
+  cursor: grab;
+}
+
+.media-manager__page:active {
+  cursor: grabbing;
+}
+
+.media-manager__page:focus-visible {
+  outline: 2px solid rgba(129, 150, 229, 0.95);
+  outline-offset: 2px;
 }
 
 .media-manager__page:hover {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.media-manager__page.is-drag-source {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.media-manager__page.is-drop-before::before,
+.media-manager__page.is-drop-after::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7b9cff, #4f70ff);
+  box-shadow: 0 0 0 2px rgba(89, 118, 239, 0.18);
+  z-index: 2;
+}
+
+.media-manager__page.is-drop-before::before {
+  left: 4px;
+}
+
+.media-manager__page.is-drop-after::after {
+  right: 4px;
 }
 
 .media-manager__page.is-active {

@@ -178,12 +178,14 @@
     }
 
     async function addResourceUrl(resource) {
+      const sortOrder = Number(resource && resource.sortOrder !== undefined ? resource.sortOrder : 0);
       return requestEndpoint(apiPaths.resource.add, {
         data: {
           owner_type: resourceOwnerType,
           owner_id: entityId,
           type: resource.type,
           url: resource.url,
+          sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
         },
         parseAs: 'json',
         fallbackError: 'Не удалось добавить изображение',
@@ -191,11 +193,13 @@
     }
 
     async function editResource(resourceChange) {
+      const sortOrder = Number(resourceChange && resourceChange.sortOrder !== undefined ? resourceChange.sortOrder : NaN);
       return requestEndpoint(apiPaths.resource.edit, {
         pathParams: { resource_id: resourceChange.id },
         data: {
           ...(resourceChange.type ? { type: resourceChange.type } : {}),
           ...(resourceChange.url ? { url: resourceChange.url } : {}),
+          ...(Number.isFinite(sortOrder) ? { sort_order: sortOrder } : {}),
         },
         parseAs: 'json',
         fallbackError: 'Не удалось обновить изображение',
@@ -299,12 +303,14 @@
     }
 
     async function uploadNewResourceFile(resource) {
+      const sortOrder = Number(resource && resource.sortOrder !== undefined ? resource.sortOrder : 0);
       const transfer = await startResourceTransfer({
         kind: 'resource_image',
         owner_type: 'resource',
         resource_owner_type: resourceOwnerType,
         resource_owner_id: entityId,
         resource_type: resource.type,
+        ...(Number.isFinite(sortOrder) ? { resource_sort_order: sortOrder } : {}),
       });
       await uploadBinaryToTransfer(transfer.transfer_url, resource.file);
     }

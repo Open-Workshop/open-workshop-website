@@ -34,6 +34,11 @@
       activeKey: '',
       isDragOver: false,
       dragDepth: 0,
+      paginationDragKey: '',
+      paginationDropKey: '',
+      paginationDropPlacement: 'after',
+      paginationSuppressClick: false,
+      paginationSuppressClickTimer: null,
     };
 
     if (root.dataset.storageOrigin) {
@@ -51,6 +56,11 @@
 
     function normalizeUrl(value) {
       return String(value || '').trim();
+    }
+
+    function parseSortOrder(value, fallback) {
+      const parsed = Number.parseInt(String(value || ''), 10);
+      return Number.isFinite(parsed) ? parsed : fallback;
     }
 
     function isStorageUrl(value) {
@@ -153,6 +163,7 @@
       const node = document.createElement('div');
       node.className = 'media-item';
       node.dataset.mediaKey = item.key;
+      node.dataset.sortOrder = String(item.sortOrder);
 
       const preview = document.createElement('a');
       preview.className = 'media-item__preview without-caption image-link';
@@ -217,6 +228,8 @@
       const node = findNode(item.key);
       if (!node) return;
 
+      node.dataset.sortOrder = String(item.sortOrder);
+
       const preview = node.querySelector('.media-item__preview');
       const backdrop = node.querySelector('.media-item__backdrop');
       const image = node.querySelector('.media-item__image');
@@ -249,6 +262,107 @@
       list.appendChild(node);
     }
 
+    function syncSortOrders() {
+      state.items.forEach(function (item, index) {
+        item.sortOrder = index;
+        const node = findNode(item.key);
+        if (node) {
+          node.dataset.sortOrder = String(index);
+        }
+      });
+    }
+
+    function syncMainListOrder() {
+      if (!list) return;
+
+      const nodes = state.items
+        .map(function (item) {
+          return findNode(item.key);
+        })
+        .filter(function (node) {
+          return Boolean(node);
+        });
+
+      if (nodes.length > 0) {
+        list.replaceChildren.apply(list, nodes);
+      }
+    }
+
+    function getPaginationButtonNodes() {
+      if (!pagination) return [];
+      return Array.from(pagination.querySelectorAll('[data-media-page-key]'));
+    }
+
+    function updatePaginationDragState() {
+      if (!pagination) return;
+
+      getPaginationButtonNodes().forEach(function (node) {
+        const key = node.dataset.mediaPageKey || '';
+        const isSource = key === state.paginationDragKey;
+        const isTarget = key === state.paginationDropKey;
+        node.classList.toggle('is-draggable', state.items.length > 1);
+        node.classList.toggle('is-drag-source', isSource);
+        node.classList.toggle('is-drop-before', isTarget && state.paginationDropPlacement === 'before');
+        node.classList.toggle('is-drop-after', isTarget && state.paginationDropPlacement === 'after');
+      });
+    }
+
+    function clearPaginationDragState() {
+      if (!state.paginationDragKey && !state.paginationDropKey) return;
+
+      state.paginationDragKey = '';
+      state.paginationDropKey = '';
+      state.paginationDropPlacement = 'after';
+      updatePaginationDragState();
+    }
+
+    function setPaginationDropState(sourceKey, targetKey, placement) {
+      state.paginationDragKey = sourceKey || '';
+      state.paginationDropKey = targetKey || '';
+      state.paginationDropPlacement = placement === 'before' ? 'before' : 'after';
+      updatePaginationDragState();
+    }
+
+    function renderPagination() {
+      if (!pagination) return;
+
+      const count = state.items.length;
+      pagination.replaceChildren();
+      pagination.hidden = count === 0;
+      if (footer) {
+        footer.hidden = false;
+      }
+
+      if (count === 0) {
+        clearPaginationDragState();
+        return;
+      }
+
+      const activeIndex = getActiveIndex();
+      const range = getPaginationRange(activeIndex);
+      const draggable = count > 1;
+
+      for (let index = range.start; index < range.end; index += 1) {
+        const item = state.items[index];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'media-manager__page';
+        button.dataset.mediaPage = String(index);
+        button.dataset.mediaPageKey = item.key;
+        button.textContent = String(index + 1);
+        button.draggable = draggable;
+        button.title = draggable
+          ? `Изображение ${index + 1}. Перетащите, чтобы изменить порядок`
+          : `Изображение ${index + 1}`;
+        button.setAttribute('aria-label', `Изображение ${index + 1}`);
+        button.classList.toggle('is-active', index === activeIndex);
+        button.classList.toggle('is-draggable', draggable);
+        pagination.appendChild(button);
+      }
+
+      updatePaginationDragState();
+    }
+
     function updateIndicators() {
       const count = state.items.length;
       if (countNode) {
@@ -269,33 +383,6 @@
           logoStateNode.textContent = 'Логотип не выбран';
           logoStateNode.classList.remove('has-logo');
         }
-      }
-    }
-
-    function renderPagination() {
-      if (!pagination) return;
-
-      if (footer) {
-        footer.hidden = false;
-      }
-      pagination.replaceChildren();
-      pagination.hidden = state.items.length === 0;
-
-      if (state.items.length === 0) {
-        return;
-      }
-
-      const activeIndex = getActiveIndex();
-      const range = getPaginationRange(activeIndex);
-
-      for (let index = range.start; index < range.end; index += 1) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'media-manager__page';
-        button.dataset.mediaPage = String(index);
-        button.textContent = String(index + 1);
-        button.classList.toggle('is-active', index === activeIndex);
-        pagination.appendChild(button);
       }
     }
 
@@ -335,6 +422,7 @@
               changes.new.push({
                 type: item.type,
                 file: item.file,
+                sortOrder: item.sortOrder,
               });
             }
             return;
@@ -345,16 +433,23 @@
             changes.new.push({
               type: item.type,
               url,
+              sortOrder: item.sortOrder,
             });
           }
           return;
         }
 
         const typeChanged = item.type !== item.startType;
+        const sortOrderChanged = item.sortOrder !== item.startSortOrder;
 
-        if (typeChanged) {
+        if (typeChanged || sortOrderChanged) {
           const nextChange = { id: item.id };
-          nextChange.type = item.type;
+          if (typeChanged) {
+            nextChange.type = item.type;
+          }
+          if (sortOrderChanged) {
+            nextChange.sortOrder = item.sortOrder;
+          }
           changes.changed.push(nextChange);
         }
       });
@@ -372,6 +467,8 @@
             source: item.source,
             isNew: item.isNew,
             urlEditable: item.urlEditable,
+            sortOrder: item.sortOrder,
+            startSortOrder: item.startSortOrder,
             previewUrl: getResolvedUrl(item),
             invalidUrl: Boolean(item.invalidUrl),
           };
@@ -428,6 +525,18 @@
     }
 
     function createStateItem(data) {
+      const isNew = Boolean(data.isNew);
+      const startSortOrder = isNew
+        ? null
+        : parseSortOrder(
+          data.startSortOrder,
+          parseSortOrder(data.sortOrder, 0),
+        );
+      const sortOrder = parseSortOrder(
+        data.sortOrder,
+        startSortOrder === null ? 0 : startSortOrder,
+      );
+
       return {
         key: data.key || nextKey(data.isNew ? 'new' : 'existing'),
         id: data.id || '',
@@ -437,17 +546,20 @@
         startUrl: data.startUrl || '',
         url: data.url || '',
         urlEditable: Boolean(data.urlEditable),
-        isNew: Boolean(data.isNew),
+        isNew,
         file: data.file || null,
         fileName: data.fileName || '',
         objectUrl: data.objectUrl || '',
         invalidUrl: Boolean(data.invalidUrl),
+        startSortOrder,
+        sortOrder,
       };
     }
 
     function addItem(item, prepend) {
       state.items[prepend ? 'unshift' : 'push'](item);
       insertNode(createMediaItemNode(item), Boolean(prepend));
+      syncSortOrders();
 
       if (item.type === 'logo') {
         enforceSingleLogo(item);
@@ -483,6 +595,7 @@
         node.remove();
       }
 
+      syncSortOrders();
       ensureActiveItem(nextActiveItem ? nextActiveItem.key : '');
       notify('delete');
     }
@@ -521,6 +634,7 @@
         const preview = node.querySelector('.media-item__preview');
         const logoCheckbox = node.querySelector('.media-item__logo-checkbox');
         const startUrl = normalizeUrl(node.dataset.startUrl || (preview ? preview.getAttribute('href') : ''));
+        const startSortOrder = parseSortOrder(node.dataset.sortOrder, 0);
 
         return createStateItem({
           id: String(node.dataset.id || ''),
@@ -531,6 +645,8 @@
           url: startUrl,
           urlEditable: false,
           isNew: false,
+          startSortOrder,
+          sortOrder: startSortOrder,
         });
       });
 
@@ -563,6 +679,72 @@
       renderCarousel();
     }
 
+    function reorderItems(sourceKey, targetKey, placement) {
+      if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+
+      const sourceIndex = state.items.findIndex(function (item) {
+        return item.key === sourceKey;
+      });
+      const targetIndex = state.items.findIndex(function (item) {
+        return item.key === targetKey;
+      });
+
+      if (sourceIndex < 0 || targetIndex < 0) return;
+
+      let insertIndex = placement === 'before' ? targetIndex : targetIndex + 1;
+      if (sourceIndex === insertIndex || (sourceIndex + 1 === insertIndex && placement === 'before')) {
+        return;
+      }
+
+      const movedItems = state.items.splice(sourceIndex, 1);
+      const movedItem = movedItems[0];
+
+      if (sourceIndex < insertIndex) {
+        insertIndex -= 1;
+      }
+
+      state.items.splice(insertIndex, 0, movedItem);
+      syncMainListOrder();
+      syncSortOrders();
+      ensureActiveItem();
+      notify('reorder');
+    }
+
+    function getPaginationDropInfo(clientX) {
+      if (!pagination) return null;
+
+      const nodes = getPaginationButtonNodes();
+      if (nodes.length === 0) return null;
+
+      for (let index = 0; index < nodes.length; index += 1) {
+        const node = nodes[index];
+        const rect = node.getBoundingClientRect();
+        if (clientX < rect.left + rect.width / 2) {
+          return {
+            key: node.dataset.mediaPageKey || '',
+            placement: 'before',
+          };
+        }
+      }
+
+      const lastNode = nodes[nodes.length - 1];
+      return {
+        key: lastNode.dataset.mediaPageKey || '',
+        placement: 'after',
+      };
+    }
+
+    function suppressPaginationClick() {
+      state.paginationSuppressClick = true;
+      if (state.paginationSuppressClickTimer) {
+        window.clearTimeout(state.paginationSuppressClickTimer);
+      }
+      state.paginationSuppressClickTimer = window.setTimeout(function () {
+        state.paginationSuppressClick = false;
+        state.paginationSuppressClickTimer = null;
+      }, 0);
+    }
+
     list.addEventListener('change', function (event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -592,12 +774,58 @@
 
     if (pagination) {
       pagination.addEventListener('click', function (event) {
+        if (state.paginationDragKey || state.paginationSuppressClick) return;
+
         const target = event.target instanceof Element ? event.target.closest('[data-media-page]') : null;
         if (!target) return;
 
         const index = Number.parseInt(target.dataset.mediaPage || '', 10);
         if (!Number.isFinite(index)) return;
         setActiveIndex(index);
+      });
+
+      pagination.addEventListener('dragstart', function (event) {
+        const button = event.target instanceof Element ? event.target.closest('[data-media-page-key]') : null;
+        if (!button || !event.dataTransfer || !button.draggable) return;
+
+        const key = button.dataset.mediaPageKey || '';
+        if (!findItem(key)) return;
+
+        state.paginationDragKey = key;
+        state.paginationDropKey = key;
+        state.paginationDropPlacement = 'after';
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', key);
+        updatePaginationDragState();
+      });
+
+      pagination.addEventListener('dragover', function (event) {
+        if (!state.paginationDragKey || !event.dataTransfer) return;
+
+        const dropInfo = getPaginationDropInfo(event.clientX);
+        if (!dropInfo) return;
+
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        setPaginationDropState(state.paginationDragKey, dropInfo.key, dropInfo.placement);
+      });
+
+      pagination.addEventListener('drop', function (event) {
+        if (!state.paginationDragKey || !event.dataTransfer) return;
+
+        const dropInfo = getPaginationDropInfo(event.clientX);
+        if (!dropInfo) return;
+
+        event.preventDefault();
+        suppressPaginationClick();
+        const targetKey = dropInfo.key;
+        const sourceKey = state.paginationDragKey;
+        clearPaginationDragState();
+        reorderItems(sourceKey, targetKey, dropInfo.placement);
+      });
+
+      pagination.addEventListener('dragend', function () {
+        clearPaginationDragState();
       });
     }
 
@@ -659,6 +887,9 @@
     });
 
     window.addEventListener('beforeunload', function () {
+      if (state.paginationSuppressClickTimer) {
+        window.clearTimeout(state.paginationSuppressClickTimer);
+      }
       state.items.forEach(function (item) {
         if (item.objectUrl) {
           URL.revokeObjectURL(item.objectUrl);
