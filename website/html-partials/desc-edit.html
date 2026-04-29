@@ -1,4 +1,7 @@
 <div
+  {% if editor_id is defined and editor_id %}
+  id="{{ editor_id }}"
+  {% endif %}
   limit="{{ limit | default('256') }}"
   class="desc-edit"
   data-desc-edit

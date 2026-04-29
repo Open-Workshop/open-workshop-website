@@ -181,7 +181,7 @@
     const preview = createPreview({
       root: root.querySelector('.game-edit__catalog-cards'),
       titleInput: root.querySelector('#game-name'),
-      descriptionRoot: root.querySelector('#game-short-desc-panel'),
+      descriptionRoot: root.querySelector('#game-short-desc-editor'),
       mediaManager,
       gameId,
     });
@@ -235,8 +235,8 @@
   function collectBaseChanges() {
     const nameValue = getTextValue('#game-name');
     const typeValue = getTextValue('#game-type');
-    const shortDescValue = getEditorValue('#game-short-desc-panel');
-    const descValue = getEditorValue('#game-full-desc-panel');
+    const shortDescValue = getEditorValue('#game-short-desc-editor');
+    const descValue = getEditorValue('#game-full-desc-editor');
     const sourceValue = getTextValue('#game-source').trim();
     const sourceIdValue = getTextValue('#game-source-id').trim();
     const startSourceValue = getStartValue('#game-source').trim();
@@ -256,11 +256,11 @@
       changed = true;
     }
 
-    if (shortDescValue !== getEditorStartValue('#game-short-desc-panel')) {
+    if (shortDescValue !== getEditorStartValue('#game-short-desc-editor')) {
       changed = true;
     }
 
-    if (descValue !== getEditorStartValue('#game-full-desc-panel')) {
+    if (descValue !== getEditorStartValue('#game-full-desc-editor')) {
       changed = true;
     }
 
@@ -287,8 +287,8 @@
       payload: {
         ...(nameValue !== getStartValue('#game-name') ? { name: nameValue } : {}),
         ...(typeValue !== getStartValue('#game-type') ? { type: typeValue } : {}),
-        ...(shortDescValue !== getEditorStartValue('#game-short-desc-panel') ? { short_description: shortDescValue } : {}),
-        ...(descValue !== getEditorStartValue('#game-full-desc-panel') ? { description: descValue } : {}),
+        ...(shortDescValue !== getEditorStartValue('#game-short-desc-editor') ? { short_description: shortDescValue } : {}),
+        ...(descValue !== getEditorStartValue('#game-full-desc-editor') ? { description: descValue } : {}),
         ...(sourcePairChanged ? { source: sourceValue, source_id: Number(sourceIdValue) } : {}),
       },
     };

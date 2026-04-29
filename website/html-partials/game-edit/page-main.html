@@ -19,12 +19,9 @@
       </select>
     </div>
 
-    <div id="game-full-desc-panel" class="standart-panel mod-edit__panel">
-      <h3>Полное описание</h3>
-      {% with limit=10000, placeholder='Полное описание игры...', init_text=game['description'] %}
-        {% include 'html-partials/desc-edit.html' %}
-      {% endwith %}
-    </div>
+    {% with limit=10000, placeholder='Полное описание игры...', init_text=game['description'], editor_id='game-full-desc-editor' %}
+      {% include 'html-partials/desc-edit.html' %}
+    {% endwith %}
   </section>
 
   <aside class="mod-edit__sidebar">
