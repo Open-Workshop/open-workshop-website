@@ -1,6 +1,7 @@
 {% extends 'html-partials/standart.html' %}
 {% block content %}
 <link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
+{% set mod_git_url = info.get('git_url') or '' %}
 
 <main class="mod">
     <div class="info-text">
@@ -61,7 +62,6 @@
         </div>
         {% endif %}
 
-
         {% if authors | length > 0 %}
         <div class="outline-container">
         <h2>Авторы</h2>
@@ -71,6 +71,31 @@
                 <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
             </a>
         {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if mod_git_url %}
+        <div class="outline-container mod-git-panel" data-git-url-block>
+        <h2>Ссылки</h2>
+        <div class="mod-git-panel__row">
+            <img
+                class="mod-git-panel__favicon"
+                data-git-favicon
+                src="/assets/images/svg/white/link.svg"
+                alt=""
+                aria-hidden="true"
+            >
+            <a
+                class="mod-git-panel__link"
+                data-git-url-source
+                href="{{ mod_git_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="{{ mod_git_url }}"
+            >
+                {{ mod_git_url }}
+            </a>
+        </div>
         </div>
         {% endif %}
 

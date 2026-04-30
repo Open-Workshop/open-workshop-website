@@ -192,6 +192,17 @@ button.public-mod-toggle:active {
   width: 100%;
 }
 
+.mod-edit__field > span {
+  color: #cfd4e2;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.mod-edit__field > input[type="text"] {
+  margin: 0;
+  width: 100%;
+}
+
 .mod-edit__field--toggle {
   flex-direction: row;
   align-items: flex-start;

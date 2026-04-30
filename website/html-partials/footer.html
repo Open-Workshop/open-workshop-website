@@ -40,7 +40,7 @@
         {% for item in ow.site.profile_menu %}
         {% set href = item.href.format(id=user_profile.id) %}
         {% if item.id == 'my_mods' %}
-        {% set href = href + '?show_not_public=true&trigger=edit' %}
+        {% set href = href + '?show_not_public=true&trigger=edit&adult=-1' %}
         {% endif %}
         {% if item.id != 'upload_mod' or (session_access and session_access.can_add_mod) %}
         <a href="{{ href }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>

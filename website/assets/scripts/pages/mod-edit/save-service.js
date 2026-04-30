@@ -11,6 +11,7 @@
     const deleteButton = runtime.resolveElement(settings.deleteButton);
     const deleteConfirmInput = runtime.resolveElement(settings.deleteConfirmInput);
     const titleInput = runtime.resolveElement(settings.titleInput);
+    const gitUrlInput = runtime.resolveElement(settings.gitUrlInput);
     const publicButton = runtime.resolveElement(settings.publicButton);
     const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);
     const fullDescriptionRoot = runtime.resolveElement(settings.fullDescriptionRoot);
@@ -74,11 +75,18 @@
       };
     }
 
+    function normalizeNullableText(value) {
+      const normalized = String(value == null ? '' : value).trim();
+      return normalized === '' ? null : normalized;
+    }
+
     function collectBaseChanges() {
       const adultStartValue = adultCheckbox instanceof HTMLInputElement && adultCheckbox.hasAttribute('startdata')
         ? String(adultCheckbox.getAttribute('startdata') || '')
         : '';
       const adultCurrentValue = adultCheckbox instanceof HTMLInputElement && adultCheckbox.checked ? 'checked' : '';
+      const gitUrlStartValue = normalizeNullableText(runtime.getStartValue(gitUrlInput));
+      const gitUrlCurrentValue = normalizeNullableText(runtime.getTextValue(gitUrlInput));
 
       return {
         name: runtime.diffValue(
@@ -98,6 +106,11 @@
           runtime.getStartValue(publicButton),
         ),
         adult: runtime.diffValue(adultCurrentValue, adultStartValue),
+        git_url: {
+          value: gitUrlCurrentValue,
+          startValue: gitUrlStartValue,
+          changed: gitUrlCurrentValue !== gitUrlStartValue,
+        },
       };
     }
 
@@ -111,6 +124,8 @@
             payload[key] = Number(value.value);
           } else if (key === 'adult') {
             payload[key] = value.value === 'checked';
+          } else if (key === 'git_url') {
+            payload[key] = value.value === null ? null : value.value;
           } else {
             payload[key] = value.value;
           }

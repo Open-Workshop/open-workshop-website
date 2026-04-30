@@ -1,4 +1,5 @@
 {% from 'html-partials/macros/taglike-editor.html' import render_tags_editor with context %}
+{% set mod_git_url = info.get('git_url') or '' %}
 
 <div id="page-in-mod-page" class="mod-edit__page mod-edit__split">
   <section class="mod-edit__main">
@@ -18,6 +19,34 @@
     {% include 'html-partials/screenshots-edit.html' %}
 
     {{ render_tags_editor(tags, info["game"]["id"], false, 'mod-tags-editor') }}
+
+    <div class="standart-panel mod-edit__panel mod-git-panel" data-git-url-block>
+      <h3>Ссылки</h3>
+      <div class="mod-git-panel__row">
+        <img
+          class="mod-git-panel__favicon"
+          data-git-favicon
+          src="/assets/images/svg/white/link.svg"
+          alt=""
+          aria-hidden="true"
+        >
+        <label class="mod-edit__field mod-git-panel__input">
+          <input
+            id="mod-git-url"
+            type="text"
+            inputmode="url"
+            autocomplete="url"
+            aria-label="Ссылка на git"
+            placeholder="https://github.com/user/repo"
+            maxlength="512"
+            startdata="{{ mod_git_url }}"
+            value="{{ mod_git_url }}"
+            spellcheck="false"
+            data-git-url-source
+          >
+        </label>
+      </div>
+    </div>
 
     {% with editor_id='mod-dependencies-editor', show_optional_toggle=true %}
       {% include 'html-partials/mod-dependence-edit.html' %}

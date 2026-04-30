@@ -108,6 +108,7 @@
       deleteButton: root.querySelector('[data-action="mod-delete"]'),
       deleteConfirmInput: root.querySelector('#delete-mod-confirm'),
       titleInput: root.querySelector('.title-mod'),
+      gitUrlInput: root.querySelector('#mod-git-url'),
       publicButton: root.querySelector('[data-action="mod-toggle-public"]'),
       adultCheckbox: root.querySelector('#mod-adult'),
       fullDescriptionRoot: getDescRoot('full'),

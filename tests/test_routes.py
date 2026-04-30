@@ -314,6 +314,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "name": "Example Mod",
                         "short_description": "Short",
                         "description": "[b]Long[/b]",
+                        "git_url": "https://github.com/example/repo",
                         "source": "local",
                         "source_id": None,
                         "game_id": 5,
@@ -360,6 +361,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(render_kwargs["data"][0], render_kwargs["info"])
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
+        self.assertEqual(render_kwargs["info"]["git_url"], "https://github.com/example/repo")
 
     async def test_mod_view_uses_conflict_cards_and_scope_all(self) -> None:
         handler = StubHandler(
@@ -622,8 +624,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_mod_edit_save_service_sends_adult_flag(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/save-service.js").read_text(encoding="utf-8")
         self.assertIn("const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);", script)
+        self.assertIn("const gitUrlInput = runtime.resolveElement(settings.gitUrlInput);", script)
         self.assertIn("const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');", script)
         self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
+        self.assertIn("git_url: {", script)
+        self.assertIn("payload[key] = value.value === null ? null : value.value;", script)
         self.assertIn("payload[key] = value.value === 'checked';", script)
         self.assertIn("const conflicts = getPickerChanges(conflictsEditorId);", script)
         self.assertIn("await api.updateConflict(id, true);", script)
@@ -639,6 +644,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_mod_edit_script_passes_conflicts_editor_id(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit.js").read_text(encoding="utf-8")
         self.assertIn("conflictsEditorId: 'mod-conflicts-editor',", script)
+        self.assertIn("gitUrlInput: root.querySelector('#mod-git-url'),", script)
 
     def test_mod_edit_api_exposes_relation_endpoints(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/api.js").read_text(encoding="utf-8")
@@ -661,6 +667,17 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
         dependence_script = (ROOT / "website/assets/scripts/vendors/dependence-edit.js").read_text(encoding="utf-8")
         self.assertIn("mod-conflicts-editor", mod_main)
+        self.assertIn("mod-git-url", mod_main)
+        self.assertIn("mod-git-panel", mod_main)
+        self.assertIn("data-git-url-source", mod_main)
+        self.assertIn("data-git-favicon", mod_main)
+        self.assertIn("info.get('git_url') or ''", mod_main)
+        self.assertIn('<aside class="mod-edit__sidebar">', mod_main)
+        self.assertGreater(mod_main.index("mod-git-url"), mod_main.index('<aside class="mod-edit__sidebar">'))
+        self.assertNotIn("Укажите ссылку на репозиторий мода", mod_main)
+        self.assertNotIn("<span>Git URL</span>", mod_main)
+        self.assertLess(mod_main.index("mod-tags-editor"), mod_main.index("data-git-url-block"))
+        self.assertLess(mod_main.index("data-git-url-block"), mod_main.index("mod-dependencies-editor"))
         self.assertIn("show_optional_toggle=true", mod_main)
         self.assertIn("dependence_optional_toggle", mod_dependence)
         self.assertIn("show_optional_toggle if show_optional_toggle is defined else false", mod_dependence)
@@ -691,6 +708,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         mod_page = (ROOT / "website/mod.html").read_text(encoding="utf-8")
         mod_styles = (ROOT / "website/assets/styles/pages/mod.css").read_text(encoding="utf-8")
         self.assertIn("Конфликты мода", mod_page)
+        self.assertIn("Ссылки", mod_page)
+        self.assertIn("mod-git-panel", mod_page)
+        self.assertIn("data-git-url-block", mod_page)
+        self.assertIn("data-git-url-source", mod_page)
+        self.assertIn("data-git-favicon", mod_page)
+        self.assertIn("info.get('git_url') or ''", mod_page)
+        self.assertLess(mod_page.index("mod-tags-title"), mod_page.index("Авторы"))
+        self.assertLess(mod_page.index("Авторы"), mod_page.index("Ссылки"))
         self.assertIn("info['conflicts']['count'] > 0", mod_page)
         self.assertIn("for item in conflicts.values()", mod_page)
         self.assertIn("mod-dependencies-optional-heading", mod_page)
@@ -700,6 +725,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(".mod-dependencies-optional-heading", mod_styles)
         self.assertIn("margin-top: 10pt;", mod_styles)
         self.assertNotIn("text-align", mod_styles.split(".mod-dependencies-optional-heading")[1].split(".mod-plugins-header")[0])
+
+    def test_standart_template_includes_git_link_assets(self) -> None:
+        standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
+        self.assertIn("/assets/styles/mini-parts/mod-git-link.css", standart)
+        self.assertIn("/assets/scripts/components/mod-git-link.js", standart)
 
     def test_save_progress_overlays_header(self) -> None:
         styles = (ROOT / "website/assets/styles/mini-parts/ui-patterns.css").read_text(encoding="utf-8")
@@ -1006,6 +1036,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         footer = (ROOT / "website/html-partials/footer.html").read_text(encoding="utf-8")
         self.assertIn('data-status-badge-url="/api/status-badge/open-workshop"', footer)
         self.assertIn('https://status.miskler.ru/status/open-workshop', footer)
+
+    def test_profile_menu_my_mods_links_include_adult_filter(self) -> None:
+        header = (ROOT / "website/html-partials/header.html").read_text(encoding="utf-8")
+        footer = (ROOT / "website/html-partials/footer.html").read_text(encoding="utf-8")
+        self.assertIn('?show_not_public=true&trigger=edit&adult=-1', header)
+        self.assertIn('?show_not_public=true&trigger=edit&adult=-1', footer)
+        self.assertIn('my_mods', header)
+        self.assertIn('my_mods', footer)
 
     def test_standard_template_loads_footer_status_script(self) -> None:
         standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
