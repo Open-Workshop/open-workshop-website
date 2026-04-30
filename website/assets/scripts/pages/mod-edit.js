@@ -116,6 +116,7 @@
       authorsManager,
       tagsEditorId: 'mod-tags-editor',
       dependenciesEditorId: 'mod-dependencies-editor',
+      conflictsEditorId: 'mod-conflicts-editor',
       progressRoot: root.querySelector('[data-save-progress-root]'),
     });
 

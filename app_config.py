@@ -78,10 +78,13 @@ PUBLIC_CONFIG: dict = {
                 "resources": {"method": "GET", "path": "/mods/{mod_id}/resources"},
                 "tags": {"method": "GET", "path": "/mods/{mod_id}/tags"},
                 "dependencies": {"method": "GET", "path": "/mods/{mod_id}/dependencies"},
+                "conflicts": {"method": "GET", "path": "/mods/{mod_id}/conflicts"},
                 "tags_add": {"method": "POST", "path": "/mods/{mod_id}/tags/{tag_id}"},
                 "tags_delete": {"method": "DELETE", "path": "/mods/{mod_id}/tags/{tag_id}"},
                 "dependencies_add": {"method": "POST", "path": "/mods/{mod_id}/dependencies/{dependency_mod_id}"},
                 "dependencies_delete": {"method": "DELETE", "path": "/mods/{mod_id}/dependencies/{dependency_mod_id}"},
+                "conflicts_add": {"method": "POST", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},
+                "conflicts_delete": {"method": "DELETE", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},
             },
             "resource": {
                 "list": {"method": "GET", "path": "/resources"},

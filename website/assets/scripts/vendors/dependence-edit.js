@@ -146,9 +146,12 @@
     };
   }
 
-  function createDependencyItemElement(options, isCatalogEditor) {
+  function createRelationItemElement(options, relationKind, isCatalogEditor) {
     const element = document.createElement('div');
     element.className = 'picker-editor__item picker-editor__item--row';
+    const removeActionAlt = relationKind === 'conflicts'
+      ? 'Убрать конфликт'
+      : 'Убрать зависимость';
 
     const media = document.createElement('img');
     media.className = 'picker-editor__item-media';
@@ -202,7 +205,7 @@
       const removeIcon = document.createElement('img');
       removeIcon.className = 'picker-editor__item-action';
       removeIcon.src = '/assets/images/removal-triangle.svg';
-      removeIcon.alt = 'Убрать зависимость';
+      removeIcon.alt = removeActionAlt;
       actions.appendChild(removeIcon);
     }
 
@@ -235,11 +238,12 @@
   }
 
   function initDependencyEditors() {
-    document.querySelectorAll('[data-picker-editor-kind="dependencies"]').forEach(function (root) {
+    document.querySelectorAll('[data-picker-editor-kind="dependencies"], [data-picker-editor-kind="conflicts"]').forEach(function (root) {
       if (root.dataset.owDependencyEditorBound === 'true') return;
       root.dataset.owDependencyEditorBound = 'true';
 
       const isCatalogEditor = root.id === 'catalog-dependencies-editor';
+      const relationKind = String(root.dataset.pickerEditorKind || 'dependencies');
       const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
@@ -247,7 +251,7 @@
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
         },
         renderItem: function renderDependencyItem(options) {
-          return createDependencyItemElement(options, isCatalogEditor);
+          return createRelationItemElement(options, relationKind, isCatalogEditor);
         },
         async fetchSearchResults(queryValue, editor) {
           return searchDependencies(queryValue, editor.getContext().gameId, isCatalogEditor);

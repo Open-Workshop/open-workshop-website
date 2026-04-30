@@ -307,6 +307,35 @@ async def _load_mod_cards_by_ids(
     return cards
 
 
+def _normalize_mod_collection_payload(payload: object) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        return {"count": 0, "items": []}
+
+    raw_items = payload.get("items", [])
+    normalized_items: list[int] = []
+    if isinstance(raw_items, list):
+        for item in raw_items:
+            candidate = item
+            if isinstance(item, dict):
+                candidate = item.get("mod_id", item.get("id", item))
+
+            try:
+                normalized_items.append(int(candidate))
+            except (TypeError, ValueError):
+                continue
+
+    raw_count = payload.get("count", len(normalized_items))
+    try:
+        normalized_count = int(raw_count)
+    except (TypeError, ValueError):
+        normalized_count = len(normalized_items)
+
+    return {
+        "count": max(normalized_count, 0),
+        "items": normalized_items,
+    }
+
+
 def _get_local_tz() -> datetime.tzinfo:
     tz_name = getattr(ow_config, "TIMEZONE", None)
     if tz_name:
@@ -649,20 +678,27 @@ async def mod_view_and_edit(mod_id):
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
         resources_list_path = app_config.api_path("resource", "list")
         tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
+        info_include = [
+            "dependencies",
+            "description",
+            "short_description",
+            "dates",
+            "game",
+            "authors",
+        ]
+        if edit_page:
+            info_include.insert(1, "conflicts")
+
+        info_query = {
+            "include": info_include,
+        }
+        if edit_page:
+            info_query["scope"] = "outgoing"
 
         api_urls = {
             "info": _build_query_url(
                 info_path,
-                {
-                    "include": [
-                        "dependencies",
-                        "description",
-                        "short_description",
-                        "dates",
-                        "game",
-                        "authors",
-                    ],
-                },
+                info_query,
             ),
             "resources": _build_query_url(
                 resources_list_path,
@@ -767,20 +803,10 @@ async def mod_view_and_edit(mod_id):
 
         info_result["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
-        dependencies_payload = info_result.get("dependencies")
-        if isinstance(dependencies_payload, dict):
-            dependency_items = [
-                int(item)
-                for item in dependencies_payload.get("items", [])
-                if isinstance(item, (int, str)) and str(item).strip()
-            ]
-            dependencies_payload = {
-                "count": int(dependencies_payload.get("count", len(dependency_items)) or 0),
-                "items": dependency_items,
-            }
-        else:
-            dependencies_payload = {"count": 0, "items": []}
+        dependencies_payload = _normalize_mod_collection_payload(info_result.get("dependencies"))
         info_result["dependencies"] = dependencies_payload
+        conflicts_payload = _normalize_mod_collection_payload(info_result.get("conflicts"))
+        info_result["conflicts"] = conflicts_payload
 
         for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
             input_date = parse_api_datetime(info_result[key])
@@ -800,6 +826,15 @@ async def mod_view_and_edit(mod_id):
             dependencies = await _load_mod_cards_by_ids(
                 handler,
                 info_result["dependencies"]["items"],
+                mods_list_path,
+                resources_list_path,
+            )
+
+        conflicts = {}
+        if info_result["conflicts"]["count"] > 0:
+            conflicts = await _load_mod_cards_by_ids(
+                handler,
+                info_result["conflicts"]["items"],
                 mods_list_path,
                 resources_list_path,
             )
@@ -873,6 +908,7 @@ async def mod_view_and_edit(mod_id):
                 tags=tags,
                 resources=resources,
                 dependencies=dependencies,
+                conflicts=conflicts,
                 plugins=plugins,
                 plugins_more_count=plugins_more_count,
                 mod_access=mod_access,
@@ -888,6 +924,7 @@ async def mod_view_and_edit(mod_id):
                 tags=tags,
                 resources=resources,
                 dependencies=dependencies,
+                conflicts=conflicts,
                 plugins=plugins,
                 plugins_more_count=plugins_more_count,
                 mod_access=mod_access,

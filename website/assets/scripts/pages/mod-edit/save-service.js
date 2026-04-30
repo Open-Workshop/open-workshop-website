@@ -19,6 +19,7 @@
     const authorsManager = settings.authorsManager || null;
     const tagsEditorId = String(settings.tagsEditorId || 'mod-tags-editor');
     const dependenciesEditorId = String(settings.dependenciesEditorId || 'mod-dependencies-editor');
+    const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');
 
     let saveInProgress = false;
     let deleteInProgress = false;
@@ -104,11 +105,13 @@
         };
       const tags = getPickerChanges(tagsEditorId);
       const dependencies = getPickerChanges(dependenciesEditorId);
+      const conflicts = getPickerChanges(conflictsEditorId);
 
       return {
         base,
         tags,
         dependencies,
+        conflicts,
         media: mediaState.changes,
         authors: authorsState.changes,
         hasInvalidMedia: Boolean(mediaState.hasInvalidUrls),
@@ -122,7 +125,9 @@
           tags.add.length > 0 ||
           tags.remove.length > 0 ||
           dependencies.add.length > 0 ||
-          dependencies.remove.length > 0,
+          dependencies.remove.length > 0 ||
+          conflicts.add.length > 0 ||
+          conflicts.remove.length > 0,
         };
     }
 
@@ -150,6 +155,10 @@
         changes.dependencies &&
         (changes.dependencies.add.length > 0 || changes.dependencies.remove.length > 0),
       );
+      const conflictsChanged = Boolean(
+        changes.conflicts &&
+        (changes.conflicts.add.length > 0 || changes.conflicts.remove.length > 0),
+      );
 
       if (baseChanged) {
         steps.push({ key: 'base', label: 'Сохраняем основные поля' });
@@ -165,6 +174,9 @@
       }
       if (dependenciesChanged) {
         steps.push({ key: 'dependencies', label: 'Синхронизируем зависимости' });
+      }
+      if (conflictsChanged) {
+        steps.push({ key: 'conflicts', label: 'Синхронизируем конфликты' });
       }
 
       steps.push({ key: 'finish', label: 'Завершаем сохранение' });
@@ -216,6 +228,15 @@
       }
       for (const id of changes.remove) {
         await api.updateDependency(id, false);
+      }
+    }
+
+    async function syncConflicts(changes) {
+      for (const id of changes.add) {
+        await api.updateConflict(id, true);
+      }
+      for (const id of changes.remove) {
+        await api.updateConflict(id, false);
       }
     }
 
@@ -361,6 +382,13 @@
             saveProgress.setStep('dependencies', 'active');
           }
           await syncDependencies(changes.dependencies);
+        }
+
+        if (hasStep('conflicts')) {
+          if (saveProgress) {
+            saveProgress.setStep('conflicts', 'active');
+          }
+          await syncConflicts(changes.conflicts);
         }
 
         if (saveProgress) {

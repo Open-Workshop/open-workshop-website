@@ -158,6 +158,15 @@
       });
     }
 
+    async function updateConflict(conflictId, add) {
+      const endpoint = add ? apiPaths.mod.conflicts_add : apiPaths.mod.conflicts_delete;
+      return requestEndpoint(endpoint, {
+        pathParams: { mod_id: modId, conflict_mod_id: conflictId },
+        parseAs: 'text',
+        fallbackError: add ? 'Не удалось добавить конфликт' : 'Не удалось удалить конфликт',
+      });
+    }
+
     async function upsertAuthor(authorId, owner) {
       return requestEndpoint(apiPaths.mod.authors_upsert, {
         pathParams: { mod_id: modId, author_id: authorId },
@@ -416,6 +425,7 @@
       updateMod,
       updateTag,
       updateDependency,
+      updateConflict,
       upsertAuthor,
       deleteAuthor,
       addResourceUrl,

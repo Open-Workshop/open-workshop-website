@@ -136,25 +136,65 @@
 <script src="/assets/scripts/vendors/game-genres-edit.js"></script>
 {%- endmacro %}
 
-{% macro render_dependencies_editor(items, game=0, editor_id='dependencies-editor', button_text='Добавить зависимость') -%}
+{% macro render_relation_editor(
+  items,
+  game=0,
+  editor_id='dependencies-editor',
+  editor_kind='dependencies',
+  button_text='Добавить зависимость',
+  selected_empty_text='Модов не выбрано',
+  results_empty_text='Не найдено',
+  remove_action_alt='Убрать зависимость',
+  load_scripts=true
+) -%}
 {% call(section) render_picker_editor(
   root_id=editor_id,
-  editor_kind='dependencies',
+  editor_kind=editor_kind,
   modifier='picker-editor--rows',
   import_height='#' ~ editor_id ~ ' .picker-editor__shell',
   context={'game_id': game},
   trigger_text=button_text,
   search_placeholder='Поиск...',
-  selected_empty_text='Модов не выбрано',
-  results_empty_text='Не найдено'
+  selected_empty_text=selected_empty_text,
+  results_empty_text=results_empty_text
 ) %}
   {% if section == 'selected' %}
     {% for item in items %}
-      {{ render_picker_row_item(item.id, item.name, item.img, true, false, false, true, 'Логотип мода', 'Убрать зависимость') }}
+      {{ render_picker_row_item(item.id, item.name, item.img, true, false, false, true, 'Логотип мода', remove_action_alt) }}
     {% endfor %}
   {% endif %}
 {% endcall %}
 
+{% if load_scripts %}
 <script src="/assets/scripts/vendors/picker-editor.js"></script>
 <script src="/assets/scripts/vendors/dependence-edit.js"></script>
+{% endif %}
+{%- endmacro %}
+
+{% macro render_dependencies_editor(items, game=0, editor_id='dependencies-editor', button_text='Добавить зависимость', load_scripts=true) -%}
+{{ render_relation_editor(
+  items,
+  game,
+  editor_id,
+  'dependencies',
+  button_text,
+  'Модов не выбрано',
+  'Не найдено',
+  'Убрать зависимость',
+  load_scripts
+) }}
+{%- endmacro %}
+
+{% macro render_conflicts_editor(items, game=0, editor_id='conflicts-editor', button_text='Добавить конфликт', load_scripts=true) -%}
+{{ render_relation_editor(
+  items,
+  game,
+  editor_id,
+  'conflicts',
+  button_text,
+  'Конфликтов не выбрано',
+  'Не найдено',
+  'Убрать конфликт',
+  load_scripts
+) }}
 {%- endmacro %}

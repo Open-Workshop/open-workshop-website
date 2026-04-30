@@ -1,0 +1,8 @@
+{% from 'html-partials/macros/taglike-editor.html' import render_conflicts_editor with context %}
+
+{% set conflict_items = conflicts.values() if conflicts is defined else [] %}
+{% set conflict_game_id = game if game is defined else info["game"]["id"] %}
+{% set conflict_button_text = conflict_button_text if conflict_button_text is defined else 'Добавить конфликт' %}
+{% set conflict_editor_id = editor_id if editor_id is defined else 'mod-conflicts-editor' %}
+
+{{ render_conflicts_editor(conflict_items, conflict_game_id, conflict_editor_id, conflict_button_text, false) }}

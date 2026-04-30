@@ -328,6 +328,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "updated_at": "2026-04-24T10:00:00+00:00",
                         "file": None,
                         "dependencies": {"count": 0, "items": []},
+                        "conflicts": {"count": 0, "items": []},
                         "game": {"id": 5, "name": "Game"},
                         "authors": {},
                     },
@@ -361,6 +362,83 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
 
+    async def test_mod_edit_uses_conflict_cards_and_conflict_scope(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            profile={"id": 1, "username": "Alice"},
+            mod_access={
+                "authenticated": True,
+                "owner_id": 1,
+                "login_method": "google",
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": True, "reason": "Можно редактировать", "reason_code": "allowed"},
+                    "authors": {"value": True, "reason": "Можно редактировать", "reason_code": "allowed"},
+                    "new_version": {"value": True, "reason": "Можно загружать версии", "reason_code": "allowed"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+                "download": {
+                    "value": True,
+                    "reason": "Мод можно скачать",
+                    "reason_code": "public",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 42,
+                        "name": "Example Mod",
+                        "short_description": "Short",
+                        "description": "[b]Long[/b]",
+                        "source": "local",
+                        "source_id": None,
+                        "game_id": 5,
+                        "public": 0,
+                        "adult": False,
+                        "condition": "published",
+                        "downloads": 3,
+                        "size": 2048,
+                        "size_unpacked": 4096,
+                        "created_at": "2026-04-22T10:00:00+00:00",
+                        "file_updated_at": "2026-04-23T10:00:00+00:00",
+                        "updated_at": "2026-04-24T10:00:00+00:00",
+                        "file": None,
+                        "dependencies": {"count": 0, "items": []},
+                        "conflicts": {"count": 1, "items": [77]},
+                        "game": {"id": 5, "name": "Game"},
+                        "authors": {},
+                    },
+                ),
+                (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
+                (200, {"items": []}),
+                (200, {"items": [{"id": 77, "name": "Conflict Mod"}]}),
+                (200, {"items": [{"id": 9, "owner_id": 77, "type": "logo", "url": "https://cdn.example/conflict.webp"}]}),
+                (200, {"items": []}),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/mod/42/edit"):
+                result = await main.mod_view_and_edit(42)
+
+        self.assertEqual(result["template"], "mod-edit.html")
+        self.assertIn("scope=outgoing", handler.fetch_calls[0][0])
+        self.assertIn("include=conflicts", handler.fetch_calls[0][0])
+        render_kwargs = handler.render_calls[0][1]
+        self.assertEqual(render_kwargs["info"]["conflicts"], {"count": 1, "items": [77]})
+        self.assertIn(77, render_kwargs["conflicts"])
+        self.assertEqual(render_kwargs["conflicts"][77]["name"], "Conflict Mod")
+        self.assertEqual(render_kwargs["conflicts"][77]["img"], "https://cdn.example/conflict.webp")
+
     def test_mod_add_template_exposes_adult_toggle(self) -> None:
         mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
         self.assertIn('id="mod-adult"', mod_add)
@@ -382,8 +460,31 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_mod_edit_save_service_sends_adult_flag(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/save-service.js").read_text(encoding="utf-8")
         self.assertIn("const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);", script)
+        self.assertIn("const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');", script)
         self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
         self.assertIn("payload[key] = value.value === 'checked';", script)
+        self.assertIn("const conflicts = getPickerChanges(conflictsEditorId);", script)
+        self.assertIn("await api.updateConflict(id, true);", script)
+        self.assertIn("await syncConflicts(changes.conflicts);", script)
+
+    def test_mod_edit_script_passes_conflicts_editor_id(self) -> None:
+        script = (ROOT / "website/assets/scripts/pages/mod-edit.js").read_text(encoding="utf-8")
+        self.assertIn("conflictsEditorId: 'mod-conflicts-editor',", script)
+
+    def test_mod_edit_api_exposes_conflict_endpoints(self) -> None:
+        script = (ROOT / "website/assets/scripts/pages/mod-edit/api.js").read_text(encoding="utf-8")
+        self.assertIn("async function updateConflict(conflictId, add)", script)
+        self.assertIn("apiPaths.mod.conflicts_add", script)
+        self.assertIn("apiPaths.mod.conflicts_delete", script)
+        self.assertIn("conflict_mod_id: conflictId", script)
+
+    def test_mod_edit_templates_expose_conflict_editor(self) -> None:
+        mod_main = (ROOT / "website/html-partials/mod-edit/page-main.html").read_text(encoding="utf-8")
+        mod_conflicts = (ROOT / "website/html-partials/mod-conflict-edit.html").read_text(encoding="utf-8")
+        self.assertIn("mod-conflicts-editor", mod_main)
+        self.assertIn("html-partials/mod-conflict-edit.html", mod_main)
+        self.assertIn("Добавить конфликт", mod_conflicts)
+        self.assertIn("render_conflicts_editor", mod_conflicts)
 
     def test_catalog_cards_blur_adult_logos_show_18_plus_until_hover(self) -> None:
         script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
@@ -434,7 +535,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('ow-modal-open', ui_styles)
         self.assertIn('small dark ow-modal__button ow-modal__button--cancel', modal)
         self.assertIn('confirmModal', ui_script)
-        self.assertIn('data-ow-modal-default-action', ui_script)
+        self.assertIn('data-ow-modal-default-action', modal)
 
     def test_catalog_game_type_filter_maps_to_manager_types_query(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")
