@@ -15,6 +15,7 @@ Clean-param: size_unpacked_min /
 Clean-param: size_unpacked_max /
 Clean-param: dependencies /
 Clean-param: excluded_dependencies /
+Clean-param: excluded_conflicts /
 Clean-param: dependents_count_min /
 Clean-param: dependents_count_max /
 Clean-param: dependencies_mode /

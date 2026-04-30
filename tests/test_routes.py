@@ -566,6 +566,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("render_conflicts_editor", mod_conflicts)
         self.assertIn("html-partials/save-progress.html", mod_edit_page)
         self.assertNotIn("save-progress.html", mod_params)
+        self.assertIn("const requestedIds = Array.isArray(params && params.ids)", dependence_script)
+        self.assertIn("delete searchParams.allowed_ids;", dependence_script)
+        self.assertIn("searchParams.sort = '-dependents_count';", dependence_script)
+        self.assertIn("fetchModItems({", dependence_script)
+        self.assertIn("ids,", dependence_script)
         self.assertIn("document.readyState === 'loading'", dependence_script)
         self.assertIn("DOMContentLoaded", dependence_script)
         self.assertIn("initDependencyEditors", dependence_script)
@@ -632,6 +637,34 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('small dark ow-modal__button ow-modal__button--cancel', modal)
         self.assertIn('confirmModal', ui_script)
         self.assertIn('data-ow-modal-default-action', modal)
+
+    def test_catalog_conflict_filter_uses_relation_picker_pattern(self) -> None:
+        index = (ROOT / "website/index.html").read_text(encoding="utf-8")
+        catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        catalog_vendor = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
+        robots = (ROOT / "website/robots.txt").read_text(encoding="utf-8")
+
+        self.assertIn("catalog-conflicts-setting", index)
+        self.assertIn("catalog-conflicts-editor", index)
+        self.assertIn("Исключить конфликт", index)
+        self.assertIn("mod-conflict-edit.html", index)
+        self.assertIn(
+            "</setting>\n\n      <hr class=\"catalog-game-filter\">\n\n      <setting class=\"with-events catalog-dependencies-setting catalog-conflicts-setting catalog-game-filter\">",
+            index,
+        )
+        self.assertIn("getConflictsEditor", catalog_script)
+        self.assertIn("getConflictsEditorRoot", catalog_script)
+        self.assertIn("syncConflictsSearchGame", catalog_script)
+        self.assertIn("syncExcludedConflictsUrlFromSelection", catalog_script)
+        self.assertIn("handleConflictsSelectionChange", catalog_script)
+        self.assertIn("clearSelectedConflicts", catalog_script)
+        self.assertIn("hydrateConflictsFilter", catalog_script)
+        self.assertIn("excluded_conflicts", catalog_script)
+        self.assertIn("excluded_conflicts", catalog_vendor)
+        self.assertIn("settings.set('excluded_conflicts', excludedConflicts);", catalog_vendor)
+        self.assertIn("settings.pop('excluded_conflicts');", catalog_vendor)
+        self.assertIn("settings.set('sgame', 'no');", catalog_vendor)
+        self.assertIn("Clean-param: excluded_conflicts /", robots)
 
     def test_catalog_game_type_filter_maps_to_manager_types_query(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")

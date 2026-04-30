@@ -65,11 +65,25 @@
   }
 
   async function fetchModItems(params) {
+    const requestedIds = Array.isArray(params && params.ids)
+      ? params.ids
+      : Array.isArray(params && params.allowed_ids)
+        ? params.allowed_ids
+        : [];
+    const searchParams = {
+      ...(params || {}),
+    };
+
+    if (requestedIds.length > 0) {
+      searchParams.ids = requestedIds;
+    }
+    delete searchParams.allowed_ids;
+
     const [modsData, resourcesData] = await Promise.all([
-      fetchJson(modsPath, params),
+      fetchJson(modsPath, searchParams),
       fetchJson(resourcesPath, {
         owner_type: 'mods',
-        owner_ids: params.allowed_ids || [],
+        owner_ids: requestedIds,
         types: ['logo'],
       }).catch(function () {
         return { items: [] };
@@ -103,7 +117,7 @@
     };
 
     if (useDependentsCountSort) {
-      searchParams.sort = 'dependents_count';
+      searchParams.sort = '-dependents_count';
     }
 
     const normalizedGameId = normalizeGameId(gameId);
@@ -259,7 +273,7 @@
         async fetchItemsByIds(ids) {
           if (!Array.isArray(ids) || ids.length === 0) return [];
           const data = await fetchModItems({
-            allowed_ids: ids,
+            ids,
             page_size: 50,
           });
           return data.results;

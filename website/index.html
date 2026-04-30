@@ -143,6 +143,14 @@
 
       <hr class="catalog-game-filter">
 
+      <setting class="with-events catalog-dependencies-setting catalog-conflicts-setting catalog-game-filter">
+        {% with conflicts={}, game=0, conflict_button_text='Исключить конфликт', editor_id='catalog-conflicts-editor' %}
+          {% include 'html-partials/mod-conflict-edit.html' %}
+        {% endwith %}
+      </setting>
+
+      <hr class="catalog-game-filter">
+
       <setting class="with-events catalog-tags-setting catalog-game-filter">
         {{ render_tags_editor({}, 0, false, 'catalog-tags-editor') }}
       </setting>

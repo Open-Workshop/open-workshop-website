@@ -194,12 +194,6 @@
       const editTrigger = String(settings.get('trigger', '')).toLowerCase() === 'edit';
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
-      const includeFields = ['short_description', 'dates'];
-
-      if (settings.get('sgame', 'yes') === 'yes') {
-        includeFields.push('statistics');
-      }
-      settings.set('include', includeFields);
       settings.set('page_size', 30);
       settings.pop('statistics');
       settings.pop('dates');
@@ -214,6 +208,7 @@
 
       const rawDependencies = String(settings.get('dependencies', '') || '');
       const rawExcludedDependencies = String(settings.get('excluded_dependencies', '') || '');
+      const rawExcludedConflicts = String(settings.get('excluded_conflicts', '') || '');
       const dependencies = rawDependencies
         .replaceAll('_', ',')
         .replaceAll('[', '')
@@ -228,6 +223,13 @@
         .split(',')
         .map((id) => String(id).trim())
         .filter((id) => /^\d+$/.test(id));
+      const excludedConflicts = rawExcludedConflicts
+        .replaceAll('_', ',')
+        .replaceAll('[', '')
+        .replaceAll(']', '')
+        .split(',')
+        .map((id) => String(id).trim())
+        .filter((id) => /^\d+$/.test(id));
       const independentMode = String(settings.get('independents', 'no')) === 'yes';
       settings.pop('dependencies_mode');
       if (independentMode) {
@@ -235,13 +237,13 @@
         settings.pop('excluded_dependencies');
       } else {
         if (dependencies.length > 0) {
-          settings.set('dependencies', '[' + dependencies.join(',') + ']');
+          settings.set('dependencies', dependencies);
         } else {
           settings.pop('dependencies');
         }
 
         if (excludedDependencies.length > 0) {
-          settings.set('excluded_dependencies', '[' + excludedDependencies.join(',') + ']');
+          settings.set('excluded_dependencies', excludedDependencies);
         } else {
           settings.pop('excluded_dependencies');
         }
@@ -251,8 +253,19 @@
           settings.set('independents', 'no');
         }
       }
+      if (excludedConflicts.length > 0) {
+        settings.set('excluded_conflicts', excludedConflicts);
+        settings.set('sgame', 'no');
+      } else {
+        settings.pop('excluded_conflicts');
+      }
 
       const isGameMode = settings.get('sgame', 'yes') == 'yes';
+      const includeFields = ['short_description', 'dates'];
+      if (isGameMode) {
+        includeFields.push('statistics');
+      }
+      settings.set('include', includeFields);
       const gameType = normalizeCatalogGameTypeForManager(settings.get('game_type', settings.get('types', 'all')));
       const requestSettings = settings.duplicate();
       requestSettings.pop('dependencies_mode');
