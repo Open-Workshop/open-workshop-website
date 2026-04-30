@@ -75,14 +75,29 @@
         {% endif %}
 
         {% if info['dependencies']['count'] > 0 %}
+        {% set dependency_items = dependencies.values() | list %}
+        {% set required_dependencies = dependency_items | rejectattr('optional') | list %}
+        {% set optional_dependencies = dependency_items | selectattr('optional') | list %}
         <div class="outline-container">
         <h2>Зависимости мода</h2>
-        {% for item in dependencies.values() %}
+        {% for item in required_dependencies %}
             <a class="element" href="/mod/{{ item.id }}">
                 <img src="{{ item.img or ow.assets.images.fallback }}" alt="Логотип мода" data-fallback-src="{{ ow.assets.images.fallback }}">
                 <h3 translate="no">{{ item.name }}</h3>
             </a>
         {% endfor %}
+
+        {% if optional_dependencies | length > 0 %}
+        <div class="mod-dependencies-optional-heading">
+            <h3>Опциональные</h3>
+        </div>
+        {% for item in optional_dependencies %}
+            <a class="element" href="/mod/{{ item.id }}">
+                <img src="{{ item.img or ow.assets.images.fallback }}" alt="Логотип мода" data-fallback-src="{{ ow.assets.images.fallback }}">
+                <h3 translate="no">{{ item.name }}</h3>
+            </a>
+        {% endfor %}
+        {% endif %}
         </div>
         {% endif %}
 

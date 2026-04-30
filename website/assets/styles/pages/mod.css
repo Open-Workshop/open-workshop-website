@@ -52,6 +52,15 @@ a#mod-setting-gear:hover * {
     position: relative;
 }
 
+.mod-dependencies-optional-heading {
+    width: 100%;
+    margin-top: 10pt;
+}
+
+.mod-dependencies-optional-heading > h3 {
+    margin: 0;
+}
+
 .mod-plugins-header {
     width: 100%;
     display: flex;
