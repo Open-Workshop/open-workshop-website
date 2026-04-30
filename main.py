@@ -680,20 +680,18 @@ async def mod_view_and_edit(mod_id):
         tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
         info_include = [
             "dependencies",
+            "conflicts",
             "description",
             "short_description",
             "dates",
             "game",
             "authors",
         ]
-        if edit_page:
-            info_include.insert(1, "conflicts")
 
         info_query = {
             "include": info_include,
+            "scope": "outgoing" if edit_page else "all",
         }
-        if edit_page:
-            info_query["scope"] = "outgoing"
 
         api_urls = {
             "info": _build_query_url(

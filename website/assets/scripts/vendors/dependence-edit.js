@@ -285,5 +285,9 @@
     });
   }
 
-  initDependencyEditors();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDependencyEditors);
+  } else {
+    initDependencyEditors();
+  }
 })();

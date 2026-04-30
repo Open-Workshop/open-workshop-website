@@ -78,8 +78,13 @@ body.ow-save-progress-open {
     overflow: hidden;
 }
 
+body.ow-save-progress-open #standart-container {
+    position: relative;
+    z-index: 10001;
+}
+
 .ow-save-progress {
-    z-index: 1010;
+    z-index: 10050;
 }
 
 .ow-save-progress[hidden] {
