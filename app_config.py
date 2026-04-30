@@ -82,6 +82,7 @@ PUBLIC_CONFIG: dict = {
                 "tags_add": {"method": "POST", "path": "/mods/{mod_id}/tags/{tag_id}"},
                 "tags_delete": {"method": "DELETE", "path": "/mods/{mod_id}/tags/{tag_id}"},
                 "dependencies_add": {"method": "POST", "path": "/mods/{mod_id}/dependencies/{dependency_mod_id}"},
+                "dependencies_update": {"method": "PUT", "path": "/mods/{mod_id}/dependencies/{dependency_mod_id}"},
                 "dependencies_delete": {"method": "DELETE", "path": "/mods/{mod_id}/dependencies/{dependency_mod_id}"},
                 "conflicts_add": {"method": "POST", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},
                 "conflicts_delete": {"method": "DELETE", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},

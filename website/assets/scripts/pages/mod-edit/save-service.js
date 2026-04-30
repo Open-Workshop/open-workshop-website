@@ -29,13 +29,29 @@
       ? window.OWUI.createSaveProgress(progressRoot)
       : null;
 
-    function getPickerChanges(editorId) {
+    function getPickerChanges(editorId, includeOptional = false) {
       const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
       if (!editor) {
-        return { add: [], remove: [] };
+        return { add: [], remove: [], update: [], optionalById: {} };
       }
 
       const state = editor.getState();
+      const selectedNodes = editor.root
+        ? Array.from(editor.root.querySelectorAll('[data-picker-slot="selected"] [data-picker-id]')).filter(function (node) {
+          return !node.classList.contains('is-hidden');
+        })
+        : [];
+      const optionalById = {};
+      const optionalStartById = {};
+
+      selectedNodes.forEach(function (node) {
+        const itemId = String(node.dataset.pickerId || '');
+        if (itemId === '') return;
+
+        optionalById[itemId] = String(node.dataset.pickerOptional || 'false') === 'true';
+        optionalStartById[itemId] = String(node.dataset.pickerOptionalStart || 'false') === 'true';
+      });
+
       return {
         add: state.unsavedVisible.map(function (item) {
           return item.id;
@@ -43,6 +59,18 @@
         remove: state.savedHidden.map(function (item) {
           return item.id;
         }),
+        update: includeOptional
+          ? state.savedVisible
+            .filter(function (item) {
+              const itemId = String(item.id);
+              return Object.prototype.hasOwnProperty.call(optionalById, itemId)
+                && optionalById[itemId] !== optionalStartById[itemId];
+            })
+            .map(function (item) {
+              return item.id;
+            })
+          : [],
+        optionalById,
       };
     }
 
@@ -104,7 +132,7 @@
           hasInvalidState: false,
         };
       const tags = getPickerChanges(tagsEditorId);
-      const dependencies = getPickerChanges(dependenciesEditorId);
+      const dependencies = getPickerChanges(dependenciesEditorId, true);
       const conflicts = getPickerChanges(conflictsEditorId);
 
       return {
@@ -126,6 +154,7 @@
           tags.remove.length > 0 ||
           dependencies.add.length > 0 ||
           dependencies.remove.length > 0 ||
+          dependencies.update.length > 0 ||
           conflicts.add.length > 0 ||
           conflicts.remove.length > 0,
         };
@@ -153,7 +182,11 @@
       const tagsChanged = Boolean(changes.tags && (changes.tags.add.length > 0 || changes.tags.remove.length > 0));
       const dependenciesChanged = Boolean(
         changes.dependencies &&
-        (changes.dependencies.add.length > 0 || changes.dependencies.remove.length > 0),
+        (
+          changes.dependencies.add.length > 0 ||
+          changes.dependencies.remove.length > 0 ||
+          changes.dependencies.update.length > 0
+        ),
       );
       const conflictsChanged = Boolean(
         changes.conflicts &&
@@ -223,8 +256,13 @@
     }
 
     async function syncDependencies(changes) {
+      const optionalById = changes.optionalById || {};
+
       for (const id of changes.add) {
-        await api.updateDependency(id, true);
+        await api.updateDependency(id, true, optionalById[id]);
+      }
+      for (const id of changes.update) {
+        await api.updateDependencyOptional(id, optionalById[id]);
       }
       for (const id of changes.remove) {
         await api.updateDependency(id, false);

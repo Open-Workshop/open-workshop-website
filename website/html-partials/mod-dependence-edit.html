@@ -4,5 +4,12 @@
 {% set dependence_game_id = game if game is defined else info["game"]["id"] %}
 {% set dependence_button_text = dependence_button_text if dependence_button_text is defined else 'Добавить зависимость' %}
 {% set dependence_editor_id = editor_id if editor_id is defined else 'mod-dependencies-editor' %}
+{% set dependence_optional_toggle = show_optional_toggle if show_optional_toggle is defined else false %}
 
-{{ render_dependencies_editor(dependence_items, dependence_game_id, dependence_editor_id, dependence_button_text) }}
+{{ render_dependencies_editor(
+  dependence_items,
+  dependence_game_id,
+  dependence_editor_id,
+  dependence_button_text,
+  dependence_optional_toggle
+) }}

@@ -13,19 +13,47 @@
 </div>
 {%- endmacro %}
 
-{% macro render_picker_row_item(item_id, item_name, item_img='', saved=false, selected=false, pending=false, show_action=true, image_alt='Логотип элемента', action_alt='Удалить элемент') -%}
+{% macro render_picker_row_item(
+  item_id,
+  item_name,
+  item_img='',
+  saved=false,
+  selected=false,
+  pending=false,
+  show_action=true,
+  image_alt='Логотип элемента',
+  action_alt='Удалить элемент',
+  optional=false,
+  show_optional_toggle=false
+) -%}
 <div
-  class="picker-editor__item picker-editor__item--row{% if selected %} is-selected{% endif %}{% if pending %} is-pending{% endif %}"
+  class="picker-editor__item picker-editor__item--row{% if selected %} is-selected{% endif %}{% if optional %} is-optional{% endif %}{% if pending %} is-pending{% endif %}"
   data-picker-id="{{ item_id }}"
   data-picker-name="{{ item_name }}"
+  data-picker-optional="{{ 'true' if optional else 'false' }}"
+  data-picker-optional-start="{{ 'true' if optional else 'false' }}"
   {% if saved %}data-picker-saved="true"{% endif %}
   {% if pending %}data-picker-pending="true"{% endif %}
 >
   <img class="picker-editor__item-media" src="{{ item_img or ow.assets.images.fallback }}" alt="{{ image_alt }}" errorcap>
   <div class="picker-editor__item-content">
-    <h3 class="picker-editor__item-title" translate="no">{{ item_name }}</h3>
-    {% if show_action %}
-      <img class="picker-editor__item-action" src="/assets/images/removal-triangle.svg" alt="{{ action_alt }}">
+    <div class="picker-editor__item-header">
+      <h3 class="picker-editor__item-title" translate="no">{{ item_name }}</h3>
+      {% if show_action %}
+        <img class="picker-editor__item-action" src="/assets/images/removal-triangle.svg" alt="{{ action_alt }}">
+      {% endif %}
+    </div>
+    {% if show_optional_toggle %}
+      <div class="picker-editor__item-footer">
+        <label
+          class="media-item__logo-toggle"
+          data-action="dependency-toggle-optional"
+          title="{% if optional %}Сделать зависимость обязательной{% else %}Сделать зависимость опциональной{% endif %}"
+        >
+          <input class="media-item__logo-checkbox" type="checkbox"{% if optional %} checked{% endif %}>
+          <span class="media-item__logo-label">Опционально</span>
+        </label>
+      </div>
     {% endif %}
   </div>
 </div>
@@ -44,13 +72,15 @@
   selected_empty_text='',
   results_empty_text='Не найдено',
   can_create=false,
-  create_button_text='Добавить новое'
+  create_button_text='Добавить новое',
+  show_optional_toggle=false
 ) -%}
 <div
   id="{{ root_id }}"
   class="standart-panel picker-editor {{ modifier }}{% if panel_classes %} {{ panel_classes }}{% endif %}"
   data-picker-editor
   data-picker-editor-kind="{{ editor_kind }}"
+  data-picker-show-optional-toggle="{{ 'true' if show_optional_toggle else 'false' }}"
   {% if can_create %}data-picker-can-create="true"{% endif %}
   {% if import_height %}import-height="{{ import_height }}"{% endif %}
   {% if context %}
@@ -145,6 +175,7 @@
   selected_empty_text='Модов не выбрано',
   results_empty_text='Не найдено',
   remove_action_alt='Убрать зависимость',
+  show_optional_toggle=false,
   load_scripts=true
 ) -%}
 {% call(section) render_picker_editor(
@@ -156,11 +187,24 @@
   trigger_text=button_text,
   search_placeholder='Поиск...',
   selected_empty_text=selected_empty_text,
-  results_empty_text=results_empty_text
+  results_empty_text=results_empty_text,
+  show_optional_toggle=show_optional_toggle
 ) %}
   {% if section == 'selected' %}
     {% for item in items %}
-      {{ render_picker_row_item(item.id, item.name, item.img, true, false, false, true, 'Логотип мода', remove_action_alt) }}
+      {{ render_picker_row_item(
+        item.id,
+        item.name,
+        item.img,
+        true,
+        false,
+        false,
+        true,
+        'Логотип мода',
+        remove_action_alt,
+        item.optional if item.optional is defined else false,
+        show_optional_toggle
+      ) }}
     {% endfor %}
   {% endif %}
 {% endcall %}
@@ -171,30 +215,39 @@
 {% endif %}
 {%- endmacro %}
 
-{% macro render_dependencies_editor(items, game=0, editor_id='dependencies-editor', button_text='Добавить зависимость', load_scripts=true) -%}
-{{ render_relation_editor(
+{% macro render_dependencies_editor(
   items,
-  game,
-  editor_id,
-  'dependencies',
-  button_text,
-  'Модов не выбрано',
-  'Не найдено',
-  'Убрать зависимость',
-  load_scripts
+  game=0,
+  editor_id='dependencies-editor',
+  button_text='Добавить зависимость',
+  show_optional_toggle=false,
+  load_scripts=true
+) -%}
+{{ render_relation_editor(
+  items=items,
+  game=game,
+  editor_id=editor_id,
+  editor_kind='dependencies',
+  button_text=button_text,
+  selected_empty_text='Модов не выбрано',
+  results_empty_text='Не найдено',
+  remove_action_alt='Убрать зависимость',
+  show_optional_toggle=show_optional_toggle,
+  load_scripts=load_scripts
 ) }}
 {%- endmacro %}
 
 {% macro render_conflicts_editor(items, game=0, editor_id='conflicts-editor', button_text='Добавить конфликт', load_scripts=true) -%}
 {{ render_relation_editor(
-  items,
-  game,
-  editor_id,
-  'conflicts',
-  button_text,
-  'Конфликтов не выбрано',
-  'Не найдено',
-  'Убрать конфликт',
-  load_scripts
+  items=items,
+  game=game,
+  editor_id=editor_id,
+  editor_kind='conflicts',
+  button_text=button_text,
+  selected_empty_text='Конфликтов не выбрано',
+  results_empty_text='Не найдено',
+  remove_action_alt='Убрать конфликт',
+  show_optional_toggle=false,
+  load_scripts=load_scripts
 ) }}
 {%- endmacro %}

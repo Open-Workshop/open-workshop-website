@@ -29,6 +29,71 @@
     return rawValue === '0' ? '' : rawValue;
   }
 
+  function normalizeOptionalValue(value) {
+    if (value === true || value === 1) return true;
+    return String(value || '').trim().toLowerCase() === 'true';
+  }
+
+  function getOptionalToggleTitle(optional) {
+    return optional
+      ? 'Сделать зависимость обязательной'
+      : 'Сделать зависимость опциональной';
+  }
+
+  function findOptionalToggle(item) {
+    if (!(item instanceof Element)) return null;
+    const toggle = item.querySelector('[data-action="dependency-toggle-optional"]');
+    return toggle instanceof Element ? toggle : null;
+  }
+
+  function syncOptionalToggleState(item, optional) {
+    if (!(item instanceof Element)) return false;
+
+    const isOptional = normalizeOptionalValue(optional);
+    item.dataset.pickerOptional = isOptional ? 'true' : 'false';
+    item.classList.toggle('is-optional', isOptional);
+
+    const toggle = findOptionalToggle(item);
+    if (toggle) {
+      const title = getOptionalToggleTitle(isOptional);
+      const checkbox = toggle.querySelector('input[type="checkbox"]');
+      toggle.setAttribute('title', title);
+      if (checkbox instanceof HTMLInputElement) {
+        checkbox.checked = isOptional;
+        checkbox.setAttribute('title', title);
+      }
+    }
+
+    if (item.__pickerData && typeof item.__pickerData === 'object') {
+      item.__pickerData.optional = isOptional;
+    }
+
+    return isOptional;
+  }
+
+  function createOptionalToggleControl(optional) {
+    const isOptional = normalizeOptionalValue(optional);
+    const title = getOptionalToggleTitle(isOptional);
+    const label = document.createElement('label');
+    label.className = 'media-item__logo-toggle';
+    label.setAttribute('data-action', 'dependency-toggle-optional');
+    label.setAttribute('title', title);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'media-item__logo-checkbox';
+    checkbox.checked = isOptional;
+    checkbox.setAttribute('title', title);
+
+    const text = document.createElement('span');
+    text.className = 'media-item__logo-label';
+    text.textContent = 'Опционально';
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    return label;
+  }
+
   function buildUrl(path, params) {
     const query = new URLSearchParams();
 
@@ -160,9 +225,20 @@
     };
   }
 
-  function createRelationItemElement(options, relationKind, isCatalogEditor) {
+  function createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle) {
+    const canToggleOptional = Boolean(
+      showOptionalToggle &&
+      relationKind === 'dependencies' &&
+      !isCatalogEditor &&
+      options.slot === 'selected',
+    );
+    const initialOptional = normalizeOptionalValue(
+      options.optional !== undefined
+        ? options.optional
+        : options.data && options.data.optional,
+    );
     const element = document.createElement('div');
-    element.className = 'picker-editor__item picker-editor__item--row';
+    element.className = `picker-editor__item picker-editor__item--row${canToggleOptional ? ' picker-editor__item--dependency' : ''}`;
     const removeActionAlt = relationKind === 'conflicts'
       ? 'Убрать конфликт'
       : 'Убрать зависимость';
@@ -181,7 +257,6 @@
     title.className = 'picker-editor__item-title';
     title.setAttribute('translate', 'no');
     title.textContent = String(options.name || '');
-    content.appendChild(title);
 
     const actions = document.createElement('div');
     actions.className = 'picker-editor__item-actions';
@@ -223,11 +298,30 @@
       actions.appendChild(removeIcon);
     }
 
+    const header = document.createElement('div');
+    header.className = 'picker-editor__item-header';
+    header.appendChild(title);
     if (actions.childNodes.length > 0) {
-      content.appendChild(actions);
+      header.appendChild(actions);
+    }
+    content.appendChild(header);
+
+    if (canToggleOptional) {
+      const footer = document.createElement('div');
+      footer.className = 'picker-editor__item-footer';
+      footer.appendChild(createOptionalToggleControl(initialOptional));
+      content.appendChild(footer);
     }
 
     element.appendChild(content);
+
+    if (relationKind === 'dependencies') {
+      element.dataset.pickerOptional = initialOptional ? 'true' : 'false';
+      element.dataset.pickerOptionalStart = initialOptional ? 'true' : 'false';
+      if (canToggleOptional) {
+        syncOptionalToggleState(element, initialOptional);
+      }
+    }
 
     if (isCatalogEditor) {
       const itemMode = window.OWCatalogDependencies
@@ -258,6 +352,7 @@
 
       const isCatalogEditor = root.id === 'catalog-dependencies-editor';
       const relationKind = String(root.dataset.pickerEditorKind || 'dependencies');
+      const showOptionalToggle = root.dataset.pickerShowOptionalToggle === 'true';
       const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
@@ -265,7 +360,7 @@
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
         },
         renderItem: function renderDependencyItem(options) {
-          return createRelationItemElement(options, relationKind, isCatalogEditor);
+          return createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle);
         },
         async fetchSearchResults(queryValue, editor) {
           return searchDependencies(queryValue, editor.getContext().gameId, isCatalogEditor);
@@ -279,6 +374,43 @@
           return data.results;
         },
       });
+
+      if (showOptionalToggle && relationKind === 'dependencies' && !isCatalogEditor) {
+        root.addEventListener('click', function (event) {
+          const toggle = event.target instanceof Element
+            ? event.target.closest('[data-action="dependency-toggle-optional"]')
+            : null;
+          if (!toggle || !root.contains(toggle)) return;
+
+          event.stopPropagation();
+        }, true);
+
+        root.addEventListener('change', function (event) {
+          const toggle = event.target instanceof Element
+            ? event.target.closest('[data-action="dependency-toggle-optional"]')
+            : null;
+          if (!toggle || !root.contains(toggle)) return;
+
+          const checkbox = toggle.querySelector('input[type="checkbox"]');
+          const item = toggle.closest('[data-picker-id]');
+          if (!(checkbox instanceof HTMLInputElement) || !(item instanceof Element)) return;
+
+          event.stopPropagation();
+          syncOptionalToggleState(item, checkbox.checked);
+
+          root.dispatchEvent(new CustomEvent('ow:picker-selection-change', {
+            bubbles: true,
+            detail: {
+              editor,
+              key: root.id,
+              state: editor.getState(),
+              context: editor.getContext(),
+              optionalChanged: true,
+              itemId: item.dataset.pickerId,
+            },
+          }));
+        });
+      }
 
       if (isCatalogEditor) {
         root.addEventListener('click', function (event) {

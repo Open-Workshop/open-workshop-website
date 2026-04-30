@@ -187,7 +187,7 @@
 
 .picker-editor__item--row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
   padding: 6px;
@@ -197,6 +197,7 @@
   width: 40px;
   height: 40px;
   flex: none;
+  margin-top: 1px;
   border-radius: var(--radius-sm);
   object-fit: cover;
 }
@@ -205,9 +206,30 @@
   min-width: 0;
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+}
+
+.picker-editor__item-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+}
+
+.picker-editor__item-header .picker-editor__item-title {
+  flex: 1;
+}
+
+.picker-editor__item-footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .picker-editor--rows .picker-editor__item-action {

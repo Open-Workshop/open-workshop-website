@@ -149,12 +149,28 @@
       });
     }
 
-    async function updateDependency(dependencyId, add) {
+    async function updateDependency(dependencyId, add, optional) {
       const endpoint = add ? apiPaths.mod.dependencies_add : apiPaths.mod.dependencies_delete;
       return requestEndpoint(endpoint, {
         pathParams: { mod_id: modId, dependency_mod_id: dependencyId },
+        data: add && optional !== undefined
+          ? {
+            optional: Boolean(optional),
+          }
+          : undefined,
         parseAs: 'text',
         fallbackError: add ? 'Не удалось добавить зависимость' : 'Не удалось удалить зависимость',
+      });
+    }
+
+    async function updateDependencyOptional(dependencyId, optional) {
+      return requestEndpoint(apiPaths.mod.dependencies_update, {
+        pathParams: { mod_id: modId, dependency_mod_id: dependencyId },
+        data: {
+          optional: Boolean(optional),
+        },
+        parseAs: 'text',
+        fallbackError: 'Не удалось обновить параметр зависимости',
       });
     }
 
@@ -425,6 +441,7 @@
       updateMod,
       updateTag,
       updateDependency,
+      updateDependencyOptional,
       updateConflict,
       upsertAuthor,
       deleteAuthor,

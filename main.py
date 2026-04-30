@@ -225,8 +225,15 @@ async def _load_mod_cards_by_ids(
 ) -> dict:
     ordered_ids = []
     seen_ids = set()
+    optional_by_id: dict[int, bool] = {}
 
     for mod_id in mod_ids:
+        raw_optional = None
+        if isinstance(mod_id, dict):
+            if "optional" in mod_id:
+                raw_optional = mod_id.get("optional")
+            mod_id = mod_id.get("mod_id", mod_id.get("id", mod_id))
+
         try:
             normalized_id = int(mod_id)
         except (TypeError, ValueError):
@@ -237,6 +244,8 @@ async def _load_mod_cards_by_ids(
 
         seen_ids.add(normalized_id)
         ordered_ids.append(normalized_id)
+        if raw_optional is not None:
+            optional_by_id[normalized_id] = bool(raw_optional)
 
     if len(ordered_ids) <= 0:
         return {}
@@ -302,6 +311,7 @@ async def _load_mod_cards_by_ids(
             "id": mod_id,
             "img": images_by_id.get(mod_id) or DEFAULT_IMAGE_FALLBACK,
             "name": names_by_id[mod_id],
+            "optional": optional_by_id.get(mod_id, False),
         }
 
     return cards
@@ -801,7 +811,8 @@ async def mod_view_and_edit(mod_id):
 
         info_result["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
 
-        dependencies_payload = _normalize_mod_collection_payload(info_result.get("dependencies"))
+        raw_dependencies_payload = info_result.get("dependencies")
+        dependencies_payload = _normalize_mod_collection_payload(raw_dependencies_payload)
         info_result["dependencies"] = dependencies_payload
         conflicts_payload = _normalize_mod_collection_payload(info_result.get("conflicts"))
         info_result["conflicts"] = conflicts_payload
@@ -821,9 +832,10 @@ async def mod_view_and_edit(mod_id):
 
         dependencies = {}
         if info_result["dependencies"]["count"] > 0: # Чекаем, есть ли зависимости
+            dependency_items = raw_dependencies_payload.get("items", []) if isinstance(raw_dependencies_payload, dict) else info_result["dependencies"]["items"]
             dependencies = await _load_mod_cards_by_ids(
                 handler,
-                info_result["dependencies"]["items"],
+                dependency_items,
                 mods_list_path,
                 resources_list_path,
             )
