@@ -962,6 +962,81 @@
     select.classList.toggle('mod', mode);
   }
 
+  const CATALOG_SORT_ALIASES = {
+    creation: 'created_at',
+    downloads: 'downloads',
+    mods: 'mods_count',
+    mods_downloads: 'downloads',
+    plugins_count: 'dependents_count',
+    update: 'file_updated_at',
+    updated_at: 'file_updated_at',
+  };
+  const CATALOG_SORT_ALLOWED_VALUES = {
+    game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
+    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
+  };
+  const CATALOG_SORT_DEFAULT_VALUES = {
+    game: 'mods_count',
+    mod: 'downloads',
+  };
+
+  function getCatalogSortSelect() {
+    return document.querySelector('select#sort-select');
+  }
+
+  function getCatalogSortInvertButton() {
+    return document.querySelector('button#sort-select-invert');
+  }
+
+  function normalizeCatalogSortValue(sortMode) {
+    const normalizedSort = String(sortMode || '')
+      .replace(/^-/, '')
+      .toLowerCase();
+    return CATALOG_SORT_ALIASES[normalizedSort] || normalizedSort;
+  }
+
+  function getCatalogSortDefaultValue(isGameMode) {
+    return isGameMode ? CATALOG_SORT_DEFAULT_VALUES.game : CATALOG_SORT_DEFAULT_VALUES.mod;
+  }
+
+  function isCatalogSortAllowedForMode(sortValue, isGameMode) {
+    const normalizedSort = normalizeCatalogSortValue(sortValue);
+    const allowedValues = isGameMode
+      ? CATALOG_SORT_ALLOWED_VALUES.game
+      : CATALOG_SORT_ALLOWED_VALUES.mod;
+    return allowedValues.has(normalizedSort);
+  }
+
+  function getCatalogSortStateForMode(sortMode, isGameMode) {
+    const rawSort = String(sortMode || '').trim();
+    const descending = rawSort.startsWith('-');
+    const normalizedSort = normalizeCatalogSortValue(rawSort);
+    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)
+      ? normalizedSort
+      : getCatalogSortDefaultValue(isGameMode);
+
+    return {
+      descending,
+      sort: (descending ? '-' : '') + allowedSort,
+      value: allowedSort,
+    };
+  }
+
+  function syncCatalogSortForMode(sortMode, isGameMode) {
+    const sortState = getCatalogSortStateForMode(sortMode, isGameMode);
+    const select = getCatalogSortSelect();
+    if (select) {
+      select.value = sortState.value;
+    }
+
+    const invertButton = getCatalogSortInvertButton();
+    if (invertButton) {
+      invertButton.classList.toggle('toggled', sortState.descending);
+    }
+
+    return sortState;
+  }
+
   function getGameSetting() {
     return document.querySelector('setting#game-select');
   }
@@ -1348,6 +1423,87 @@
     }
   }
 
+  function getCatalogTagSelectionForValidation() {
+    const editorSelection = getSelectedTagSelection();
+    const selectedTags = Array.isArray(editorSelection.tags) ? editorSelection.tags : [];
+    const excludedTags = Array.isArray(editorSelection.excluded_tags) ? editorSelection.excluded_tags : [];
+
+    if (selectedTags.length > 0 || excludedTags.length > 0) {
+      return {
+        tags: selectedTags,
+        excluded_tags: excludedTags,
+      };
+    }
+
+    const params = URLManager.getParams();
+    return {
+      tags: parseTagsParam(params.get('tags', '')),
+      excluded_tags: parseTagsParam(params.get('excluded_tags', '')),
+    };
+  }
+
+  function getCatalogTagSelectionIds(selection) {
+    return Array.from(new Set(
+      [
+        ...(Array.isArray(selection && selection.tags) ? selection.tags : []),
+        ...(Array.isArray(selection && selection.excluded_tags) ? selection.excluded_tags : []),
+      ]
+        .map(function (id) {
+          return String(id || '').trim();
+        })
+        .filter(function (id) {
+          return id.length > 0;
+        }),
+    ));
+  }
+
+  async function validateCatalogTagsForContext(selection, gameId) {
+    const selectedIds = getCatalogTagSelectionIds(selection);
+    if (selectedIds.length === 0) return true;
+
+    const query = new URLSearchParams();
+    selectedIds.forEach(function (id) {
+      query.append('ids', id);
+    });
+
+    const normalizedGameId = String(gameId || '').trim();
+    if (normalizedGameId !== '') {
+      query.set('game_id', normalizedGameId);
+    }
+
+    const response = await fetch(`${apiUrl(apiPaths.tag.list.path)}?${query.toString()}`, {
+      method: 'GET',
+      credentials: 'include',
+    }).catch(function () {
+      return null;
+    });
+
+    if (!response) {
+      return null;
+    }
+
+    if (!response.ok) {
+      return response.status === 404 ? false : null;
+    }
+
+    const data = await response.json().catch(function () {
+      return {};
+    });
+    const normalized = window.OWCore.normalizeCollectionResponse(data);
+    const items = Array.isArray(normalized && normalized.items) ? normalized.items : null;
+    if (!items) return null;
+
+    const foundIds = new Set(items.map(function (item) {
+      return String(item && item.id !== undefined ? item.id : '').trim();
+    }).filter(function (id) {
+      return id.length > 0;
+    }));
+
+    return selectedIds.every(function (id) {
+      return foundIds.has(id);
+    });
+  }
+
   function syncDependenciesUrlFromSelection(triggerReset) {
     const params = URLManager.getParams();
     const selection = getSelectedDependencySelection();
@@ -1521,10 +1677,11 @@
     resetCatalog();
   }
 
-  function toggleGameMode(settingElement) {
+  async function toggleGameMode(settingElement) {
     const setting = settingElement instanceof Element ? settingElement : getGameSetting();
     const input = setting ? setting.querySelector('input') : null;
     const params = URLManager.getParams();
+    const currentSort = String(params.get('sort', '-downloads') || '');
     const checked = !(input && input.checked);
     const hasDependencies =
       getSelectedDependencyIds().length > 0
@@ -1546,11 +1703,31 @@
     }
 
     sortOptionsList(checked);
+    const sortState = syncCatalogSortForMode(currentSort, checked);
+
+    const tagsValidation = await validateCatalogTagsForContext(
+      getCatalogTagSelectionForValidation(),
+      checked ? '' : params.get('game', ''),
+    );
+    const shouldClearTags = tagsValidation === false;
+    if (shouldClearTags) {
+      clearSelectedTags();
+    }
+
     const updates = [
       new Dictionary({ key: 'sgame', value: checked ? 'yes' : 'no', default: 'yes' }),
       new Dictionary({ key: 'dependencies_mode', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ];
+
+    if (sortState.sort !== currentSort) {
+      updates.push(new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }));
+    }
+
+    if (shouldClearTags) {
+      updates.push(new Dictionary({ key: 'tags', value: '', default: '' }));
+      updates.push(new Dictionary({ key: 'excluded_tags', value: '', default: '' }));
+    }
 
     if (checked) {
       clearSelectedDependencies();
@@ -1575,12 +1752,16 @@
   }
 
   async function selectGame(gameID) {
+    const params = URLManager.getParams();
+    const currentSort = String(params.get('sort', '-downloads') || '');
     sortOptionsList(false);
+    const sortState = syncCatalogSortForMode(currentSort, false);
     URLManager.updateParams([
       new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
       new Dictionary({ key: 'game', value: gameID, default: '' }),
       new Dictionary({ key: 'tags', value: '', default: '' }),
       new Dictionary({ key: 'excluded_tags', value: '', default: '' }),
+      new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
 
@@ -1963,7 +2144,7 @@
     const independentMode = params.get('depen', 'no') === 'yes';
     const dependencyHydrationIds = Array.from(new Set([...dependencyIds, ...excludedDependencyIds]));
     const conflictHydrationIds = excludedConflictIds;
-    const tagHydrationIds = Array.from(new Set([...tagIds, ...excludedTagIds]));
+    let tagHydrationIds = Array.from(new Set([...tagIds, ...excludedTagIds]));
 
     dependencyIds.forEach(function (id) {
       dependencyItemModes.set(String(id), CATALOG_DEPENDENCY_FILTER_MODES.dependencies);
@@ -2046,6 +2227,29 @@
     }
 
     const sgame = params.get('sgame', 'yes') === 'yes';
+    const sortMode = String(params.get('sort', '-downloads') || '');
+    const sortState = syncCatalogSortForMode(sortMode, sgame);
+    if (sortState.sort !== sortMode) {
+      URLManager.updateParams([
+        new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }),
+        new Dictionary({ key: 'page', value: 0 }),
+      ]);
+      params = URLManager.getParams();
+    }
+    const tagsValidation = await validateCatalogTagsForContext(
+      getCatalogTagSelectionForValidation(),
+      sgame ? '' : params.get('game', ''),
+    );
+    if (tagsValidation === false) {
+      clearSelectedTags();
+      tagHydrationIds = [];
+      URLManager.updateParams([
+        new Dictionary({ key: 'tags', value: '', default: '' }),
+        new Dictionary({ key: 'excluded_tags', value: '', default: '' }),
+        new Dictionary({ key: 'page', value: 0 }),
+      ]);
+      params = URLManager.getParams();
+    }
 
     setSettingChecked(getDependencySetting(), params.get('depen', 'no') === 'yes');
     setSettingChecked(getGameSetting(), sgame);
@@ -2073,18 +2277,6 @@
 
     setCatalogGameSpecificFiltersVisible(!sgame);
     setCatalogGameSelectionFiltersVisible(sgame);
-
-    const sortMode = params.get('sort', '-downloads');
-    const sortModeText = String(sortMode || '');
-    const sortSelectValue = sortModeText.replace(/^-/, '');
-    const invertButton = document.querySelector('button#sort-select-invert');
-    if (invertButton) {
-      invertButton.classList.toggle('toggled', sortModeText.startsWith('-'));
-    }
-    const sortSelectInput = document.querySelector('select#sort-select');
-    if (sortSelectInput) {
-      sortSelectInput.value = sortSelectValue === 'mods_downloads' ? 'downloads' : sortSelectValue;
-    }
 
     if (params.get('game', '') !== '') {
       const gameListPath = apiPaths.game.list.path;
@@ -2163,7 +2355,7 @@
     }
 
     if (action === 'catalog-toggle-game-mode') {
-      toggleGameMode(target);
+      void toggleGameMode(target);
       return;
     }
 

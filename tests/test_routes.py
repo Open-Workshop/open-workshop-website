@@ -840,6 +840,37 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('catalog-game-type-setting', catalog_styles)
         self.assertIn('catalog-game-select-filter', index)
 
+    def test_catalog_tag_filters_reset_when_tags_are_missing_in_target_mode(self) -> None:
+        catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+
+        self.assertIn("function getCatalogTagSelectionForValidation()", catalog_script)
+        self.assertIn("function getCatalogTagSelectionIds(selection)", catalog_script)
+        self.assertIn("async function validateCatalogTagsForContext(selection, gameId)", catalog_script)
+        self.assertIn("checked ? '' : params.get('game', '')", catalog_script)
+        self.assertIn("sgame ? '' : params.get('game', '')", catalog_script)
+        self.assertIn("const shouldClearTags = tagsValidation === false;", catalog_script)
+        self.assertIn("clearSelectedTags();", catalog_script)
+        self.assertIn("new Dictionary({ key: 'tags', value: '', default: '' })", catalog_script)
+        self.assertIn("new Dictionary({ key: 'excluded_tags', value: '', default: '' })", catalog_script)
+        self.assertIn("tagHydrationIds = [];", catalog_script)
+        self.assertIn("void toggleGameMode(target);", catalog_script)
+
+    def test_catalog_sort_resets_to_supported_field_per_mode(self) -> None:
+        catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        catalog_vendor = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
+
+        self.assertIn("normalizeCatalogSortValue", catalog_script)
+        self.assertIn("getCatalogSortStateForMode", catalog_script)
+        self.assertIn("syncCatalogSortForMode", catalog_script)
+        self.assertIn("const sortState = syncCatalogSortForMode(currentSort, checked);", catalog_script)
+        self.assertIn("const sortState = syncCatalogSortForMode(currentSort, false);", catalog_script)
+        self.assertIn("new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' })", catalog_script)
+        self.assertIn("mods_count", catalog_script)
+        self.assertIn("downloads", catalog_script)
+        self.assertIn("const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)", catalog_vendor)
+        self.assertIn("const managerSort = allowedSort === 'downloads' && isGameMode", catalog_vendor)
+        self.assertIn("mods_downloads", catalog_vendor)
+
     async def test_mod_download_redirects_to_storage_url(self) -> None:
         handler = StubHandler(
             authenticated=True,

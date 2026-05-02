@@ -44,6 +44,24 @@
     return false;
   }
 
+  const CATALOG_SORT_ALIASES = {
+    creation: 'created_at',
+    downloads: 'downloads',
+    mods: 'mods_count',
+    mods_downloads: 'downloads',
+    plugins_count: 'dependents_count',
+    update: 'file_updated_at',
+    updated_at: 'file_updated_at',
+  };
+  const CATALOG_SORT_ALLOWED_VALUES = {
+    game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
+    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
+  };
+  const CATALOG_SORT_DEFAULT_VALUES = {
+    game: 'mods_count',
+    mod: 'downloads',
+  };
+
   function getContextSortMode(sortMode) {
     const normalizedSort = String(sortMode || '')
       .replace(/^-/, '')
@@ -61,27 +79,35 @@
     return aliases[normalizedSort] || normalizedSort.toUpperCase();
   }
 
+  function normalizeCatalogSortValue(sortMode) {
+    const normalizedSort = String(sortMode || '')
+      .replace(/^-/, '')
+      .toLowerCase();
+    return CATALOG_SORT_ALIASES[normalizedSort] || normalizedSort;
+  }
+
+  function getCatalogSortDefaultValue(isGameMode) {
+    return isGameMode ? CATALOG_SORT_DEFAULT_VALUES.game : CATALOG_SORT_DEFAULT_VALUES.mod;
+  }
+
+  function isCatalogSortAllowedForMode(sortValue, isGameMode) {
+    const normalizedSort = normalizeCatalogSortValue(sortValue);
+    const allowedValues = isGameMode
+      ? CATALOG_SORT_ALLOWED_VALUES.game
+      : CATALOG_SORT_ALLOWED_VALUES.mod;
+    return allowedValues.has(normalizedSort);
+  }
+
   function normalizeCatalogSortForManager(sortMode, isGameMode) {
     const rawSort = String(sortMode || '').trim();
     const descending = rawSort.startsWith('-');
-    const normalizedSort = rawSort
-      .replace(/^-/, '')
-      .toLowerCase();
-
-    let managerSort = normalizedSort;
-    if (normalizedSort === 'downloads') {
-      managerSort = isGameMode ? 'mods_downloads' : 'downloads';
-    } else if (normalizedSort === 'mods_downloads') {
-      managerSort = 'mods_downloads';
-    } else if (normalizedSort === 'creation') {
-      managerSort = 'created_at';
-    } else if (normalizedSort === 'update') {
-      managerSort = 'file_updated_at';
-    } else if (normalizedSort === 'plugins_count') {
-      managerSort = 'dependents_count';
-    } else if (normalizedSort === 'mods') {
-      managerSort = 'mods_count';
-    }
+    const normalizedSort = normalizeCatalogSortValue(rawSort);
+    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)
+      ? normalizedSort
+      : getCatalogSortDefaultValue(isGameMode);
+    const managerSort = allowedSort === 'downloads' && isGameMode
+      ? 'mods_downloads'
+      : allowedSort;
 
     return descending ? '-' + managerSort : managerSort;
   }
