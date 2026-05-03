@@ -137,10 +137,10 @@ a#mod-setting-gear:hover * {
 .mod-rating-panel__actions {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
-    width: min(100%, 190px);
-    max-width: 190px;
+    width: min(100%, 150px);
+    max-width: 150px;
     overflow: hidden;
     border-radius: 20px;
     border: 1px solid rgba(112, 120, 196, 0.24);

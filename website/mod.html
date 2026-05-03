@@ -2,6 +2,7 @@
 {% block content %}
 <link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
 {% set mod_git_url = info.get('git_url') or '' %}
+{% set current_vote = info.get('current_vote') %}
 
 <main class="mod">
     <div class="info-text">
@@ -58,6 +59,7 @@
             class="outline-container mod-rating-panel"
             data-mod-rating-widget
             data-mod-id="{{ info['id'] }}"
+            data-current-vote="{% if current_vote is not none %}{{ current_vote }}{% endif %}"
             data-can-vote="{% if vote_access and vote_access.vote_for_reputation.value %}true{% else %}false{% endif %}"
             data-vote-reason="{% if vote_access and vote_access.vote_for_reputation.value %}{% else %}{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать' }}{% endif %}"
         >
@@ -78,17 +80,6 @@
                         {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
                     >
                         <span class="mod-rating-panel__glyph" aria-hidden="true">👍</span>
-                    </button>
-                    <button
-                        type="button"
-                        class="mod-rating-panel__button"
-                        data-action="mod-rate"
-                        data-value="0"
-                        title="Снять голос"
-                        aria-label="Снять голос"
-                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
-                    >
-                        <span class="mod-rating-panel__glyph" aria-hidden="true">−</span>
                     </button>
                     <button
                         type="button"

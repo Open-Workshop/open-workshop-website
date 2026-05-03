@@ -321,6 +321,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "public": 0,
                         "adult": False,
                         "condition": "published",
+                        "current_vote": 1,
                         "downloads": 3,
                         "size": 2048,
                         "size_unpacked": 4096,
@@ -358,6 +359,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["info"]["description"], "[b]Long[/b]")
         self.assertEqual(render_kwargs["info"]["description_html"], "<p><strong>Long</strong></p>")
         self.assertEqual(render_kwargs["info"]["conflicts"], {"count": 0, "items": []})
+        self.assertEqual(render_kwargs["info"]["current_vote"], 1)
         self.assertIs(render_kwargs["data"][0], render_kwargs["info"])
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
@@ -781,15 +783,19 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_mod_template_exposes_conflicts_section(self) -> None:
         mod_page = (ROOT / "website/mod.html").read_text(encoding="utf-8")
         mod_styles = (ROOT / "website/assets/styles/pages/mod.css").read_text(encoding="utf-8")
+        mod_script = (ROOT / "website/assets/scripts/mod.js").read_text(encoding="utf-8")
         self.assertIn("Конфликты мода", mod_page)
         self.assertIn("Ссылки", mod_page)
         self.assertIn("data-mod-rating-widget", mod_page)
+        self.assertIn("data-current-vote", mod_page)
+        self.assertEqual(mod_page.count('data-action="mod-rate"'), 2)
         self.assertIn("mod-rating-panel__row", mod_page)
         self.assertIn("data-action=\"mod-rate\"", mod_page)
         self.assertIn('role="group" aria-label="Голосование за мод"', mod_page)
         self.assertIn('aria-label="Лайк"', mod_page)
-        self.assertIn('aria-label="Снять голос"', mod_page)
         self.assertIn('aria-label="Дизлайк"', mod_page)
+        self.assertNotIn('aria-label="Снять голос"', mod_page)
+        self.assertNotIn('data-value="0"', mod_page)
         self.assertIn("mod-rating-panel__actions--locked", mod_page)
         self.assertIn("mod-rating-panel__overlay", mod_page)
         self.assertIn("mod-rating-panel__overlay-text", mod_page)
@@ -800,11 +806,15 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("data-git-favicon", mod_page)
         self.assertIn("info.get('git_url') or ''", mod_page)
         self.assertIn(".mod-rating-panel__actions", mod_styles)
-        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", mod_styles)
-        self.assertIn("max-width: 190px;", mod_styles)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", mod_styles)
+        self.assertIn("max-width: 150px;", mod_styles)
         self.assertIn("background: rgba(23, 28, 61, 0.18);", mod_styles)
         self.assertNotIn("backdrop-filter", mod_styles)
         self.assertNotIn("radial-gradient(circle at 18% 22%", mod_styles)
+        self.assertIn("function parseCurrentVote(value)", mod_script)
+        self.assertIn("setRatingButtonState(widget, parseCurrentVote(widget.dataset.currentVote));", mod_script)
+        self.assertIn("const nextValue = currentVote === value ? 0 : value;", mod_script)
+        self.assertIn("widget.dataset.currentVote = String(value);", mod_script)
         self.assertLess(mod_page.index("mod-tags-title"), mod_page.index("Авторы"))
         self.assertLess(mod_page.index("Авторы"), mod_page.index("Ссылки"))
         self.assertIn("info['conflicts']['count'] > 0", mod_page)

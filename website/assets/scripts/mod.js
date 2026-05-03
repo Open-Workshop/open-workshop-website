@@ -63,6 +63,15 @@
     });
   }
 
+  function parseCurrentVote(value) {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   function setRatingBusy(widget, busy) {
     if (!(widget instanceof Element)) return;
     const canVote = widget.dataset.canVote === 'true';
@@ -109,6 +118,7 @@
       if (ratingValueNode && payload.rating !== undefined) {
         ratingValueNode.textContent = formatRatingValue(payload.rating);
       }
+      widget.dataset.currentVote = String(value);
       setRatingButtonState(widget, value);
       showToast(
         value === 0 ? 'Голос снят' : 'Голос сохранён',
@@ -126,11 +136,15 @@
     const widget = document.querySelector('[data-mod-rating-widget]');
     if (!widget) return;
 
+    setRatingButtonState(widget, parseCurrentVote(widget.dataset.currentVote));
+
     widget.querySelectorAll('[data-action="mod-rate"]').forEach(function (button) {
       button.addEventListener('click', function () {
         const value = Number.parseInt(button.dataset.value || '0', 10);
         if (!Number.isFinite(value)) return;
-        sendRatingVote(widget, value);
+        const currentVote = parseCurrentVote(widget.dataset.currentVote);
+        const nextValue = currentVote === value ? 0 : value;
+        sendRatingVote(widget, nextValue);
       });
     });
   }
