@@ -96,6 +96,12 @@ div.card.card--materialized-final .card-placeholder-surface {
     display: none;
 }
 
+div.card.card--placeholder-exiting {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+    pointer-events: none;
+}
+
 div.card.card--placeholder .card-placeholder-surface div.card-click {
     cursor: progress;
 }

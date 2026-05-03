@@ -235,17 +235,31 @@
   }
 
   function clearPlaceholderCards(placeholders, relayout) {
-    let removedAny = false;
-    placeholders.forEach(function (placeholder) {
-      if (placeholder && placeholder.isConnected) {
-        placeholder.remove();
-        removedAny = true;
-      }
+    const cardsApi = window.Cards;
+    const connectedPlaceholders = placeholders.filter(function (placeholder) {
+      return placeholder && placeholder.isConnected;
     });
 
-    if (removedAny && relayout) {
-      relayoutCatalog();
+    if (connectedPlaceholders.length === 0) {
+      return;
     }
+
+    let remaining = connectedPlaceholders.length;
+    const finishOne = function () {
+      remaining -= 1;
+      if (remaining <= 0 && relayout) {
+        relayoutCatalog();
+      }
+    };
+
+    connectedPlaceholders.forEach(function (placeholder) {
+      if (cardsApi && typeof cardsApi.animatePlaceholderExit === 'function') {
+        cardsApi.animatePlaceholderExit(placeholder, finishOne);
+      } else {
+        placeholder.remove();
+        finishOne();
+      }
+    });
   }
 
   window.addEventListener('resize', function () {
@@ -438,7 +452,7 @@
       }
 
       if (!isCurrentCatalogRequest(requestToken)) {
-        clearPlaceholderCards(placeholders, false);
+        clearPlaceholderCards(placeholders, true);
         return null;
       }
 
@@ -448,9 +462,10 @@
       }
 
       if (cardsRoot) {
+        const placeholdersToRemove = [];
         for (let index = 0; index < data.items.length; index += 1) {
           if (!isCurrentCatalogRequest(requestToken)) {
-            clearPlaceholderCards(placeholders, false);
+            clearPlaceholderCards(placeholders, true);
             return null;
           }
 
@@ -460,7 +475,7 @@
 
           if (existingCard) {
             if (placeholder && placeholder.isConnected) {
-              placeholder.remove();
+              placeholdersToRemove.push(placeholder);
             }
             continue;
           }
@@ -495,11 +510,12 @@
         for (let index = data.items.length; index < placeholders.length; index += 1) {
           const placeholder = placeholders[index];
           if (placeholder && placeholder.isConnected) {
-            placeholder.remove();
+            placeholdersToRemove.push(placeholder);
           }
         }
 
         relayoutCatalog();
+        clearPlaceholderCards(placeholdersToRemove, true);
       }
 
       return data;

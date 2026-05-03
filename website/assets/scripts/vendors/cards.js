@@ -228,7 +228,7 @@
         if (!(card instanceof Element)) {
             return false;
         }
-        if (!card.classList.contains('card--materialized')) {
+        if (!card.classList.contains('card--materialized') && !card.classList.contains('card--materialized-final')) {
             return false;
         }
         if (card.dataset.cardMediaLoaded !== 'true') {
@@ -245,6 +245,59 @@
         card.classList.remove('card--materializing');
         card.classList.add('card--materialized-final');
         return true;
+    }
+
+    function animatePlaceholderExitCard(placeholder, onComplete) {
+        const done = typeof onComplete === 'function' ? onComplete : function () {};
+        if (!(placeholder instanceof Element)) {
+            done();
+            return;
+        }
+
+        if (!placeholder.isConnected) {
+            done();
+            return;
+        }
+
+        if (!placeholder.classList.contains('card--placeholder')) {
+            placeholder.remove();
+            done();
+            return;
+        }
+
+        if (placeholder.classList.contains('card--placeholder-exiting')) {
+            return;
+        }
+
+        const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+        if (motionQuery && motionQuery.matches) {
+            placeholder.remove();
+            done();
+            return;
+        }
+
+        let finished = false;
+        const finish = function () {
+            if (finished) return;
+            finished = true;
+            if (placeholder.isConnected) {
+                placeholder.remove();
+            }
+            done();
+        };
+
+        placeholder.classList.add('card--placeholder-exiting');
+        placeholder.addEventListener('transitionend', function (event) {
+            if (event.target !== placeholder) {
+                return;
+            }
+            if (event.propertyName !== 'opacity' && event.propertyName !== 'transform') {
+                return;
+            }
+            finish();
+        }, { once: true });
+
+        window.setTimeout(finish, 240);
     }
 
     function copyCardAttributes(target, source) {
@@ -580,6 +633,9 @@ window.Cards = {
     },
     createPlaceholder: function (page, options = {}) {
         return createPlaceholderCard(page, options);
+    },
+    animatePlaceholderExit: function (placeholder, onComplete) {
+        animatePlaceholderExitCard(placeholder, onComplete);
     },
     materializePlaceholder: function (placeholder, card, requestToken = null) {
         return materializePlaceholderCard(placeholder, card, requestToken);
