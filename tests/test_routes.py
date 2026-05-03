@@ -750,10 +750,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
     def test_catalog_cards_setter_imgs_skips_placeholder_cards(self) -> None:
         script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
-        self.assertIn("setterImgs: async function(page, owner_type = \"mods\", requestToken = null)", script)
+        catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        self.assertIn("setterImgs: async function(page, owner_type = \"mods\", requestToken = null, sourceItems = null)", script)
+        self.assertIn("Array.isArray(sourceItems) && sourceItems.length > 0", script)
         self.assertIn("!element.classList.contains('card--placeholder')", script)
         self.assertIn("return id !== '' && id !== 'null' && id !== 'undefined';", script)
         self.assertIn("if (ids.length <= 0) {", script)
+        self.assertIn("Cards.setterImgs(params.get('page', 0), ownerType, requestToken, res.items);", catalog_script)
 
     def test_catalog_adult_filter_uses_shared_modal_pattern(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")

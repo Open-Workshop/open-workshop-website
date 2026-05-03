@@ -640,20 +640,33 @@ window.Cards = {
     materializePlaceholder: function (placeholder, card, requestToken = null) {
         return materializePlaceholderCard(placeholder, card, requestToken);
     },
-    setterImgs: async function(page, owner_type = "mods", requestToken = null) {
+    setterImgs: async function(page, owner_type = "mods", requestToken = null, sourceItems = null) {
         if (!isCurrentCatalogRequest(requestToken)) {
             return;
         }
-        const ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]'))
-            .filter(function (element) {
-                return element && !element.classList.contains('card--placeholder');
-            })
-            .map(function (element) {
-                return element && typeof element.id === 'string' ? element.id.trim() : '';
-            })
-            .filter(function (id) {
-                return id !== '' && id !== 'null' && id !== 'undefined';
-            });
+        const ids = Array.isArray(sourceItems) && sourceItems.length > 0
+            ? sourceItems
+                .map(function (item) {
+                    if (!item || typeof item !== 'object') {
+                        return '';
+                    }
+
+                    const id = item.id !== undefined && item.id !== null ? item.id : item.owner_id;
+                    return id !== undefined && id !== null ? String(id).trim() : '';
+                })
+                .filter(function (id) {
+                    return id !== '' && id !== 'null' && id !== 'undefined';
+                })
+            : Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]'))
+                .filter(function (element) {
+                    return element && !element.classList.contains('card--placeholder');
+                })
+                .map(function (element) {
+                    return element && typeof element.id === 'string' ? element.id.trim() : '';
+                })
+                .filter(function (id) {
+                    return id !== '' && id !== 'null' && id !== 'undefined';
+                });
         if (ids.length <= 0) {
             return;
         }

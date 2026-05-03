@@ -1877,7 +1877,7 @@
     try {
       if (res && Array.isArray(res.items) && res.items.length > 0) {
         const ownerType = params.get('sgame', 'yes') === 'yes' ? 'games' : 'mods';
-        await Cards.setterImgs(params.get('page', 0), ownerType, requestToken);
+        await Cards.setterImgs(params.get('page', 0), ownerType, requestToken, res.items);
         return res;
       }
       return null;
