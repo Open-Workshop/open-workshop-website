@@ -644,7 +644,19 @@ window.Cards = {
         if (!isCurrentCatalogRequest(requestToken)) {
             return;
         }
-        const ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
+        const ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]'))
+            .filter(function (element) {
+                return element && !element.classList.contains('card--placeholder');
+            })
+            .map(function (element) {
+                return element && typeof element.id === 'string' ? element.id.trim() : '';
+            })
+            .filter(function (id) {
+                return id !== '' && id !== 'null' && id !== 'undefined';
+            });
+        if (ids.length <= 0) {
+            return;
+        }
 
         const { getApiPaths, apiUrl } = window.OWCore;
         const apiPaths = getApiPaths();

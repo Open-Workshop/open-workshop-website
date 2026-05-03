@@ -748,6 +748,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("div.card.card--adult:hover div.card-media canvas.card-blurhash", styles)
         self.assertIn("div.card.card--adult:hover div.card-media img", styles)
 
+    def test_catalog_cards_setter_imgs_skips_placeholder_cards(self) -> None:
+        script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
+        self.assertIn("setterImgs: async function(page, owner_type = \"mods\", requestToken = null)", script)
+        self.assertIn("!element.classList.contains('card--placeholder')", script)
+        self.assertIn("return id !== '' && id !== 'null' && id !== 'undefined';", script)
+        self.assertIn("if (ids.length <= 0) {", script)
+
     def test_catalog_adult_filter_uses_shared_modal_pattern(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")
         modal = (ROOT / "website/html-partials/macros/modal.html").read_text(encoding="utf-8")
