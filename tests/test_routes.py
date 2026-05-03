@@ -363,6 +363,80 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
         self.assertEqual(render_kwargs["info"]["git_url"], "https://github.com/example/repo")
 
+    async def test_mod_view_includes_vote_access_for_authenticated_user(self) -> None:
+        profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=1,
+            profile={"id": 1, "username": "Alice"},
+            profile_access=profile_access,
+            mod_access={
+                "authenticated": True,
+                "owner_id": 1,
+                "login_method": "google",
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "authors": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "new_version": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+                "download": {
+                    "value": True,
+                    "reason": "Мод можно скачать",
+                    "reason_code": "public",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 42,
+                        "name": "Example Mod",
+                        "short_description": "Short",
+                        "description": "[b]Long[/b]",
+                        "source": "local",
+                        "source_id": None,
+                        "game_id": 5,
+                        "public": 0,
+                        "adult": False,
+                        "condition": "published",
+                        "downloads": 3,
+                        "size": 2048,
+                        "size_unpacked": 4096,
+                        "created_at": "2026-04-22T10:00:00+00:00",
+                        "file_updated_at": "2026-04-23T10:00:00+00:00",
+                        "updated_at": "2026-04-24T10:00:00+00:00",
+                        "file": None,
+                        "dependencies": {"count": 0, "items": []},
+                        "conflicts": {"count": 0, "items": []},
+                        "game": {"id": 5, "name": "Game"},
+                        "authors": {},
+                    },
+                ),
+                (200, {"items": []}),
+                (200, {"items": []}),
+                (200, {"items": []}),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/mod/42"):
+                result = await main.mod_view_and_edit(42)
+
+        self.assertEqual(result["template"], "mod.html")
+        self.assertIn(("get_profile_access", 1), handler.calls)
+        render_kwargs = handler.render_calls[0][1]
+        self.assertIs(render_kwargs["vote_access"], profile_access)
+
     async def test_mod_view_uses_conflict_cards_and_scope_all(self) -> None:
         handler = StubHandler(
             authenticated=True,
@@ -709,11 +783,28 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         mod_styles = (ROOT / "website/assets/styles/pages/mod.css").read_text(encoding="utf-8")
         self.assertIn("Конфликты мода", mod_page)
         self.assertIn("Ссылки", mod_page)
+        self.assertIn("data-mod-rating-widget", mod_page)
+        self.assertIn("mod-rating-panel__row", mod_page)
+        self.assertIn("data-action=\"mod-rate\"", mod_page)
+        self.assertIn('role="group" aria-label="Голосование за мод"', mod_page)
+        self.assertIn('aria-label="Лайк"', mod_page)
+        self.assertIn('aria-label="Снять голос"', mod_page)
+        self.assertIn('aria-label="Дизлайк"', mod_page)
+        self.assertIn("mod-rating-panel__actions--locked", mod_page)
+        self.assertIn("mod-rating-panel__overlay", mod_page)
+        self.assertIn("mod-rating-panel__overlay-text", mod_page)
+        self.assertIn('class="mod-rating-panel__glyph"', mod_page)
         self.assertIn("mod-git-panel", mod_page)
         self.assertIn("data-git-url-block", mod_page)
         self.assertIn("data-git-url-source", mod_page)
         self.assertIn("data-git-favicon", mod_page)
         self.assertIn("info.get('git_url') or ''", mod_page)
+        self.assertIn(".mod-rating-panel__actions", mod_styles)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", mod_styles)
+        self.assertIn("max-width: 190px;", mod_styles)
+        self.assertIn("background: rgba(23, 28, 61, 0.18);", mod_styles)
+        self.assertNotIn("backdrop-filter", mod_styles)
+        self.assertNotIn("radial-gradient(circle at 18% 22%", mod_styles)
         self.assertLess(mod_page.index("mod-tags-title"), mod_page.index("Авторы"))
         self.assertLess(mod_page.index("Авторы"), mod_page.index("Ссылки"))
         self.assertIn("info['conflicts']['count'] > 0", mod_page)
@@ -866,6 +957,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("void toggleGameMode(target);", catalog_script)
 
     def test_catalog_sort_resets_to_supported_field_per_mode(self) -> None:
+        index = (ROOT / "website/index.html").read_text(encoding="utf-8")
         catalog_script = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
         catalog_vendor = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
 
@@ -877,6 +969,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' })", catalog_script)
         self.assertIn("mods_count", catalog_script)
         self.assertIn("downloads", catalog_script)
+        self.assertIn('option class="mod" value="rating">Сортировка по рейтингу</option>', index)
+        self.assertIn("mod: new Set(['downloads', 'rating', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name'])", catalog_script)
         self.assertIn("const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)", catalog_vendor)
         self.assertIn("const managerSort = allowedSort === 'downloads' && isGameMode", catalog_vendor)
         self.assertIn("mods_downloads", catalog_vendor)
@@ -970,11 +1064,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     200,
                     {
                         "items": [
-                            {"id": 92408, "name": "The Lone Ranger"},
-                            {"id": 92407, "name": "Extinction Colonists"},
-                            {"id": 92406, "name": "Thinking Spot"},
-                            {"id": 92405, "name": "No vanilla apparel"},
-                            {"id": 92404, "name": "Hardcore Naked Brutality"},
+                            {"id": 92408, "name": "The Lone Ranger", "rating": 12},
+                            {"id": 92407, "name": "Extinction Colonists", "rating": -4},
+                            {"id": 92406, "name": "Thinking Spot", "rating": 0},
+                            {"id": 92405, "name": "No vanilla apparel", "rating": 6},
+                            {"id": 92404, "name": "Hardcore Naked Brutality", "rating": 99},
                         ],
                     },
                 ),
@@ -1008,6 +1102,76 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][1]["img"], "https://cdn.example/92407.webp")
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][2]["img"], "https://cdn.example/92406.webp")
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][3]["img"], "https://cdn.example/92405.webp")
+        self.assertEqual([item["rating"] for item in render_kwargs["user_mods"]["mods_data"]], [12, -4, 0, 6])
+
+    async def test_user_rating_history_route_fetches_profile_only(self) -> None:
+        profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=7,
+            profile={"id": 7, "username": "Alice"},
+            profile_access=profile_access,
+            fetch_results=[
+                (200, _profile_payload(7, "Alice")),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/user/7/rating/history"):
+                result = await main.user_rating_history(7)
+
+        self.assertEqual(result["template"], "user-rating-history.html")
+        self.assertEqual(handler.fetch_calls[0][0], "/profiles/7?include=general")
+        self.assertEqual(len(handler.fetch_calls), 1)
+        render_kwargs = handler.render_calls[0][1]
+        self.assertIs(render_kwargs["profile_access"], profile_access)
+        self.assertNotIn("rating_history", render_kwargs)
+
+    async def test_user_rating_history_route_uses_profile_meta_access(self) -> None:
+        profile_access = {
+            "authenticated": True,
+            "owner_id": 7,
+            "info": {
+                "public": {"value": True, "reason": "Профиль доступен", "reason_code": "public"},
+                "meta": {"value": True, "reason": "Скрытые данные доступны", "reason_code": "forbidden"},
+            },
+            "my": False,
+            "admin": False,
+        }
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=2,
+            profile={"id": 2, "username": "Bob"},
+            profile_access=profile_access,
+            fetch_results=[
+                (200, _profile_payload(7, "Alice")),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/user/7/rating/history"):
+                result = await main.user_rating_history(7)
+
+        self.assertEqual(result["template"], "user-rating-history.html")
+        self.assertEqual(handler.fetch_calls[0][0], "/profiles/7?include=general")
+        self.assertEqual(len(handler.fetch_calls), 1)
+        self.assertIs(handler.render_calls[0][1]["profile_access"], profile_access)
+
+    def test_user_rating_history_template_defers_table_rendering_to_frontend(self) -> None:
+        template = (ROOT / "website/user-rating-history.html").read_text(encoding="utf-8")
+        script = (ROOT / "website/assets/scripts/pages/user-rating-history.js").read_text(encoding="utf-8")
+
+        self.assertIn('data-rating-history-root', template)
+        self.assertIn('/assets/scripts/pages/user-rating-history.js', template)
+        self.assertNotIn('rating_history[', template)
+        self.assertIn('<th scope="col">Цель</th>', template)
+        self.assertIn('<th scope="col">Голос</th>', template)
+        self.assertIn('<th scope="col">Когда</th>', template)
+        self.assertNotIn('<th scope="col">Мод</th>', template)
+        self.assertNotIn('<th scope="col">Репутация</th>', template)
+        self.assertIn('apiPaths.profile.rating_history', script)
+        self.assertIn('data-rating-history-table', script)
+        self.assertIn('Intl.DateTimeFormat', script)
 
     def test_user_route_accepts_trailing_slash(self) -> None:
         adapter = main.app.url_map.bind("example.com")
@@ -1085,6 +1249,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('?show_not_public=true&trigger=edit&adult=-1', footer)
         self.assertIn('my_mods', header)
         self.assertIn('my_mods', footer)
+        self.assertIn('rating_history', header)
+        self.assertIn('rating_history', footer)
+        self.assertIn('История голосов', header)
+        self.assertIn('История голосов', footer)
 
     def test_standard_template_loads_footer_status_script(self) -> None:
         standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")

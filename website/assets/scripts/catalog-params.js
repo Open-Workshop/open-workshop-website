@@ -973,7 +973,7 @@
   };
   const CATALOG_SORT_ALLOWED_VALUES = {
     game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
-    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
+    mod: new Set(['downloads', 'rating', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
   };
   const CATALOG_SORT_DEFAULT_VALUES = {
     game: 'mods_count',

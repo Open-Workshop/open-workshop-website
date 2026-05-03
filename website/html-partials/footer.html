@@ -43,7 +43,7 @@
         {% set href = href + '?show_not_public=true&trigger=edit&adult=-1' %}
         {% endif %}
         {% if item.id != 'upload_mod' or (session_access and session_access.can_add_mod) %}
-        <a href="{{ href }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','settings':'Настройки'}[item.id] }}</a>
+        <a href="{{ href }}">{{ {'upload_mod':'Загрузить мод','my_mods':'Мои моды','rating_history':'История голосов','settings':'Настройки'}[item.id] }}</a>
         {% endif %}
         {% if item.id == 'upload_mod' and session_access and session_access.can_add_game %}
         <a href="/game/add">Создать игру</a>

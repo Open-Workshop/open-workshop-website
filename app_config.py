@@ -19,6 +19,7 @@ PUBLIC_CONFIG: dict = {
         "profile_menu": [
             {"id": "upload_mod", "href": "/mod/add"},
             {"id": "my_mods", "href": "/user/{id}/mods"},
+            {"id": "rating_history", "href": "/user/{id}/rating/history"},
             {"id": "settings", "href": "/user/{id}/settings"},
         ],
         "legal": {
@@ -87,6 +88,8 @@ PUBLIC_CONFIG: dict = {
                 "delete": {"method": "DELETE", "path": "/profiles/{user_id}"},
                 "avatar": {"method": "GET", "path": "/profiles/{user_id}/avatar"},
                 "avatar_delete": {"method": "DELETE", "path": "/profiles/{user_id}/avatar"},
+                "rating": {"method": "PUT", "path": "/profiles/{user_id}/rating"},
+                "rating_history": {"method": "GET", "path": "/profiles/{user_id}/rating/history"},
             },
             "mod": {
                 "list": {"method": "GET", "path": "/mods"},
@@ -96,6 +99,7 @@ PUBLIC_CONFIG: dict = {
                 "edit": {"method": "PATCH", "path": "/mods/{mod_id}"},
                 "info": {"method": "GET", "path": "/mods/{mod_id}"},
                 "download": {"method": "POST", "path": "/mods/{mod_id}/download-url"},
+                "rating": {"method": "PUT", "path": "/mods/{mod_id}/rating"},
                 "delete": {"method": "DELETE", "path": "/mods/{mod_id}"},
                 "authors_upsert": {"method": "PUT", "path": "/mods/{mod_id}/authors/{author_id}"},
                 "authors_delete": {"method": "DELETE", "path": "/mods/{mod_id}/authors/{author_id}"},
@@ -256,6 +260,7 @@ ROUTES: dict = {
         "view": ["/user/<int:user_id>", "/user/<int:user_id>.html"],
         "settings": ["/user/<int:user_id>/settings", "/user/<int:user_id>/settings.html"],
         "mods": ["/user/<int:user_id>/mods", "/user/<int:user_id>/mods.html"],
+        "rating_history": ["/user/<int:user_id>/rating/history", "/user/<int:user_id>/rating/history.html"],
     },
 }
 

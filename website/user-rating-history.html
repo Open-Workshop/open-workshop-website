@@ -1,0 +1,62 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+<link href="/assets/styles/pages/user.css" rel="stylesheet"/>
+
+<main class="user user-rating-history" data-user-id="{{ user_data.general.id }}" data-rating-history-page-size="50">
+  <div class="outline-container user-rating-history__header-panel">
+    <div class="user-rating-history__header">
+      <div class="user-rating-history__header-copy">
+        <p class="user-rating-history__eyebrow">История голосов</p>
+        <h1 translate="no">{{ user_data.general.username }}</h1>
+        <p class="user-rating-history__subtitle">Последние изменения голосов за моды и профили.</p>
+      </div>
+
+      <div class="user-profile__actions">
+        <a href="/user/{{ user_data.general.id }}" class="button-style button-style-small user-rating-history__back">К профилю</a>
+        {% if profile_access.any %}
+        <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
+          <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="outline-container user-rating-history__list" data-rating-history-root>
+    <div class="user-rating-history__table-state">
+      <p class="user-rating-history__loading" data-rating-history-status aria-live="polite">Загружаем историю голосов…</p>
+      <span class="tag-link user-rating-history__total" data-rating-history-total hidden></span>
+    </div>
+
+    <div class="user-rating-history__table-wrap">
+      <table class="user-rating-history__table" data-rating-history-table hidden>
+        <thead>
+          <tr>
+            <th scope="col">Цель</th>
+            <th scope="col">Голос</th>
+            <th scope="col">Когда</th>
+          </tr>
+        </thead>
+        <tbody data-rating-history-items></tbody>
+      </table>
+    </div>
+
+    <p class="user-rating-history__empty" data-rating-history-empty hidden>Пока нет голосов.</p>
+  </div>
+</main>
+
+<script src="/assets/scripts/pages/user-rating-history.js"></script>
+{% endblock %}
+
+{% block title %}
+История голосов {{ user_data.general.username }} - OW user
+{% endblock %}
+
+{% block description %}
+История голосов пользователя {{ user_data.general.username }}
+{% endblock %}
+
+
+{% block metaimage %}
+{{ user_data.general.avatar_url }}
+{% endblock %}

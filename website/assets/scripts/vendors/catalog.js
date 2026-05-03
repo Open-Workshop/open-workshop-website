@@ -50,12 +50,13 @@
     mods: 'mods_count',
     mods_downloads: 'downloads',
     plugins_count: 'dependents_count',
+    rating: 'rating',
     update: 'file_updated_at',
     updated_at: 'file_updated_at',
   };
   const CATALOG_SORT_ALLOWED_VALUES = {
     game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
-    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
+    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name', 'rating']),
   };
   const CATALOG_SORT_DEFAULT_VALUES = {
     game: 'mods_count',
@@ -75,6 +76,7 @@
       mods_count: 'MODS',
       dependents_count: 'DEPENDENTS',
       size: 'SIZE',
+      rating: 'RATING',
     };
     return aliases[normalizedSort] || normalizedSort.toUpperCase();
   }
@@ -191,6 +193,16 @@
         description: 'Размер файла',
         value: numericSize ? Number(size) : String(size),
         ...(numericSize ? { type: 'size' } : {}),
+      };
+    }
+
+    if (contextSortMode === 'RATING') {
+      const rating = getFirstValue(element, ['rating']);
+      if (!hasValue(rating)) return null;
+      return {
+        text: '⭐',
+        description: 'Рейтинг',
+        value: rating,
       };
     }
 

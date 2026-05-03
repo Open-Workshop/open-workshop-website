@@ -22,6 +22,9 @@
           {{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %} 
         </div>
         <div class="user-profile__actions">
+          {% if profile_access.info.meta.value %}
+          <a href="/user/{{ user_data.general.id }}/rating/history" class="button-style button-style-small user-rating-history__button">История голосов</a>
+          {% endif %}
           {% if profile_access.edit.rights.value %}
           <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true&trigger=edit" class="button-style button-style-small user-admin-mods">Моды пользователя</a>
           {% endif %}
@@ -94,6 +97,9 @@
     <a class="element user-mod" href="/mod/{{ item.id }}">
       <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
       <p translate="no">{{ item.name }}</p>
+      <div class="user-mod__meta">
+        <span class="tag-link-blue user-mod__rating" title="Рейтинг мода" translate="no">{% if item.rating > 0 %}+{% endif %}{{ item.rating }}</span>
+      </div>
     </a>
     {% endfor %}
   </div>

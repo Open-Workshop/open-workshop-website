@@ -183,6 +183,37 @@ def _render_api_error(handler: UserHandler, payload, status_code: int | None = N
     return handler.finish(page), error_code
 
 
+def _prepare_profile_page_payload(profile_info, user_id: int, launge: str) -> dict:
+    profile_info = _ensure_profile_payload(profile_info)
+    profile_info['delete_user'] = profile_info['general']['username'] is None
+
+    if profile_info['delete_user']:
+        return profile_info
+
+    if profile_info["general"].get("mute_until"):
+        input_date = parse_api_datetime(str(profile_info["general"]["mute_until"]))
+        profile_info["general"]["mute_until_js"] = format_js_datetime(input_date)
+        profile_info["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=launge)
+
+    input_date = parse_api_datetime(profile_info['general']['registration_date'])
+    profile_info['general']['registration_date_js'] = format_js_datetime(input_date)
+    profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+
+    if profile_info['general']['about'] is None or len(profile_info['general']['about']) <= 0:
+        profile_info['general']['about_enable'] = False
+        profile_info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {profile_info['general']['username']} в друзья! 🤪"
+    else:
+        profile_info['general']['about_enable'] = True
+
+    if profile_info['general']['avatar_url'] is None or len(profile_info['general']['avatar_url']) <= 0:
+        profile_info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
+    elif profile_info['general']['avatar_url'].startswith("local"):
+        avatar_path = app_config.api_path("profile", "avatar").format(user_id=user_id)
+        profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }{avatar_path}"
+
+    return profile_info
+
+
 async def _load_paged_results(handler: UserHandler, base_url: str, *, page_size: int = 50) -> list:
     safe_page_size = max(1, min(int(page_size), 50))
     first_status, first_payload = await handler.fetch(
@@ -371,6 +402,14 @@ def format_js_datetime(value: datetime.datetime) -> str:
         value = value.replace(tzinfo=datetime.timezone.utc)
     # ISO 8601 with timezone offset for correct client-side parsing
     return value.astimezone(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def _format_signed_int(value: object | None) -> str:
+    try:
+        number = int(value or 0)
+    except (TypeError, ValueError):
+        number = 0
+    return f"{number:+d}"
 
 
 def _normalize_status_badge_state(value) -> str:
@@ -662,6 +701,7 @@ async def mod_view_and_edit(mod_id):
     async with UserHandler() as handler:
         mod_access = await handler.get_mod_access(mod_id)
         right_edit_mod = build_mod_rights(mod_access)
+        profile_vote_access = await handler.get_profile_access(handler.id) if handler.authenticated and handler.id >= 0 else None
 
         if not mod_access["info"]["value"]:
             page = handler.render(
@@ -923,6 +963,7 @@ async def mod_view_and_edit(mod_id):
                 plugins_more_count=plugins_more_count,
                 mod_access=mod_access,
                 right_edit=right_edit_mod,
+                vote_access=profile_vote_access,
                 authors=authors,
                 is_mod_data=False,
                 data=[info_result],
@@ -939,6 +980,7 @@ async def mod_view_and_edit(mod_id):
                 plugins_more_count=plugins_more_count,
                 mod_access=mod_access,
                 right_edit=right_edit_mod,
+                vote_access=profile_vote_access,
                 authors=authors,
                 is_mod_data=True,
                 data=[info_result],
@@ -1158,32 +1200,10 @@ async def user(user_id):
         if profile_info_code != 200:
             return _render_api_error(handler, profile_info, profile_info_code)
 
-        profile_info = _ensure_profile_payload(profile_info)
-        profile_info['delete_user'] = profile_info['general']['username'] is None
+        profile_info = _prepare_profile_page_payload(profile_info, user_id, launge)
 
         if profile_info['delete_user']:
             return handler.finish(handler.render("error.html", error="Профиль удален", error_title="Этот профиль удален!")), 404
-
-        if profile_info["general"].get("mute_until"):
-            input_date = parse_api_datetime(str(profile_info["general"]["mute_until"]))
-            profile_info["general"]["mute_until_js"] = format_js_datetime(input_date)
-            profile_info["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=launge)
-
-        input_date = parse_api_datetime(profile_info['general']['registration_date'])
-        profile_info['general']['registration_date_js'] = format_js_datetime(input_date)
-        profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
-
-        if profile_info['general']['about'] is None or len(profile_info['general']['about']) <= 0:
-            profile_info['general']['about_enable'] = False
-            profile_info['general']['about'] = f"Социальная сеть для модов! Зарегистрируйся и добавь {profile_info['general']['username']} в друзья! 🤪"
-        else:
-            profile_info['general']['about_enable'] = True
-
-        if profile_info['general']['avatar_url'] is None or len(profile_info['general']['avatar_url']) <= 0:
-            profile_info['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
-        elif profile_info['general']['avatar_url'].startswith("local"):
-            avatar_path = app_config.api_path("profile", "avatar").format(user_id=user_id)
-            profile_info['general']['avatar_url'] = f"{ ow_config.MANAGER_ADDRESS }{avatar_path}"
 
         user_mods_items = _collection_items(user_mods) if isinstance(user_mods, dict) else []
         user_mods_items = [mod for mod in user_mods_items if isinstance(mod, dict)]
@@ -1205,9 +1225,10 @@ async def user(user_id):
 
             mods_data = [
                 {
-                    'id': int(i['id']),
-                    'name': i['name'],
-                    'img': DEFAULT_IMAGE_FALLBACK
+                   'id': int(i['id']),
+                   'name': i['name'],
+                   'img': DEFAULT_IMAGE_FALLBACK,
+                   'rating': int(i.get('rating', 0) or 0),
                 }
                 for i in visible_mods_items
             ]
@@ -1229,6 +1250,45 @@ async def user(user_id):
 
         page = handler.render("user.html", user_data=profile_info, user_mods=user_mods, profile_access=profile_access)
 
+        return handler.finish(page)
+
+
+async def user_rating_history(user_id):
+    launge = "ru"
+
+    async with UserHandler() as handler:
+        profile_access = await handler.get_profile_access(user_id)
+
+        can_view_rating_history = bool(
+            profile_access.get("info", {}).get("meta", {}).get("value")
+        )
+        if not can_view_rating_history:
+            if not handler.authenticated:
+                page = handler.render("error.html", error="Войдите или создайте аккаунт", error_title="Не авторизован")
+            else:
+                page = handler.render(
+                    "error.html",
+                    error="История голосов доступна владельцу профиля или администратору",
+                    error_title="Отказано в доступе",
+                )
+            return handler.finish(page), 403
+
+        profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
+        profile_info_code, profile_info = await handler.fetch(
+            _build_query_url(profile_info_path, {"include": ["general"]})
+        )
+        if profile_info_code != 200:
+            return _render_api_error(handler, profile_info, profile_info_code)
+
+        profile_info = _prepare_profile_page_payload(profile_info, user_id, launge)
+        if profile_info['delete_user']:
+            return handler.finish(handler.render("error.html", error="Профиль удален", error_title="Этот профиль удален!")), 404
+
+        page = handler.render(
+            "user-rating-history.html",
+            user_data=profile_info,
+            profile_access=profile_access,
+        )
         return handler.finish(page)
 
 async def user_settings(user_id):
@@ -1320,6 +1380,8 @@ def register_routes() -> None:
 
     for route in app_config.ROUTES["user"]["view"]:
         app.add_url_rule(route, view_func=user, strict_slashes=False)
+    for route in app_config.ROUTES["user"]["rating_history"]:
+        app.add_url_rule(route, view_func=user_rating_history, strict_slashes=False)
     for route in app_config.ROUTES["user"]["settings"]:
         app.add_url_rule(route, view_func=user_settings, strict_slashes=False)
     for route in app_config.ROUTES["user"]["mods"]:

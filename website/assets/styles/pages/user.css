@@ -26,16 +26,192 @@ main.user > article {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
-.user-admin-mods {
+.user-profile__actions > .button-style {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    min-height: 30px;
-    padding: 6px 10px;
-    font-size: 0.85rem;
+}
+
+.user-mod__meta {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.user-mod__rating {
+    min-width: 54px;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.user-rating-history__header-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-rating-history__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.user-rating-history__header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.user-rating-history__header-copy > h1,
+.user-rating-history__header-copy > p {
+    margin: 0;
+}
+
+.user-rating-history__eyebrow {
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.72));
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.user-rating-history__subtitle {
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.8));
+    font-size: 0.95rem;
+}
+
+.user-rating-history__table-state {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.user-rating-history__loading {
+    margin: 0;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.8));
+}
+
+.user-rating-history__loading--error {
+    color: #ff9c9c;
+}
+
+.user-rating-history__total {
+    white-space: nowrap;
+}
+
+.user-rating-history__table-wrap {
+    overflow-x: auto;
+}
+
+.user-rating-history__table {
+    width: auto;
+    table-layout: auto;
+    border-collapse: collapse;
+}
+
+.user-rating-history__table thead th {
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.72));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.user-rating-history__table thead th:first-child,
+.user-rating-history__table tbody td:first-child {
+    width: 18rem;
+    min-width: 18rem;
+}
+
+.user-rating-history__row td {
+    padding: 10px 12px;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.user-rating-history__row:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.user-rating-history__target {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+
+.user-rating-history__target:hover .user-rating-history__name {
+    text-decoration: underline;
+}
+
+.user-rating-history__type {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #c5d9ff;
+    background: rgba(87, 109, 145, 0.18);
+}
+
+.user-rating-history__type--profile {
+    color: #d8c6ff;
+    background: rgba(112, 83, 166, 0.18);
+}
+
+.user-rating-history__name {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.user-rating-history__value,
+.user-rating-history__date-cell {
+    white-space: nowrap;
+    text-align: right;
+}
+
+.user-rating-history__value--positive {
+    color: #b8f4b8;
+}
+
+.user-rating-history__value--negative {
+    color: #ffb0b0;
+}
+
+.user-rating-history__date-cell {
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.82));
+}
+
+.user-rating-history__value--neutral {
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.82));
+}
+
+.user-rating-history__time {
+    white-space: nowrap;
+}
+
+.user-rating-history__empty {
+    margin: 12px 0 0;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.75));
 }
 
 
@@ -53,6 +229,10 @@ main.user > article {
     .user-profile {
         display: block;
     }
+
+    .user-rating-history__header {
+        flex-direction: column;
+    }
 }
 
 @media (min-width: 440px) {
@@ -66,5 +246,15 @@ main.user > article {
     .user-avatar {
         max-width: 200px;
         min-width: 200px;
+    }
+}
+
+@media (max-width: 679px) {
+    .user-rating-history__header {
+        align-items: flex-start;
+    }
+
+    .user-profile__actions {
+        width: 100%;
     }
 }

@@ -54,6 +54,62 @@
         {% endif %}
 
 
+        <div
+            class="outline-container mod-rating-panel"
+            data-mod-rating-widget
+            data-mod-id="{{ info['id'] }}"
+            data-can-vote="{% if vote_access and vote_access.vote_for_reputation.value %}true{% else %}false{% endif %}"
+            data-vote-reason="{% if vote_access and vote_access.vote_for_reputation.value %}{% else %}{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать' }}{% endif %}"
+        >
+            {% set can_vote = vote_access and vote_access.vote_for_reputation.value %}
+            <h2>Рейтинг</h2>
+            <div class="mod-rating-panel__row">
+                <div class="mod-rating-panel__score" data-mod-rating-value aria-live="polite">
+                    {% if info['rating'] > 0 %}+{% endif %}{{ info['rating'] }}
+                </div>
+                <div class="mod-rating-panel__actions{% if not can_vote %} mod-rating-panel__actions--locked{% endif %}" role="group" aria-label="Голосование за мод">
+                    <button
+                        type="button"
+                        class="mod-rating-panel__button"
+                        data-action="mod-rate"
+                        data-value="1"
+                        title="Лайк"
+                        aria-label="Лайк"
+                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
+                    >
+                        <span class="mod-rating-panel__glyph" aria-hidden="true">👍</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="mod-rating-panel__button"
+                        data-action="mod-rate"
+                        data-value="0"
+                        title="Снять голос"
+                        aria-label="Снять голос"
+                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
+                    >
+                        <span class="mod-rating-panel__glyph" aria-hidden="true">−</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="mod-rating-panel__button"
+                        data-action="mod-rate"
+                        data-value="-1"
+                        title="Дизлайк"
+                        aria-label="Дизлайк"
+                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
+                    >
+                        <span class="mod-rating-panel__glyph" aria-hidden="true">👎</span>
+                    </button>
+                    {% if not can_vote %}
+                    <div class="mod-rating-panel__overlay" role="status" aria-live="polite">
+                        <span class="mod-rating-panel__overlay-text">{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать.' }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
         {% if tags | length > 0 %}
         <div class="outline-container">
         {% for item in tags %}
