@@ -48,6 +48,30 @@ PUBLIC_CONFIG: dict = {
     },
     "api": {
         "base": ow_config.MANAGER_ADDRESS,
+        "access": {
+            "base": ow_config.ACCESS_SERVICE_URL,
+            "docs": {
+                "swagger": ow_config.ACCESS_SERVICE_URL,
+                "redoc": f"{ow_config.ACCESS_SERVICE_URL}/redoc",
+            },
+        },
+        "storage": {
+            "base": ow_config.STORAGE_ADDRESS,
+            "distributor": f"{ow_config.STORAGE_ADDRESS}/distributor/",
+            "loader": f"{ow_config.STORAGE_ADDRESS}/loader/",
+            "docs": {
+                "distributor": {
+                    "swagger": f"{ow_config.STORAGE_ADDRESS}/distributor/",
+                },
+                "loader": {
+                    "swagger": f"{ow_config.STORAGE_ADDRESS}/loader/",
+                },
+            },
+        },
+        "docs": {
+            "redoc": f"{ow_config.MANAGER_ADDRESS}/",
+            "swagger": f"{ow_config.MANAGER_ADDRESS}/docs",
+        },
         "paths": {
             "session": {
                 "logout": {"method": "DELETE", "path": "/sessions/current"},

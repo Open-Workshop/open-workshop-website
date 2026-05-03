@@ -1,19 +1,68 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
-    <main class="about">
-        <article>
-            <h1>📜 <a class="tag-link" href="{{ ow.api.base }}">Manager API</a></h1>
-            <p>Сервис-оркестратор OW.</p>
-        </article>
-        
-        <hr>
 
-        <article>
-            <h1>👤 <a class="tag-link" href="{{ storage_address }}">Storage API</a></h1>
-            <p>Микросервис управления файлами.</p>
-        </article>
-    </main>
-{% endblock %}
 {% block title %}
-Open Workshop: API's
+Open Workshop: APIs
+{% endblock %}
+
+{% block description %}
+Публичные сервисы Open Workshop и их точки документации.
+{% endblock %}
+
+{% block content %}
+<main class="about">
+    <div>
+        <h1>API endpoints</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Service</th>
+                    <th scope="col">Swagger</th>
+                    <th scope="col">ReDoc</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <span translate="no">Manager API</span>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.docs.swagger }}" target="_blank" rel="noopener noreferrer">Swagger</a>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.docs.redoc }}" target="_blank" rel="noopener noreferrer">ReDoc</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span translate="no">Access service</span>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.access.docs.swagger }}" target="_blank" rel="noopener noreferrer">Swagger</a>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.access.docs.redoc }}" target="_blank" rel="noopener noreferrer">ReDoc</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span translate="no">Storage Distributor</span>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.storage.docs.distributor.swagger }}" target="_blank" rel="noopener noreferrer">Swagger</a>
+                    </td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>
+                        <span translate="no">Storage Loader</span>
+                    </td>
+                    <td>
+                        <a class="tag-link" href="{{ ow.api.storage.docs.loader.swagger }}" target="_blank" rel="noopener noreferrer">Swagger</a>
+                    </td>
+                    <td>—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 {% endblock %}
