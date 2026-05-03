@@ -148,10 +148,228 @@
         image.style.opacity = '1';
     }
 
+    function createSkeletonLine(className, width) {
+        const line = document.createElement('span');
+        line.className = className;
+        if (width) {
+            line.style.width = width;
+        }
+        line.setAttribute('aria-hidden', 'true');
+        return line;
+    }
+
+    function createPlaceholderCard(page, settings) {
+        const options = settings || {};
+        const index = Number(options.index || 0);
+        const titleWidths = ['72%', '84%', '66%', '78%'];
+        const chipWidths = options.chipWidths && Array.isArray(options.chipWidths)
+            ? options.chipWidths
+            : [index % 2 === 0 ? '56px' : '64px', index % 3 === 0 ? '86px' : '72px'];
+
+        const card = document.createElement('div');
+        card.classList.add('card', 'card--placeholder');
+        card.dataset.placeholderCard = 'true';
+        card.dataset.placeholderPage = String(page);
+        card.dataset.placeholderIndex = String(index);
+        card.setAttribute('pageOwner', page);
+        card.setAttribute('aria-busy', 'true');
+
+        const placeholderSurface = document.createElement('div');
+        placeholderSurface.classList.add('card-placeholder-surface');
+        placeholderSurface.setAttribute('aria-hidden', 'true');
+
+        const cardClick = document.createElement('div');
+        cardClick.classList.add('card-click');
+
+        const cardMedia = document.createElement('div');
+        cardMedia.classList.add('card-media');
+        cardMedia.style.aspectRatio = '518 / 281';
+
+        const mediaShimmer = createSkeletonLine('card-placeholder__shimmer');
+        cardMedia.appendChild(mediaShimmer);
+        cardClick.appendChild(cardMedia);
+
+        const paramsList = document.createElement('div');
+        paramsList.classList.add('card-params-list');
+        chipWidths.forEach(function (width) {
+            paramsList.appendChild(createSkeletonLine('card-placeholder__chip', width));
+        });
+        cardClick.appendChild(paramsList);
+
+        const title = document.createElement('h2');
+        title.classList.add('card-placeholder__title');
+        title.appendChild(createSkeletonLine('card-placeholder__line', options.titleWidth || titleWidths[index % titleWidths.length]));
+        cardClick.appendChild(title);
+
+        placeholderSurface.appendChild(cardClick);
+        card.appendChild(placeholderSurface);
+        return card;
+    }
+
+    function isCurrentCatalogRequest(requestToken) {
+        if (requestToken == null) return true;
+        const catalog = window.Catalog;
+        if (!catalog || typeof catalog.getRequestToken !== 'function') {
+            return true;
+        }
+        return catalog.getRequestToken() === requestToken;
+    }
+
+    function requestCatalogMasonry() {
+        const catalog = window.Catalog;
+        if (catalog && typeof catalog.scheduleMasonry === 'function') {
+            catalog.scheduleMasonry();
+            return;
+        }
+        callCatalogMethod('masonry', function () {}, []);
+    }
+
+    function finalizeMaterializedCardSurface(card) {
+        if (!(card instanceof Element)) {
+            return false;
+        }
+        if (!card.classList.contains('card--materialized')) {
+            return false;
+        }
+        if (card.dataset.cardMediaLoaded !== 'true') {
+            return false;
+        }
+
+        const placeholderSurface = card.querySelector('.card-placeholder-surface');
+        if (!placeholderSurface) {
+            return false;
+        }
+
+        placeholderSurface.remove();
+        card.classList.remove('card--placeholder');
+        card.classList.remove('card--materializing');
+        card.classList.add('card--materialized-final');
+        return true;
+    }
+
+    function copyCardAttributes(target, source) {
+        if (!(target instanceof Element) || !(source instanceof Element)) {
+            return;
+        }
+
+        Array.from(source.attributes).forEach(function (attribute) {
+            if (attribute.name === 'class' || attribute.name === 'id') return;
+            target.setAttribute(attribute.name, attribute.value);
+        });
+
+        if (source.id) {
+            target.id = source.id;
+        }
+        target.classList.toggle('card--adult', source.classList.contains('card--adult'));
+    }
+
+    function createMaterializeLayer(card) {
+        const layer = document.createElement('div');
+        layer.classList.add('card-materialize-layer');
+        layer.setAttribute('aria-hidden', 'true');
+
+        while (card.firstChild) {
+            layer.appendChild(card.firstChild);
+        }
+
+        return layer;
+    }
+
+    function materializePlaceholderCard(placeholder, card, requestToken) {
+        if (!(placeholder instanceof Element) || !(card instanceof Element)) {
+            return null;
+        }
+
+        copyCardAttributes(placeholder, card);
+        placeholder.classList.add('card--materializing');
+
+        const layer = createMaterializeLayer(card);
+        placeholder.appendChild(layer);
+
+        const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+        const transitionMs = motionQuery && motionQuery.matches ? 0 : 220;
+        let started = false;
+        let finished = false;
+        let transitionTimer = 0;
+
+        function completeMaterialization() {
+            if (finished) return;
+            finished = true;
+
+            if (transitionTimer) {
+                window.clearTimeout(transitionTimer);
+                transitionTimer = 0;
+            }
+
+            if (!placeholder.isConnected) {
+                return;
+            }
+
+            if (!isCurrentCatalogRequest(requestToken)) {
+                placeholder.remove();
+                return;
+            }
+
+            layer.removeAttribute('aria-hidden');
+            delete placeholder.dataset.placeholderCard;
+            delete placeholder.dataset.placeholderPage;
+            delete placeholder.dataset.placeholderIndex;
+            placeholder.classList.remove('card--placeholder', 'card--materializing');
+            placeholder.classList.add('card--materialized-final');
+            placeholder.removeAttribute('aria-busy');
+            finalizeMaterializedCardSurface(placeholder);
+            requestCatalogMasonry();
+        }
+
+        function triggerMaterialization() {
+            if (started || finished) {
+                return;
+            }
+
+            if (!placeholder.isConnected || !layer.isConnected) {
+                completeMaterialization();
+                return;
+            }
+
+            if (!isCurrentCatalogRequest(requestToken)) {
+                placeholder.remove();
+                return;
+            }
+
+            started = true;
+            placeholder.classList.add('card--materialized');
+
+            if (transitionMs === 0) {
+                completeMaterialization();
+                return;
+            }
+
+            layer.addEventListener('transitionend', function (event) {
+                if (event.target !== layer || event.propertyName !== 'opacity') {
+                    return;
+                }
+                completeMaterialization();
+            }, { once: true });
+
+            transitionTimer = window.setTimeout(completeMaterialization, transitionMs + 80);
+        }
+
+        placeholder.__owTriggerMaterialization = triggerMaterialization;
+        placeholder.__owCompleteMaterialization = completeMaterialization;
+
+        if (card.dataset.cardMediaLoaded === 'true') {
+            triggerMaterialization();
+        }
+        return placeholder;
+    }
+
 window.Cards = {
     create: function(cardData, page, toLink = true, searchCard = "", isGame = false, tags = [], showEditButton = false, options = {}) {
         const allowGameEdit = document.body && document.body.dataset.canEditGame === 'true';
         const settings = options || {};
+        if (settings.placeholder) {
+            return createPlaceholderCard(page, settings);
+        }
         const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit && !settings.disableAutoGameEditButton));
 
         // Создаем карточку
@@ -174,7 +392,9 @@ window.Cards = {
         // В кликабельной части - картинка с blurhash-плейсхолдером
         const cardMedia = document.createElement('div');
         cardMedia.classList.add('card-media');
-        cardMedia.style.aspectRatio = '4 / 3';
+        if (settings.mediaAspectRatio) {
+            cardMedia.style.aspectRatio = settings.mediaAspectRatio;
+        }
 
         const blurhashCanvas = document.createElement('canvas');
         blurhashCanvas.classList.add('card-blurhash');
@@ -192,8 +412,15 @@ window.Cards = {
             if (media && this.naturalWidth > 0 && this.naturalHeight > 0) {
                 media.style.aspectRatio = `${this.naturalWidth} / ${this.naturalHeight}`;
             }
+            const cardRoot = this.closest('.card');
+            if (cardRoot) {
+                cardRoot.dataset.cardMediaLoaded = 'true';
+                if (typeof cardRoot.__owTriggerMaterialization === 'function') {
+                    cardRoot.__owTriggerMaterialization();
+                }
+            }
             revealCardImage(this);
-            callCatalogMethod('masonry', function () {}, []);
+            requestCatalogMasonry();
         });
 
         if ("logo" in cardData) {
@@ -332,7 +559,7 @@ window.Cards = {
         const tog = document.createElement('button');
         tog.id = "togamelink"+cardData.id;
         tog.addEventListener('click', function () {
-            callCatalogMethod('cardsCancel', fallbackCardsCancel, [card]);
+            callCatalogMethod('cardsCancel', fallbackCardsCancel, [this]);
         });
 
         const to_img = document.createElement('img');
@@ -351,7 +578,16 @@ window.Cards = {
         // Создаем саму карточку
         return card;
     },
-    setterImgs: async function(page, owner_type = "mods") {
+    createPlaceholder: function (page, options = {}) {
+        return createPlaceholderCard(page, options);
+    },
+    materializePlaceholder: function (placeholder, card, requestToken = null) {
+        return materializePlaceholderCard(placeholder, card, requestToken);
+    },
+    setterImgs: async function(page, owner_type = "mods", requestToken = null) {
+        if (!isCurrentCatalogRequest(requestToken)) {
+            return;
+        }
         const ids = Array.from(document.querySelectorAll('div.card[pageowner=\"'+page+'\"]')).map(element => element.getAttribute('id'));
 
         const { getApiPaths, apiUrl } = window.OWCore;
@@ -369,7 +605,13 @@ window.Cards = {
         const response = await fetch(`${apiUrl(resourcesPath)}?${resourcesParams.toString()}`, {
             credentials: 'include'
         });
+        if (!isCurrentCatalogRequest(requestToken)) {
+            return;
+        }
         const data = window.OWCore.normalizeCollectionResponse(await response.json());
+        if (!isCurrentCatalogRequest(requestToken)) {
+            return;
+        }
 
         const resourceItems = Array.isArray(data.items) ? data.items : [];
         const blurhashUrls = Array.from(new Set(resourceItems
@@ -380,6 +622,9 @@ window.Cards = {
                 return isStorageDownloadUrl(url);
             })));
         const blurhashMap = blurhashUrls.length ? await fetchBlurhashBatch(blurhashUrls) : new Map();
+        if (!isCurrentCatalogRequest(requestToken)) {
+            return;
+        }
         const seenIds = new Set();
         let needsMasonry = false;
 
@@ -405,6 +650,10 @@ window.Cards = {
             }
         }
 
+        if (!isCurrentCatalogRequest(requestToken)) {
+            return;
+        }
+
         for (const id of ids) {
             if (seenIds.has(String(id))) {
                 continue;
@@ -415,8 +664,8 @@ window.Cards = {
             }
         }
 
-        if (needsMasonry) {
-            callCatalogMethod('masonry', function () {}, []);
+        if (needsMasonry && isCurrentCatalogRequest(requestToken)) {
+            requestCatalogMasonry();
         }
     },
 }

@@ -202,21 +202,78 @@
     ...masonrySettings,
   });
   const cardsRoot = document.getElementById('cards');
+  let catalogRequestToken = 0;
+  let pendingMasonryFrame = 0;
+
+  function cancelPendingMasonryFrame() {
+    if (!pendingMasonryFrame) return;
+    cancelAnimationFrame(pendingMasonryFrame);
+    pendingMasonryFrame = 0;
+  }
+
+  function isCurrentCatalogRequest(requestToken) {
+    if (requestToken == null) return true;
+    const normalizedToken = Number(requestToken);
+    return Number.isFinite(normalizedToken) && normalizedToken === catalogRequestToken;
+  }
+
+  function relayoutCatalog() {
+    cancelPendingMasonryFrame();
+    if (cardsRoot) {
+      cardsRoot.style.width = 'auto';
+    }
+    msnry.reloadItems();
+    msnry.layout();
+  }
+
+  function scheduleMasonryCatalog() {
+    if (!cardsRoot || pendingMasonryFrame) return;
+    pendingMasonryFrame = requestAnimationFrame(function () {
+      pendingMasonryFrame = 0;
+      relayoutCatalog();
+    });
+  }
+
+  function clearPlaceholderCards(placeholders, relayout) {
+    let removedAny = false;
+    placeholders.forEach(function (placeholder) {
+      if (placeholder && placeholder.isConnected) {
+        placeholder.remove();
+        removedAny = true;
+      }
+    });
+
+    if (removedAny && relayout) {
+      relayoutCatalog();
+    }
+  }
 
   window.addEventListener('resize', function () {
     Catalog.masonry();
   });
 
   window.Catalog = {
+    beginRequest: function () {
+      cancelPendingMasonryFrame();
+      catalogRequestToken += 1;
+      return catalogRequestToken;
+    },
+    getRequestToken: function () {
+      return catalogRequestToken;
+    },
     removeAll: function () {
+      cancelPendingMasonryFrame();
       if (cardsRoot) {
         cardsRoot.innerHTML = '';
       }
     },
+    scheduleMasonry: function () {
+      scheduleMasonryCatalog();
+    },
     /**
      * @param {Dictionary} settings
      */
-    addPage: async function (settings) {
+    addPage: async function (settings, requestToken = catalogRequestToken) {
       const editTrigger = String(settings.get('trigger', '')).toLowerCase() === 'edit';
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
@@ -341,41 +398,108 @@
       const url =
         apiUrl(path) +
         URLManager.genString(requestSettings, new Dictionary({ size: 'page_size' }));
+      if (!isCurrentCatalogRequest(requestToken)) {
+        return null;
+      }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        redirect: 'follow',
-        credentials: 'include',
-      });
-      const data = window.OWCore.normalizeCollectionResponse(await response.json());
+      const placeholders = [];
+      const loadingCardCount = Number(settings.get('page_size', 30)) || 30;
+      if (cardsRoot && typeof Cards.createPlaceholder === 'function' && loadingCardCount > 0) {
+        for (let index = 0; index < loadingCardCount; index += 1) {
+          const placeholder = Cards.createPlaceholder(settings.get('page', 0), {
+            index,
+          });
+          placeholders.push(placeholder);
+          cardsRoot.appendChild(placeholder);
+        }
+        relayoutCatalog();
+      }
 
-      if (response.status == 200) {
-        data.items.forEach((element) => {
-          const existingCard = cardsRoot ? cardsRoot.querySelector('div.card[id="' + String(element.id) + '"]') : null;
-          if (!cardsRoot || existingCard) {
-            return;
-          }
-
-          if (cardsRoot) {
-            element.doplink = doplink;
-
-            const tags = [];
-            const contextTag = buildContextTag(element, isGameMode, contextSortMode);
-            if (contextTag) tags.push(contextTag);
-
-            const card = Cards.create(
-              element,
-              settings.get('page', 0),
-              true,
-              settings.get('name', ''),
-              isGameMode,
-              tags,
-              editTrigger,
-            );
-            cardsRoot.appendChild(card);
-            msnry.appended(card);
-          }
+      let response;
+      let payload;
+      try {
+        response = await fetch(url, {
+          method: 'GET',
+          redirect: 'follow',
+          credentials: 'include',
         });
+        payload = await response.json().catch(function () {
+          return null;
+        });
+      } catch (error) {
+        clearPlaceholderCards(placeholders, true);
+        return null;
+      }
+
+      const data = window.OWCore.normalizeCollectionResponse(payload);
+      if (!data || typeof data !== 'object') {
+        clearPlaceholderCards(placeholders, true);
+        return null;
+      }
+
+      if (!isCurrentCatalogRequest(requestToken)) {
+        clearPlaceholderCards(placeholders, false);
+        return null;
+      }
+
+      if (response.status != 200) {
+        clearPlaceholderCards(placeholders, true);
+        return null;
+      }
+
+      if (cardsRoot) {
+        for (let index = 0; index < data.items.length; index += 1) {
+          if (!isCurrentCatalogRequest(requestToken)) {
+            clearPlaceholderCards(placeholders, false);
+            return null;
+          }
+
+          const element = data.items[index];
+          const placeholder = placeholders[index] || null;
+          const existingCard = cardsRoot.querySelector('div.card[id="' + String(element.id) + '"]');
+
+          if (existingCard) {
+            if (placeholder && placeholder.isConnected) {
+              placeholder.remove();
+            }
+            continue;
+          }
+
+          element.doplink = doplink;
+
+          const tags = [];
+          const contextTag = buildContextTag(element, isGameMode, contextSortMode);
+          if (contextTag) tags.push(contextTag);
+
+          const card = Cards.create(
+            element,
+            settings.get('page', 0),
+            true,
+            settings.get('name', ''),
+            isGameMode,
+            tags,
+            editTrigger,
+          );
+
+          if (placeholder && placeholder.isConnected) {
+            if (typeof Cards.materializePlaceholder === 'function') {
+              Cards.materializePlaceholder(placeholder, card, requestToken);
+            } else {
+              placeholder.replaceWith(card);
+            }
+          } else {
+            cardsRoot.appendChild(card);
+          }
+        }
+
+        for (let index = data.items.length; index < placeholders.length; index += 1) {
+          const placeholder = placeholders[index];
+          if (placeholder && placeholder.isConnected) {
+            placeholder.remove();
+          }
+        }
+
+        relayoutCatalog();
       }
 
       return data;
@@ -396,11 +520,7 @@
       Catalog.masonry();
     },
     masonry: function () {
-      if (cardsRoot) {
-        cardsRoot.style.width = 'auto';
-      }
-      msnry.reloadItems();
-      msnry.layout();
+      relayoutCatalog();
     },
     cardShow: function (cardClick) {
       if (!cardsRoot) return;

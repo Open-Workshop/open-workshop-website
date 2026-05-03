@@ -30,7 +30,6 @@ div.card-click {
 div.card-media {
     position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.4);
 }
@@ -51,6 +50,99 @@ div.card-media canvas.card-blurhash {
 div.card-media img {
     object-fit: cover;
     transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+div.card.card--placeholder .card-placeholder-surface,
+div.card.card--materializing .card-placeholder-surface {
+    position: relative;
+    width: 100%;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+div.card.card--materializing.card--materialized .card-placeholder-surface {
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+div.card.card--materialized .card-placeholder-surface {
+    opacity: 0;
+    pointer-events: none;
+}
+
+div.card.card--materializing .card-materialize-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+div.card.card--materializing.card--materialized .card-materialize-layer {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+div.card.card--materialized-final .card-materialize-layer {
+    position: relative;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+div.card.card--materialized-final .card-placeholder-surface {
+    display: none;
+}
+
+div.card.card--placeholder .card-placeholder-surface div.card-click {
+    cursor: progress;
+}
+
+div.card.card--placeholder .card-placeholder-surface div.card-media {
+    background: linear-gradient(135deg, rgba(19, 21, 29, 0.96), rgba(31, 34, 45, 0.96));
+}
+
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__shimmer,
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__chip,
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__line {
+    display: block;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.16) 50%, rgba(255, 255, 255, 0.05) 100%);
+    background-size: 220% 100%;
+    animation: card-placeholder-shimmer 1.35s ease-in-out infinite;
+}
+
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__shimmer {
+    position: absolute;
+    inset: 0;
+}
+
+div.card.card--placeholder .card-placeholder-surface .card-params-list {
+    align-items: center;
+}
+
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__chip {
+    height: 18px;
+    margin-left: 1pt;
+    margin-top: -3px;
+    border-radius: 999px;
+}
+
+div.card.card--placeholder .card-placeholder-surface h2 {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    margin: 0;
+}
+
+div.card.card--placeholder .card-placeholder-surface .card-placeholder__line {
+    height: 18px;
+    border-radius: 999px;
+}
+
+div.card.card--placeholder .card-placeholder-surface svg.card-hover-outline {
+    display: none;
 }
 
 div.card.card--adult div.card-media canvas.card-blurhash,
@@ -219,5 +311,22 @@ div.card.show div.card-flap {
 @keyframes card-hover-outline-dash {
     to {
         stroke-dashoffset: -20;
+    }
+}
+
+@keyframes card-placeholder-shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    div.card.card--placeholder .card-placeholder__shimmer,
+    div.card.card--placeholder .card-placeholder__chip,
+    div.card.card--placeholder .card-placeholder__line {
+        animation: none;
     }
 }

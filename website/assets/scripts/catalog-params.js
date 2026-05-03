@@ -1869,12 +1869,15 @@
     resetCatalog();
   }
 
-  async function render(params) {
-    const res = await Catalog.addPage(params);
+  async function render(params, requestToken) {
+    const res = await Catalog.addPage(params, requestToken);
+    if (requestToken != null && typeof Catalog.getRequestToken === 'function' && Catalog.getRequestToken() !== requestToken) {
+      return null;
+    }
     try {
-      if (Array.isArray(res.items) && res.items.length > 0) {
+      if (res && Array.isArray(res.items) && res.items.length > 0) {
         const ownerType = params.get('sgame', 'yes') === 'yes' ? 'games' : 'mods';
-        await Cards.setterImgs(params.get('page', 0), ownerType);
+        await Cards.setterImgs(params.get('page', 0), ownerType, requestToken);
         return res;
       }
       return null;
@@ -1889,13 +1892,17 @@
       pendingInfiniteScrollCheck = 0;
     }
 
+    const requestToken = Catalog.beginRequest();
     blocking = false;
     outOfCards = false;
     warns = [false, false, false];
 
     setEndOfCardsVisible(false);
     Catalog.removeAll();
-    const renderRes = await render(URLManager.getParams());
+    const renderRes = await render(URLManager.getParams(), requestToken);
+    if (requestToken !== Catalog.getRequestToken()) {
+      return;
+    }
     if (!renderRes) {
       setEndOfCardsVisible(false);
       outOfCards = true;
@@ -1939,12 +1946,16 @@
   async function loadNextPage() {
     if (blocking || outOfCards) return;
     blocking = true;
+    const requestToken = Catalog.getRequestToken();
 
     try {
       const params = URLManager.getParams();
       params.set('page', Number(params.get('page', 0)) + 1);
 
-      const renderRes = await render(params);
+      const renderRes = await render(params, requestToken);
+      if (requestToken !== Catalog.getRequestToken()) {
+        return;
+      }
       if (renderRes) {
         URLManager.updateParam('page', Number(params.get('page', 0)));
         warnAboutCardCount(document.querySelectorAll('.card').length);
@@ -1956,7 +1967,7 @@
       }
     } finally {
       blocking = false;
-      if (!outOfCards) {
+      if (requestToken === Catalog.getRequestToken() && !outOfCards) {
         queueInfiniteScrollCheck();
       }
     }
