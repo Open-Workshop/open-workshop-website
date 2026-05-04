@@ -12,15 +12,15 @@
         >
         <div class="mod-edit__field-copy">
           <span>Контент 18+</span>
-          <small>Такой мод можно скрывать через фильтр по возрастному ограничению.</small>
+          <small>{{ edit_page.adult_description or 'Пометка 18+ меняет доступность этой записи в каталоге.' }}</small>
         </div>
       </label>
     </div>
 
     {% if right_edit.new_version %}
     <div class="standart-panel mod-edit__panel">
-      <h3>Новая версия мода</h3>
-      <p class="ow-muted">Загрузите новый архив. Лимит 10 GB.</p>
+      <h3>{{ edit_page.new_version_title or 'Новая версия записи' }}</h3>
+      <p class="ow-muted">{{ edit_page.new_version_description or 'Загрузите новый архив. Лимит 10 GB.' }}</p>
       {% include "html-partials/upload-file.html" %}
       <div class="mod-edit__row">
         <button class="button-style" type="button" data-action="mod-upload-version">Загрузить</button>
@@ -35,13 +35,13 @@
 
     {% if right_edit.delete %}
     <div class="standart-panel mod-edit__panel mod-edit__panel--danger">
-      <h3>Удаление мода</h3>
-      <p class="ow-muted">Действие необратимо. Мод и ресурсы будут удалены.</p>
+      <h3>{{ edit_page.delete_title or 'Удаление записи' }}</h3>
+      <p class="ow-muted">{{ edit_page.delete_description or 'Действие необратимо. Эта запись и ресурсы будут удалены.' }}</p>
       <label class="mod-edit__confirm">
         <input id="delete-mod-confirm" type="checkbox">
         Подтверждаю удаление
       </label>
-      <button id="delete-mod-button" class="button-style" type="button" data-action="mod-delete" disabled>Удалить мод</button>
+      <button id="delete-mod-button" class="button-style" type="button" data-action="mod-delete" disabled>{{ edit_page.delete_button_label or 'Удалить запись' }}</button>
     </div>
     {% endif %}
   </div>

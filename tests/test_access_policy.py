@@ -77,8 +77,53 @@ class AccessPolicyTests(unittest.TestCase):
         self.assertNotIn("change_mods", access)
         self.assertNotIn("write_comments", access)
         self.assertFalse(access["can_add_mod"])
+        self.assertFalse(access["can_add_modpack"])
         self.assertFalse(access["can_add_game"])
         self.assertFalse(access["can_edit_game"])
+
+    def test_session_access_uses_separate_modpack_add_rights(self) -> None:
+        source = {
+            "authenticated": True,
+            "owner_id": 5,
+            "login_method": "google",
+        }
+        mod_add = {
+            "authenticated": True,
+            "owner_id": 5,
+            "login_method": "google",
+            "add": {
+                "value": False,
+                "reason": "Публикация модов недоступна",
+                "reason_code": "forbidden",
+            },
+            "anonymous_add": {
+                "value": False,
+                "reason": "Публикация без автора доступна только администратору",
+                "reason_code": "admin_required",
+            },
+        }
+        modpack_add = {
+            "authenticated": True,
+            "owner_id": 5,
+            "login_method": "google",
+            "add": {
+                "value": True,
+                "reason": "Публикация модпаков доступна",
+                "reason_code": "allowed",
+            },
+            "anonymous_add": {
+                "value": False,
+                "reason": "Публикация без автора доступна только администратору",
+                "reason_code": "admin_required",
+            },
+        }
+
+        access = build_session_access(source, mod_add=mod_add, modpack_add=modpack_add)
+
+        self.assertFalse(access["can_add_mod"])
+        self.assertTrue(access["can_add_modpack"])
+        self.assertFalse(access["mod_add"]["add"]["value"])
+        self.assertTrue(access["modpack_add"]["add"]["value"])
 
     def test_profile_access_marks_self_and_admin(self) -> None:
         self_access = build_profile_access(_profile_source("self", rights_value=False))

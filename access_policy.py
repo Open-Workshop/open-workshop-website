@@ -95,18 +95,26 @@ def build_game_add_access(source: Any) -> dict[str, Any]:
     return payload
 
 
+def build_modpack_add_access(source: Any) -> dict[str, Any]:
+    return build_mod_add_access(source)
+
+
 def build_session_access(
     context: Any,
     mod_add: Any | None = None,
+    modpack_add: Any | None = None,
     game_add: Any | None = None,
 ) -> dict[str, Any]:
     payload = _context_payload(context)
     mod_add_right = build_mod_add_access(mod_add)
+    modpack_add_right = build_modpack_add_access(modpack_add if modpack_add is not None else mod_add)
     game_add_right = build_game_add_access(game_add)
 
     payload["mod_add"] = mod_add_right
+    payload["modpack_add"] = modpack_add_right
     payload["game_add"] = game_add_right
     payload["can_add_mod"] = _right_value(mod_add_right["add"])
+    payload["can_add_modpack"] = _right_value(modpack_add_right["add"])
     payload["can_add_game"] = _right_value(game_add_right["add"])
     payload["can_edit_game"] = payload["can_add_game"]
     return payload

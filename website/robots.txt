@@ -29,6 +29,9 @@ Allow: /legal/
 Allow: /mod/*
 Disallow: /mod/*/edit
 
+Allow: /modpack/*
+Disallow: /modpack/*/edit
+
 Allow: /user/*
 Disallow: /user/*/settings
 

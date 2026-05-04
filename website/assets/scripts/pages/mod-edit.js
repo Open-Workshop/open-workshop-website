@@ -6,6 +6,20 @@
   if (!runtime || !root) return;
 
   const modId = Number(root.dataset.modId || 0);
+  let pageConfig = {};
+  try {
+    pageConfig = JSON.parse(root.dataset.editPage || '{}');
+  } catch (error) {
+    pageConfig = {};
+  }
+  const entityKind = String(pageConfig.entity_kind || root.dataset.entityKind || pageConfig.kind || 'mod').toLowerCase();
+  const sizeLabel = String(pageConfig.size_label || (entityKind === 'modpack' ? 'Размер модпака' : 'Размер мода'));
+  const showMediaManager = pageConfig.show_media_manager !== false;
+  const showGitPanel = pageConfig.show_git_panel !== false;
+  const showTagsEditor = pageConfig.show_tags_editor !== false;
+  const showDependencies = pageConfig.show_dependencies !== false;
+  const showConflicts = pageConfig.show_conflicts !== false;
+  const showNewVersion = pageConfig.show_new_version !== false;
   const config = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
   const apiPaths = window.OWCore.getApiPaths();
   const publicIcons = (config.assets && config.assets.icons && config.assets.icons.public) || {
@@ -70,12 +84,15 @@
 
     const api = runtime.requireFactory('mod-edit-api')({
       modId,
+      entityKind,
       apiPaths,
     });
 
-    const mediaManager = runtime.requireFactory('mod-edit-media-manager')({
-      root: root.querySelector('#media-manager'),
-    });
+    const mediaManager = showMediaManager
+      ? runtime.requireFactory('mod-edit-media-manager')({
+        root: root.querySelector('#media-manager'),
+      })
+      : null;
 
     const authorsManager = runtime.requireFactory('mod-edit-authors-manager')({
       root: root.querySelector('#mod-authors-manager'),
@@ -88,6 +105,7 @@
       descriptionRoot: getDescRoot('catalog'),
       mediaManager,
       modId,
+      sizeLabel,
       sizeText: root.querySelector('.mod-edit__catalog-cards')?.dataset.modSize || '',
       gameId: root.querySelector('.mod-edit__catalog-cards')?.dataset.gameId || '',
     });
@@ -96,28 +114,32 @@
       catalogPreview.bind();
     }
 
-    const uploadFlow = runtime.requireFactory('mod-edit-upload-flow')({
-      api,
-      uploadButton: root.querySelector('[data-action="mod-upload-version"]'),
-      progressRoot: root.querySelector('[data-upload-progress-root]'),
-    });
+    const uploadFlow = showNewVersion
+      ? runtime.requireFactory('mod-edit-upload-flow')({
+        api,
+        entityKind,
+        uploadButton: root.querySelector('[data-action="mod-upload-version"]'),
+        progressRoot: root.querySelector('[data-upload-progress-root]'),
+      })
+      : null;
 
     const saveService = runtime.requireFactory('mod-edit-save-service')({
       api,
+      entityKind,
       saveButton: root.querySelector('[data-action="mod-save"]'),
       deleteButton: root.querySelector('[data-action="mod-delete"]'),
       deleteConfirmInput: root.querySelector('#delete-mod-confirm'),
       titleInput: root.querySelector('.title-mod'),
-      gitUrlInput: root.querySelector('#mod-git-url'),
+      gitUrlInput: showGitPanel ? root.querySelector('#mod-git-url') : null,
       publicButton: root.querySelector('[data-action="mod-toggle-public"]'),
       adultCheckbox: root.querySelector('#mod-adult'),
       fullDescriptionRoot: getDescRoot('full'),
       catalogDescriptionRoot: getDescRoot('catalog'),
       mediaManager,
       authorsManager,
-      tagsEditorId: 'mod-tags-editor',
-      dependenciesEditorId: 'mod-dependencies-editor',
-      conflictsEditorId: 'mod-conflicts-editor',
+      tagsEditorId: showTagsEditor ? 'mod-tags-editor' : '',
+      dependenciesEditorId: showDependencies ? 'mod-dependencies-editor' : '',
+      conflictsEditorId: showConflicts ? 'mod-conflicts-editor' : '',
       progressRoot: root.querySelector('[data-save-progress-root]'),
     });
 
@@ -140,6 +162,9 @@
       }
 
       if (action === 'mod-upload-version') {
+        if (!uploadFlow || typeof uploadFlow.start !== 'function') {
+          return;
+        }
         const fileInput = document.getElementById('input-mod-file-upload');
         const file = fileInput && fileInput.files ? fileInput.files[0] : null;
         uploadFlow.start(file);

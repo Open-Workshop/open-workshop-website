@@ -21,6 +21,12 @@
     const tagsEditorId = String(settings.tagsEditorId || 'mod-tags-editor');
     const dependenciesEditorId = String(settings.dependenciesEditorId || 'mod-dependencies-editor');
     const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');
+    const entityKind = String(settings.entityKind || 'mod').toLowerCase();
+    const ENTITY_FORMS = {
+      mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
+      modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
+    };
+    const entityForms = ENTITY_FORMS[entityKind] || ENTITY_FORMS.mod;
 
     let saveInProgress = false;
     let deleteInProgress = false;
@@ -85,8 +91,9 @@
         ? String(adultCheckbox.getAttribute('startdata') || '')
         : '';
       const adultCurrentValue = adultCheckbox instanceof HTMLInputElement && adultCheckbox.checked ? 'checked' : '';
-      const gitUrlStartValue = normalizeNullableText(runtime.getStartValue(gitUrlInput));
-      const gitUrlCurrentValue = normalizeNullableText(runtime.getTextValue(gitUrlInput));
+      const hasGitUrlField = Boolean(gitUrlInput);
+      const gitUrlStartValue = hasGitUrlField ? normalizeNullableText(runtime.getStartValue(gitUrlInput)) : null;
+      const gitUrlCurrentValue = hasGitUrlField ? normalizeNullableText(runtime.getTextValue(gitUrlInput)) : null;
 
       return {
         name: runtime.diffValue(
@@ -377,7 +384,7 @@
         return;
       }
       if (changes.hasInvalidAuthors) {
-        runtime.showToast('Проверьте авторов', 'У мода должен остаться хотя бы один автор и один владелец', 'warning');
+        runtime.showToast('Проверьте авторов', 'У ' + entityForms.genitive + ' должен остаться хотя бы один автор и один владелец', 'warning');
         return;
       }
 
@@ -393,7 +400,7 @@
 
       if (saveProgress) {
         saveProgress.start({
-          title: 'Сохраняем мод',
+          title: 'Сохраняем ' + entityForms.accusative,
           message: 'Не закрывайте страницу до завершения сохранения.',
           steps: savePlan,
         });
@@ -460,9 +467,9 @@
         window.location.reload();
       } catch (error) {
         if (saveProgress) {
-          saveProgress.fail(error && error.message ? error.message : 'Не удалось сохранить изменения мода');
+          saveProgress.fail(error && error.message ? error.message : 'Не удалось сохранить изменения ' + entityForms.genitive);
         }
-        runtime.showError(error, { fallbackText: 'Не удалось сохранить изменения мода' });
+        runtime.showError(error, { fallbackText: 'Не удалось сохранить изменения ' + entityForms.genitive });
       } finally {
         saveInProgress = false;
         runtime.setButtonBusy(saveButton, false);
@@ -480,20 +487,20 @@
     async function deleteMod() {
       if (deleteInProgress) return;
       if (deleteConfirmInput instanceof HTMLInputElement && !deleteConfirmInput.checked) return;
-      if (!window.confirm('Удалить мод без возможности восстановления?')) return;
+      if (!window.confirm('Удалить ' + entityForms.accusative + ' без возможности восстановления?')) return;
 
       deleteInProgress = true;
       runtime.setButtonBusy(deleteButton, true);
 
       try {
         await api.deleteMod();
-        runtime.showToast('Удалено', 'Мод удален', 'success');
+        runtime.showToast('Удалено', `${entityForms.nominative.charAt(0).toUpperCase()}${entityForms.nominative.slice(1)} удален`, 'success');
         if (unloadGuard) {
           unloadGuard.suppressOnce();
         }
         window.location.href = '/';
       } catch (error) {
-        runtime.showError(error, { fallbackText: 'Не удалось удалить мод' });
+        runtime.showError(error, { fallbackText: 'Не удалось удалить ' + entityForms.accusative });
       } finally {
         deleteInProgress = false;
         runtime.setButtonBusy(deleteButton, false);

@@ -1,10 +1,12 @@
 <div id="page-in-catalog-view" class="mod-edit__page">
   <div class="mod-edit__catalog">
+    {% set game_info = info.get('game') if info is defined else none %}
+    {% set game_id = game_info.get('id') if game_info and game_info.get('id') else '' %}
     <div
       class="cards mod-edit__catalog-cards"
       data-mod-id="{{ info['id'] }}"
       data-mod-size="{{ info['size'] }}"
-      data-game-id="{{ info['game']['id'] }}"
+      data-game-id="{{ game_id }}"
     ></div>
 
     <div class="mod-edit__catalog-desc">

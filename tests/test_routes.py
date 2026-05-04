@@ -88,6 +88,8 @@ class StubHandler:
         response_code: int = 200,
         mod_access: dict | None = None,
         mod_add_access: dict | None = None,
+        modpack_access: dict | None = None,
+        modpack_add_access: dict | None = None,
         game_add_access: dict | None = None,
         game_access: dict | None = None,
         profile_access: dict | None = None,
@@ -100,6 +102,8 @@ class StubHandler:
         self.response_code = response_code
         self.mod_access = mod_access
         self.mod_add_access = mod_add_access
+        self.modpack_access = modpack_access
+        self.modpack_add_access = modpack_add_access
         self.game_add_access = game_add_access
         self.game_access = game_access
         self.profile_access = profile_access
@@ -122,6 +126,14 @@ class StubHandler:
     async def get_mod_add_access(self) -> dict:
         self.calls.append(("get_mod_add_access",))
         return self.mod_add_access or {}
+
+    async def get_modpack_access(self, modpack_id: int, author_id: int | None = None, mode: bool | None = None) -> dict:
+        self.calls.append(("get_modpack_access", modpack_id, author_id, mode))
+        return self.modpack_access or {}
+
+    async def get_modpack_add_access(self) -> dict:
+        self.calls.append(("get_modpack_add_access",))
+        return self.modpack_add_access or {}
 
     async def get_game_add_access(self) -> dict:
         self.calls.append(("get_game_add_access",))
@@ -182,6 +194,41 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.render_calls[0][0], "error.html")
         self.assertEqual(handler.render_calls[0][1]["error"], "Публикация модов недоступна")
         self.assertEqual(handler.fetch_calls, [])
+
+    async def test_add_modpack_uses_modpack_page_config(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            modpack_add_access={
+                "authenticated": True,
+                "owner_id": 11,
+                "login_method": "google",
+                "add": {
+                    "value": True,
+                    "reason": "Публикация модов доступна",
+                    "reason_code": "allowed",
+                },
+                "anonymous_add": {
+                    "value": False,
+                    "reason": "Публикация без автора доступна только администратору",
+                    "reason_code": "admin_required",
+                },
+                "any": True,
+            },
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/modpack/add"):
+                result = await main.add_mod()
+
+        self.assertEqual(result["template"], "mod-add.html")
+        add_page = handler.render_calls[0][1]["add_page"]
+        self.assertEqual(add_page["entity_kind"], "modpack")
+        self.assertEqual(add_page["route_prefix"], "modpack")
+        self.assertEqual(add_page["heading"], "Создать модпак 😉")
+        self.assertFalse(add_page["show_file_upload"])
+        self.assertFalse(add_page["show_progress"])
+        self.assertIn(("get_modpack_add_access",), handler.calls)
+        self.assertNotIn(("get_mod_add_access",), handler.calls)
 
     async def test_hidden_mod_does_not_fetch_manager_content(self) -> None:
         handler = StubHandler(
@@ -679,17 +726,89 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["conflicts"][77]["name"], "Conflict Mod")
         self.assertEqual(render_kwargs["conflicts"][77]["img"], "https://cdn.example/conflict.webp")
 
+    async def test_modpack_edit_uses_modpack_edit_config(self) -> None:
+        handler = StubHandler(
+            authenticated=False,
+            modpack_access={
+                "authenticated": False,
+                "owner_id": -1,
+                "login_method": None,
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": True, "reason": "Можно редактировать", "reason_code": "allowed"},
+                    "description": {"value": True, "reason": "Можно редактировать", "reason_code": "allowed"},
+                    "short_description": {"value": True, "reason": "Можно редактировать", "reason_code": "allowed"},
+                    "authors": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 42,
+                        "name": "Pack Example",
+                        "short_description": "Short",
+                        "description": "[b]Long[/b]",
+                        "source": "local",
+                        "source_id": None,
+                        "game_id": 5,
+                        "public": 0,
+                        "adult": False,
+                        "created_at": "2026-04-22T10:00:00+00:00",
+                        "updated_at": "2026-04-24T10:00:00+00:00",
+                        "rating": 0,
+                        "current_vote": None,
+                        "downloads": 3,
+                        "authors": {},
+                    },
+                ),
+                (200, {"id": 5, "name": "Game"}),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/modpack/42/edit"):
+                result = await main.mod_view_and_edit(42)
+
+        self.assertEqual(result["template"], "mod-edit.html")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertEqual(render_kwargs["edit_page"]["entity_kind"], "modpack")
+        self.assertEqual(render_kwargs["edit_page"]["title_placeholder"], "Название модпака")
+        self.assertFalse(render_kwargs["right_edit"]["new_version"])
+        self.assertIn("Open Modpack", render_kwargs["edit_title"])
+        self.assertIn(("get_modpack_access", 42, None, None), handler.calls)
+        self.assertNotIn(("get_mod_access", 42, None, None), handler.calls)
+        self.assertEqual(
+            handler.fetch_calls,
+            [
+                ("/modpacks/42", "GET"),
+                ("/games/5", "GET"),
+            ],
+        )
+
     def test_mod_add_template_exposes_adult_toggle(self) -> None:
         mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
         self.assertIn('id="mod-adult"', mod_add)
         self.assertIn('Контент 18+', mod_add)
         self.assertIn("add_page.kind == 'mod'", mod_add)
+        self.assertIn("add_page.adult_description", mod_add)
 
     def test_mod_edit_params_template_exposes_adult_toggle(self) -> None:
         mod_params = (ROOT / "website/html-partials/mod-edit/page-params.html").read_text(encoding="utf-8")
         self.assertIn('id="mod-adult"', mod_params)
         self.assertIn("startdata", mod_params)
         self.assertIn('Контент 18+', mod_params)
+        self.assertIn("edit_page.new_version_title", mod_params)
+        self.assertIn("edit_page.delete_button_label", mod_params)
         self.assertNotIn("Можно включить или снять пометку 18+ без изменения других параметров мода.", mod_params)
 
     def test_mod_add_script_sends_adult_flag(self) -> None:
@@ -719,8 +838,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
     def test_mod_edit_script_passes_conflicts_editor_id(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit.js").read_text(encoding="utf-8")
-        self.assertIn("conflictsEditorId: 'mod-conflicts-editor',", script)
-        self.assertIn("gitUrlInput: root.querySelector('#mod-git-url'),", script)
+        self.assertIn("conflictsEditorId: showConflicts ? 'mod-conflicts-editor' : '',", script)
+        self.assertIn("gitUrlInput: showGitPanel ? root.querySelector('#mod-git-url') : null,", script)
 
     def test_mod_edit_api_exposes_relation_endpoints(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/api.js").read_text(encoding="utf-8")
@@ -1263,6 +1382,12 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('rating_history', footer)
         self.assertIn('История голосов', header)
         self.assertIn('История голосов', footer)
+        self.assertIn('Создать модпак', header)
+        self.assertIn('Создать модпак', footer)
+
+    def test_robots_disallow_modpack_edit(self) -> None:
+        robots = (ROOT / "website/robots.txt").read_text(encoding="utf-8")
+        self.assertIn('Disallow: /modpack/*/edit', robots)
 
     def test_standard_template_loads_footer_status_script(self) -> None:
         standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")

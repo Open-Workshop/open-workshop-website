@@ -10,6 +10,7 @@ from access_policy import (
     build_game_add_access,
     build_mod_access,
     build_mod_add_access,
+    build_modpack_add_access,
     build_profile_access,
     build_session_access,
 )
@@ -196,11 +197,13 @@ class UserHandler:
             return self.session_access
 
         mod_add_code, mod_add = await self._cached_access(("mod-add",), "/mod", method="PUT")
+        modpack_add_code, modpack_add = await self._cached_access(("modpack-add",), "/modpack", method="PUT")
         game_add_code, game_add = await self._cached_access(("game-add",), "/game", method="PUT")
 
         self.session_access = build_session_access(
             self.access_context,
             mod_add if mod_add_code == 200 and isinstance(mod_add, dict) else None,
+            modpack_add if modpack_add_code == 200 and isinstance(modpack_add, dict) else None,
             game_add if game_add_code == 200 and isinstance(game_add, dict) else None,
         )
         return self.session_access
@@ -208,6 +211,10 @@ class UserHandler:
     async def get_mod_add_access(self) -> dict:
         code, payload = await self._cached_access(("mod-add",), "/mod", method="PUT")
         return build_mod_add_access(payload if code == 200 and isinstance(payload, dict) else None)
+
+    async def get_modpack_add_access(self) -> dict:
+        code, payload = await self._cached_access(("modpack-add",), "/modpack", method="PUT")
+        return build_modpack_add_access(payload if code == 200 and isinstance(payload, dict) else None)
 
     async def get_game_add_access(self) -> dict:
         code, payload = await self._cached_access(("game-add",), "/game", method="PUT")
@@ -254,6 +261,28 @@ class UserHandler:
             json_data={},
         )
         return build_game_access(result if code == 200 and isinstance(result, dict) else None)
+
+    async def get_modpack_access(
+        self,
+        modpack_id: int,
+        *,
+        author_id: int | None = None,
+        mode: bool | None = None,
+    ) -> dict:
+        cache_key = ("modpack", int(modpack_id), author_id, mode)
+        payload = {}
+        if author_id is not None:
+            payload["author_id"] = int(author_id)
+        if mode is not None:
+            payload["mode"] = bool(mode)
+
+        code, result = await self._cached_access(
+            cache_key,
+            f"/modpack/{int(modpack_id)}",
+            method="POST",
+            json_data=payload,
+        )
+        return build_mod_access(result if code == 200 and isinstance(result, dict) else None)
 
     def render(self, filename: str, **kwargs) -> str:
         return render_template(

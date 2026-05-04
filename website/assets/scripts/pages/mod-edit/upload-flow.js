@@ -7,7 +7,14 @@
   runtime.define('mod-edit-upload-flow', function createModEditUploadFlow(options) {
     const settings = options || {};
     const api = settings.api;
+    const entityKind = String(settings.entityKind || 'mod').toLowerCase();
+    const ENTITY_FORMS = {
+      mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
+      modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
+    };
+    const entityForms = ENTITY_FORMS[entityKind] || ENTITY_FORMS.mod;
     const uploadButton = runtime.resolveElement(settings.uploadButton);
+    if (!uploadButton) return null;
     const progressRoot = runtime.resolveElement(settings.progressRoot);
     const progress = window.OWUI ? window.OWUI.createUploadProgress(progressRoot) : null;
     const subscribers = new Set();
@@ -114,7 +121,7 @@
     async function start(file) {
       if (busy) return;
       if (!file) {
-        runtime.showToast('Файл не выбран', 'Выберите архив мода', 'info');
+        runtime.showToast('Файл не выбран', 'Выберите архив ' + entityForms.genitive, 'info');
         return;
       }
 
@@ -195,9 +202,9 @@
             const info = await api.fetchModInfo().catch(function () { return null; });
             const nextResult = info || null;
             const nextDate = nextResult ? nextResult.file_updated_at : null;
-            if (nextDate && nextDate !== previousDate) {
+              if (nextDate && nextDate !== previousDate) {
               setStatus('Новая версия сохранена');
-              runtime.showToast('Готово', 'Новая версия загружена', 'success');
+              runtime.showToast('Готово', 'Новая версия ' + entityForms.genitive + ' загружена', 'success');
               notify({ stage: 'complete' });
               window.location.reload();
               return;
@@ -244,7 +251,7 @@
         busy = false;
         runtime.setButtonBusy(uploadButton, false);
         setStatus('Ошибка загрузки');
-        runtime.showError(error, { fallbackText: 'Не удалось загрузить новую версию' });
+        runtime.showError(error, { fallbackText: 'Не удалось загрузить новую версию ' + entityForms.genitive });
         notify({ stage: 'error', error });
       }
     }

@@ -78,6 +78,7 @@
       manager-url="{{ ow.api.base }}"
       data-session-authenticated="{{ 'true' if session_access and session_access.authenticated else 'false' }}"
       data-can-add-mod="{{ 'true' if session_access and session_access.can_add_mod else 'false' }}"
+      data-can-add-modpack="{{ 'true' if session_access and session_access.can_add_modpack else 'false' }}"
       data-can-add-game="{{ 'true' if session_access and session_access.can_add_game else 'false' }}"
       data-can-edit-game="{{ 'true' if session_access and session_access.can_edit_game else 'false' }}"
     >

@@ -9,11 +9,23 @@
     config = {};
   }
   const addKind = String(config.kind || root.dataset.addKind || 'mod').toLowerCase();
+  const entityKind = String(config.entity_kind || root.dataset.entityKind || addKind || 'mod').toLowerCase();
+  const routePrefix = String(config.route_prefix || (entityKind === 'game' ? 'game' : 'mod')).toLowerCase();
+  const ENTITY_FORMS = {
+    game: { nominative: 'игра', genitive: 'игры', accusative: 'игру', pluralGenitive: 'игр' },
+    mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод', pluralGenitive: 'модов' },
+    modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак', pluralGenitive: 'модпаков' },
+  };
+  const entityForms = ENTITY_FORMS[entityKind] || ENTITY_FORMS.mod;
   const apiBase = window.OWCore.getApiBase();
   const apiPaths = window.OWCore.getApiPaths();
-  const addModEndpoint = apiPaths.mod && apiPaths.mod.add ? apiPaths.mod.add : null;
-  const addGameEndpoint = apiPaths.game && apiPaths.game.add ? apiPaths.game.add : null;
-  const uploadEndpoint = apiPaths.mod && apiPaths.mod.file ? apiPaths.mod.file : null;
+  const modApi = apiPaths.mod || {};
+  const modpackApi = apiPaths.modpack || {};
+  const gameApi = apiPaths.game || {};
+  const addModEndpoint = modApi.add || null;
+  const addModpackEndpoint = modpackApi.add || null;
+  const addGameEndpoint = gameApi.add || null;
+  const uploadEndpoint = modApi.file || null;
   const uploadProgress = window.OWUI
     ? window.OWUI.createUploadProgress(root.querySelector('[data-upload-progress-root]'))
     : null;
@@ -87,7 +99,7 @@
 
   async function startTransferViaManager(payload) {
     if (!uploadEndpoint) {
-      throw new Error('В приложении не настроен endpoint для загрузки модов');
+      throw new Error('В приложении не настроен endpoint для загрузки ' + entityForms.pluralGenitive);
     }
 
     const response = await window.OWCore.request(apiBase + uploadEndpoint.path, {
@@ -185,48 +197,22 @@
     return '';
   }
 
-  function normalizeIdCandidate(value) {
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
-    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
-      return Number(value.trim());
-    }
-    return null;
-  }
-
-  function extractCreatedId(payload, kind) {
-    const directId = normalizeIdCandidate(payload);
-    if (directId !== null) return directId;
-
-    if (Array.isArray(payload)) {
-      for (const item of payload) {
-        const nestedId = extractCreatedId(item, kind);
-        if (nestedId !== null) return nestedId;
-      }
+  function extractCreatedIdFromResponse(response) {
+    const payload = response ? response.data : null;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       return null;
     }
 
-    if (!payload || typeof payload !== 'object') return null;
-
-    const candidates = kind === 'game' ? ['game_id', 'id'] : ['mod_id', 'id'];
-    for (const key of candidates) {
-      const value = normalizeIdCandidate(payload[key]);
-      if (value !== null) return value;
+    const rawId = payload.id;
+    if (typeof rawId === 'number' && Number.isFinite(rawId)) {
+      return rawId;
     }
 
-    const nestedContainers = ['data', 'game', 'mod'];
-    for (const key of nestedContainers) {
-      if (payload[key] === undefined) continue;
-      const nestedId = extractCreatedId(payload[key], kind);
-      if (nestedId !== null) return nestedId;
+    if (typeof rawId === 'string' && /^\d+$/.test(rawId.trim())) {
+      return Number(rawId.trim());
     }
 
     return null;
-  }
-
-  function extractIdFromLocation(locationHeader) {
-    if (typeof locationHeader !== 'string' || locationHeader.trim() === '') return null;
-    const match = locationHeader.match(/\/(\d+)(?:\/)?$/);
-    return match ? Number(match[1]) : null;
   }
 
   function setSubmitInProgress(nextValue) {
@@ -288,9 +274,7 @@
       }
 
       const payload = response.data;
-      const gameId =
-        extractCreatedId(payload, 'game') ||
-        extractIdFromLocation(response.response.headers.get('Location') || response.response.headers.get('location'));
+      const gameId = extractCreatedIdFromResponse(response);
 
       if (gameId !== null) {
         window.location.href = `/game/${gameId}/edit`;
@@ -311,23 +295,86 @@
     }
   }
 
-  async function uploadNewMod() {
-    if (!addModEndpoint) {
-      printDanger('В приложении не настроен endpoint для загрузки модов');
+  async function createNewModpack() {
+    if (!addModpackEndpoint) {
+      printDanger('В приложении не настроен endpoint для создания ' + entityForms.pluralGenitive);
       return;
     }
 
     if (getNameValue().length <= 0) {
-      printError('Не указали название мода!');
+      printError('Не указали название ' + entityForms.genitive + '!');
       return;
     }
 
     const textDesc = getDescriptionValue(descriptionModules[0], true).trim();
     if (textDesc.length <= 0) {
-      printError('Описание мода не указано!');
+      printError('Описание ' + entityForms.genitive + ' не указано!');
       return;
     } else if (textDesc.length > 256) {
-      printError('Описание мода слииишком длинное!');
+      printError('Описание ' + entityForms.genitive + ' слииишком длинное!');
+      return;
+    }
+
+    const selectedGameId = gameSelector ? gameSelector.getAttribute('gameid') : '';
+    if (!selectedGameId) {
+      printError('Игра-владелец не выбрана!');
+      return;
+    }
+
+    setSubmitInProgress(true);
+
+    try {
+      const createdModResponse = await window.OWCore.request(apiBase + addModpackEndpoint.path, {
+        method: addModpackEndpoint.method,
+        data: {
+          name: getNameValue(),
+          short_description: textDesc,
+          description: textDesc,
+          source: 'local',
+          source_id: null,
+          game_id: Number(selectedGameId),
+          public: 2,
+          adult: Boolean(adultCheckbox && adultCheckbox.checked),
+          without_author: false,
+        },
+        credentials: 'include',
+        parseAs: 'json',
+      });
+
+      if (!createdModResponse.ok) {
+        throw new Error(extractErrorText(createdModResponse, `Ошибка (${createdModResponse.status})`));
+      }
+
+      const createdModId = extractCreatedIdFromResponse(createdModResponse);
+
+      if (createdModId === null) {
+        throw new Error('Не удалось получить ID ' + entityForms.genitive);
+      }
+
+      window.location.href = `/${routePrefix}/${createdModId}/edit`;
+    } catch (error) {
+      printDanger(error && error.message ? error.message : 'Не удалось создать ' + entityForms.genitive);
+      setSubmitInProgress(false);
+    }
+  }
+
+  async function uploadNewMod() {
+    if (!addModEndpoint) {
+      printDanger('В приложении не настроен endpoint для загрузки ' + entityForms.pluralGenitive);
+      return;
+    }
+
+    if (getNameValue().length <= 0) {
+      printError('Не указали название ' + entityForms.genitive + '!');
+      return;
+    }
+
+    const textDesc = getDescriptionValue(descriptionModules[0], true).trim();
+    if (textDesc.length <= 0) {
+      printError('Описание ' + entityForms.genitive + ' не указано!');
+      return;
+    } else if (textDesc.length > 256) {
+      printError('Описание ' + entityForms.genitive + ' слииишком длинное!');
       return;
     }
 
@@ -338,7 +385,7 @@
     }
 
     if (!fileInput || !fileInput.files || fileInput.files.length <= 0) {
-      printError('Нужно выбрать файл первой версии!');
+      printError('Нужно выбрать файл первой версии ' + entityForms.genitive + '!');
       return;
     }
 
@@ -366,14 +413,10 @@
         throw new Error(extractErrorText(createdModResponse, `Ошибка (${createdModResponse.status})`));
       }
 
-      const createdModId =
-        extractCreatedId(createdModResponse.data, 'mod') ||
-        extractIdFromLocation(
-          createdModResponse.response.headers.get('Location') || createdModResponse.response.headers.get('location'),
-        );
+      const createdModId = extractCreatedIdFromResponse(createdModResponse);
 
       if (createdModId === null) {
-        throw new Error('Не удалось получить ID мода');
+        throw new Error('Не удалось получить ID ' + entityForms.genitive);
       }
 
       showUploadProgress();
@@ -446,7 +489,7 @@
             const condition = data ? data.condition : null;
             if (condition === 'published') {
               hideUploadProgress();
-              window.location.href = `/mod/${modId}/edit`;
+              window.location.href = `/${routePrefix}/${modId}/edit`;
               return;
             }
           }
@@ -527,7 +570,7 @@
       hideUploadProgress();
       new Toast({
         title: 'Ошибка загрузки',
-        text: error && error.message ? error.message : 'Не удалось загрузить мод',
+        text: error && error.message ? error.message : `Не удалось загрузить ${entityForms.accusative}`,
         theme: 'warning',
         autohide: true,
         interval: 6000,
@@ -541,6 +584,11 @@
 
     if (addKind === 'game') {
       await createNewGame();
+      return;
+    }
+
+    if (entityKind === 'modpack') {
+      await createNewModpack();
       return;
     }
 

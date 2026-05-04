@@ -25,7 +25,16 @@
     const modId = Number(config.modId || 0);
     const entityId = Number(config.entityId || modId || 0);
     const resourceOwnerType = String(config.resourceOwnerType || 'mods');
+    const entityKind = String(config.entityKind || 'mod').toLowerCase();
     const apiPaths = config.apiPaths || window.OWCore.getApiPaths();
+    const modApiPaths = apiPaths.mod || {};
+    const modpackApiPaths = apiPaths.modpack || {};
+    const entityApiPaths = entityKind === 'modpack' ? modpackApiPaths : modApiPaths;
+    const ENTITY_FORMS = {
+      mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
+      modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
+    };
+    const entityForms = ENTITY_FORMS[entityKind] || ENTITY_FORMS.mod;
 
     function formatEndpoint(endpoint, pathParams, query) {
       const path = window.OWCore.formatPath(endpoint.path, pathParams || {});
@@ -75,11 +84,13 @@
     }
 
     async function fetchModInfo() {
-      const result = await requestEndpoint(apiPaths.mod.info, {
-        pathParams: { mod_id: modId },
-        query: { include: ['dates', 'authors', 'game', 'short_description', 'description', 'resources'] },
+      const result = await requestEndpoint(entityApiPaths.info, {
+        pathParams: entityKind === 'modpack' ? { modpack_id: modId } : { mod_id: modId },
+        query: entityKind === 'modpack'
+          ? undefined
+          : { include: ['dates', 'authors', 'game', 'short_description', 'description', 'resources'] },
         parseAs: 'json',
-        fallbackError: 'Не удалось получить информацию о моде',
+        fallbackError: 'Не удалось получить информацию о ' + entityForms.genitive,
       });
 
       return result.data;
@@ -132,11 +143,11 @@
       });
       if (Object.keys(payload).length === 0) return null;
 
-      return requestEndpoint(apiPaths.mod.edit, {
-        pathParams: { mod_id: modId },
+      return requestEndpoint(entityApiPaths.edit, {
+        pathParams: entityKind === 'modpack' ? { modpack_id: modId } : { mod_id: modId },
         data: payload,
         parseAs: 'json',
-        fallbackError: 'Не удалось сохранить изменения мода',
+        fallbackError: 'Не удалось сохранить изменения ' + entityForms.genitive,
       });
     }
 
@@ -184,8 +195,10 @@
     }
 
     async function upsertAuthor(authorId, owner) {
-      return requestEndpoint(apiPaths.mod.authors_upsert, {
-        pathParams: { mod_id: modId, author_id: authorId },
+      return requestEndpoint(entityApiPaths.authors_upsert, {
+        pathParams: entityKind === 'modpack'
+          ? { modpack_id: modId, author_id: authorId }
+          : { mod_id: modId, author_id: authorId },
         data: {
           owner: Boolean(owner),
         },
@@ -195,8 +208,10 @@
     }
 
     async function deleteAuthor(authorId) {
-      return requestEndpoint(apiPaths.mod.authors_delete, {
-        pathParams: { mod_id: modId, author_id: authorId },
+      return requestEndpoint(entityApiPaths.authors_delete, {
+        pathParams: entityKind === 'modpack'
+          ? { modpack_id: modId, author_id: authorId }
+          : { mod_id: modId, author_id: authorId },
         parseAs: 'text',
         fallbackError: 'Не удалось удалить автора',
       });
@@ -240,10 +255,10 @@
     }
 
     async function deleteMod() {
-      return requestEndpoint(apiPaths.mod.delete, {
-        pathParams: { mod_id: modId },
+      return requestEndpoint(entityApiPaths.delete, {
+        pathParams: entityKind === 'modpack' ? { modpack_id: modId } : { mod_id: modId },
         parseAs: 'text',
-        fallbackError: 'Не удалось удалить мод',
+        fallbackError: 'Не удалось удалить ' + entityForms.accusative,
       });
     }
 

@@ -11,6 +11,10 @@
     const descriptionRoot = runtime.resolveElement(settings.descriptionRoot);
     const mediaManager = settings.mediaManager || null;
     const modId = Number(settings.modId || 0);
+    const sizeLabel = String(settings.sizeLabel || 'Размер мода');
+    const fallbackImage = window.OWCore && typeof window.OWCore.getImageFallback === 'function'
+      ? window.OWCore.getImageFallback()
+      : '/assets/images/loading.webp';
 
     if (!container || !window.Cards || typeof window.Cards.create !== 'function') {
       return null;
@@ -20,7 +24,7 @@
     const gameId = String(settings.gameId || '');
     const doplink = gameId ? `?sgame=no&game=${encodeURIComponent(gameId)}` : '';
     const tags = sizeText
-      ? [{ text: '📦', description: 'Размер мода', value: sizeText }]
+      ? [{ text: '📦', description: sizeLabel, value: sizeText }]
       : [];
 
     let card = null;
@@ -40,7 +44,7 @@
       const mediaState = mediaManager && typeof mediaManager.getState === 'function'
         ? mediaManager.getState()
         : null;
-      return (mediaState && mediaState.logoUrl) || '/assets/images/loading.webp';
+      return (mediaState && mediaState.logoUrl) || fallbackImage;
     }
 
     function ensureCard() {

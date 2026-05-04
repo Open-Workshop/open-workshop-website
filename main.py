@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, request, make_response, redirect, jsonify
+from flask import Flask, render_template, send_from_directory, request, make_response, redirect, jsonify, has_request_context
 from pathlib import Path
 from babel import dates
 import datetime
@@ -699,7 +699,16 @@ async def mod_view_and_edit(mod_id):
     launge = "ru"
 
     async with UserHandler() as handler:
-        mod_access = await handler.get_mod_access(mod_id)
+        request_path = request.path if has_request_context() else ""
+        is_modpack_route = request_path.startswith("/modpack/")
+        page_kind = "modpack" if is_modpack_route else "mod"
+        edit_page = "/edit" in request.path
+
+        if is_modpack_route:
+            mod_access = await handler.get_modpack_access(mod_id)
+        else:
+            mod_access = await handler.get_mod_access(mod_id)
+
         right_edit_mod = build_mod_rights(mod_access)
         profile_vote_access = await handler.get_profile_access(handler.id) if handler.authenticated and handler.id >= 0 else None
 
@@ -711,7 +720,6 @@ async def mod_view_and_edit(mod_id):
             )
             return handler.finish(page), 403
 
-        edit_page = "/edit" in request.path
         if edit_page and not right_edit_mod["edit"]:
             if not handler.authenticated:
                 page = handler.render("error.html", error="Войдите или создайте аккаунт", error_title="Не авторизован")
@@ -723,6 +731,9 @@ async def mod_view_and_edit(mod_id):
                 )
 
             return handler.finish(page), 403
+
+        if is_modpack_route:
+            return await _render_modpack_edit_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
 
         # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
@@ -945,14 +956,22 @@ async def mod_view_and_edit(mod_id):
         plugins_more_count = max(plugins_database_size - len(plugins), 0)
 
         if edit_page:
+            edit_page_kind = page_kind if page_kind in app_config.EDIT_PAGE_CONFIGS else "mod"
             edit_page_config = {
-                **app_config.EDIT_PAGE_CONFIGS["mod"],
+                **app_config.EDIT_PAGE_CONFIGS[edit_page_kind],
                 "entity_id": info_result["id"],
             }
+            if edit_page_kind == "modpack":
+                right_edit_mod = {
+                    **right_edit_mod,
+                    "new_version": False,
+                    "any": right_edit_mod["edit"] or right_edit_mod["authors"] or right_edit_mod["delete"],
+                }
+            edit_title_suffix = "Open Modpack" if edit_page_kind == "modpack" else "Open Mod"
             page_html = handler.render(
                 "mod-edit.html",
                 edit_page=edit_page_config,
-                edit_title=f"{info_result['name']} - edit Open Mod",
+                edit_title=f"{info_result['name']} - edit {edit_title_suffix}",
                 edit_description=info_result["short_description"],
                 info=info_result,
                 tags=tags,
@@ -1020,7 +1039,9 @@ async def mod_download(mod_id):
 
 async def add_mod():
     async with UserHandler() as handler:
-        access = await handler.get_mod_add_access()
+        request_path = request.path if has_request_context() else ""
+        page_kind = "modpack" if request_path.startswith("/modpack/") else "mod"
+        access = await handler.get_modpack_add_access() if page_kind == "modpack" else await handler.get_mod_add_access()
 
         if not access['add']['value']:
             if not handler.authenticated:
@@ -1034,7 +1055,8 @@ async def add_mod():
 
             return handler.finish(page), 403
 
-        page = handler.render("mod-add.html", add_page=app_config.ADD_PAGE_CONFIGS["mod"])
+        add_page_kind = page_kind if page_kind in app_config.ADD_PAGE_CONFIGS else "mod"
+        page = handler.render("mod-add.html", add_page=app_config.ADD_PAGE_CONFIGS[add_page_kind])
 
         return handler.finish(page)
 
@@ -1172,6 +1194,102 @@ async def game_edit(game_id):
             selected_genres=selected_genres,
             selected_genre_ids=selected_genre_ids,
         ))
+
+
+async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_mod, profile_vote_access):
+    launge = "ru"
+
+    info_path = app_config.api_path("modpack", "info").format(modpack_id=modpack_id)
+    info_code, info = await handler.fetch(info_path)
+
+    if info_code != 200 or not isinstance(info, dict):
+        return _render_api_error(handler, info, info_code)
+
+    info_result = info
+
+    created_at = info_result.get("created_at")
+    if created_at:
+        input_date = parse_api_datetime(created_at)
+        info_result["date_creation_js"] = format_js_datetime(input_date)
+        info_result["date_creation"] = dates.format_date(input_date, locale=launge)
+    else:
+        info_result["date_creation_js"] = ""
+        info_result["date_creation"] = ""
+
+    updated_at = info_result.get("updated_at") or created_at
+    if updated_at:
+        input_date = parse_api_datetime(updated_at)
+        info_result["date_update_file_js"] = format_js_datetime(input_date)
+        info_result["date_update_file"] = dates.format_date(input_date, locale=launge)
+    else:
+        info_result["date_update_file_js"] = info_result["date_creation_js"]
+        info_result["date_update_file"] = info_result["date_creation"]
+
+    game_id = info_result.get("game_id")
+    if game_id:
+        game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
+        game_code, game_info = await handler.fetch(game_info_path)
+        if game_code == 200 and isinstance(game_info, dict):
+            info_result["game"] = game_info
+        else:
+            info_result["game"] = {"id": int(game_id), "name": f"Игра #{game_id}"}
+    else:
+        info_result["game"] = {"id": 0, "name": "Игра не указана"}
+
+    authors = []
+    authors_source = info_result.get("authors") or {}
+    if len(authors_source) > 0:
+        profile_info_path = app_config.api_path("profile", "info")
+        authors_info = await asyncio.gather(
+            *[handler.fetch(profile_info_path.format(user_id=author)) for author in authors_source]
+        )
+
+        for status_code, author in authors_info:
+            if not isinstance(author, dict) or "general" not in author:
+                continue
+
+            author_to_add = author["general"]
+            author_entry = authors_source.get(str(author_to_add["id"]), {})
+            author_to_add["owner"] = bool(author_entry.get("owner", False))
+            authors.append(author_to_add)
+
+    info_result["short_description"] = str(info_result.get("short_description") or "")
+    info_result["description"] = str(info_result.get("description") or "")
+    info_result["description_html"] = render_description_html(info_result["description"])
+    info_result["size"] = ""
+    info_result["size_unpacked"] = ""
+    info_result["downloads"] = int(info_result.get("downloads") or 0)
+    info_result["rating"] = int(info_result.get("rating") or 0)
+    info_result["logo"] = DEFAULT_IMAGE_FALLBACK
+    info_result["no_many_screenshots"] = True
+    info_result["dependencies"] = {"count": 0, "items": []}
+    info_result["conflicts"] = {"count": 0, "items": []}
+
+    edit_page_config = {
+        **app_config.EDIT_PAGE_CONFIGS["modpack"],
+        "entity_id": info_result["id"],
+    }
+    page_html = handler.render(
+        "mod-edit.html",
+        edit_page=edit_page_config,
+        edit_title=f"{info_result['name']} - edit Open Modpack",
+        edit_description=info_result["short_description"],
+        info=info_result,
+        tags=[],
+        resources={"items": []},
+        dependencies={},
+        conflicts={},
+        plugins={},
+        plugins_more_count=0,
+        mod_access=mod_access,
+        right_edit=right_edit_mod,
+        vote_access=profile_vote_access,
+        authors=authors,
+        is_mod_data=False,
+        data=[info_result],
+    )
+
+    return handler.finish(page_html)
 
 async def user(user_id):
     launge = "ru"
@@ -1373,6 +1491,10 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=mod_view_and_edit)
     for route in app_config.ROUTES["mod"]["add"]:
         app.add_url_rule(route, view_func=add_mod)
+    for route in app_config.ROUTES["modpack"]["add"]:
+        app.add_url_rule(route, view_func=add_mod)
+    for route in app_config.ROUTES["modpack"]["edit"]:
+        app.add_url_rule(route, view_func=mod_view_and_edit)
     for route in app_config.ROUTES["game"]["add"]:
         app.add_url_rule(route, view_func=add_game)
     for route in app_config.ROUTES["game"]["edit"]:

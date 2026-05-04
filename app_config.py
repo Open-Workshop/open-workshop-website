@@ -18,6 +18,7 @@ PUBLIC_CONFIG: dict = {
         ],
         "profile_menu": [
             {"id": "upload_mod", "href": "/mod/add"},
+            {"id": "upload_modpack", "href": "/modpack/add"},
             {"id": "my_mods", "href": "/user/{id}/mods"},
             {"id": "rating_history", "href": "/user/{id}/rating/history"},
             {"id": "settings", "href": "/user/{id}/settings"},
@@ -115,6 +116,18 @@ PUBLIC_CONFIG: dict = {
                 "conflicts_add": {"method": "POST", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},
                 "conflicts_delete": {"method": "DELETE", "path": "/mods/{mod_id}/conflicts/{conflict_mod_id}"},
             },
+            "modpack": {
+                "list": {"method": "GET", "path": "/modpacks"},
+                "add": {"method": "POST", "path": "/modpacks"},
+                "edit": {"method": "PATCH", "path": "/modpacks/{modpack_id}"},
+                "info": {"method": "GET", "path": "/modpacks/{modpack_id}"},
+                "delete": {"method": "DELETE", "path": "/modpacks/{modpack_id}"},
+                "rating": {"method": "PUT", "path": "/modpacks/{modpack_id}/rating"},
+                "authors_upsert": {"method": "PUT", "path": "/modpacks/{modpack_id}/authors/{author_id}"},
+                "authors_delete": {"method": "DELETE", "path": "/modpacks/{modpack_id}/authors/{author_id}"},
+                "mods": {"method": "GET", "path": "/modpacks/{modpack_id}/mods"},
+                "mods_update": {"method": "PUT", "path": "/modpacks/{modpack_id}/mods"},
+            },
             "resource": {
                 "list": {"method": "GET", "path": "/resources"},
                 "add": {"method": "POST", "path": "/resources"},
@@ -137,7 +150,7 @@ PUBLIC_CONFIG: dict = {
                 "genres_add": {"method": "POST", "path": "/games/{game_id}/genres/{genre_id}"},
                 "genres_delete": {"method": "DELETE", "path": "/games/{game_id}/genres/{genre_id}"},
             },
-"genre": {
+            "genre": {
                 "add": {"method": "POST", "path": "/genres"},
                 "list": {"method": "GET", "path": "/genres"},
                 "edit": {"method": "PATCH", "path": "/genres/{genre_id}"},
@@ -246,6 +259,13 @@ ROUTES: dict = {
         ],
         "add": ["/mod/add", "/mod/add.html"],
     },
+    "modpack": {
+        "add": ["/modpack/add", "/modpack/add.html"],
+        "edit": [
+            "/modpack/<int:mod_id>/edit",
+            "/modpack/<int:mod_id>/edit.html",
+        ],
+    },
     "game": {
         "add": [
             "/game/add",
@@ -268,6 +288,11 @@ ROUTES: dict = {
 ADD_PAGE_CONFIGS: dict = {
     "mod": {
         "kind": "mod",
+        "entity_kind": "mod",
+        "route_prefix": "mod",
+        "entity_label": "мод",
+        "entity_label_genitive": "мода",
+        "entity_label_accusative": "мод",
         "heading": "Загрузить мод 😉",
         "max_width": "300pt",
         "name_placeholder": "Этот мод прозвали...",
@@ -278,6 +303,7 @@ ADD_PAGE_CONFIGS: dict = {
         "show_file_upload": True,
         "show_progress": True,
         "type_select": None,
+        "adult_description": "Помечает мод как взрослый и позволяет скрывать его через фильтры каталога.",
         "description_modules": [
             {
                 "module_key": "mod-short",
@@ -292,6 +318,8 @@ ADD_PAGE_CONFIGS: dict = {
     },
     "game": {
         "kind": "game",
+        "entity_kind": "game",
+        "route_prefix": "game",
         "heading": "Добавить игру 😉",
         "max_width": "300pt",
         "name_placeholder": "Название игры",
@@ -322,6 +350,41 @@ ADD_PAGE_CONFIGS: dict = {
         "page_title": "OW: Add game",
         "page_description": "Добавьте игру в каталог Open Workshop!",
     },
+    "modpack": {
+        "kind": "mod",
+        "entity_kind": "modpack",
+        "route_prefix": "modpack",
+        "entity_label": "модпак",
+        "entity_label_genitive": "модпака",
+        "entity_label_accusative": "модпак",
+        "heading": "Создать модпак 😉",
+        "max_width": "300pt",
+        "name_placeholder": "Название модпака",
+        "name_maxlength": 60,
+        "name_minlength": 1,
+        "submit_label": "Подтвердить",
+        "show_game_selector": True,
+        "show_file_upload": False,
+        "show_progress": False,
+        "show_media_manager": False,
+        "show_git_panel": False,
+        "show_tags_editor": False,
+        "show_dependencies": False,
+        "show_conflicts": False,
+        "type_select": None,
+        "adult_description": "Помечает модпак как взрослый и позволяет скрывать его через фильтры каталога.",
+        "description_modules": [
+            {
+                "module_key": "modpack-short",
+                "label": "Описание",
+                "limit": 256,
+                "placeholder": "Описание не может быть пустым!(",
+                "init_text": "",
+            }
+        ],
+        "page_title": "OW: Add modpack",
+        "page_description": "Добавьте модпак в каталог Open Workshop!",
+    },
 }
 
 
@@ -330,6 +393,18 @@ EDIT_PAGE_CONFIGS: dict = {
         "kind": "mod",
         "root_id": "main-mod-edit",
         "main_classes": "mod-edit",
+        "entity_kind": "mod",
+        "entity_label": "мод",
+        "entity_label_genitive": "мода",
+        "entity_label_accusative": "мод",
+        "title_placeholder": "Название мода",
+        "size_label": "Размер мода",
+        "new_version_title": "Новая версия мода",
+        "new_version_description": "Загрузите новый архив. Лимит 10 GB.",
+        "delete_title": "Удаление мода",
+        "delete_description": "Действие необратимо. Мод и ресурсы будут удалены.",
+        "delete_button_label": "Удалить мод",
+        "adult_description": "Такой мод можно скрывать через фильтр по возрастному ограничению.",
         "styles": [
             "/assets/styles/pages/mod-edit.css",
         ],
@@ -372,6 +447,48 @@ EDIT_PAGE_CONFIGS: dict = {
             "/assets/scripts/pages/mod-edit/api.js",
             "/assets/scripts/pages/game-edit/catalog-preview.js",
             "/assets/scripts/pages/game-edit.js",
+        ],
+    },
+    "modpack": {
+        "kind": "mod",
+        "root_id": "main-mod-edit",
+        "main_classes": "mod-edit",
+        "entity_kind": "modpack",
+        "entity_label": "модпак",
+        "entity_label_genitive": "модпака",
+        "entity_label_accusative": "модпак",
+        "title_placeholder": "Название модпака",
+        "size_label": "Размер модпака",
+        "new_version_title": "Новая версия модпака",
+        "new_version_description": "Модпаки не используют архивную загрузку.",
+        "delete_title": "Удаление модпака",
+        "delete_description": "Действие необратимо. Модпак и ресурсы будут удалены.",
+        "delete_button_label": "Удалить модпак",
+        "adult_description": "Такой модпак можно скрывать через фильтр по возрастному ограничению.",
+        "show_media_manager": False,
+        "show_git_panel": False,
+        "show_tags_editor": False,
+        "show_dependencies": False,
+        "show_conflicts": False,
+        "styles": [
+            "/assets/styles/pages/mod-edit.css",
+        ],
+        "template_nav": "html-partials/mod-edit/nav.html",
+        "template_pages": [
+            "html-partials/mod-edit/page-main.html",
+            "html-partials/mod-edit/page-catalog.html",
+            "html-partials/mod-edit/page-params.html",
+        ],
+        "scripts": [
+            "/assets/scripts/vendors/pager-logic.js",
+            "/assets/scripts/ow-edit-runtime.js",
+            "/assets/scripts/pages/mod-edit/api.js",
+            "/assets/scripts/pages/mod-edit/media-manager.js",
+            "/assets/scripts/pages/mod-edit/authors-manager.js",
+            "/assets/scripts/pages/mod-edit/catalog-preview.js",
+            "/assets/scripts/pages/mod-edit/upload-flow.js",
+            "/assets/scripts/pages/mod-edit/save-service.js",
+            "/assets/scripts/pages/mod-edit.js",
         ],
     },
 }
