@@ -424,6 +424,14 @@ window.Cards = {
             return createPlaceholderCard(page, settings);
         }
         const canShowEditButton = Boolean(showEditButton || (isGame && allowGameEdit && !settings.disableAutoGameEditButton));
+        const entityKind = String(settings.entityKind || cardData.entity_kind || (isGame ? 'game' : 'mod')).trim().toLowerCase() || (isGame ? 'game' : 'mod');
+        const detailPrefix = entityKind === 'modpack' ? '/modpack/' : '/mod/';
+        const editPrefix = entityKind === 'game' ? '/game/' : (entityKind === 'modpack' ? '/modpack/' : '/mod/');
+        const entityLabel = entityKind === 'game'
+            ? 'игры'
+            : entityKind === 'modpack'
+                ? 'модпака'
+                : 'мода';
 
         // Создаем карточку
         const card = document.createElement('div');
@@ -455,7 +463,7 @@ window.Cards = {
         blurhashCanvas.setAttribute('aria-hidden', 'true');
 
         const image = document.createElement('img');
-        image.alt = "Здесь должен быть логотип мода";
+        image.alt = `Здесь должен быть логотип ${entityLabel}`;
         image.id = "preview-logo-card-"+cardData.id
         image.dataset.fallbackSrc = fallbackImage;
         image.style.opacity = '0';
@@ -561,7 +569,7 @@ window.Cards = {
 
         if (toLink && !isGame) {
             const to = document.createElement('a');
-            to.href = "/mod/"+cardData.id+cardData.doplink;
+            to.href = detailPrefix + cardData.id + cardData.doplink;
             to.id = "tomodlink"+cardData.id;
             to.classList.add('button-style')
             to.classList.add('button-style-small')
@@ -577,7 +585,7 @@ window.Cards = {
         }
         if (canShowEditButton && toLink) {
             const toEdit = document.createElement('a');
-            toEdit.href = isGame ? "/game/"+cardData.id+"/edit" : "/mod/"+cardData.id+"/edit";
+            toEdit.href = editPrefix + cardData.id + "/edit";
             toEdit.id = "toeditlink"+cardData.id;
             toEdit.classList.add('button-style');
             toEdit.classList.add('button-style-small');
@@ -589,7 +597,7 @@ window.Cards = {
 
             toEdit.classList.add('button-card');
             toEdit.classList.add('button-flap');
-            toEdit.title = isGame ? "Редактировать игру" : "Редактировать мод";
+            toEdit.title = entityKind === 'game' ? "Редактировать игру" : (entityKind === 'modpack' ? "Редактировать модпак" : "Редактировать мод");
             flapButtons.appendChild(toEdit);
         }
         if (isGame && !settings.disableGameSelectButton) {
@@ -674,7 +682,7 @@ window.Cards = {
         const { getApiPaths, apiUrl } = window.OWCore;
         const apiPaths = getApiPaths();
         const resourcesPath = apiPaths.resource.list.path;
-        const ownerType = owner_type === 'games' ? 'games' : 'mods';
+        const ownerType = owner_type === 'games' ? 'games' : (owner_type === 'modpacks' ? 'modpacks' : 'mods');
         const resourcesParams = new URLSearchParams();
         resourcesParams.set('owner_type', ownerType);
         resourcesParams.set('page_size', '50');

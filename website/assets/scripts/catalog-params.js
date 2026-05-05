@@ -21,6 +21,19 @@
   let pendingInfiniteScrollCheck = 0;
   let catalogAdultMode = -1;
   const INFINITE_SCROLL_ROOT_MARGIN_PX = 2500;
+
+  function getCatalogKind() {
+    if (!(root instanceof Element)) return '';
+    return String(root.dataset.catalogKind || '').trim().toLowerCase();
+  }
+
+  function resolveCatalogMode(mode) {
+    if (mode === 'game' || mode === 'mod' || mode === 'modpack') {
+      return mode;
+    }
+    return mode ? 'game' : 'mod';
+  }
+
   const CATALOG_MOD_TYPE_CONFIGS = {
     all: { min: null, max: null },
     mods: { min: 0, max: 0 },
@@ -416,6 +429,7 @@
   let catalogRangeDrag = null;
 
   function getCatalogRangeFeedUrl() {
+    if (getCatalogKind() === 'modpack') return '';
     const feedPath = apiPaths.mod && apiPaths.mod.feed
       ? apiPaths.mod.feed.path
       : '';
@@ -958,8 +972,22 @@
   function sortOptionsList(mode) {
     const select = document.querySelector('select#sort-select');
     if (!select) return;
-    select.classList.toggle('game', !mode);
-    select.classList.toggle('mod', mode);
+    const catalogKind = getCatalogKind();
+    if (catalogKind === 'modpack' || mode === 'modpack') {
+      select.classList.remove('game');
+      select.classList.remove('mod');
+      select.classList.add('modpack');
+      return;
+    }
+
+    const isGameMode = mode === 'game'
+      ? true
+      : mode === 'mod'
+        ? false
+        : Boolean(mode);
+    select.classList.toggle('game', !isGameMode);
+    select.classList.toggle('mod', isGameMode);
+    select.classList.remove('modpack');
   }
 
   const CATALOG_SORT_ALIASES = {
@@ -974,10 +1002,12 @@
   const CATALOG_SORT_ALLOWED_VALUES = {
     game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
     mod: new Set(['downloads', 'rating', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
+    modpack: new Set(['downloads', 'rating', 'created_at', 'name']),
   };
   const CATALOG_SORT_DEFAULT_VALUES = {
     game: 'mods_count',
     mod: 'downloads',
+    modpack: 'downloads',
   };
 
   function getCatalogSortSelect() {
@@ -995,25 +1025,25 @@
     return CATALOG_SORT_ALIASES[normalizedSort] || normalizedSort;
   }
 
-  function getCatalogSortDefaultValue(isGameMode) {
-    return isGameMode ? CATALOG_SORT_DEFAULT_VALUES.game : CATALOG_SORT_DEFAULT_VALUES.mod;
+  function getCatalogSortDefaultValue(catalogMode) {
+    const resolvedMode = resolveCatalogMode(catalogMode);
+    return CATALOG_SORT_DEFAULT_VALUES[resolvedMode] || CATALOG_SORT_DEFAULT_VALUES.mod;
   }
 
-  function isCatalogSortAllowedForMode(sortValue, isGameMode) {
+  function isCatalogSortAllowedForMode(sortValue, catalogMode) {
     const normalizedSort = normalizeCatalogSortValue(sortValue);
-    const allowedValues = isGameMode
-      ? CATALOG_SORT_ALLOWED_VALUES.game
-      : CATALOG_SORT_ALLOWED_VALUES.mod;
+    const resolvedMode = resolveCatalogMode(catalogMode);
+    const allowedValues = CATALOG_SORT_ALLOWED_VALUES[resolvedMode] || CATALOG_SORT_ALLOWED_VALUES.mod;
     return allowedValues.has(normalizedSort);
   }
 
-  function getCatalogSortStateForMode(sortMode, isGameMode) {
+  function getCatalogSortStateForMode(sortMode, catalogMode) {
     const rawSort = String(sortMode || '').trim();
     const descending = rawSort.startsWith('-');
     const normalizedSort = normalizeCatalogSortValue(rawSort);
-    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)
+    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, catalogMode)
       ? normalizedSort
-      : getCatalogSortDefaultValue(isGameMode);
+      : getCatalogSortDefaultValue(catalogMode);
 
     return {
       descending,
@@ -1022,8 +1052,8 @@
     };
   }
 
-  function syncCatalogSortForMode(sortMode, isGameMode) {
-    const sortState = getCatalogSortStateForMode(sortMode, isGameMode);
+  function syncCatalogSortForMode(sortMode, catalogMode) {
+    const sortState = getCatalogSortStateForMode(sortMode, catalogMode);
     const select = getCatalogSortSelect();
     if (select) {
       select.value = sortState.value;
@@ -1861,6 +1891,7 @@
   function clearUserFilter() {
     URLManager.updateParams([
       new Dictionary({ key: 'user', value: '', default: '' }),
+      new Dictionary({ key: 'author_id', value: '', default: '' }),
       new Dictionary({ key: 'show_not_public', value: '', default: '' }),
       new Dictionary({ key: 'page', value: 0 }),
     ]);
@@ -1876,7 +1907,12 @@
     }
     try {
       if (res && Array.isArray(res.items) && res.items.length > 0) {
-        const ownerType = params.get('sgame', 'yes') === 'yes' ? 'games' : 'mods';
+        const catalogKind = getCatalogKind();
+        const ownerType = catalogKind === 'modpack'
+          ? 'modpacks'
+          : params.get('sgame', 'yes') === 'yes'
+            ? 'games'
+            : 'mods';
         await Cards.setterImgs(params.get('page', 0), ownerType, requestToken, res.items);
         return res;
       }
@@ -2115,17 +2151,94 @@
     }
   }
 
-  async function initCatalogPage() {
+  async function initModpackCatalogPage() {
     let params = URLManager.getParams();
     const filterEl = document.getElementById('catalog-user-filter');
     if (filterEl) {
-      const userId = filterEl.getAttribute('data-user-id');
+      const ownerId = filterEl.getAttribute('data-author-id') || filterEl.getAttribute('data-user-id') || '';
+      const currentAuthorId = params.get('author_id', '');
+      const currentUserId = params.get('user', '');
+      const currentShowNotPublic = params.get('show_not_public', 'false');
+      if (currentAuthorId !== String(ownerId) || currentUserId !== '' || currentShowNotPublic !== 'true') {
+        URLManager.updateParams([
+          new Dictionary({ key: 'author_id', value: String(ownerId), default: '' }),
+          new Dictionary({ key: 'user', value: '', default: '' }),
+          new Dictionary({ key: 'show_not_public', value: 'true', default: 'false' }),
+          new Dictionary({ key: 'page', value: 0 }),
+        ]);
+        params = URLManager.getParams();
+      }
+    }
+
+    const cleanupKeys = [
+      'sgame',
+      'game',
+      'game_type',
+      'types',
+      'dependencies',
+      'excluded_dependencies',
+      'excluded_conflicts',
+      'dependencies_mode',
+      'depen',
+      'independents',
+      'tags',
+      'excluded_tags',
+      'genres',
+      'size_min',
+      'size_max',
+      'size_unpacked_min',
+      'size_unpacked_max',
+      'include',
+    ];
+    const cleanupUpdates = cleanupKeys
+      .filter(function (key) {
+        return params.get(key, '') !== '';
+      })
+      .map(function (key) {
+        return new Dictionary({ key, value: '', default: '' });
+      });
+    if (cleanupUpdates.length > 0) {
+      cleanupUpdates.push(new Dictionary({ key: 'page', value: 0 }));
+      URLManager.updateParams(cleanupUpdates);
+      params = URLManager.getParams();
+    }
+
+    const currentSort = String(params.get('sort', '-downloads') || '');
+    sortOptionsList('modpack');
+    const sortState = syncCatalogSortForMode(currentSort, 'modpack');
+    if (sortState.sort !== currentSort) {
+      URLManager.updateParams([
+        new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }),
+        new Dictionary({ key: 'page', value: 0 }),
+      ]);
+      params = URLManager.getParams();
+    }
+
+    const adultMode = normalizeCatalogAdultMode(params.get('adult', ''));
+    syncCatalogAdultMode(adultMode);
+    setCatalogSearchValues(params.get('name', ''));
+    bindInfiniteScroll();
+    resetCatalog();
+  }
+
+  async function initCatalogPage() {
+    if (getCatalogKind() === 'modpack') {
+      await initModpackCatalogPage();
+      return;
+    }
+
+    let params = URLManager.getParams();
+    const filterEl = document.getElementById('catalog-user-filter');
+    if (filterEl) {
+      const userId = filterEl.getAttribute('data-user-id') || filterEl.getAttribute('data-author-id') || '';
       const currentUser = params.get('user', '');
+      const currentAuthorId = params.get('author_id', '');
       const currentSGame = params.get('sgame', 'yes');
       const currentShowNotPublic = params.get('show_not_public', 'false');
-      if (currentUser !== String(userId) || currentSGame !== 'no' || currentShowNotPublic !== 'true') {
+      if (currentUser !== String(userId) || currentAuthorId !== '' || currentSGame !== 'no' || currentShowNotPublic !== 'true') {
         URLManager.updateParams([
           new Dictionary({ key: 'user', value: String(userId), default: '' }),
+          new Dictionary({ key: 'author_id', value: '', default: '' }),
           new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
           new Dictionary({ key: 'show_not_public', value: 'true', default: 'false' }),
           new Dictionary({ key: 'page', value: 0 }),

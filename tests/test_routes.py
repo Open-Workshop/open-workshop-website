@@ -909,6 +909,34 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("gitUrlInput: showGitPanel ? root.querySelector('#mod-git-url') : null,", script)
         self.assertIn("resourceOwnerType: entityKind === 'modpack' ? 'modpacks' : 'mods',", script)
 
+    def test_catalog_scripts_support_modpack_catalog(self) -> None:
+        catalog_script = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
+        catalog_params = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        cards_script = (ROOT / "website/assets/scripts/vendors/cards.js").read_text(encoding="utf-8")
+        app_config = (ROOT / "app_config.py").read_text(encoding="utf-8")
+
+        self.assertIn("const catalogMode = getCatalogKind();", catalog_script)
+        self.assertIn("modpack: new Set(['downloads', 'rating', 'created_at', 'name'])", catalog_script)
+        self.assertIn("const includeFields = ['short_description', 'dates'];", catalog_script)
+        self.assertIn("includeFields.push('statistics');", catalog_script)
+        self.assertIn("requestSettings.set('include', includeFields);", catalog_script)
+        self.assertIn("path = apiPaths.modpack.list.path;", catalog_script)
+        self.assertIn("const renderEntityKind = isModpackMode ? 'modpack' : (isGameMode ? 'game' : 'mod');", catalog_script)
+        self.assertIn("buildContextTag(element, renderEntityKind, contextSortMode)", catalog_script)
+        self.assertIn("normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), 'modpack')", catalog_script)
+
+        self.assertIn("if (getCatalogKind() === 'modpack') return '';", catalog_params)
+        self.assertIn("key: 'author_id'", catalog_params)
+        self.assertIn("const ownerType = catalogKind === 'modpack'", catalog_params)
+        self.assertIn("? 'modpacks'", catalog_params)
+
+        self.assertIn("const entityKind = String(settings.entityKind || cardData.entity_kind || (isGame ? 'game' : 'mod')).trim().toLowerCase()", cards_script)
+        self.assertIn("entityKind === 'modpack' ? '/modpack/'", cards_script)
+        self.assertIn("image.alt = `Здесь должен быть логотип ${entityLabel}`;", cards_script)
+        self.assertIn("owner_type === 'modpacks' ? 'modpacks' : 'mods'", cards_script)
+
+        self.assertIn('\"modpacks\": [\"/user/<int:user_id>/modpacks\", \"/user/<int:user_id>/modpacks.html\"]', app_config)
+
     def test_mod_edit_api_exposes_relation_endpoints(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/api.js").read_text(encoding="utf-8")
         app_config = (ROOT / "app_config.py").read_text(encoding="utf-8")
@@ -1182,6 +1210,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("normalizeCatalogSortValue", catalog_script)
         self.assertIn("getCatalogSortStateForMode", catalog_script)
         self.assertIn("syncCatalogSortForMode", catalog_script)
+        self.assertIn("if (catalogKind === 'modpack' || mode === 'modpack')", catalog_script)
+        self.assertIn("select.classList.toggle('game', !isGameMode);", catalog_script)
+        self.assertIn("select.classList.toggle('mod', isGameMode);", catalog_script)
         self.assertIn("const sortState = syncCatalogSortForMode(currentSort, checked);", catalog_script)
         self.assertIn("const sortState = syncCatalogSortForMode(currentSort, false);", catalog_script)
         self.assertIn("new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' })", catalog_script)
@@ -1189,8 +1220,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("downloads", catalog_script)
         self.assertIn('option class="mod" value="rating">Сортировка по рейтингу</option>', index)
         self.assertIn("mod: new Set(['downloads', 'rating', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name'])", catalog_script)
-        self.assertIn("const allowedSort = isCatalogSortAllowedForMode(normalizedSort, isGameMode)", catalog_vendor)
-        self.assertIn("const managerSort = allowedSort === 'downloads' && isGameMode", catalog_vendor)
+        self.assertIn("const allowedSort = isCatalogSortAllowedForMode(normalizedSort, resolvedMode)", catalog_vendor)
+        self.assertIn("const managerSort = allowedSort === 'downloads' && resolvedMode === 'game'", catalog_vendor)
         self.assertIn("mods_downloads", catalog_vendor)
 
     async def test_mod_download_redirects_to_storage_url(self) -> None:
@@ -1467,12 +1498,46 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('?show_not_public=true&trigger=edit&adult=-1', footer)
         self.assertIn('my_mods', header)
         self.assertIn('my_mods', footer)
+        self.assertIn('my_modpacks', header)
+        self.assertIn('my_modpacks', footer)
         self.assertIn('rating_history', header)
         self.assertIn('rating_history', footer)
         self.assertIn('История голосов', header)
         self.assertIn('История голосов', footer)
         self.assertIn('Создать модпак', header)
         self.assertIn('Создать модпак', footer)
+        self.assertIn('Мои модпаки', header)
+        self.assertIn('Мои модпаки', footer)
+
+    def test_index_catalog_template_supports_modpack_mode(self) -> None:
+        index = (ROOT / "website/index.html").read_text(encoding="utf-8")
+        self.assertIn("data-catalog-kind=\"{{ catalog_kind }}\"", index)
+        self.assertIn("{% if catalog_kind == 'modpack' %}", index)
+        self.assertIn("Сортировка по загрузкам", index)
+        self.assertIn("Каталог {{ catalog_entity_label | lower }} пользователя {{ catalog_user.username }}", index)
+
+    async def test_user_modpacks_route_uses_modpack_catalog_config(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=2,
+            profile={"id": 2, "username": "Bob"},
+            fetch_results=[
+                (200, _profile_payload(2, "Bob")),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/user/2/modpacks"):
+                result = await main.user_modpacks(2)
+
+        self.assertEqual(result["template"], "index.html")
+        self.assertEqual(handler.fetch_calls[0][0], "/profiles/2?include=general")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertTrue(render_kwargs["catalog"])
+        self.assertEqual(render_kwargs["catalog_user"]["id"], 2)
+        self.assertEqual(render_kwargs["catalog_user"]["username"], "Bob")
+        self.assertEqual(render_kwargs["catalog_entity_label"], "Модпаки")
+        self.assertEqual(render_kwargs["catalog_kind"], "modpack")
 
     def test_robots_disallow_modpack_edit(self) -> None:
         robots = (ROOT / "website/robots.txt").read_text(encoding="utf-8")

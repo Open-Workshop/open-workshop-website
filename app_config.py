@@ -20,6 +20,7 @@ PUBLIC_CONFIG: dict = {
             {"id": "upload_mod", "href": "/mod/add"},
             {"id": "upload_modpack", "href": "/modpack/add"},
             {"id": "my_mods", "href": "/user/{id}/mods"},
+            {"id": "my_modpacks", "href": "/user/{id}/modpacks"},
             {"id": "rating_history", "href": "/user/{id}/rating/history"},
             {"id": "settings", "href": "/user/{id}/settings"},
         ],
@@ -283,6 +284,7 @@ ROUTES: dict = {
         "view": ["/user/<int:user_id>", "/user/<int:user_id>.html"],
         "settings": ["/user/<int:user_id>/settings", "/user/<int:user_id>/settings.html"],
         "mods": ["/user/<int:user_id>/mods", "/user/<int:user_id>/mods.html"],
+        "modpacks": ["/user/<int:user_id>/modpacks", "/user/<int:user_id>/modpacks.html"],
         "rating_history": ["/user/<int:user_id>/rating/history", "/user/<int:user_id>/rating/history.html"],
     },
 }

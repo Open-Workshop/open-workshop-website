@@ -11,7 +11,7 @@
 
         <nav>
             <ul>
-                {% set nav_labels = { 'about': 'О проекте', 'api': 'API', 'upload_mod': 'Загрузить мод', 'upload_modpack': 'Создать модпак', 'my_mods': 'Мои моды', 'rating_history': 'История голосов', 'settings': 'Настройки' } %}
+                {% set nav_labels = { 'about': 'О проекте', 'api': 'API', 'upload_mod': 'Загрузить мод', 'upload_modpack': 'Создать модпак', 'my_mods': 'Мои моды', 'my_modpacks': 'Мои модпаки', 'rating_history': 'История голосов', 'settings': 'Настройки' } %}
                 {% for item in ow.site.nav %}
                 <li>
                     <a href="{{ item.href }}" {% if item.translate == 'no' %}translate="no"{% endif %}>{{ nav_labels[item.id] }}</a>
@@ -36,7 +36,7 @@
                     <ul>
                         {% for item in ow.site.profile_menu %}
                         {% set href = item.href.format(id=user_profile.id) %}
-                        {% if item.id == 'my_mods' %}
+                        {% if item.id == 'my_mods' or item.id == 'my_modpacks' %}
                         {% set href = href + '?show_not_public=true&trigger=edit&adult=-1' %}
                         {% endif %}
                         {% if item.id == 'upload_mod' %}

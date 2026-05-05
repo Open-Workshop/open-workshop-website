@@ -1566,9 +1566,19 @@ async def user_settings(user_id):
         return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable, profile_access=editable))
 
 async def user_mods(user_id):
+    return await _render_user_catalog_page(user_id, "Моды")
+
+
+async def user_modpacks(user_id):
+    return await _render_user_catalog_page(user_id, "Модпаки", catalog_kind="modpack")
+
+
+async def _render_user_catalog_page(user_id, catalog_entity_label, catalog_kind=""):
     async with UserHandler() as handler:
         profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
-        profile_code, profile_info = await handler.fetch(profile_info_path)
+        profile_code, profile_info = await handler.fetch(
+            _build_query_url(profile_info_path, {"include": ["general"]})
+        )
 
         if profile_code != 200:
             return _render_api_error(handler, profile_info, profile_code)
@@ -1579,7 +1589,15 @@ async def user_mods(user_id):
             "username": username
         }
 
-        page = handler.render("index.html", catalog=True, catalog_user=catalog_user)
+        render_kwargs = {
+            "catalog": True,
+            "catalog_user": catalog_user,
+            "catalog_entity_label": catalog_entity_label,
+        }
+        if catalog_kind:
+            render_kwargs["catalog_kind"] = catalog_kind
+
+        page = handler.render("index.html", **render_kwargs)
         return handler.finish(page)
 
 
@@ -1608,6 +1626,8 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=user_settings, strict_slashes=False)
     for route in app_config.ROUTES["user"]["mods"]:
         app.add_url_rule(route, view_func=user_mods, strict_slashes=False)
+    for route in app_config.ROUTES["user"]["modpacks"]:
+        app.add_url_rule(route, view_func=user_modpacks, strict_slashes=False)
 
 
 register_routes()
