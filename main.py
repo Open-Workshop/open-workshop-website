@@ -257,12 +257,20 @@ async def _load_mod_cards_by_ids(
     ordered_ids = []
     seen_ids = set()
     optional_by_id: dict[int, bool] = {}
+    auto_added_by_id: dict[int, bool] = {}
+    sort_order_by_id: dict[int, int] = {}
 
     for mod_id in mod_ids:
         raw_optional = None
+        raw_auto_added = None
+        raw_sort_order = None
         if isinstance(mod_id, dict):
             if "optional" in mod_id:
                 raw_optional = mod_id.get("optional")
+            if "auto_added" in mod_id:
+                raw_auto_added = mod_id.get("auto_added")
+            if "sort_order" in mod_id:
+                raw_sort_order = mod_id.get("sort_order")
             mod_id = mod_id.get("mod_id", mod_id.get("id", mod_id))
 
         try:
@@ -277,6 +285,13 @@ async def _load_mod_cards_by_ids(
         ordered_ids.append(normalized_id)
         if raw_optional is not None:
             optional_by_id[normalized_id] = bool(raw_optional)
+        if raw_auto_added is not None:
+            auto_added_by_id[normalized_id] = bool(raw_auto_added)
+        if raw_sort_order is not None:
+            try:
+                sort_order_by_id[normalized_id] = int(raw_sort_order)
+            except (TypeError, ValueError):
+                sort_order_by_id[normalized_id] = len(ordered_ids) - 1
 
     if len(ordered_ids) <= 0:
         return {}
@@ -335,14 +350,13 @@ async def _load_mod_cards_by_ids(
 
     cards = {}
     for mod_id in ordered_ids:
-        if mod_id not in names_by_id:
-            continue
-
         cards[mod_id] = {
             "id": mod_id,
             "img": images_by_id.get(mod_id) or DEFAULT_IMAGE_FALLBACK,
-            "name": names_by_id[mod_id],
+            "name": names_by_id.get(mod_id) or f"Мод #{mod_id}",
             "optional": optional_by_id.get(mod_id, False),
+            "auto_added": auto_added_by_id.get(mod_id, False),
+            "sort_order": sort_order_by_id.get(mod_id, 0),
         }
 
     return cards
@@ -1236,6 +1250,91 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
     else:
         info_result["game"] = {"id": 0, "name": "Игра не указана"}
 
+    mods_list_path = app_config.api_path("mod", "list")
+    resources_list_path = app_config.api_path("resource", "list")
+    tags_path = app_config.api_path("modpack", "tags").format(modpack_id=modpack_id)
+
+    def _normalize_picker_items(payload, fallback_key: str | None = None) -> list[dict]:
+        if isinstance(payload, dict):
+            if str(modpack_id) in payload:
+                payload = payload[str(modpack_id)]
+            elif "items" in payload or "results" in payload:
+                payload = _collection_items(payload)
+            elif fallback_key and isinstance(payload.get(fallback_key), list):
+                payload = payload[fallback_key]
+            else:
+                payload = []
+
+        if isinstance(payload, list):
+            return [item for item in payload if isinstance(item, dict)]
+
+        return []
+
+    modpack_mods_path = app_config.api_path("modpack", "mods").format(modpack_id=modpack_id)
+    modpack_mods = []
+    modpack_mods_code, modpack_mods_payload = await handler.fetch(modpack_mods_path)
+    if modpack_mods_code == 200 and isinstance(modpack_mods_payload, dict):
+        raw_modpack_mod_items = modpack_mods_payload.get("items", [])
+        normalized_modpack_mod_items = []
+        if isinstance(raw_modpack_mod_items, list):
+            for index, item in enumerate(raw_modpack_mod_items):
+                if not isinstance(item, dict):
+                    continue
+
+                raw_mod_id = item.get("mod_id", item.get("id"))
+                try:
+                    normalized_mod_id = int(raw_mod_id)
+                except (TypeError, ValueError):
+                    continue
+
+                raw_sort_order = item.get("sort_order", index)
+                try:
+                    normalized_sort_order = int(raw_sort_order)
+                except (TypeError, ValueError):
+                    normalized_sort_order = index
+
+                normalized_modpack_mod_items.append({
+                    "mod_id": normalized_mod_id,
+                    "sort_order": normalized_sort_order,
+                    "auto_added": bool(item.get("auto_added", False)),
+                })
+
+        normalized_modpack_mod_items.sort(key=lambda item: (item["sort_order"], item["mod_id"]))
+        if normalized_modpack_mod_items:
+            modpack_mod_cards = await _load_mod_cards_by_ids(
+                handler,
+                normalized_modpack_mod_items,
+                mods_list_path,
+                resources_list_path,
+            )
+            modpack_mods = list(modpack_mod_cards.values())
+
+    tags = _normalize_picker_items(info_result.get("tags"), "tags")
+    tags_code, tags_payload = await handler.fetch(tags_path)
+    if tags_code == 200:
+        fetched_tags = _normalize_picker_items(tags_payload, "tags")
+        if fetched_tags or not tags:
+            tags = fetched_tags
+
+    resources = {"items": _normalize_picker_items(info_result.get("resources"))}
+    modpack_resources_url = _build_query_url(
+        resources_list_path,
+        {
+            "page_size": 30,
+            "owner_type": "modpacks",
+            "owner_ids": [modpack_id],
+            "types": ["logo", "screenshot"],
+        },
+    )
+    resources_code, resources_payload = await handler.fetch(modpack_resources_url)
+    if resources_code == 200:
+        fetched_resources = _normalize_picker_items(resources_payload)
+        if fetched_resources or not resources["items"]:
+            resources = {
+                **(resources_payload if isinstance(resources_payload, dict) else {}),
+                "items": fetched_resources,
+            }
+
     authors = []
     authors_source = info_result.get("authors") or {}
     if len(authors_source) > 0:
@@ -1275,10 +1374,11 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
         edit_title=f"{info_result['name']} - edit Open Modpack",
         edit_description=info_result["short_description"],
         info=info_result,
-        tags=[],
-        resources={"items": []},
+        tags=tags,
+        resources=resources,
         dependencies={},
         conflicts={},
+        modpack_mods=modpack_mods,
         plugins={},
         plugins_more_count=0,
         mod_access=mod_access,

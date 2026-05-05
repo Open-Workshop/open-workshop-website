@@ -1,0 +1,19 @@
+{% from 'html-partials/macros/taglike-editor.html' import render_relation_editor with context %}
+{% set modpack_mod_items = modpack_mods if modpack_mods is defined else [] %}
+{% set game_info = info.get('game') if info is defined else none %}
+{% set game_id = game_info.get('id') if game_info and game_info.get('id') else '' %}
+{% set editor_id = editor_id if editor_id is defined else 'modpack-mods-editor' %}
+
+{{ render_relation_editor(
+  items=modpack_mod_items,
+  game=game_id,
+  editor_id=editor_id,
+  editor_kind='dependencies',
+  button_text='Добавить мод',
+  selected_empty_text='Модов не выбрано',
+  results_empty_text='Не найдено',
+  remove_action_alt='Убрать мод',
+  image_alt='Логотип мода',
+  show_optional_toggle=false,
+  load_scripts=false
+) }}

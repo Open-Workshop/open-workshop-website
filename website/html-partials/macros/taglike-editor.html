@@ -24,7 +24,8 @@
   image_alt='Логотип элемента',
   action_alt='Удалить элемент',
   optional=false,
-  show_optional_toggle=false
+  show_optional_toggle=false,
+  auto_added=false
 ) -%}
 <div
   class="picker-editor__item picker-editor__item--row{% if selected %} is-selected{% endif %}{% if optional %} is-optional{% endif %}{% if pending %} is-pending{% endif %}"
@@ -32,6 +33,7 @@
   data-picker-name="{{ item_name }}"
   data-picker-optional="{{ 'true' if optional else 'false' }}"
   data-picker-optional-start="{{ 'true' if optional else 'false' }}"
+  data-picker-auto-added="{{ 'true' if auto_added else 'false' }}"
   {% if saved %}data-picker-saved="true"{% endif %}
   {% if pending %}data-picker-pending="true"{% endif %}
 >
@@ -54,6 +56,10 @@
           <span class="media-item__logo-label">Опционально</span>
         </label>
       </div>
+    {% elif auto_added %}
+      <div class="picker-editor__item-footer">
+        <span class="tag-link">Авто</span>
+      </div>
     {% endif %}
   </div>
 </div>
@@ -73,7 +79,9 @@
   results_empty_text='Не найдено',
   can_create=false,
   create_button_text='Добавить новое',
-  show_optional_toggle=false
+  show_optional_toggle=false,
+  item_image_alt='',
+  remove_action_alt=''
 ) -%}
 <div
   id="{{ root_id }}"
@@ -81,6 +89,8 @@
   data-picker-editor
   data-picker-editor-kind="{{ editor_kind }}"
   data-picker-show-optional-toggle="{{ 'true' if show_optional_toggle else 'false' }}"
+  data-picker-item-image-alt="{{ item_image_alt }}"
+  data-picker-remove-action-alt="{{ remove_action_alt }}"
   {% if can_create %}data-picker-can-create="true"{% endif %}
   {% if import_height %}import-height="{{ import_height }}"{% endif %}
   {% if context %}
@@ -175,20 +185,30 @@
   selected_empty_text='Модов не выбрано',
   results_empty_text='Не найдено',
   remove_action_alt='Убрать зависимость',
+  image_alt='Логотип мода',
+  context=None,
   show_optional_toggle=false,
   load_scripts=true
 ) -%}
+{% set relation_context = {'game_id': game} %}
+{% if context %}
+  {% for attr_name, attr_value in context.items() %}
+    {% set _ = relation_context.update({attr_name: attr_value}) %}
+  {% endfor %}
+{% endif %}
 {% call(section) render_picker_editor(
   root_id=editor_id,
   editor_kind=editor_kind,
   modifier='picker-editor--rows',
   import_height='#' ~ editor_id ~ ' .picker-editor__shell',
-  context={'game_id': game},
+  context=relation_context,
   trigger_text=button_text,
   search_placeholder='Поиск...',
   selected_empty_text=selected_empty_text,
   results_empty_text=results_empty_text,
-  show_optional_toggle=show_optional_toggle
+  show_optional_toggle=show_optional_toggle,
+  item_image_alt=image_alt,
+  remove_action_alt=remove_action_alt
 ) %}
   {% if section == 'selected' %}
     {% for item in items %}
@@ -200,10 +220,11 @@
         false,
         false,
         true,
-        'Логотип мода',
+        image_alt,
         remove_action_alt,
         item.optional if item.optional is defined else false,
-        show_optional_toggle
+        show_optional_toggle,
+        item.auto_added if item.auto_added is defined else false
       ) }}
     {% endfor %}
   {% endif %}
@@ -232,6 +253,7 @@
   selected_empty_text='Модов не выбрано',
   results_empty_text='Не найдено',
   remove_action_alt='Убрать зависимость',
+  image_alt='Логотип мода',
   show_optional_toggle=show_optional_toggle,
   load_scripts=load_scripts
 ) }}
@@ -247,6 +269,7 @@
   selected_empty_text='Конфликтов не выбрано',
   results_empty_text='Не найдено',
   remove_action_alt='Убрать конфликт',
+  image_alt='Логотип мода',
   show_optional_toggle=false,
   load_scripts=load_scripts
 ) }}

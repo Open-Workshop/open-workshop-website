@@ -772,6 +772,38 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     },
                 ),
                 (200, {"id": 5, "name": "Game"}),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"mod_id": 11, "sort_order": 2, "auto_added": True},
+                        ],
+                    },
+                ),
+                (200, {"items": [{"id": 11, "name": "Core Mod"}]}),
+                (200, {"items": [{"owner_id": 11, "url": "https://cdn.example/core.webp"}]}),
+                (200, {"items": [{"id": 301, "name": "Challenge"}]}),
+                (
+                    200,
+                    {
+                        "items": [
+                            {
+                                "id": 501,
+                                "owner_id": 42,
+                                "type": "logo",
+                                "url": "https://cdn.example/pack-logo.webp",
+                                "sort_order": 0,
+                            },
+                            {
+                                "id": 502,
+                                "owner_id": 42,
+                                "type": "screenshot",
+                                "url": "https://cdn.example/pack-shot.webp",
+                                "sort_order": 1,
+                            },
+                        ],
+                    },
+                ),
             ],
         )
 
@@ -783,17 +815,46 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["edit_page"]["entity_kind"], "modpack")
         self.assertEqual(render_kwargs["edit_page"]["title_placeholder"], "Название модпака")
+        self.assertTrue(render_kwargs["edit_page"]["show_modpack_mods"])
+        self.assertTrue(render_kwargs["edit_page"]["show_media_manager"])
+        self.assertTrue(render_kwargs["edit_page"]["show_tags_editor"])
         self.assertFalse(render_kwargs["right_edit"]["new_version"])
         self.assertIn("Open Modpack", render_kwargs["edit_title"])
         self.assertIn(("get_modpack_access", 42, None, None), handler.calls)
         self.assertNotIn(("get_mod_access", 42, None, None), handler.calls)
         self.assertEqual(
-            handler.fetch_calls,
+            handler.fetch_calls[:3],
             [
                 ("/modpacks/42", "GET"),
                 ("/games/5", "GET"),
+                ("/modpacks/42/mods", "GET"),
             ],
         )
+        self.assertIn(
+            "/mods?page_size=1&ids=11",
+            [url for url, _method in handler.fetch_calls],
+        )
+        self.assertIn(
+            "/resources?page_size=50&owner_type=mods&owner_ids=11&types=logo",
+            [url for url, _method in handler.fetch_calls],
+        )
+        self.assertIn("/modpacks/42/tags", [url for url, _method in handler.fetch_calls])
+        self.assertIn(
+            "/resources?page_size=30&owner_type=modpacks&owner_ids=42&types=logo&types=screenshot",
+            [url for url, _method in handler.fetch_calls],
+        )
+        self.assertEqual(len(handler.fetch_calls), 7)
+        self.assertEqual(len(render_kwargs["modpack_mods"]), 1)
+        self.assertEqual(render_kwargs["modpack_mods"][0]["id"], 11)
+        self.assertEqual(render_kwargs["modpack_mods"][0]["name"], "Core Mod")
+        self.assertEqual(render_kwargs["modpack_mods"][0]["img"], "https://cdn.example/core.webp")
+        self.assertEqual(render_kwargs["modpack_mods"][0]["sort_order"], 2)
+        self.assertTrue(render_kwargs["modpack_mods"][0]["auto_added"])
+        self.assertEqual(render_kwargs["tags"], [{"id": 301, "name": "Challenge"}])
+        self.assertEqual(len(render_kwargs["resources"]["items"]), 2)
+        self.assertEqual(render_kwargs["resources"]["items"][0]["type"], "logo")
+        self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/pack-logo.webp")
+        self.assertEqual(render_kwargs["resources"]["items"][1]["type"], "screenshot")
 
     def test_mod_add_template_exposes_adult_toggle(self) -> None:
         mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
@@ -821,13 +882,18 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("const adultCheckbox = runtime.resolveElement(settings.adultCheckbox);", script)
         self.assertIn("const gitUrlInput = runtime.resolveElement(settings.gitUrlInput);", script)
         self.assertIn("const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');", script)
+        self.assertIn("const modpackModsEditorId = String(settings.modpackModsEditorId || 'modpack-mods-editor');", script)
         self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
         self.assertIn("git_url: {", script)
         self.assertIn("payload[key] = value.value === null ? null : value.value;", script)
         self.assertIn("payload[key] = value.value === 'checked';", script)
         self.assertIn("const conflicts = getPickerChanges(conflictsEditorId);", script)
+        self.assertIn("const modpackMods = getModpackModsChanges(modpackModsEditorId);", script)
+        self.assertIn("const initialModpackMods = getPickerSelectedIds(modpackModsEditorId);", script)
         self.assertIn("await api.updateConflict(id, true);", script)
         self.assertIn("await syncConflicts(changes.conflicts);", script)
+        self.assertIn("await syncModpackMods(changes.modpackMods);", script)
+        self.assertIn("await api.updateModpackMods(changes.items);", script)
 
     def test_mod_edit_save_service_supports_dependency_optionality(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/save-service.js").read_text(encoding="utf-8")
@@ -839,7 +905,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_mod_edit_script_passes_conflicts_editor_id(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit.js").read_text(encoding="utf-8")
         self.assertIn("conflictsEditorId: showConflicts ? 'mod-conflicts-editor' : '',", script)
+        self.assertIn("modpackModsEditorId: showModpackMods ? 'modpack-mods-editor' : '',", script)
         self.assertIn("gitUrlInput: showGitPanel ? root.querySelector('#mod-git-url') : null,", script)
+        self.assertIn("resourceOwnerType: entityKind === 'modpack' ? 'modpacks' : 'mods',", script)
 
     def test_mod_edit_api_exposes_relation_endpoints(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit/api.js").read_text(encoding="utf-8")
@@ -852,15 +920,26 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("apiPaths.mod.conflicts_delete", script)
         self.assertIn('\"dependencies_update\": {\"method\": \"PUT\", \"path\": \"/mods/{mod_id}/dependencies/{dependency_mod_id}\"}', app_config)
         self.assertIn("conflict_mod_id: conflictId", script)
+        self.assertIn("entityApiPaths.tags_add", script)
+        self.assertIn("entityApiPaths.tags_delete", script)
+        self.assertIn('\"tags\": {\"method\": \"GET\", \"path\": \"/modpacks/{modpack_id}/tags\"}', app_config)
+        self.assertIn('\"tags_add\": {\"method\": \"POST\", \"path\": \"/modpacks/{modpack_id}/tags/{tag_id}\"}', app_config)
+        self.assertIn('\"tags_delete\": {\"method\": \"DELETE\", \"path\": \"/modpacks/{modpack_id}/tags/{tag_id}\"}', app_config)
+        self.assertIn("async function updateModpackMods(items)", script)
+        self.assertIn("entityApiPaths.mods_update", script)
+        self.assertIn('\"mods_update\": {\"method\": \"PUT\", \"path\": \"/modpacks/{modpack_id}/mods\"}', app_config)
 
     def test_mod_edit_templates_expose_relation_editors(self) -> None:
         mod_main = (ROOT / "website/html-partials/mod-edit/page-main.html").read_text(encoding="utf-8")
+        screenshots_edit = (ROOT / "website/html-partials/screenshots-edit.html").read_text(encoding="utf-8")
         mod_dependence = (ROOT / "website/html-partials/mod-dependence-edit.html").read_text(encoding="utf-8")
         mod_conflicts = (ROOT / "website/html-partials/mod-conflict-edit.html").read_text(encoding="utf-8")
+        modpack_mods = (ROOT / "website/html-partials/modpack-mods-edit.html").read_text(encoding="utf-8")
         mod_edit_page = (ROOT / "website/mod-edit.html").read_text(encoding="utf-8")
         mod_params = (ROOT / "website/html-partials/mod-edit/page-params.html").read_text(encoding="utf-8")
         taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
         dependence_script = (ROOT / "website/assets/scripts/vendors/dependence-edit.js").read_text(encoding="utf-8")
+        media_manager_script = (ROOT / "website/assets/scripts/pages/mod-edit/media-manager.js").read_text(encoding="utf-8")
         self.assertIn("mod-conflicts-editor", mod_main)
         self.assertIn("mod-git-url", mod_main)
         self.assertIn("mod-git-panel", mod_main)
@@ -868,11 +947,19 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("data-git-favicon", mod_main)
         self.assertIn("info.get('git_url') or ''", mod_main)
         self.assertIn('<aside class="mod-edit__sidebar">', mod_main)
+        self.assertIn("media_image_alt='Изображение ' ~ entity_label_genitive", mod_main)
+        self.assertIn("data-media-image-alt", screenshots_edit)
+        self.assertIn("const mediaImageAlt = String(root.dataset.mediaImageAlt || 'Изображение мода');", media_manager_script)
         self.assertGreater(mod_main.index("mod-git-url"), mod_main.index('<aside class="mod-edit__sidebar">'))
         self.assertNotIn("Укажите ссылку на репозиторий мода", mod_main)
         self.assertNotIn("<span>Git URL</span>", mod_main)
         self.assertLess(mod_main.index("mod-tags-editor"), mod_main.index("data-git-url-block"))
         self.assertLess(mod_main.index("data-git-url-block"), mod_main.index("mod-dependencies-editor"))
+        self.assertIn("html-partials/modpack-mods-edit.html", mod_main)
+        self.assertIn("modpack-mods-editor", modpack_mods)
+        self.assertIn("Добавить мод", modpack_mods)
+        self.assertIn("Убрать мод", modpack_mods)
+        self.assertIn("load_scripts=false", modpack_mods)
         self.assertIn("show_optional_toggle=true", mod_main)
         self.assertIn("dependence_optional_toggle", mod_dependence)
         self.assertIn("show_optional_toggle if show_optional_toggle is defined else false", mod_dependence)
@@ -880,6 +967,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Добавить конфликт", mod_conflicts)
         self.assertIn("render_conflicts_editor", mod_conflicts)
         self.assertIn("data-picker-show-optional-toggle", taglike_macros)
+        self.assertIn("data-picker-item-image-alt", taglike_macros)
+        self.assertIn("data-picker-remove-action-alt", taglike_macros)
         self.assertIn("data-action=\"dependency-toggle-optional\"", taglike_macros)
         self.assertIn("media-item__logo-toggle", taglike_macros)
         self.assertIn("media-item__logo-checkbox", taglike_macros)

@@ -24,8 +24,8 @@
     const config = options || {};
     const modId = Number(config.modId || 0);
     const entityId = Number(config.entityId || modId || 0);
-    const resourceOwnerType = String(config.resourceOwnerType || 'mods');
     const entityKind = String(config.entityKind || 'mod').toLowerCase();
+    const resourceOwnerType = String(config.resourceOwnerType || (entityKind === 'modpack' ? 'modpacks' : 'mods'));
     const apiPaths = config.apiPaths || window.OWCore.getApiPaths();
     const modApiPaths = apiPaths.mod || {};
     const modpackApiPaths = apiPaths.modpack || {};
@@ -152,9 +152,11 @@
     }
 
     async function updateTag(tagId, add) {
-      const endpoint = add ? apiPaths.mod.tags_add : apiPaths.mod.tags_delete;
+      const endpoint = add ? entityApiPaths.tags_add : entityApiPaths.tags_delete;
       return requestEndpoint(endpoint, {
-        pathParams: { mod_id: modId, tag_id: tagId },
+        pathParams: entityKind === 'modpack'
+          ? { modpack_id: modId, tag_id: tagId }
+          : { mod_id: modId, tag_id: tagId },
         parseAs: 'text',
         fallbackError: add ? 'Не удалось добавить тег' : 'Не удалось удалить тег',
       });
@@ -214,6 +216,17 @@
           : { mod_id: modId, author_id: authorId },
         parseAs: 'text',
         fallbackError: 'Не удалось удалить автора',
+      });
+    }
+
+    async function updateModpackMods(items) {
+      return requestEndpoint(entityApiPaths.mods_update, {
+        pathParams: { modpack_id: modId },
+        data: {
+          items: Array.isArray(items) ? items : [],
+        },
+        parseAs: 'text',
+        fallbackError: 'Не удалось обновить список модов модпака',
       });
     }
 
@@ -460,6 +473,7 @@
       updateConflict,
       upsertAuthor,
       deleteAuthor,
+      updateModpackMods,
       addResourceUrl,
       editResource,
       deleteResource,

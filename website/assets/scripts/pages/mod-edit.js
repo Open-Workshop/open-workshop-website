@@ -19,6 +19,7 @@
   const showTagsEditor = pageConfig.show_tags_editor !== false;
   const showDependencies = pageConfig.show_dependencies !== false;
   const showConflicts = pageConfig.show_conflicts !== false;
+  const showModpackMods = entityKind === 'modpack' && pageConfig.show_modpack_mods !== false;
   const showNewVersion = pageConfig.show_new_version !== false;
   const config = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
   const apiPaths = window.OWCore.getApiPaths();
@@ -86,6 +87,7 @@
       modId,
       entityKind,
       apiPaths,
+      resourceOwnerType: entityKind === 'modpack' ? 'modpacks' : 'mods',
     });
 
     const mediaManager = showMediaManager
@@ -140,6 +142,7 @@
       tagsEditorId: showTagsEditor ? 'mod-tags-editor' : '',
       dependenciesEditorId: showDependencies ? 'mod-dependencies-editor' : '',
       conflictsEditorId: showConflicts ? 'mod-conflicts-editor' : '',
+      modpackModsEditorId: showModpackMods ? 'modpack-mods-editor' : '',
       progressRoot: root.querySelector('[data-save-progress-root]'),
     });
 

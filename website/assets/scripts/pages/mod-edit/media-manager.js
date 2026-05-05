@@ -8,6 +8,7 @@
     const root = runtime.resolveElement(options && options.root);
     if (!root) return null;
     const fallbackImage = window.OWCore.getImageFallback();
+    const mediaImageAlt = String(root.dataset.mediaImageAlt || 'Изображение мода');
 
     const stage = root.querySelector('[data-media-stage]');
     const list = root.querySelector('.media-manager__list');
@@ -180,7 +181,7 @@
       const image = document.createElement('img');
       image.className = 'media-item__image';
       image.src = getResolvedUrl(item);
-      image.alt = 'Изображение мода';
+      image.alt = mediaImageAlt;
       image.dataset.fallbackSrc = fallbackImage;
 
       preview.appendChild(backdrop);

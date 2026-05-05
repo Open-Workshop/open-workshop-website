@@ -13,11 +13,18 @@
     {% with module_key='full', aria_label='Режим полного описания', limit=10000, placeholder='Описание не может быть пустым!(', init_text=info['description'] %}
       {% include 'html-partials/mod-edit/description-module.html' %}
     {% endwith %}
+
+    {% if edit_page.show_modpack_mods is defined and edit_page.show_modpack_mods %}
+    {% include 'html-partials/modpack-mods-edit.html' %}
+    {% endif %}
   </section>
 
   <aside class="mod-edit__sidebar">
+    {% set entity_label_genitive = edit_page.entity_label_genitive | default('мода') %}
     {% if edit_page.show_media_manager is not defined or edit_page.show_media_manager %}
-    {% include 'html-partials/screenshots-edit.html' %}
+    {% with media_title='Логотип и скриншоты ' ~ entity_label_genitive, media_image_alt='Изображение ' ~ entity_label_genitive %}
+      {% include 'html-partials/screenshots-edit.html' %}
+    {% endwith %}
     {% endif %}
 
     {% if edit_page.show_tags_editor is not defined or edit_page.show_tags_editor %}

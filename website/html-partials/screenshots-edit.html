@@ -3,7 +3,7 @@
 {% set media_items = resources['items'] if resources is defined and resources and resources['items'] is defined else [] %}
 
 <div class="standart-panel screenshots-edit">
-    <div class="media-manager" id="media-manager" data-storage-origin="{{ storage_address }}">
+    <div class="media-manager" id="media-manager" data-storage-origin="{{ storage_address }}" data-media-image-alt="{{ media_image_alt }}">
         <div class="media-manager__header">
             <div class="media-manager__title">
                 <p class="ow-muted">{{ media_title }}</p>

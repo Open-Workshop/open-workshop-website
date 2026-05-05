@@ -21,6 +21,7 @@
     const tagsEditorId = String(settings.tagsEditorId || 'mod-tags-editor');
     const dependenciesEditorId = String(settings.dependenciesEditorId || 'mod-dependencies-editor');
     const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');
+    const modpackModsEditorId = String(settings.modpackModsEditorId || 'modpack-mods-editor');
     const entityKind = String(settings.entityKind || 'mod').toLowerCase();
     const ENTITY_FORMS = {
       mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
@@ -78,6 +79,55 @@
             })
           : [],
         optionalById,
+      };
+    }
+
+    function getPickerSelectedNodes(editorId) {
+      const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
+      if (!editor || !editor.root) {
+        return [];
+      }
+
+      return Array.from(editor.root.querySelectorAll('[data-picker-slot="selected"] [data-picker-id]')).filter(function (node) {
+        return !node.classList.contains('is-hidden');
+      });
+    }
+
+    function getPickerSelectedIds(editorId) {
+      return getPickerSelectedNodes(editorId).map(function (node) {
+        return String(node.dataset.pickerId || '').trim();
+      }).filter(function (itemId) {
+        return itemId !== '';
+      });
+    }
+
+    const initialModpackMods = getPickerSelectedIds(modpackModsEditorId);
+
+    function getModpackModsChanges(editorId) {
+      const selectedNodes = getPickerSelectedNodes(editorId);
+      const currentIds = selectedNodes.map(function (node) {
+        return String(node.dataset.pickerId || '').trim();
+      }).filter(function (itemId) {
+        return itemId !== '';
+      });
+
+      const changed = currentIds.length !== initialModpackMods.length || currentIds.some(function (itemId, index) {
+        return itemId !== initialModpackMods[index];
+      });
+
+      return {
+        items: selectedNodes.map(function (node) {
+          const modId = Number(node.dataset.pickerId || 0);
+          if (!Number.isFinite(modId) || modId <= 0) {
+            return null;
+          }
+
+          return {
+            mod_id: modId,
+            auto_added: String(node.dataset.pickerAutoAdded || 'false') === 'true',
+          };
+        }).filter(Boolean),
+        changed,
       };
     }
 
@@ -156,12 +206,14 @@
       const tags = getPickerChanges(tagsEditorId);
       const dependencies = getPickerChanges(dependenciesEditorId, true);
       const conflicts = getPickerChanges(conflictsEditorId);
+      const modpackMods = getModpackModsChanges(modpackModsEditorId);
 
       return {
         base,
         tags,
         dependencies,
         conflicts,
+        modpackMods,
         media: mediaState.changes,
         authors: authorsState.changes,
         hasInvalidMedia: Boolean(mediaState.hasInvalidUrls),
@@ -178,7 +230,8 @@
           dependencies.remove.length > 0 ||
           dependencies.update.length > 0 ||
           conflicts.add.length > 0 ||
-          conflicts.remove.length > 0,
+          conflicts.remove.length > 0 ||
+          modpackMods.changed,
         };
     }
 
@@ -214,6 +267,7 @@
         changes.conflicts &&
         (changes.conflicts.add.length > 0 || changes.conflicts.remove.length > 0),
       );
+      const modpackModsChanged = Boolean(changes.modpackMods && changes.modpackMods.changed);
 
       if (baseChanged) {
         steps.push({ key: 'base', label: 'Сохраняем основные поля' });
@@ -232,6 +286,9 @@
       }
       if (conflictsChanged) {
         steps.push({ key: 'conflicts', label: 'Синхронизируем конфликты' });
+      }
+      if (modpackModsChanged) {
+        steps.push({ key: 'modpackMods', label: 'Обновляем список модов' });
       }
 
       steps.push({ key: 'finish', label: 'Завершаем сохранение' });
@@ -298,6 +355,12 @@
       for (const id of changes.remove) {
         await api.updateConflict(id, false);
       }
+    }
+
+    async function syncModpackMods(changes) {
+      if (!changes || !changes.changed) return;
+
+      await api.updateModpackMods(changes.items);
     }
 
     async function syncAuthors(changes) {
@@ -449,6 +512,13 @@
             saveProgress.setStep('conflicts', 'active');
           }
           await syncConflicts(changes.conflicts);
+        }
+
+        if (hasStep('modpackMods')) {
+          if (saveProgress) {
+            saveProgress.setStep('modpackMods', 'active');
+          }
+          await syncModpackMods(changes.modpackMods);
         }
 
         if (saveProgress) {

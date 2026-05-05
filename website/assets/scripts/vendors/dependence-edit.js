@@ -225,7 +225,7 @@
     };
   }
 
-  function createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle) {
+  function createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle, itemImageAlt, removeActionAlt) {
     const canToggleOptional = Boolean(
       showOptionalToggle &&
       relationKind === 'dependencies' &&
@@ -239,14 +239,11 @@
     );
     const element = document.createElement('div');
     element.className = `picker-editor__item picker-editor__item--row${canToggleOptional ? ' picker-editor__item--dependency' : ''}`;
-    const removeActionAlt = relationKind === 'conflicts'
-      ? 'Убрать конфликт'
-      : 'Убрать зависимость';
 
     const media = document.createElement('img');
     media.className = 'picker-editor__item-media';
     media.src = (options.data && options.data.img) || fallbackImage;
-    media.alt = 'Логотип мода';
+    media.alt = itemImageAlt || 'Логотип мода';
     media.setAttribute('errorcap', '');
     element.appendChild(media);
 
@@ -294,7 +291,7 @@
       const removeIcon = document.createElement('img');
       removeIcon.className = 'picker-editor__item-action';
       removeIcon.src = '/assets/images/removal-triangle.svg';
-      removeIcon.alt = removeActionAlt;
+      removeIcon.alt = removeActionAlt || (relationKind === 'conflicts' ? 'Убрать конфликт' : 'Убрать зависимость');
       actions.appendChild(removeIcon);
     }
 
@@ -353,6 +350,8 @@
       const isCatalogEditor = root.id === 'catalog-dependencies-editor';
       const relationKind = String(root.dataset.pickerEditorKind || 'dependencies');
       const showOptionalToggle = root.dataset.pickerShowOptionalToggle === 'true';
+      const itemImageAlt = root.dataset.pickerItemImageAlt || 'Логотип мода';
+      const removeActionAlt = root.dataset.pickerRemoveActionAlt || (relationKind === 'conflicts' ? 'Убрать конфликт' : 'Убрать зависимость');
       const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
@@ -360,7 +359,7 @@
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
         },
         renderItem: function renderDependencyItem(options) {
-          return createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle);
+          return createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle, itemImageAlt, removeActionAlt);
         },
         async fetchSearchResults(queryValue, editor) {
           return searchDependencies(queryValue, editor.getContext().gameId, isCatalogEditor);
