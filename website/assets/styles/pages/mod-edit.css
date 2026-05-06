@@ -228,6 +228,7 @@ button.public-mod-toggle:active {
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.9;
+  transition: opacity 0.12s ease;
 }
 
 .modpack-dependency-graph__edge--required {
@@ -241,6 +242,22 @@ button.public-mod-toggle:active {
 
 .modpack-dependency-graph__edge--faded {
   opacity: 0.36;
+}
+
+.picker-editor.modpack-mods-edit__panel--graph[data-modpack-dependency-graph-hovered="true"] .picker-editor__selected-list [data-picker-id] {
+  opacity: 0.2;
+}
+
+.picker-editor.modpack-mods-edit__panel--graph[data-modpack-dependency-graph-hovered="true"] .picker-editor__selected-list [data-picker-id].modpack-dependency-graph__hover-related {
+  opacity: 1;
+}
+
+.picker-editor.modpack-mods-edit__panel--graph[data-modpack-dependency-graph-hovered="true"] .modpack-dependency-graph__edge {
+  opacity: 0.2;
+}
+
+.picker-editor.modpack-mods-edit__panel--graph[data-modpack-dependency-graph-hovered="true"] .modpack-dependency-graph__edge.modpack-dependency-graph__hover-related {
+  opacity: 1;
 }
 
 .modpack-dependency-graph__empty {

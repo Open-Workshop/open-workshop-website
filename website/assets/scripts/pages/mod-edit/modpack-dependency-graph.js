@@ -29,8 +29,12 @@
     let bound = false;
     let refreshToken = 0;
     let lastModel = null;
+    let hoveredNodeId = 0;
     let resizeObserver = null;
     let resizeListener = null;
+    let hoverSelectedList = null;
+    let hoverPointerOverListener = null;
+    let hoverPointerLeaveListener = null;
 
     function normalizeId(value) {
       const normalized = Number(value);
@@ -103,6 +107,10 @@
         : null;
     }
 
+    function getHoverRoot() {
+      return editorRoot instanceof Element ? editorRoot : null;
+    }
+
     function setGraphVisibility(visible) {
       const isVisible = Boolean(visible);
 
@@ -140,6 +148,7 @@
       const selectedList = getSelectedList();
       const edgesRoot = getEdgesRoot();
       lastModel = null;
+      hoveredNodeId = 0;
 
       if (graphRoot) {
         delete graphRoot.dataset.graphNotice;
@@ -154,6 +163,8 @@
       if (edgesRoot) {
         clearSvg(edgesRoot);
       }
+
+      syncHoverFocus();
     }
 
     function insertGhostItem(listNode, element) {
@@ -207,6 +218,135 @@
 
       nodesById.set(normalizedId, next);
       return next;
+    }
+
+    function buildDirectAdjacency(edges) {
+      const outgoing = new Map();
+      const incoming = new Map();
+
+      (Array.isArray(edges) ? edges : []).forEach(function (edge) {
+        const sourceId = normalizeId(edge && edge.sourceId);
+        const targetId = normalizeId(edge && edge.targetId);
+        if (!sourceId || !targetId) {
+          return;
+        }
+
+        if (!outgoing.has(sourceId)) {
+          outgoing.set(sourceId, new Set());
+        }
+
+        if (!incoming.has(targetId)) {
+          incoming.set(targetId, new Set());
+        }
+
+        outgoing.get(sourceId).add(targetId);
+        incoming.get(targetId).add(sourceId);
+      });
+
+      return {
+        outgoingAdjacency: outgoing,
+        incomingAdjacency: incoming,
+      };
+    }
+
+    function getRelatedNodeIds(nodeId) {
+      const normalizedId = normalizeId(nodeId);
+      if (!normalizedId || !lastModel) {
+        return new Set();
+      }
+
+      const related = new Set([normalizedId]);
+
+      const outgoing = lastModel.outgoingAdjacency instanceof Map ? lastModel.outgoingAdjacency : new Map();
+      const incoming = lastModel.incomingAdjacency instanceof Map ? lastModel.incomingAdjacency : new Map();
+
+      const directOutgoing = outgoing.get(normalizedId);
+      const directIncoming = incoming.get(normalizedId);
+
+      if (directOutgoing) {
+        directOutgoing.forEach(function (neighborId) {
+          related.add(neighborId);
+        });
+      }
+
+      if (directIncoming) {
+        directIncoming.forEach(function (neighborId) {
+          related.add(neighborId);
+        });
+      }
+
+      return related;
+    }
+
+    function syncHoverFocus() {
+      const hoverRoot = getHoverRoot();
+      const selectedList = getSelectedList();
+      const edgesRoot = getEdgesRoot();
+      const relatedNodeIds = hoveredNodeId > 0 ? getRelatedNodeIds(hoveredNodeId) : new Set();
+      const hasHover = relatedNodeIds.size > 0;
+
+      if (hoverRoot) {
+        if (hasHover) {
+          hoverRoot.dataset.modpackDependencyGraphHovered = 'true';
+        } else {
+          delete hoverRoot.dataset.modpackDependencyGraphHovered;
+        }
+      }
+
+      if (selectedList instanceof Element) {
+        selectedList.querySelectorAll('[data-picker-id]:not(.is-hidden)').forEach(function (node) {
+          const itemId = normalizeId(node.dataset.pickerId);
+          node.classList.toggle('modpack-dependency-graph__hover-related', hasHover && itemId > 0 && relatedNodeIds.has(itemId));
+        });
+      }
+
+      if (edgesRoot instanceof Element) {
+        edgesRoot.querySelectorAll('.modpack-dependency-graph__edge').forEach(function (edgeNode) {
+          const sourceId = normalizeId(edgeNode.dataset.edgeSourceId);
+          const targetId = normalizeId(edgeNode.dataset.edgeTargetId);
+          const related = hasHover && sourceId > 0 && targetId > 0
+            && relatedNodeIds.has(sourceId)
+            && relatedNodeIds.has(targetId);
+          edgeNode.classList.toggle('modpack-dependency-graph__hover-related', related);
+        });
+      }
+    }
+
+    function setHoverNode(nodeId) {
+      const normalizedId = normalizeId(nodeId);
+      if (normalizedId === hoveredNodeId) {
+        return;
+      }
+
+      hoveredNodeId = normalizedId;
+      syncHoverFocus();
+    }
+
+    function clearHoverNode() {
+      if (hoveredNodeId === 0) {
+        return;
+      }
+
+      hoveredNodeId = 0;
+      syncHoverFocus();
+    }
+
+    function findHoverTarget(event) {
+      if (!(event && event.target instanceof Element)) {
+        return null;
+      }
+
+      const selectedList = getSelectedList();
+      if (!(selectedList instanceof Element)) {
+        return null;
+      }
+
+      const target = event.target.closest('[data-picker-slot="selected"] [data-picker-id]');
+      if (!(target instanceof Element) || !selectedList.contains(target)) {
+        return null;
+      }
+
+      return target;
     }
 
     function addEdge(edgesByKey, sourceId, targetId, optional, required, fromBuild) {
@@ -539,6 +679,8 @@
           'd',
           'M ' + startX + ' ' + startY + ' C ' + routeX + ' ' + startY + ', ' + routeX + ' ' + endY + ', ' + endX + ' ' + endY,
         );
+        path.dataset.edgeSourceId = String(edge.sourceId);
+        path.dataset.edgeTargetId = String(edge.targetId);
         path.setAttribute(
           'marker-end',
           edge.required
@@ -777,6 +919,7 @@
       lastModel = {
         nodes,
         edges,
+        ...buildDirectAdjacency(edges),
       };
 
       if (graphRoot) {
@@ -793,10 +936,12 @@
         window.OWPickerEditors.requestLayout(editorRoot);
       }
 
+      syncHoverFocus();
       setStatus('', 'ready');
 
       window.requestAnimationFrame(function () {
         drawEdges(lastModel);
+        syncHoverFocus();
       });
     }
 
@@ -818,6 +963,7 @@
           if (graphRoot && lastModel) {
             window.requestAnimationFrame(function () {
               drawEdges(lastModel);
+              syncHoverFocus();
             });
           }
         });
@@ -827,6 +973,7 @@
       resizeListener = function () {
         if (graphRoot && lastModel) {
           drawEdges(lastModel);
+          syncHoverFocus();
         }
       };
 
@@ -842,6 +989,26 @@
 
       editorRoot.dataset.modpackDependencyGraphVisible = 'false';
       graphRoot.hidden = true;
+
+      hoverSelectedList = getSelectedList();
+      if (hoverSelectedList instanceof Element) {
+        hoverPointerOverListener = function (event) {
+          const target = findHoverTarget(event);
+          if (!target) {
+            clearHoverNode();
+            return;
+          }
+
+          setHoverNode(target.dataset.pickerId);
+        };
+
+        hoverPointerLeaveListener = function () {
+          clearHoverNode();
+        };
+
+        hoverSelectedList.addEventListener('pointerover', hoverPointerOverListener);
+        hoverSelectedList.addEventListener('pointerleave', hoverPointerLeaveListener);
+      }
 
       editorRoot.addEventListener('ow:picker-selection-change', handleSelectionChange);
       bindResizeListeners();
@@ -865,6 +1032,21 @@
         window.removeEventListener('resize', resizeListener);
         resizeListener = null;
       }
+
+      if (hoverSelectedList instanceof Element) {
+        if (hoverPointerOverListener) {
+          hoverSelectedList.removeEventListener('pointerover', hoverPointerOverListener);
+        }
+        if (hoverPointerLeaveListener) {
+          hoverSelectedList.removeEventListener('pointerleave', hoverPointerLeaveListener);
+        }
+      }
+
+      hoverSelectedList = null;
+      hoverPointerOverListener = null;
+      hoverPointerLeaveListener = null;
+      hoveredNodeId = 0;
+      syncHoverFocus();
     }
 
     return {
