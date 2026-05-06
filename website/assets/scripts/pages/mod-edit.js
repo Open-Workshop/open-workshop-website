@@ -146,6 +146,17 @@
       progressRoot: root.querySelector('[data-save-progress-root]'),
     });
 
+    const modpackAutoDependencies = showModpackMods
+      ? runtime.requireFactory('mod-edit-modpack-autodependencies')({
+        api,
+        root: root.querySelector('#modpack-mods-editor'),
+        modpackModsEditorId: 'modpack-mods-editor',
+      })
+      : null;
+    if (modpackAutoDependencies && typeof modpackAutoDependencies.bind === 'function') {
+      modpackAutoDependencies.bind();
+    }
+
     const publicController = bindPublicToggle(root.querySelector('[data-action="mod-toggle-public"]'));
 
     root.addEventListener('click', function (event) {
@@ -161,6 +172,16 @@
 
       if (action === 'mod-save') {
         saveService.save();
+        return;
+      }
+
+      if (action === 'modpack-autodependencies-build') {
+        if (!modpackAutoDependencies || typeof modpackAutoDependencies.refresh !== 'function') {
+          return;
+        }
+        Promise.resolve(modpackAutoDependencies.refresh()).catch(function (error) {
+          runtime.showError(error, { fallbackText: 'Не удалось подключить автозависимости' });
+        });
         return;
       }
 

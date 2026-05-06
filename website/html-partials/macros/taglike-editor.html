@@ -25,7 +25,8 @@
   action_alt='Удалить элемент',
   optional=false,
   show_optional_toggle=false,
-  auto_added=false
+  auto_added=false,
+  show_view_link=false
 ) -%}
 <div
   class="picker-editor__item picker-editor__item--row{% if selected %} is-selected{% endif %}{% if optional %} is-optional{% endif %}{% if pending %} is-pending{% endif %}"
@@ -40,9 +41,41 @@
   <img class="picker-editor__item-media" src="{{ item_img or ow.assets.images.fallback }}" alt="{{ image_alt }}" errorcap>
   <div class="picker-editor__item-content">
     <div class="picker-editor__item-header">
-      <h3 class="picker-editor__item-title" translate="no">{{ item_name }}</h3>
-      {% if show_action %}
+      <h3 class="picker-editor__item-title picker-editor__item-title--row" translate="no">
+        <span class="picker-editor__item-title-text">{{ item_name }}</span>
+        {% if auto_added %}
+        <button
+          type="button"
+          class="tag-link-yellow modpack-auto-badge"
+          data-action="modpack-auto-added-toggle"
+          data-modpack-auto-badge="true"
+          title="Убрать автозависимость"
+          aria-label="Убрать автозависимость"
+        >
+          <span class="modpack-auto-badge__label">Автозависимость</span>
+          <span class="modpack-auto-badge__remove" aria-hidden="true">×</span>
+        </button>
+        {% endif %}
+      </h3>
+      {% if show_action or show_view_link %}
+      <div class="picker-editor__item-actions picker-editor__item-actions--header">
+        {% if show_action %}
         <img class="picker-editor__item-action" src="/assets/images/removal-triangle.svg" alt="{{ action_alt }}">
+        {% endif %}
+        {% if show_view_link %}
+        <a
+          class="modpack-mods-edit__view-link"
+          href="/mod/{{ item_id }}"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Открыть страницу мода"
+          aria-label="Открыть страницу мода"
+          data-picker-ignore-toggle="true"
+        >
+          <img src="/assets/images/svg/white/eye.svg" alt="" aria-hidden="true">
+        </a>
+        {% endif %}
+      </div>
       {% endif %}
     </div>
     {% if show_optional_toggle %}
@@ -55,10 +88,6 @@
           <input class="media-item__logo-checkbox" type="checkbox"{% if optional %} checked{% endif %}>
           <span class="media-item__logo-label">Опционально</span>
         </label>
-      </div>
-    {% elif auto_added %}
-      <div class="picker-editor__item-footer">
-        <span class="tag-link">Авто</span>
       </div>
     {% endif %}
   </div>
@@ -81,7 +110,8 @@
   create_button_text='Добавить новое',
   show_optional_toggle=false,
   item_image_alt='',
-  remove_action_alt=''
+  remove_action_alt='',
+  show_view_link=false
 ) -%}
 <div
   id="{{ root_id }}"
@@ -89,6 +119,7 @@
   data-picker-editor
   data-picker-editor-kind="{{ editor_kind }}"
   data-picker-show-optional-toggle="{{ 'true' if show_optional_toggle else 'false' }}"
+  data-picker-show-view-link="{{ 'true' if show_view_link else 'false' }}"
   data-picker-item-image-alt="{{ item_image_alt }}"
   data-picker-remove-action-alt="{{ remove_action_alt }}"
   {% if can_create %}data-picker-can-create="true"{% endif %}
@@ -188,6 +219,7 @@
   image_alt='Логотип мода',
   context=None,
   show_optional_toggle=false,
+  show_view_link=false,
   load_scripts=true
 ) -%}
 {% set relation_context = {'game_id': game} %}
@@ -207,6 +239,7 @@
   selected_empty_text=selected_empty_text,
   results_empty_text=results_empty_text,
   show_optional_toggle=show_optional_toggle,
+  show_view_link=show_view_link,
   item_image_alt=image_alt,
   remove_action_alt=remove_action_alt
 ) %}
@@ -224,7 +257,8 @@
         remove_action_alt,
         item.optional if item.optional is defined else false,
         show_optional_toggle,
-        item.auto_added if item.auto_added is defined else false
+        item.auto_added if item.auto_added is defined else false,
+        show_view_link
       ) }}
     {% endfor %}
   {% endif %}

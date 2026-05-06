@@ -1,5 +1,5 @@
 
-.tag-link, .tag-link-green, .tag-link-blue, .tag-link-red, .tag-link-orange {
+.tag-link, .tag-link-green, .tag-link-blue, .tag-link-red, .tag-link-orange, .tag-link-yellow {
     display: inline-flex;
 
     background-color: rgb(61, 61, 61, 0.5);
@@ -38,6 +38,43 @@
 
 .tag-link-orange {
     background-color: rgb(194, 126, 0);
+}
+
+.tag-link-yellow {
+    background-color: rgb(194, 164, 0);
+    color: #fff7cc;
+}
+
+.tag-link-yellow:hover {
+    background-color: rgb(171, 145, 0);
+}
+
+.tag-link-yellow:active {
+    background-color: rgb(146, 124, 0);
+}
+
+button.tag-link-yellow {
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 0;
+    min-height: 0;
+    padding: 2px 6px;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    line-height: 1;
+}
+
+.modpack-auto-badge {
+    gap: 6px;
+    font-weight: 700;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.modpack-auto-badge__remove {
+    font-size: 1.05em;
+    line-height: 1;
 }
 
 .picker-editor--chips .picker-editor__item--tag-filter {

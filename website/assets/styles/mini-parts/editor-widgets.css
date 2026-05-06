@@ -164,6 +164,25 @@
   line-height: 1.2;
 }
 
+.picker-editor__item-title--row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.picker-editor__item-title-text {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .picker-editor__item-action {
   width: 18px;
   height: 18px;
@@ -218,10 +237,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-}
-
-.picker-editor__item-header .picker-editor__item-title {
-  flex: 1;
 }
 
 .picker-editor__item-footer {

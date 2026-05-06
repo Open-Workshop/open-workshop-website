@@ -1,4 +1,8 @@
-.picker-editor--rows .picker-editor__item-title {
+.picker-editor--rows .picker-editor__item-title--row {
+  align-items: flex-start;
+}
+
+.picker-editor--rows .picker-editor__item-title-text {
   white-space: normal;
   overflow-wrap: anywhere;
 }

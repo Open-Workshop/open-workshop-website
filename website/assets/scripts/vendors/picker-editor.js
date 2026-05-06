@@ -347,6 +347,12 @@
       notifySelectionChange();
     }
 
+    function shouldIgnoreItemToggle(target) {
+      return Boolean(target.closest(
+        'a, button, input, label, select, textarea, summary, [contenteditable="true"], [data-picker-ignore-toggle="true"]',
+      ));
+    }
+
     function queueCreate() {
       const itemName = normalizeName(searchInput.value);
       const itemNameKey = getNameKey(itemName);
@@ -542,7 +548,7 @@
       }
 
       const item = target.closest('[data-picker-id]');
-      if (item && root.contains(item)) {
+      if (item && root.contains(item) && !shouldIgnoreItemToggle(target)) {
         toggle(item);
       }
     });

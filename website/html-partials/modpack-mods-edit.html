@@ -4,6 +4,17 @@
 {% set game_id = game_info.get('id') if game_info and game_info.get('id') else '' %}
 {% set editor_id = editor_id if editor_id is defined else 'modpack-mods-editor' %}
 
+<div class="modpack-mods-edit__actions">
+  <button
+    type="button"
+    class="button-style button-style-small modpack-mods-edit__auto-build"
+    data-action="modpack-autodependencies-build"
+    title="Подобрать и отметить автозависимости для выбранных модов"
+  >
+    Подобрать автозависимости
+  </button>
+</div>
+
 {{ render_relation_editor(
   items=modpack_mod_items,
   game=game_id,
@@ -15,5 +26,6 @@
   remove_action_alt='Убрать мод',
   image_alt='Логотип мода',
   show_optional_toggle=false,
+  show_view_link=true,
   load_scripts=false
 ) }}

@@ -1,5 +1,23 @@
 <div id="page-params-mod" class="mod-edit__page">
   <div class="mod-edit__params">
+    {% if edit_page.show_game_info %}
+    {% set modpack_game = info.get('game') if info is defined else none %}
+    <div class="standart-panel mod-edit__panel mod-edit__panel--readonly">
+      <h3>Игра</h3>
+      <div class="mod-edit__field mod-edit__field--readonly">
+        <span>Принадлежит игре</span>
+        {% if modpack_game and modpack_game.get('id') %}
+        <a class="tag-link-blue mod-edit__readonly-link" href="/game/{{ modpack_game['id'] }}" translate="no">
+          {{ modpack_game.get('name') or ('Игра #' ~ modpack_game['id']) }}
+        </a>
+        <small>Поле только для просмотра</small>
+        {% else %}
+        <div class="ow-muted">Игра не указана</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <div class="standart-panel mod-edit__panel">
       <h3>Возрастное ограничение</h3>
       <label class="mod-edit__field mod-edit__field--toggle">

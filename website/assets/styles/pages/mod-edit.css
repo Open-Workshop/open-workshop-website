@@ -165,6 +165,51 @@ button.public-mod-toggle:active {
   min-width: 0;
 }
 
+.modpack-mods-edit__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 2px 0 0;
+}
+
+.modpack-mods-edit__auto-build {
+  width: fit-content;
+}
+
+.modpack-mods-edit__view-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  flex: none;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-decoration: none;
+  line-height: 1;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.modpack-mods-edit__view-link:hover,
+.modpack-mods-edit__view-link:focus-visible {
+  background: transparent;
+  opacity: 0.86;
+  transform: translateY(-1px);
+}
+
+.modpack-mods-edit__view-link > img {
+  width: 23.4px;
+  height: 23.4px;
+  display: block;
+}
+
 .mod-edit__params {
   display: flex;
   flex-direction: column;
@@ -201,6 +246,22 @@ button.public-mod-toggle:active {
 .mod-edit__field > input[type="text"] {
   margin: 0;
   width: 100%;
+}
+
+.mod-edit__field--readonly {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color-strong);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.mod-edit__field--readonly small {
+  color: #a5afbf;
+  line-height: 1.35;
+}
+
+.mod-edit__readonly-link {
+  width: fit-content;
 }
 
 .mod-edit__field--toggle {

@@ -225,7 +225,15 @@
     };
   }
 
-  function createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle, itemImageAlt, removeActionAlt) {
+  function createRelationItemElement(
+    options,
+    relationKind,
+    isCatalogEditor,
+    showOptionalToggle,
+    showViewLink,
+    itemImageAlt,
+    removeActionAlt,
+  ) {
     const canToggleOptional = Boolean(
       showOptionalToggle &&
       relationKind === 'dependencies' &&
@@ -237,6 +245,7 @@
         ? options.optional
         : options.data && options.data.optional,
     );
+    const itemId = String(options.id || '').trim();
     const element = document.createElement('div');
     element.className = `picker-editor__item picker-editor__item--row${canToggleOptional ? ' picker-editor__item--dependency' : ''}`;
 
@@ -251,9 +260,34 @@
     content.className = 'picker-editor__item-content';
 
     const title = document.createElement('h3');
-    title.className = 'picker-editor__item-title';
+    title.className = 'picker-editor__item-title picker-editor__item-title--row';
     title.setAttribute('translate', 'no');
-    title.textContent = String(options.name || '');
+
+    const titleText = document.createElement('span');
+    titleText.className = 'picker-editor__item-title-text';
+    titleText.textContent = String(options.name || '');
+    title.appendChild(titleText);
+
+    if (showViewLink && options.slot === 'selected') {
+      if (itemId !== '') {
+        const viewLink = document.createElement('a');
+        viewLink.className = 'modpack-mods-edit__view-link';
+        viewLink.href = `/mod/${encodeURIComponent(itemId)}`;
+        viewLink.target = '_blank';
+        viewLink.rel = 'noopener noreferrer';
+        viewLink.title = 'Открыть страницу мода';
+        viewLink.setAttribute('aria-label', 'Открыть страницу мода');
+        viewLink.setAttribute('data-picker-ignore-toggle', 'true');
+
+        const viewIcon = document.createElement('img');
+        viewIcon.src = '/assets/images/svg/white/eye.svg';
+        viewIcon.alt = '';
+        viewIcon.setAttribute('aria-hidden', 'true');
+
+        viewLink.appendChild(viewIcon);
+        title.appendChild(viewLink);
+      }
+    }
 
     const actions = document.createElement('div');
     actions.className = 'picker-editor__item-actions';
@@ -352,14 +386,22 @@
       const showOptionalToggle = root.dataset.pickerShowOptionalToggle === 'true';
       const itemImageAlt = root.dataset.pickerItemImageAlt || 'Логотип мода';
       const removeActionAlt = root.dataset.pickerRemoveActionAlt || (relationKind === 'conflicts' ? 'Убрать конфликт' : 'Убрать зависимость');
-      const editor = window.OWPickerEditors.create({
+    const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
         context: {
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
         },
         renderItem: function renderDependencyItem(options) {
-          return createRelationItemElement(options, relationKind, isCatalogEditor, showOptionalToggle, itemImageAlt, removeActionAlt);
+          return createRelationItemElement(
+            options,
+            relationKind,
+            isCatalogEditor,
+            showOptionalToggle,
+            root.dataset.pickerShowViewLink === 'true',
+            itemImageAlt,
+            removeActionAlt,
+          );
         },
         async fetchSearchResults(queryValue, editor) {
           return searchDependencies(queryValue, editor.getContext().gameId, isCatalogEditor);

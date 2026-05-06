@@ -102,6 +102,10 @@ PUBLIC_CONFIG: dict = {
                 "info": {"method": "GET", "path": "/mods/{mod_id}"},
                 "download": {"method": "POST", "path": "/mods/{mod_id}/download-url"},
                 "rating": {"method": "PUT", "path": "/mods/{mod_id}/rating"},
+                "build": {
+                    "dependencies_missing": {"method": "GET", "path": "/mods/build/dependencies/missing"},
+                    "conflicts": {"method": "GET", "path": "/mods/build/conflicts"},
+                },
                 "delete": {"method": "DELETE", "path": "/mods/{mod_id}"},
                 "authors_upsert": {"method": "PUT", "path": "/mods/{mod_id}/authors/{author_id}"},
                 "authors_delete": {"method": "DELETE", "path": "/mods/{mod_id}/authors/{author_id}"},
@@ -476,6 +480,7 @@ EDIT_PAGE_CONFIGS: dict = {
         "show_dependencies": False,
         "show_conflicts": False,
         "show_modpack_mods": True,
+        "show_game_info": True,
         "styles": [
             "/assets/styles/pages/mod-edit.css",
         ],
@@ -491,6 +496,7 @@ EDIT_PAGE_CONFIGS: dict = {
             "/assets/scripts/vendors/picker-editor.js",
             "/assets/scripts/vendors/dependence-edit.js",
             "/assets/scripts/pages/mod-edit/api.js",
+            "/assets/scripts/pages/mod-edit/modpack-autodependencies.js",
             "/assets/scripts/pages/mod-edit/media-manager.js",
             "/assets/scripts/pages/mod-edit/authors-manager.js",
             "/assets/scripts/pages/mod-edit/catalog-preview.js",

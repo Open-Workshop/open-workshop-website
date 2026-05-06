@@ -816,10 +816,12 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["edit_page"]["entity_kind"], "modpack")
         self.assertEqual(render_kwargs["edit_page"]["title_placeholder"], "Название модпака")
         self.assertTrue(render_kwargs["edit_page"]["show_modpack_mods"])
+        self.assertTrue(render_kwargs["edit_page"]["show_game_info"])
         self.assertTrue(render_kwargs["edit_page"]["show_media_manager"])
         self.assertTrue(render_kwargs["edit_page"]["show_tags_editor"])
         self.assertFalse(render_kwargs["right_edit"]["new_version"])
         self.assertIn("Open Modpack", render_kwargs["edit_title"])
+        self.assertEqual(render_kwargs["info"]["game"]["id"], 5)
         self.assertIn(("get_modpack_access", 42, None, None), handler.calls)
         self.assertNotIn(("get_mod_access", 42, None, None), handler.calls)
         self.assertEqual(
@@ -883,13 +885,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("const gitUrlInput = runtime.resolveElement(settings.gitUrlInput);", script)
         self.assertIn("const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');", script)
         self.assertIn("const modpackModsEditorId = String(settings.modpackModsEditorId || 'modpack-mods-editor');", script)
+        self.assertIn("const initialModpackMods = getPickerSelectedNodes(modpackModsEditorId).map(function (node) {", script)
         self.assertIn("adult: runtime.diffValue(adultCurrentValue, adultStartValue),", script)
         self.assertIn("git_url: {", script)
         self.assertIn("payload[key] = value.value === null ? null : value.value;", script)
         self.assertIn("payload[key] = value.value === 'checked';", script)
         self.assertIn("const conflicts = getPickerChanges(conflictsEditorId);", script)
         self.assertIn("const modpackMods = getModpackModsChanges(modpackModsEditorId);", script)
-        self.assertIn("const initialModpackMods = getPickerSelectedIds(modpackModsEditorId);", script)
+        self.assertIn("autoAdded: String(node.dataset.pickerAutoAdded || 'false') === 'true',", script)
         self.assertIn("await api.updateConflict(id, true);", script)
         self.assertIn("await syncConflicts(changes.conflicts);", script)
         self.assertIn("await syncModpackMods(changes.modpackMods);", script)
@@ -904,10 +907,17 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
     def test_mod_edit_script_passes_conflicts_editor_id(self) -> None:
         script = (ROOT / "website/assets/scripts/pages/mod-edit.js").read_text(encoding="utf-8")
+        app_config = (ROOT / "app_config.py").read_text(encoding="utf-8")
         self.assertIn("conflictsEditorId: showConflicts ? 'mod-conflicts-editor' : '',", script)
         self.assertIn("modpackModsEditorId: showModpackMods ? 'modpack-mods-editor' : '',", script)
         self.assertIn("gitUrlInput: showGitPanel ? root.querySelector('#mod-git-url') : null,", script)
         self.assertIn("resourceOwnerType: entityKind === 'modpack' ? 'modpacks' : 'mods',", script)
+        self.assertIn("mod-edit-modpack-autodependencies", script)
+        self.assertIn("const modpackAutoDependencies = showModpackMods", script)
+        self.assertIn("modpackAutoDependencies.bind()", script)
+        self.assertIn("action === 'modpack-autodependencies-build'", script)
+        self.assertIn("modpackAutoDependencies.refresh()", script)
+        self.assertIn("/assets/scripts/pages/mod-edit/modpack-autodependencies.js", app_config)
 
     def test_catalog_scripts_support_modpack_catalog(self) -> None:
         catalog_script = (ROOT / "website/assets/scripts/vendors/catalog.js").read_text(encoding="utf-8")
@@ -943,10 +953,15 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("async function updateConflict(conflictId, add)", script)
         self.assertIn("async function updateDependency(dependencyId, add, optional)", script)
         self.assertIn("async function updateDependencyOptional(dependencyId, optional)", script)
+        self.assertIn("async function buildMissingDependencies(modIds)", script)
+        self.assertIn("async function buildConflicts(modIds)", script)
         self.assertIn("apiPaths.mod.dependencies_update", script)
         self.assertIn("apiPaths.mod.conflicts_add", script)
         self.assertIn("apiPaths.mod.conflicts_delete", script)
         self.assertIn('\"dependencies_update\": {\"method\": \"PUT\", \"path\": \"/mods/{mod_id}/dependencies/{dependency_mod_id}\"}', app_config)
+        self.assertIn('\"build\": {', app_config)
+        self.assertIn('\"dependencies_missing\": {\"method\": \"GET\", \"path\": \"/mods/build/dependencies/missing\"}', app_config)
+        self.assertIn('\"conflicts\": {\"method\": \"GET\", \"path\": \"/mods/build/conflicts\"}', app_config)
         self.assertIn("conflict_mod_id: conflictId", script)
         self.assertIn("entityApiPaths.tags_add", script)
         self.assertIn("entityApiPaths.tags_delete", script)
@@ -985,6 +1000,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertLess(mod_main.index("data-git-url-block"), mod_main.index("mod-dependencies-editor"))
         self.assertIn("html-partials/modpack-mods-edit.html", mod_main)
         self.assertIn("modpack-mods-editor", modpack_mods)
+        self.assertIn("modpack-mods-edit__auto-build", modpack_mods)
+        self.assertIn("data-action=\"modpack-autodependencies-build\"", modpack_mods)
+        self.assertIn("show_view_link=true", modpack_mods)
         self.assertIn("Добавить мод", modpack_mods)
         self.assertIn("Убрать мод", modpack_mods)
         self.assertIn("load_scripts=false", modpack_mods)
@@ -998,6 +1016,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("data-picker-item-image-alt", taglike_macros)
         self.assertIn("data-picker-remove-action-alt", taglike_macros)
         self.assertIn("data-action=\"dependency-toggle-optional\"", taglike_macros)
+        self.assertIn("picker-editor__item-title--row", taglike_macros)
+        self.assertIn("picker-editor__item-title-text", taglike_macros)
+        self.assertIn("modpack-mods-edit__view-link", taglike_macros)
         self.assertIn("media-item__logo-toggle", taglike_macros)
         self.assertIn("media-item__logo-checkbox", taglike_macros)
         self.assertNotIn("picker-editor__optional-toggle-track", taglike_macros)
@@ -1015,6 +1036,66 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("document.readyState === 'loading'", dependence_script)
         self.assertIn("DOMContentLoaded", dependence_script)
         self.assertIn("initDependencyEditors", dependence_script)
+
+    def test_modpack_edit_params_template_shows_game_readonly(self) -> None:
+        mod_params = (ROOT / "website/html-partials/mod-edit/page-params.html").read_text(encoding="utf-8")
+        self.assertIn("edit_page.show_game_info", mod_params)
+        self.assertIn("Принадлежит игре", mod_params)
+        self.assertIn("Поле только для просмотра", mod_params)
+        self.assertIn("mod-edit__readonly-link", mod_params)
+        self.assertIn("Игра не указана", mod_params)
+
+    def test_modpack_edit_autodependencies_ui_and_styles(self) -> None:
+        taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
+        mod_edit_styles = (ROOT / "website/assets/styles/pages/mod-edit.css").read_text(encoding="utf-8")
+        tags_styles = (ROOT / "website/assets/styles/mini-parts/tags.css").read_text(encoding="utf-8")
+        auto_script = (ROOT / "website/assets/scripts/pages/mod-edit/modpack-autodependencies.js").read_text(encoding="utf-8")
+        app_config = (ROOT / "app_config.py").read_text(encoding="utf-8")
+
+        self.assertIn("tag-link-yellow", taglike_macros)
+        self.assertIn("Автозависимость", taglike_macros)
+        self.assertIn("data-action=\"modpack-auto-added-toggle\"", taglike_macros)
+        self.assertIn("data-modpack-auto-badge=\"true\"", taglike_macros)
+        self.assertIn("picker-editor__item-title--row", taglike_macros)
+        self.assertIn("picker-editor__item-title-text", taglike_macros)
+        self.assertIn("target=\"_blank\"", taglike_macros)
+        self.assertIn(".modpack-auto-badge", tags_styles)
+        self.assertIn(".modpack-auto-badge__remove", tags_styles)
+        self.assertIn(".mod-edit__field--readonly", mod_edit_styles)
+        self.assertIn(".modpack-mods-edit__auto-build", mod_edit_styles)
+        self.assertIn(".modpack-mods-edit__view-link", mod_edit_styles)
+        self.assertIn("data-action=\"modpack-autodependencies-build\"", (ROOT / "website/html-partials/modpack-mods-edit.html").read_text(encoding="utf-8"))
+        self.assertIn("async function refreshAutoDependencies()", auto_script)
+        self.assertIn("let bound = false;", auto_script)
+        self.assertIn("manualIds.length === 0", auto_script)
+        self.assertIn("await api.buildMissingDependencies(manualIds);", auto_script)
+        self.assertIn("await editor.setDefaultSelected(autoIds);", auto_script)
+        self.assertIn("syncAutoBadgeState(item, false);", auto_script)
+        self.assertIn("syncAutoBadgeState(node, true);", auto_script)
+        self.assertIn("getAutoBadge(node)", auto_script)
+        self.assertIn("createAutoBadge()", auto_script)
+        self.assertIn("handleAutoBadgeToggle", auto_script)
+        self.assertIn("/assets/scripts/pages/mod-edit/modpack-autodependencies.js", app_config)
+
+        with main.app.app_context():
+            rendered = main.app.jinja_env.get_template("html-partials/modpack-mods-edit.html").render(
+                {
+                    "info": {"game": {"id": 5}},
+                    "modpack_mods": [
+                        {
+                            "id": 11,
+                            "name": "Core Mod",
+                            "img": "https://cdn.example/core.webp",
+                            "auto_added": True,
+                        }
+                    ],
+                    "editor_id": "modpack-mods-editor",
+                }
+            )
+
+        self.assertIn("modpack-auto-badge", rendered)
+        self.assertIn("modpack-mods-edit__view-link", rendered)
+        self.assertIn('target="_blank"', rendered)
 
     def test_mod_template_exposes_conflicts_section(self) -> None:
         mod_page = (ROOT / "website/mod.html").read_text(encoding="utf-8")

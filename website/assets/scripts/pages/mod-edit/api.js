@@ -30,6 +30,8 @@
     const modApiPaths = apiPaths.mod || {};
     const modpackApiPaths = apiPaths.modpack || {};
     const entityApiPaths = entityKind === 'modpack' ? modpackApiPaths : modApiPaths;
+    const modBuildApiPaths = modApiPaths.build || {};
+    const modpackBuildApiPaths = modpackApiPaths.build || {};
     const ENTITY_FORMS = {
       mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
       modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
@@ -228,6 +230,44 @@
         parseAs: 'text',
         fallbackError: 'Не удалось обновить список модов модпака',
       });
+    }
+
+    async function buildMissingDependencies(modIds) {
+      const endpoint = entityKind === 'modpack' && modpackBuildApiPaths.dependencies_missing
+        ? modpackBuildApiPaths.dependencies_missing
+        : modBuildApiPaths.dependencies_missing;
+      if (!endpoint) {
+        throw new Error('API не поддерживает сборку зависимостей');
+      }
+
+      const result = await requestEndpoint(endpoint, {
+        query: {
+          mods_ids: Array.isArray(modIds) ? modIds : [],
+        },
+        parseAs: 'json',
+        fallbackError: 'Не удалось построить зависимости',
+      });
+
+      return result.data;
+    }
+
+    async function buildConflicts(modIds) {
+      const endpoint = entityKind === 'modpack' && modpackBuildApiPaths.conflicts
+        ? modpackBuildApiPaths.conflicts
+        : modBuildApiPaths.conflicts;
+      if (!endpoint) {
+        throw new Error('API не поддерживает сборку конфликтов');
+      }
+
+      const result = await requestEndpoint(endpoint, {
+        query: {
+          mods_ids: Array.isArray(modIds) ? modIds : [],
+        },
+        parseAs: 'json',
+        fallbackError: 'Не удалось построить конфликты',
+      });
+
+      return result.data;
     }
 
     async function addResourceUrl(resource) {
@@ -478,6 +518,8 @@
       editResource,
       deleteResource,
       deleteMod,
+      buildMissingDependencies,
+      buildConflicts,
       startVersionTransfer,
       startResourceTransfer,
       uploadBinaryToTransfer,

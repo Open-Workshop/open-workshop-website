@@ -101,18 +101,29 @@
       });
     }
 
-    const initialModpackMods = getPickerSelectedIds(modpackModsEditorId);
+    const initialModpackMods = getPickerSelectedNodes(modpackModsEditorId).map(function (node) {
+      return {
+        id: String(node.dataset.pickerId || '').trim(),
+        autoAdded: String(node.dataset.pickerAutoAdded || 'false') === 'true',
+      };
+    }).filter(function (item) {
+      return item.id !== '';
+    });
 
     function getModpackModsChanges(editorId) {
       const selectedNodes = getPickerSelectedNodes(editorId);
-      const currentIds = selectedNodes.map(function (node) {
-        return String(node.dataset.pickerId || '').trim();
-      }).filter(function (itemId) {
-        return itemId !== '';
+      const currentItems = selectedNodes.map(function (node) {
+        return {
+          id: String(node.dataset.pickerId || '').trim(),
+          autoAdded: String(node.dataset.pickerAutoAdded || 'false') === 'true',
+        };
+      }).filter(function (item) {
+        return item.id !== '';
       });
 
-      const changed = currentIds.length !== initialModpackMods.length || currentIds.some(function (itemId, index) {
-        return itemId !== initialModpackMods[index];
+      const changed = currentItems.length !== initialModpackMods.length || currentItems.some(function (item, index) {
+        const initialItem = initialModpackMods[index];
+        return !initialItem || item.id !== initialItem.id || item.autoAdded !== initialItem.autoAdded;
       });
 
       return {
