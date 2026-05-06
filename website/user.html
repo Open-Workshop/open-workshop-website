@@ -3,6 +3,7 @@
 <link href="/assets/styles/pages/user.css" rel="stylesheet"/>
 
 {% set profile_rating_summary = user_data.general.rating_summary %}
+{% set has_user_collections = user_mods or user_modpacks %}
 
 <main class="user">
   <div class="user-profile">
@@ -58,49 +59,55 @@
     </div>
   </div>
 
-  {% if user_mods %}
-  <div class="outline-container">
-    {% if user_mods['not_show_all'] %}
-    <style>
-      .user-mod:last-child {
-        mask-image: linear-gradient(rgb(0 0 0 / 100%), transparent 85%);
-        margin-bottom: -10pt;
-        padding-bottom: 0;
-        pointer-events: none;
-      }
-
-      .view-button {
-        height: 25pt;
-        width: 25pt;
-        margin-left: 5pt;
-        transition: all 0.1s;
-      }
-      .view-button:hover {
-        scale: 1.2;
-      }
-      .view-button:active {
-        scale: 0.9;
-      }
-    </style>
-    {% endif %}
-
-    <h3 style="text-align: center; display: flex; flex-direction: row; justify-content: center; align-items: center;">
-      Моды пользователя
-      {% if user_mods['not_show_all'] %}
-      <a href="/user/{{ user_data.general.id }}/mods" class="view-button no-padding">
-        <img src="/assets/images/svg/white/arrow-to.svg" alt="Смотреть больше" style="width: 25pt;">
+  {% if has_user_collections %}
+  <div class="user-collections">
+    <div class="outline-container user-collection-panel{% if user_mods and user_mods['not_show_all'] %} user-collection-panel--truncated{% endif %}">
+      <h3 class="user-collection-panel__title">
+        Моды пользователя
+        {% if user_mods and user_mods['not_show_all'] %}
+        <a href="/user/{{ user_data.general.id }}/mods" class="user-collection-panel__view-button no-padding" title="Смотреть больше модов">
+          <img src="/assets/images/svg/white/arrow-to.svg" alt="Смотреть больше модов">
+        </a>
+        {% endif %}
+      </h3>
+      {% if user_mods %}
+      {% for item in user_mods['mods_data'] %}
+      <a class="element user-mod" href="/mod/{{ item.id }}">
+        <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
+        <p translate="no">{{ item.name }}</p>
+        <div class="user-mod__meta">
+          <span class="tag-link-blue user-mod__rating" title="{{ item.rating_summary.title }}" translate="no">{{ item.rating_summary.label }}</span>
+        </div>
       </a>
+      {% endfor %}
+      {% else %}
+      <p class="ow-muted user-collection-panel__empty">У пользователя пока нет модов.</p>
       {% endif %}
-    </h3>
-    {% for item in user_mods['mods_data'] %}
-    <a class="element user-mod" href="/mod/{{ item.id }}">
-      <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
-      <p translate="no">{{ item.name }}</p>
-      <div class="user-mod__meta">
-        <span class="tag-link-blue user-mod__rating" title="{{ item.rating_summary.title }}" translate="no">{{ item.rating_summary.label }}</span>
-      </div>
-    </a>
-    {% endfor %}
+    </div>
+
+    <div class="outline-container user-collection-panel{% if user_modpacks and user_modpacks['not_show_all'] %} user-collection-panel--truncated{% endif %}">
+      <h3 class="user-collection-panel__title">
+        Модпаки пользователя
+        {% if user_modpacks and user_modpacks['not_show_all'] %}
+        <a href="/user/{{ user_data.general.id }}/modpacks" class="user-collection-panel__view-button no-padding" title="Смотреть больше модпаков">
+          <img src="/assets/images/svg/white/arrow-to.svg" alt="Смотреть больше модпаков">
+        </a>
+        {% endif %}
+      </h3>
+      {% if user_modpacks %}
+      {% for item in user_modpacks['modpacks_data'] %}
+      <a class="element user-mod user-modpack" href="/modpack/{{ item.id }}">
+        <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип модпака">
+        <p translate="no">{{ item.name }}</p>
+        <div class="user-mod__meta">
+          <span class="tag-link-blue user-mod__rating" title="{{ item.rating_summary.title }}" translate="no">{{ item.rating_summary.label }}</span>
+        </div>
+      </a>
+      {% endfor %}
+      {% else %}
+      <p class="ow-muted user-collection-panel__empty">У пользователя пока нет модпаков.</p>
+      {% endif %}
+    </div>
   </div>
   {% endif %}
   

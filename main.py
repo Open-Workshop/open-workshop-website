@@ -1665,7 +1665,8 @@ async def user(user_id):
         profile_access = await handler.get_profile_access(user_id)
         profile_info_path = app_config.api_path("profile", "info").format(user_id=user_id)
         mods_list_path = app_config.api_path("mod", "list")
-        profile_info, user_mods = await asyncio.gather(
+        modpacks_list_path = app_config.api_path("modpack", "list")
+        profile_info, user_mods, user_modpacks = await asyncio.gather(
             handler.fetch(_build_query_url(profile_info_path, {"include": ["general"]})),
             handler.fetch(
                 _build_query_url(
@@ -1677,10 +1678,21 @@ async def user(user_id):
                     },
                 )
             ),
+            handler.fetch(
+                _build_query_url(
+                    modpacks_list_path,
+                    {
+                        "page_size": 5,
+                        "author_id": user_id,
+                        "sort": "-created_at",
+                    },
+                )
+            ),
         )
 
         profile_info_code, profile_info = profile_info
-        user_mods_code, user_mods = user_mods
+        _, user_mods = user_mods
+        _, user_modpacks = user_modpacks
 
         if profile_info_code != 200:
             return _render_api_error(handler, profile_info, profile_info_code)
@@ -1694,9 +1706,56 @@ async def user(user_id):
         user_mods_items = [mod for mod in user_mods_items if isinstance(mod, dict)]
         visible_mods_items = user_mods_items[:4]
 
+        user_modpacks_items = _collection_items(user_modpacks) if isinstance(user_modpacks, dict) else []
+        user_modpacks_items = [modpack for modpack in user_modpacks_items if isinstance(modpack, dict)]
+        visible_modpacks_items = user_modpacks_items[:4]
+
+        def _build_profile_cards(items: list[dict]) -> list[dict]:
+            cards = []
+            for item in items:
+                raw_id = item.get("id")
+                try:
+                    normalized_id = int(raw_id)
+                except (TypeError, ValueError):
+                    continue
+
+                cards.append(
+                    {
+                        "id": normalized_id,
+                        "name": item.get("name", ""),
+                        "img": DEFAULT_IMAGE_FALLBACK,
+                        "rating": _coerce_int(item.get("rating")),
+                        "votes_count": _coerce_int(item.get("votes_count")),
+                        "rating_summary": _steam_rating_summary(item.get("rating"), item.get("votes_count")),
+                    }
+                )
+
+            return cards
+
+        def _apply_profile_collection_images(cards: list[dict], resources_payload) -> None:
+            cards_by_id = {item["id"]: item for item in cards}
+            resource_items = _collection_items(resources_payload) if isinstance(resources_payload, dict) else []
+            for resource in resource_items:
+                if not isinstance(resource, dict):
+                    continue
+
+                owner_id = resource.get("owner_id")
+                resource_url = resource.get("url")
+                if owner_id is None or not resource_url:
+                    continue
+
+                try:
+                    normalized_owner_id = int(owner_id)
+                except (TypeError, ValueError):
+                    continue
+
+                collection_entry = cards_by_id.get(normalized_owner_id)
+                if collection_entry:
+                    collection_entry["img"] = resource_url or DEFAULT_IMAGE_FALLBACK
+
         if len(visible_mods_items) > 0:
             resources_mods_path = app_config.api_path("resource", "list")
-            resources_mods_code, resources_mods = await handler.fetch(
+            _, resources_mods = await handler.fetch(
                 _build_query_url(
                     resources_mods_path,
                     {
@@ -1708,23 +1767,8 @@ async def user(user_id):
                 )
             )
 
-            mods_data = [
-                {
-                   'id': int(i['id']),
-                   'name': i['name'],
-                   'img': DEFAULT_IMAGE_FALLBACK,
-                   'rating': _coerce_int(i.get('rating')),
-                   'votes_count': _coerce_int(i.get('votes_count')),
-                   'rating_summary': _steam_rating_summary(i.get('rating'), i.get('votes_count')),
-                }
-                for i in visible_mods_items
-            ]
-            mods_by_id = {item["id"]: item for item in mods_data}
-
-            for resource in _collection_items(resources_mods) if isinstance(resources_mods, dict) else []:
-                mod_entry = mods_by_id.get(int(resource.get('owner_id', -1)))
-                if mod_entry:
-                    mod_entry['img'] = resource.get('url') or DEFAULT_IMAGE_FALLBACK
+            mods_data = _build_profile_cards(visible_mods_items)
+            _apply_profile_collection_images(mods_data, resources_mods)
 
             user_mods = {
                 'not_show_all': len(user_mods_items) > len(visible_mods_items),
@@ -1732,10 +1776,40 @@ async def user(user_id):
             }
         else:
             user_mods = False
+
+        if len(visible_modpacks_items) > 0:
+            resources_modpacks_path = app_config.api_path("resource", "list")
+            _, resources_modpacks = await handler.fetch(
+                _build_query_url(
+                    resources_modpacks_path,
+                    {
+                        "page_size": 10,
+                        "owner_type": "modpacks",
+                        "owner_ids": [item["id"] for item in visible_modpacks_items],
+                        "types": ["logo"],
+                    },
+                )
+            )
+
+            modpacks_data = _build_profile_cards(visible_modpacks_items)
+            _apply_profile_collection_images(modpacks_data, resources_modpacks)
+
+            user_modpacks = {
+                'not_show_all': len(user_modpacks_items) > len(visible_modpacks_items),
+                'modpacks_data': modpacks_data
+            }
+        else:
+            user_modpacks = False
         
         profile_info['general']['editable'] = profile_access
 
-        page = handler.render("user.html", user_data=profile_info, user_mods=user_mods, profile_access=profile_access)
+        page = handler.render(
+            "user.html",
+            user_data=profile_info,
+            user_mods=user_mods,
+            user_modpacks=user_modpacks,
+            profile_access=profile_access,
+        )
 
         return handler.finish(page)
 

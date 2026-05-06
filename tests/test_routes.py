@@ -1552,6 +1552,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             fetch_results=[
                 (200, _profile_payload(7, "Alice")),
                 (200, {"items": []}),
+                (200, {"items": []}),
             ],
         )
 
@@ -1568,7 +1569,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("91%", handler.render_calls[0][1]["user_data"]["general"]["rating_summary"]["title"])
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
         self.assertEqual(handler.fetch_calls[1][0], "/mods?page_size=5&author_id=7&sort=-created_at")
-        self.assertEqual(len(handler.fetch_calls), 2)
+        self.assertEqual(handler.fetch_calls[2][0], "/modpacks?page_size=5&author_id=7&sort=-created_at")
+        self.assertEqual(len(handler.fetch_calls), 3)
+        self.assertFalse(handler.render_calls[0][1]["user_mods"])
+        self.assertFalse(handler.render_calls[0][1]["user_modpacks"])
 
     async def test_user_page_fetches_images_only_for_visible_mods(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
@@ -1595,9 +1599,31 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     200,
                     {
                         "items": [
+                            {"id": 81001, "name": "Pack Alpha", "rating": 77, "votes_count": 14},
+                            {"id": 81002, "name": "Pack Beta", "rating": 38, "votes_count": 6},
+                            {"id": 81003, "name": "Pack Gamma", "rating": 95, "votes_count": 9},
+                            {"id": 81004, "name": "Pack Delta", "rating": 12, "votes_count": 4},
+                            {"id": 81005, "name": "Pack Epsilon", "rating": 66, "votes_count": 5},
+                        ],
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
                             {"id": 1, "owner_id": 92405, "type": "logo", "url": "https://cdn.example/92405.webp"},
                             {"id": 2, "owner_id": 92406, "type": "logo", "url": "https://cdn.example/92406.webp"},
                             {"id": 3, "owner_id": 92407, "type": "logo", "url": "https://cdn.example/92407.webp"},
+                        ],
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 10, "owner_id": 81001, "type": "logo", "url": "https://cdn.example/pack81001.webp"},
+                            {"id": 11, "owner_id": 81003, "type": "logo", "url": "https://cdn.example/pack81003.webp"},
+                            {"id": 12, "owner_id": 81004, "type": "logo", "url": "https://cdn.example/pack81004.webp"},
                         ],
                     },
                 ),
@@ -1612,7 +1638,15 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.fetch_calls[1][0], "/mods?page_size=5&author_id=2&sort=-created_at")
         self.assertEqual(
             handler.fetch_calls[2][0],
+            "/modpacks?page_size=5&author_id=2&sort=-created_at",
+        )
+        self.assertEqual(
+            handler.fetch_calls[3][0],
             "/resources?page_size=10&owner_type=mods&owner_ids=92408&owner_ids=92407&owner_ids=92406&owner_ids=92405&types=logo",
+        )
+        self.assertEqual(
+            handler.fetch_calls[4][0],
+            "/resources?page_size=10&owner_type=modpacks&owner_ids=81001&owner_ids=81002&owner_ids=81003&owner_ids=81004&types=logo",
         )
         render_kwargs = handler.render_calls[0][1]
         self.assertTrue(render_kwargs["user_mods"]["not_show_all"])
@@ -1622,6 +1656,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][2]["img"], "https://cdn.example/92406.webp")
         self.assertEqual(render_kwargs["user_mods"]["mods_data"][3]["img"], "https://cdn.example/92405.webp")
         self.assertEqual([item["rating"] for item in render_kwargs["user_mods"]["mods_data"]], [12, -4, 0, 6])
+        self.assertTrue(render_kwargs["user_modpacks"]["not_show_all"])
+        self.assertEqual([item["id"] for item in render_kwargs["user_modpacks"]["modpacks_data"]], [81001, 81002, 81003, 81004])
+        self.assertEqual(render_kwargs["user_modpacks"]["modpacks_data"][0]["img"], "https://cdn.example/pack81001.webp")
+        self.assertEqual(render_kwargs["user_modpacks"]["modpacks_data"][1]["img"], main.DEFAULT_IMAGE_FALLBACK)
+        self.assertEqual(render_kwargs["user_modpacks"]["modpacks_data"][2]["img"], "https://cdn.example/pack81003.webp")
+        self.assertEqual(render_kwargs["user_modpacks"]["modpacks_data"][3]["img"], "https://cdn.example/pack81004.webp")
+        self.assertEqual(render_kwargs["user_modpacks"]["modpacks_data"][0]["rating_summary"]["label"], "В основном положительные")
 
     async def test_user_rating_history_route_fetches_profile_only(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
@@ -1645,6 +1686,20 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         render_kwargs = handler.render_calls[0][1]
         self.assertIs(render_kwargs["profile_access"], profile_access)
         self.assertNotIn("rating_history", render_kwargs)
+
+    def test_user_template_exposes_modpacks_panel(self) -> None:
+        template = (ROOT / "website/user.html").read_text(encoding="utf-8")
+        styles = (ROOT / "website/assets/styles/pages/user.css").read_text(encoding="utf-8")
+
+        self.assertIn("user-collections", template)
+        self.assertIn("user-collection-panel__title", template)
+        self.assertIn("Модпаки пользователя", template)
+        self.assertIn("user-modpack", template)
+        self.assertIn("user-collection-panel__view-button", template)
+        self.assertIn(".user-collections", styles)
+        self.assertIn(".user-collection-panel__title", styles)
+        self.assertIn(".user-collection-panel--truncated", styles)
+        self.assertIn(".user-modpack", styles)
 
     async def test_user_rating_history_route_uses_profile_meta_access(self) -> None:
         profile_access = {

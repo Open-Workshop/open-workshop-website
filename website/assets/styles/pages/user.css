@@ -1,5 +1,66 @@
 
-.outline-container > .element.user-mod {
+.user-collections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    width: 100%;
+    margin-top: 12px;
+    align-items: start;
+}
+
+.user-collection-panel {
+    min-width: 0;
+}
+
+.user-collection-panel__title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5pt;
+    width: 100%;
+    margin: 0;
+    text-align: center;
+}
+
+.user-collection-panel__view-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 25pt;
+    height: 25pt;
+    margin-left: 5pt;
+    padding: 0;
+    transition: all 0.1s;
+}
+
+.user-collection-panel__view-button:hover {
+    scale: 1.2;
+}
+
+.user-collection-panel__view-button:active {
+    scale: 0.9;
+}
+
+.user-collection-panel__view-button > img {
+    width: 25pt;
+}
+
+.user-collection-panel__empty {
+    width: 100%;
+    margin: 0;
+    text-align: center;
+}
+
+.user-collection-panel--truncated .user-mod:last-child,
+.user-collection-panel--truncated .user-modpack:last-child {
+    mask-image: linear-gradient(rgb(0 0 0 / 100%), transparent 85%);
+    margin-bottom: -10pt;
+    padding-bottom: 0;
+    pointer-events: none;
+}
+
+.outline-container > .element.user-mod,
+.outline-container > .element.user-modpack {
     display: grid;
     grid-template-columns: 50pt minmax(0, 1fr);
     grid-template-areas:
@@ -10,13 +71,15 @@
     align-items: start;
 }
 
-.outline-container > .element.user-mod > img {
+.outline-container > .element.user-mod > img,
+.outline-container > .element.user-modpack > img {
     grid-area: thumb;
     margin-right: 0;
     align-self: start;
 }
 
-.outline-container > .element.user-mod > p {
+.outline-container > .element.user-mod > p,
+.outline-container > .element.user-modpack > p {
     grid-area: title;
     margin: 0;
     color: white;
@@ -58,7 +121,8 @@ main.user > article {
     text-decoration: none;
 }
 
-.outline-container > .element.user-mod > .user-mod__meta {
+.outline-container > .element.user-mod > .user-mod__meta,
+.outline-container > .element.user-modpack > .user-mod__meta {
     grid-area: rating;
     display: block;
     width: auto;
@@ -76,7 +140,8 @@ main.user > article {
     overflow-wrap: anywhere;
 }
 
-.outline-container > .element.user-mod > .user-mod__meta > .user-mod__rating {
+.outline-container > .element.user-mod > .user-mod__meta > .user-mod__rating,
+.outline-container > .element.user-modpack > .user-mod__meta > .user-mod__rating {
     display: inline-block;
     max-width: 100%;
     margin: 0;
@@ -268,6 +333,10 @@ main.user > article {
         display: block;
     }
 
+    .user-collections {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .user-rating-history__header {
         flex-direction: column;
     }
@@ -294,5 +363,11 @@ main.user > article {
 
     .user-profile__actions {
         width: 100%;
+    }
+}
+
+@media (max-width: 900px) {
+    .user-collections {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
