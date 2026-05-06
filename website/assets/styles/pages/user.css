@@ -110,15 +110,95 @@ main.user > article {
 .user-profile__actions {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.user-profile__actions > .button-style {
+.user-profile__actions-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+}
+
+.user-profile__actions-dropdown::after {
+    content: "";
+    position: absolute;
+    left: -6px;
+    right: -6px;
+    top: 100%;
+    height: 12px;
+}
+
+.user-setting-gear {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+}
+
+.user-setting-gear > img {
+    width: 40px;
+    transition: rotate 300ms;
+}
+
+.user-setting-gear:hover > img,
+.user-setting-gear:focus-visible > img {
+    rotate: 90deg;
+}
+
+.user-profile__actions-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 220px;
+    padding: 10px;
+    border: 1px solid rgba(110, 122, 164, 0.42);
+    border-radius: var(--radius-md);
+    background: rgba(11, 14, 22, 0.96);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.38);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 0.12s ease, transform 0.12s ease, visibility 0.12s ease;
+}
+
+.user-profile__actions-dropdown:hover .user-profile__actions-popup,
+.user-profile__actions-dropdown:focus-within .user-profile__actions-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.user-profile__actions-popup > .button-style {
+    width: 100%;
+    justify-content: center;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (hover: none) {
+    .user-profile__actions-dropdown {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .user-profile__actions-popup {
+        position: static;
+        margin-top: 8px;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        pointer-events: auto;
+    }
 }
 
 .outline-container > .element.user-mod > .user-mod__meta,
@@ -363,6 +443,10 @@ main.user > article {
 
     .user-profile__actions {
         width: 100%;
+    }
+
+    .user-profile__actions-popup {
+        min-width: 200px;
     }
 }
 

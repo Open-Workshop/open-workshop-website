@@ -25,16 +25,23 @@
           {{ user_data.general.username }}{% if user_data.general.grade|length >0 %} <a title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ user_data.general.grade }}</a>{% endif %} 
         </div>
         <div class="user-profile__actions">
-          {% if profile_access.info.meta.value %}
-          <a href="/user/{{ user_data.general.id }}/rating/history" class="button-style button-style-small user-rating-history__button">История голосов</a>
-          {% endif %}
-          {% if profile_access.edit.rights.value %}
-          <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true&trigger=edit" class="button-style button-style-small user-admin-mods">Моды пользователя</a>
-          {% endif %}
           {% if profile_access.any %}
-          <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding">
-            <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
-          </a>
+          <div class="user-profile__actions-dropdown">
+            <a href="/user/{{ user_data.general.id }}/settings" class="user-setting-gear no-padding" title="Перейти в настройки" aria-label="Перейти в настройки">
+              <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
+            </a>
+            {% if profile_access.info.meta.value or profile_access.edit.rights.value %}
+            <div class="user-profile__actions-popup" role="menu" aria-label="Быстрые действия профиля">
+              {% if profile_access.info.meta.value %}
+              <a href="/user/{{ user_data.general.id }}/rating/history" class="button-style button-style-small user-rating-history__button" role="menuitem">История голосов</a>
+              {% endif %}
+              {% if profile_access.edit.rights.value %}
+              <a href="/user/{{ user_data.general.id }}/mods?show_not_public=true&trigger=edit" class="button-style button-style-small user-admin-mods" role="menuitem">Моды пользователя</a>
+              <a href="/user/{{ user_data.general.id }}/modpacks?show_not_public=true&trigger=edit" class="button-style button-style-small user-admin-modpacks" role="menuitem">Модпаки пользователя</a>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
           {% endif %}
         </div>
       </h1>

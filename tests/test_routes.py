@@ -1701,6 +1701,21 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(".user-collection-panel--truncated", styles)
         self.assertIn(".user-modpack", styles)
 
+    def test_user_template_exposes_profile_actions_popup(self) -> None:
+        template = (ROOT / "website/user.html").read_text(encoding="utf-8")
+        styles = (ROOT / "website/assets/styles/pages/user.css").read_text(encoding="utf-8")
+
+        self.assertIn("user-profile__actions-dropdown", template)
+        self.assertIn("user-profile__actions-popup", template)
+        self.assertIn('role="menu"', template)
+        self.assertIn('role="menuitem"', template)
+        self.assertIn("Модпаки пользователя", template)
+        self.assertIn("user-admin-modpacks", template)
+        self.assertIn(".user-profile__actions-dropdown::after", styles)
+        self.assertIn(".user-profile__actions-dropdown:hover .user-profile__actions-popup", styles)
+        self.assertIn(".user-profile__actions-popup", styles)
+        self.assertIn(".user-setting-gear > img", styles)
+
     async def test_user_rating_history_route_uses_profile_meta_access(self) -> None:
         profile_access = {
             "authenticated": True,
