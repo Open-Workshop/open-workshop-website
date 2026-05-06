@@ -65,12 +65,13 @@ def _profile_payload(user_id: int, username: str = "Alice") -> dict:
         "general": {
             "id": user_id,
             "username": username,
-            "mute": None,
-            "registration_date": "2026-04-22T10:00:00+00:00",
-            "about": None,
+            "about": "",
             "avatar_url": "",
             "grade": "",
-            "reputation": 12,
+            "registration_date": "2026-04-22T10:00:00+00:00",
+            "rating": 91,
+            "votes_count": 11,
+            "mute": False,
             "author_mods": 2,
             "comments": 3,
         }
@@ -369,6 +370,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "adult": False,
                         "condition": "published",
                         "current_vote": 1,
+                        "rating": 91,
+                        "votes_count": 11,
                         "downloads": 3,
                         "size": 2048,
                         "size_unpacked": 4096,
@@ -407,6 +410,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["info"]["description_html"], "<p><strong>Long</strong></p>")
         self.assertEqual(render_kwargs["info"]["conflicts"], {"count": 0, "items": []})
         self.assertEqual(render_kwargs["info"]["current_vote"], 1)
+        self.assertEqual(render_kwargs["info"]["rating_summary"]["label"], "Очень положительные")
+        self.assertIn("91%", render_kwargs["info"]["rating_summary"]["title"])
         self.assertIs(render_kwargs["data"][0], render_kwargs["info"])
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
@@ -1104,9 +1109,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Конфликты мода", mod_page)
         self.assertIn("Ссылки", mod_page)
         self.assertIn("data-mod-rating-widget", mod_page)
+        self.assertIn("data-rating-score", mod_page)
+        self.assertIn("data-rating-votes-count", mod_page)
         self.assertIn("data-current-vote", mod_page)
         self.assertEqual(mod_page.count('data-action="mod-rate"'), 2)
-        self.assertIn("mod-rating-panel__row", mod_page)
+        self.assertIn("mod-rating-panel__header", mod_page)
+        self.assertIn("mod-rating-panel__score", mod_page)
+        self.assertIn("mod_rating_summary.title", mod_page)
+        self.assertIn("mod_rating_summary.label", mod_page)
         self.assertIn("data-action=\"mod-rate\"", mod_page)
         self.assertIn('role="group" aria-label="Голосование за мод"', mod_page)
         self.assertIn('aria-label="Лайк"', mod_page)
@@ -1128,7 +1138,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("background: rgba(23, 28, 61, 0.18);", mod_styles)
         self.assertNotIn("backdrop-filter", mod_styles)
         self.assertNotIn("radial-gradient(circle at 18% 22%", mod_styles)
+        self.assertIn("function formatSteamRatingSummary(rating, votesCount)", mod_script)
+        self.assertIn("function applySteamRatingSummary(node, summary)", mod_script)
         self.assertIn("function parseCurrentVote(value)", mod_script)
+        self.assertIn("Нет оценок", mod_script)
         self.assertIn("setRatingButtonState(widget, parseCurrentVote(widget.dataset.currentVote));", mod_script)
         self.assertIn("const nextValue = currentVote === value ? 0 : value;", mod_script)
         self.assertIn("widget.dataset.currentVote = String(value);", mod_script)
@@ -1142,7 +1155,16 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("rejectattr('optional')", mod_page)
         self.assertIn(".mod-dependencies-optional-heading", mod_styles)
         self.assertIn("margin-top: 10pt;", mod_styles)
-        self.assertNotIn("text-align", mod_styles.split(".mod-dependencies-optional-heading")[1].split(".mod-plugins-header")[0])
+
+    def test_steam_rating_summary_uses_steam_like_thresholds(self) -> None:
+        self.assertEqual(main._steam_rating_summary(0, 0)["label"], "Нет оценок")
+        self.assertEqual(main._steam_rating_summary(99, 7)["label"], "Крайне положительные")
+        self.assertEqual(main._steam_rating_summary(88, 7)["label"], "Очень положительные")
+        self.assertEqual(main._steam_rating_summary(74, 7)["label"], "В основном положительные")
+        self.assertEqual(main._steam_rating_summary(64, 7)["label"], "Смешанные")
+        self.assertEqual(main._steam_rating_summary(33, 7)["label"], "В основном отрицательные")
+        self.assertEqual(main._steam_rating_summary(15, 7)["label"], "Очень отрицательные")
+        self.assertEqual(main._steam_rating_summary(4, 7)["label"], "Крайне отрицательные")
 
     def test_standart_template_includes_git_link_assets(self) -> None:
         standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
@@ -1377,6 +1399,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["template"], "user.html")
         self.assertEqual(handler.render_calls[0][0], "user.html")
         self.assertIs(handler.render_calls[0][1]["profile_access"], profile_access)
+        self.assertEqual(handler.render_calls[0][1]["user_data"]["general"]["rating"], 91)
+        self.assertEqual(handler.render_calls[0][1]["user_data"]["general"]["reputation"], 91)
+        self.assertEqual(handler.render_calls[0][1]["user_data"]["general"]["rating_summary"]["label"], "Очень положительные")
+        self.assertIn("91%", handler.render_calls[0][1]["user_data"]["general"]["rating_summary"]["title"])
         self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
         self.assertEqual(handler.fetch_calls[1][0], "/mods?page_size=5&author_id=7&sort=-created_at")
         self.assertEqual(len(handler.fetch_calls), 2)

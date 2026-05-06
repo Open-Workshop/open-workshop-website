@@ -44,12 +44,76 @@
     return fallback;
   }
 
-  function formatRatingValue(value) {
+  function coerceNumber(value, fallback) {
     const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
-      return String(value || 0);
+    return Number.isFinite(numericValue) ? numericValue : (fallback || 0);
+  }
+
+  function pluralizeRu(value, forms) {
+    const normalizedValue = Math.abs(Math.trunc(value));
+    if (normalizedValue % 10 === 1 && normalizedValue % 100 !== 11) {
+      return forms[0];
     }
-    return numericValue > 0 ? `+${numericValue}` : String(numericValue);
+    if (normalizedValue % 10 >= 2 && normalizedValue % 10 <= 4 && (normalizedValue % 100 < 10 || normalizedValue % 100 >= 20)) {
+      return forms[1];
+    }
+    return forms[2];
+  }
+
+  function formatSteamRatingSummary(rating, votesCount) {
+    const votesValue = Math.max(0, Math.trunc(coerceNumber(votesCount, 0)));
+    const ratingValue = Math.max(0, Math.min(100, Math.trunc(coerceNumber(rating, 0))));
+
+    if (votesValue <= 0) {
+      return {
+        label: 'Нет оценок',
+        title: 'Нет оценок',
+        rating: 0,
+        votesCount: 0,
+        tone: 'none',
+      };
+    }
+
+    let label;
+    let tone;
+
+    if (ratingValue >= 95) {
+      label = 'Крайне положительные';
+      tone = 'positive-extreme';
+    } else if (ratingValue >= 80) {
+      label = 'Очень положительные';
+      tone = 'positive-strong';
+    } else if (ratingValue >= 70) {
+      label = 'В основном положительные';
+      tone = 'positive';
+    } else if (ratingValue >= 40) {
+      label = 'Смешанные';
+      tone = 'mixed';
+    } else if (ratingValue >= 20) {
+      label = 'В основном отрицательные';
+      tone = 'negative';
+    } else if (ratingValue >= 10) {
+      label = 'Очень отрицательные';
+      tone = 'negative-strong';
+    } else {
+      label = 'Крайне отрицательные';
+      tone = 'negative-extreme';
+    }
+
+    return {
+      label,
+      title: `${label} · ${ratingValue}% · ${votesValue} ${pluralizeRu(votesValue, ['голос', 'голоса', 'голосов'])}`,
+      rating: ratingValue,
+      votesCount: votesValue,
+      tone,
+    };
+  }
+
+  function applySteamRatingSummary(node, summary) {
+    if (!(node instanceof Element)) return;
+    node.textContent = summary.label;
+    node.title = summary.title;
+    node.setAttribute('aria-label', summary.title);
   }
 
   function setRatingButtonState(widget, activeValue) {
@@ -115,14 +179,21 @@
       }
 
       const payload = result.data && typeof result.data === 'object' ? result.data : {};
-      if (ratingValueNode && payload.rating !== undefined) {
-        ratingValueNode.textContent = formatRatingValue(payload.rating);
+      const summary = formatSteamRatingSummary(
+        payload.rating !== undefined ? payload.rating : widget.dataset.ratingScore,
+        payload.votes_count !== undefined ? payload.votes_count : widget.dataset.ratingVotesCount,
+      );
+
+      if (ratingValueNode) {
+        applySteamRatingSummary(ratingValueNode, summary);
       }
+      widget.dataset.ratingScore = String(summary.rating);
+      widget.dataset.ratingVotesCount = String(summary.votesCount);
       widget.dataset.currentVote = String(value);
       setRatingButtonState(widget, value);
       showToast(
         value === 0 ? 'Голос снят' : 'Голос сохранён',
-        payload.rating !== undefined ? `Текущий рейтинг: ${formatRatingValue(payload.rating)}` : 'Голос учтен',
+        payload.rating !== undefined ? `Текущий рейтинг: ${summary.label}` : 'Голос учтен',
         'success',
       );
     } catch (error) {
@@ -137,6 +208,14 @@
     if (!widget) return;
 
     setRatingButtonState(widget, parseCurrentVote(widget.dataset.currentVote));
+
+    const ratingValueNode = widget.querySelector('[data-mod-rating-value]');
+    if (ratingValueNode) {
+      applySteamRatingSummary(
+        ratingValueNode,
+        formatSteamRatingSummary(widget.dataset.ratingScore, widget.dataset.ratingVotesCount),
+      );
+    }
 
     widget.querySelectorAll('[data-action="mod-rate"]').forEach(function (button) {
       button.addEventListener('click', function () {

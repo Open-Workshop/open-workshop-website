@@ -3,6 +3,7 @@
 <link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
 {% set mod_git_url = info.get('git_url') or '' %}
 {% set current_vote = info.get('current_vote') %}
+{% set mod_rating_summary = info.rating_summary %}
 
 <main class="mod">
     <div class="info-text">
@@ -59,16 +60,15 @@
             class="outline-container mod-rating-panel"
             data-mod-rating-widget
             data-mod-id="{{ info['id'] }}"
+            data-rating-score="{{ mod_rating_summary.rating }}"
+            data-rating-votes-count="{{ mod_rating_summary.votes_count }}"
             data-current-vote="{% if current_vote is not none %}{{ current_vote }}{% endif %}"
             data-can-vote="{% if vote_access and vote_access.vote_for_reputation.value %}true{% else %}false{% endif %}"
             data-vote-reason="{% if vote_access and vote_access.vote_for_reputation.value %}{% else %}{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать' }}{% endif %}"
         >
             {% set can_vote = vote_access and vote_access.vote_for_reputation.value %}
-            <h2>Рейтинг</h2>
-            <div class="mod-rating-panel__row">
-                <div class="mod-rating-panel__score" data-mod-rating-value aria-live="polite">
-                    {% if info['rating'] > 0 %}+{% endif %}{{ info['rating'] }}
-                </div>
+            <div class="mod-rating-panel__header">
+                <h2>Рейтинг</h2>
                 <div class="mod-rating-panel__actions{% if not can_vote %} mod-rating-panel__actions--locked{% endif %}" role="group" aria-label="Голосование за мод">
                     <button
                         type="button"
@@ -98,6 +98,9 @@
                     </div>
                     {% endif %}
                 </div>
+            </div>
+            <div class="mod-rating-panel__score" data-mod-rating-value title="{{ mod_rating_summary.title }}" aria-label="{{ mod_rating_summary.title }}" aria-live="polite">
+                {{ mod_rating_summary.label }}
             </div>
         </div>
 

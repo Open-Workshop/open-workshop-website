@@ -2,6 +2,8 @@
 {% block content %}
 <link href="/assets/styles/pages/user.css" rel="stylesheet"/>
 
+{% set profile_rating_summary = user_data.general.rating_summary %}
+
 <main class="user">
   <div class="user-profile">
     <div class="user-left-bar">
@@ -37,11 +39,8 @@
       </h1>
       <h4 id="mod-tags-title">
           <a title="Дата регистрации" id="date_creation_a_tag" datejs="" class="tag-link" translate="no">📝{{ user_data.general.registration_date }}</a>
-          <div title="Репутация пользователя: {{ user_data.general.reputation }}" class="tag-link-blue" translate="no">
-            {% if user_data.general.reputation < 0 %}👿{% endif %}
-            {% if user_data.general.reputation > 0 %}😇{% endif %}
-            <a class="tag-link" translate="no">{{ user_data.general.reputation }}</a>
-            {% if user_data.general.reputation == 0 %}👀{% endif %}
+          <div title="{{ profile_rating_summary.title }}" class="tag-link-blue user-rating-summary" translate="no">
+            {{ profile_rating_summary.label }}
           </div>
 
           {% if user_data.general.author_mods > 0 %}
@@ -98,7 +97,7 @@
       <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
       <p translate="no">{{ item.name }}</p>
       <div class="user-mod__meta">
-        <span class="tag-link-blue user-mod__rating" title="Рейтинг мода" translate="no">{% if item.rating > 0 %}+{% endif %}{{ item.rating }}</span>
+        <span class="tag-link-blue user-mod__rating" title="{{ item.rating_summary.title }}" translate="no">{{ item.rating_summary.label }}</span>
       </div>
     </a>
     {% endfor %}

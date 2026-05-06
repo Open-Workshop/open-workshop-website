@@ -111,6 +111,66 @@ def _ensure_profile_payload(payload):
     return {"general": payload}
 
 
+def _coerce_int(value, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _pluralize_ru(value: int, forms: tuple[str, str, str]) -> str:
+    normalized_value = abs(int(value))
+    if normalized_value % 10 == 1 and normalized_value % 100 != 11:
+        return forms[0]
+    if normalized_value % 10 in {2, 3, 4} and normalized_value % 100 not in {12, 13, 14}:
+        return forms[1]
+    return forms[2]
+
+
+def _steam_rating_summary(rating, votes_count) -> dict:
+    votes_value = max(0, _coerce_int(votes_count))
+    rating_value = max(0, min(100, _coerce_int(rating)))
+
+    if votes_value <= 0:
+        return {
+            "label": "Нет оценок",
+            "title": "Нет оценок",
+            "rating": 0,
+            "votes_count": 0,
+            "tone": "none",
+        }
+
+    if rating_value >= 95:
+        label = "Крайне положительные"
+        tone = "positive-extreme"
+    elif rating_value >= 80:
+        label = "Очень положительные"
+        tone = "positive-strong"
+    elif rating_value >= 70:
+        label = "В основном положительные"
+        tone = "positive"
+    elif rating_value >= 40:
+        label = "Смешанные"
+        tone = "mixed"
+    elif rating_value >= 20:
+        label = "В основном отрицательные"
+        tone = "negative"
+    elif rating_value >= 10:
+        label = "Очень отрицательные"
+        tone = "negative-strong"
+    else:
+        label = "Крайне отрицательные"
+        tone = "negative-extreme"
+
+    return {
+        "label": label,
+        "title": f"{label} · {rating_value}% · {votes_value} {_pluralize_ru(votes_value, ('голос', 'голоса', 'голосов'))}",
+        "rating": rating_value,
+        "votes_count": votes_value,
+        "tone": tone,
+    }
+
+
 def _chunked(values, chunk_size: int):
     for index in range(0, len(values), chunk_size):
         yield values[index:index + chunk_size]
@@ -198,6 +258,16 @@ def _prepare_profile_page_payload(profile_info, user_id: int, launge: str) -> di
     input_date = parse_api_datetime(profile_info['general']['registration_date'])
     profile_info['general']['registration_date_js'] = format_js_datetime(input_date)
     profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+
+    profile_info['general']['rating'] = _coerce_int(profile_info['general'].get('rating'))
+    profile_info['general']['votes_count'] = _coerce_int(profile_info['general'].get('votes_count'))
+
+    # Backward-compatible alias for older templates and snippets.
+    profile_info['general']['reputation'] = profile_info['general']['rating']
+    profile_info['general']['rating_summary'] = _steam_rating_summary(
+        profile_info['general']['rating'],
+        profile_info['general']['votes_count'],
+    )
 
     if profile_info['general']['about'] is None or len(profile_info['general']['about']) <= 0:
         profile_info['general']['about_enable'] = False
@@ -891,6 +961,12 @@ async def mod_view_and_edit(mod_id):
         info_result["short_description"] = str(info_result.get("short_description") or "")
         info_result["description"] = str(info_result.get("description") or "")
         info_result["description_html"] = render_description_html(info_result["description"])
+        info_result["rating"] = _coerce_int(info_result.get("rating"))
+        info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
+        info_result["rating_summary"] = _steam_rating_summary(
+            info_result["rating"],
+            info_result["votes_count"],
+        )
 
         mods_list_path = app_config.api_path("mod", "list")
         resources_list_path = app_config.api_path("resource", "list")
@@ -1358,7 +1434,12 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
     info_result["size"] = ""
     info_result["size_unpacked"] = ""
     info_result["downloads"] = int(info_result.get("downloads") or 0)
-    info_result["rating"] = int(info_result.get("rating") or 0)
+    info_result["rating"] = _coerce_int(info_result.get("rating"))
+    info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
+    info_result["rating_summary"] = _steam_rating_summary(
+        info_result["rating"],
+        info_result["votes_count"],
+    )
     info_result["logo"] = DEFAULT_IMAGE_FALLBACK
     info_result["no_many_screenshots"] = True
     info_result["dependencies"] = {"count": 0, "items": []}
@@ -1446,7 +1527,9 @@ async def user(user_id):
                    'id': int(i['id']),
                    'name': i['name'],
                    'img': DEFAULT_IMAGE_FALLBACK,
-                   'rating': int(i.get('rating', 0) or 0),
+                   'rating': _coerce_int(i.get('rating')),
+                   'votes_count': _coerce_int(i.get('votes_count')),
+                   'rating_summary': _steam_rating_summary(i.get('rating'), i.get('votes_count')),
                 }
                 for i in visible_mods_items
             ]
