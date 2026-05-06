@@ -11,13 +11,13 @@
     <meta property="og:site_name" content="Open Workshop" />
     <meta property="og:title" content="{{ self.title() }}">
     <meta property="og:description" content="{{ self.description() }}">
-    {% if is_mod_data %}
+    {% if is_mod_data or is_modpack_data %}
     <meta property="og:image" content="{% block metaimage %}{% endblock %}">
-    <meta property="og:image:alt" content="Logo of mod" />
+    <meta property="og:image:alt" content="{% if is_modpack_data %}Logo of modpack{% else %}Logo of mod{% endif %}" />
     <meta property="og:type" content="article" />
     <meta property="article:published_time" content="{% block published_time %}{% endblock %}" />
     <meta property="article:modified_time" content="{% block modified_time %}{% endblock %}" />
-    <link rel="canonical" href="https://openworkshop.miskler.ru/mod/{{ data[0]['id'] }}">
+    <link rel="canonical" href="https://openworkshop.miskler.ru/{% if is_modpack_data %}modpack{% else %}mod{% endif %}/{{ data[0]['id'] }}">
     {% endif %}
     {% if is_user_data %}
     <meta property="og:image" content="{{ is_user_data['logo'] }}">

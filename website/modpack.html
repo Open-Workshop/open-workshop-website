@@ -1,0 +1,196 @@
+{% extends 'html-partials/standart.html' %}
+{% block content %}
+<link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
+<link href="/assets/styles/pages/modpack.css" rel="stylesheet"/>
+
+{% set modpack_rating_summary = info.rating_summary %}
+
+<main class="mod modpack-page">
+    <div class="info-text">
+        <div id="title-bar">
+            <h1 id="mod-name-title" translate="no">{{ info['name'] }}{% if info['public'] != 0 %} <a title="Тип публичности" class="tag-link-red" translate="no">{% if info['public'] == 2 %}непубличен{% endif %}{% if info['public'] == 1 %}по ссылке{% endif %}</a>{% endif %}</h1>
+
+            {% if right_edit['edit'] %}
+            <a href="/modpack/{{ info['id'] }}/edit" id="mod-setting-gear">
+                <img src="/assets/images/svg/white/gear.svg" alt="Перейти в настройки">
+            </a>
+            {% endif %}
+        </div>
+
+        <div id="mod-tags-title">
+            <a id="mod-for-game-label" title="Модпак для этой игры" href="/?game={{ info['game']['id'] }}&game_select=false" class="tag-link-green" translate="no">🎮{{ info['game']['name'] }}</a>
+            <a title="Кол-во загрузок" class="tag-link-orange" translate="no">📥{{ info['downloads'] }}</a>
+            <a title="Модов в модпаке" class="tag-link-blue" translate="no">🧩{{ modpack_mods|length }}</a>
+
+            {% if info['date_update_file_js'] != info['date_creation_js'] %}
+            <a title="Последнее обновление" id="date_update_a_tag" datejs="{{ info['date_update_file_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">⏳{{ info['date_update_file'] }}</a>
+            {% endif %}
+
+            <a title="Дата появления" id="date_creation_a_tag" datejs="{{ info['date_creation_js'] }}" class="tag-link" translate="no" data-relative-time="ago" data-relative-prefix="(" data-relative-suffix=" назад)" data-relative-class="ow-relative-time-badge ow-relative-time-badge--inline">📝{{ info['date_creation'] }}</a>
+
+        </div>
+
+        <article id="mod-description" class="ow-description-content">
+        {{ info['description_html']|safe }}
+        </article>
+
+        <div class="outline-container modpack-mods-panel" data-modpack-download-widget>
+        <div class="modpack-mods-panel__header">
+            <h2>Моды в модпаке</h2>
+            <div class="modpack-mods-panel__actions">
+                <button
+                    type="button"
+                    class="download-button modpack-download-selected"
+                    data-modpack-download-selected
+                    {% if not modpack_mods %}disabled{% endif %}
+                >Скачать выбранное</button>
+                <div class="modpack-mods-panel__select-all">
+                    <label>
+                        <input type="checkbox" data-modpack-select-all aria-label="Выбрать все моды">
+                        <span>Все моды</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        {% if modpack_mods %}
+        {% for item in modpack_mods %}
+            <div class="element modpack-mod" data-modpack-card>
+                <a class="modpack-mod__main" href="/mod/{{ item.id }}">
+                    <img src="{{ item.img or ow.assets.images.fallback }}" data-fallback-src="{{ ow.assets.images.fallback }}" alt="Логотип мода">
+                    <p translate="no">{{ item.name }}</p>
+                </a>
+                <label class="modpack-mod__select">
+                    <input
+                        type="checkbox"
+                        data-modpack-select-item
+                        value="{{ item.id }}"
+                        aria-label="Выбрать мод {{ item.name }}"
+                        title="Выбрать мод"
+                    >
+                    <span>Выбрать</span>
+                </label>
+            </div>
+        {% endfor %}
+        {% else %}
+        <p class="ow-muted modpack-mods-panel__empty">В модпаке пока нет модов.</p>
+        {% endif %}
+        </div>
+
+        <script src="/assets/scripts/mod.js"></script>
+    </div>
+
+    <div class="right-bar">
+        {% if resources['items']|length > 0 %}
+        <div class="slider{% if info['no_many_screenshots'] %} one_slider{% endif %}">
+            <ul class="js__slider__images slider__images" data-photoswipe-gallery>
+            {% for item in resources['items'] %}
+                <a href="{{ item['url'] or ow.assets.images.fallback }}" class="slider__images-item without-caption image-link">
+                <img src="{{ item['url'] or ow.assets.images.fallback }}" alt="Скриншот модпака" class="slider__images-image" data-fallback-src="{{ ow.assets.images.fallback }}" />
+                </a>
+            {% endfor %}
+            </ul>
+
+            {% if info["no_many_screenshots"] == false %}
+            <div class="slider__controls">
+            <ol class="js__slider__pagers slider__pagers"></ol>
+            </div>
+            {% endif %}
+        </div>
+        <script src="/assets/scripts/images-list.js"></script>
+        {% endif %}
+
+
+        <div
+            class="outline-container mod-rating-panel"
+            data-mod-rating-widget
+            data-entity-kind="modpack"
+            data-mod-id="{{ info['id'] }}"
+            data-rating-score="{{ modpack_rating_summary.rating }}"
+            data-rating-votes-count="{{ modpack_rating_summary.votes_count }}"
+            data-current-vote="{% if info.get('current_vote') is not none %}{{ info.get('current_vote') }}{% endif %}"
+            data-can-vote="{% if vote_access and vote_access.vote_for_reputation.value %}true{% else %}false{% endif %}"
+            data-vote-reason="{% if vote_access and vote_access.vote_for_reputation.value %}{% else %}{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать' }}{% endif %}"
+        >
+            {% set can_vote = vote_access and vote_access.vote_for_reputation.value %}
+            <div class="mod-rating-panel__header">
+                <h2>Рейтинг</h2>
+                <div class="mod-rating-panel__actions{% if not can_vote %} mod-rating-panel__actions--locked{% endif %}" role="group" aria-label="Голосование за модпак">
+                    <button
+                        type="button"
+                        class="mod-rating-panel__button"
+                        data-action="mod-rate"
+                        data-value="1"
+                        title="Лайк"
+                        aria-label="Лайк"
+                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
+                    >
+                        <span class="mod-rating-panel__glyph" aria-hidden="true">👍</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="mod-rating-panel__button"
+                        data-action="mod-rate"
+                        data-value="-1"
+                        title="Дизлайк"
+                        aria-label="Дизлайк"
+                        {% if not vote_access or not vote_access.vote_for_reputation.value %}disabled{% endif %}
+                    >
+                        <span class="mod-rating-panel__glyph" aria-hidden="true">👎</span>
+                    </button>
+                    {% if not can_vote %}
+                    <div class="mod-rating-panel__overlay" role="status" aria-live="polite">
+                        <span class="mod-rating-panel__overlay-text">{{ vote_access.vote_for_reputation.reason if vote_access else 'Войдите, чтобы голосовать.' }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mod-rating-panel__score" data-mod-rating-value title="{{ modpack_rating_summary.title }}" aria-label="{{ modpack_rating_summary.title }}" aria-live="polite">
+                {{ modpack_rating_summary.label }}
+            </div>
+        </div>
+
+        {% if tags | length > 0 %}
+        <div class="outline-container">
+        {% for item in tags %}
+            <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег модпака: {{ item.name }}"><h3 translate="no">{{ item.name }}</h3></a>
+        {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if authors | length > 0 %}
+        <div class="outline-container">
+        <h2>Авторы</h2>
+        {% for item in authors %}
+            <a class="element user-author" {% if item.owner %}title="Создатель модпака" style="background: #200202;"{% endif %} href="/user/{{ item.id }}">
+                <img src="{{ ow.api.base }}{{ ow.api.paths.profile.avatar.path.format(user_id=item.id) }}" alt="Аватар пользователя" data-fallback-src="/assets/images/no-avatar.jpg">
+                <p translate="no">{{ item.username }} {% if item.grade|length >0 %}<grade title="Звание пользователя (за определенные заслуги)" style="padding-top: 0; padding-bottom: 0;" class="tag-link-red" translate="no">{{ item.grade }}</grade>{% endif %}</p>
+            </a>
+        {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}
+
+{% block title %}
+{{ info['name'] }} - Open Modpack
+{% endblock %}
+
+{% block description %}
+{{ info['short_description'] }}
+{% endblock %}
+
+
+{% block metaimage %}
+{{ info["logo"] }}
+{% endblock %}
+
+{% block published_time %}
+{{ info["date_creation"] }}
+{% endblock %}
+
+{% block modified_time %}
+{{ info["date_update_file"] }}
+{% endblock %}

@@ -391,6 +391,8 @@ async def _load_mod_cards_by_ids(
 
     names_by_id = {}
     images_by_id = {}
+    rating_by_id: dict[int, int] = {}
+    votes_count_by_id: dict[int, int] = {}
 
     for mods_result, resources_result in batch_results:
         mods_status_code, mods_info = mods_result
@@ -403,7 +405,10 @@ async def _load_mod_cards_by_ids(
                 if mod_id is None:
                     continue
 
-                names_by_id[int(mod_id)] = mod_info.get("name", "")
+                normalized_mod_id = int(mod_id)
+                names_by_id[normalized_mod_id] = mod_info.get("name", "")
+                rating_by_id[normalized_mod_id] = _coerce_int(mod_info.get("rating"))
+                votes_count_by_id[normalized_mod_id] = _coerce_int(mod_info.get("votes_count"))
 
         resources_status_code, resources_info = resources_result
         if resources_status_code == 200 and isinstance(resources_info, dict):
@@ -420,6 +425,8 @@ async def _load_mod_cards_by_ids(
 
     cards = {}
     for mod_id in ordered_ids:
+        rating_value = rating_by_id.get(mod_id, 0)
+        votes_count_value = votes_count_by_id.get(mod_id, 0)
         cards[mod_id] = {
             "id": mod_id,
             "img": images_by_id.get(mod_id) or DEFAULT_IMAGE_FALLBACK,
@@ -427,6 +434,9 @@ async def _load_mod_cards_by_ids(
             "optional": optional_by_id.get(mod_id, False),
             "auto_added": auto_added_by_id.get(mod_id, False),
             "sort_order": sort_order_by_id.get(mod_id, 0),
+            "rating": rating_value,
+            "votes_count": votes_count_value,
+            "rating_summary": _steam_rating_summary(rating_value, votes_count_value),
         }
 
     return cards
@@ -817,7 +827,9 @@ async def mod_view_and_edit(mod_id):
             return handler.finish(page), 403
 
         if is_modpack_route:
-            return await _render_modpack_edit_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
+            if edit_page:
+                return await _render_modpack_edit_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
+            return await _render_modpack_view_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
 
         # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
@@ -1472,6 +1484,180 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
 
     return handler.finish(page_html)
 
+
+async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_mod, profile_vote_access):
+    launge = "ru"
+
+    info_path = app_config.api_path("modpack", "info").format(modpack_id=modpack_id)
+    info_code, info = await handler.fetch(info_path)
+
+    if info_code != 200 or not isinstance(info, dict):
+        return _render_api_error(handler, info, info_code)
+
+    info_result = info
+
+    created_at = info_result.get("created_at")
+    if created_at:
+        input_date = parse_api_datetime(created_at)
+        info_result["date_creation_js"] = format_js_datetime(input_date)
+        info_result["date_creation"] = dates.format_date(input_date, locale=launge)
+    else:
+        info_result["date_creation_js"] = ""
+        info_result["date_creation"] = ""
+
+    updated_at = info_result.get("updated_at") or created_at
+    if updated_at:
+        input_date = parse_api_datetime(updated_at)
+        info_result["date_update_file_js"] = format_js_datetime(input_date)
+        info_result["date_update_file"] = dates.format_date(input_date, locale=launge)
+    else:
+        info_result["date_update_file_js"] = info_result["date_creation_js"]
+        info_result["date_update_file"] = info_result["date_creation"]
+
+    game_id = info_result.get("game_id")
+    if game_id:
+        game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
+        game_code, game_info = await handler.fetch(game_info_path)
+        if game_code == 200 and isinstance(game_info, dict):
+            info_result["game"] = game_info
+        else:
+            info_result["game"] = {"id": int(game_id), "name": f"Игра #{game_id}"}
+    else:
+        info_result["game"] = {"id": 0, "name": "Игра не указана"}
+
+    def _normalize_picker_items(payload, fallback_key: str | None = None) -> list[dict]:
+        if isinstance(payload, dict):
+            if str(modpack_id) in payload:
+                payload = payload[str(modpack_id)]
+            elif "items" in payload or "results" in payload:
+                payload = _collection_items(payload)
+            elif fallback_key and isinstance(payload.get(fallback_key), list):
+                payload = payload[fallback_key]
+            else:
+                payload = []
+
+        if isinstance(payload, list):
+            return [item for item in payload if isinstance(item, dict)]
+
+        return []
+
+    resources_items = _normalize_picker_items(info_result.get("resources"))
+    resources = {"items": list(resources_items)}
+    logo_item = None
+    logo_url = str(info_result.get("logo", "") or "")
+    for image in resources_items:
+        if image.get("type") == "logo" and image.get("url"):
+            logo_url = image["url"]
+            logo_item = image
+            break
+
+    if not logo_url:
+        for image in resources_items:
+            if image.get("url"):
+                logo_url = image["url"]
+                break
+
+    info_result["logo"] = logo_url or DEFAULT_IMAGE_FALLBACK
+
+    if logo_item:
+        resources["items"] = [logo_item] + [item for item in resources_items if item is not logo_item]
+
+    info_result["no_many_screenshots"] = len(resources_items) <= 1
+
+    tags = _normalize_picker_items(info_result.get("tags"), "tags")
+
+    authors = []
+    authors_source = info_result.get("authors") or {}
+    if isinstance(authors_source, dict) and len(authors_source) > 0:
+        profile_info_path = app_config.api_path("profile", "info")
+        authors_info = await asyncio.gather(
+            *[handler.fetch(profile_info_path.format(user_id=author)) for author in authors_source]
+        )
+
+        for status_code, author in authors_info:
+            if not isinstance(author, dict) or "general" not in author:
+                continue
+
+            author_to_add = author["general"]
+            author_entry = authors_source.get(str(author_to_add["id"]), {})
+            author_to_add["owner"] = bool(author_entry.get("owner", False))
+            authors.append(author_to_add)
+
+    mods_list_path = app_config.api_path("mod", "list")
+    resources_list_path = app_config.api_path("resource", "list")
+    modpack_mods = []
+    modpack_mods_path = app_config.api_path("modpack", "mods").format(modpack_id=modpack_id)
+    modpack_mods_code, modpack_mods_payload = await handler.fetch(modpack_mods_path)
+    if modpack_mods_code == 200 and isinstance(modpack_mods_payload, dict):
+        raw_modpack_mod_items = modpack_mods_payload.get("items", [])
+        normalized_modpack_mod_items = []
+        if isinstance(raw_modpack_mod_items, list):
+            for index, item in enumerate(raw_modpack_mod_items):
+                if not isinstance(item, dict):
+                    continue
+
+                raw_mod_id = item.get("mod_id", item.get("id"))
+                try:
+                    normalized_mod_id = int(raw_mod_id)
+                except (TypeError, ValueError):
+                    continue
+
+                raw_sort_order = item.get("sort_order", index)
+                try:
+                    normalized_sort_order = int(raw_sort_order)
+                except (TypeError, ValueError):
+                    normalized_sort_order = index
+
+                normalized_modpack_mod_items.append({
+                    "mod_id": normalized_mod_id,
+                    "sort_order": normalized_sort_order,
+                    "auto_added": bool(item.get("auto_added", False)),
+                })
+
+        normalized_modpack_mod_items.sort(key=lambda item: (item["sort_order"], item["mod_id"]))
+        if normalized_modpack_mod_items:
+            modpack_mod_cards = await _load_mod_cards_by_ids(
+                handler,
+                normalized_modpack_mod_items,
+                mods_list_path,
+                resources_list_path,
+            )
+            modpack_mods = list(modpack_mod_cards.values())
+
+    info_result["short_description"] = str(info_result.get("short_description") or "")
+    info_result["description"] = str(info_result.get("description") or "")
+    info_result["description_html"] = render_description_html(info_result["description"])
+    info_result["size"] = ""
+    info_result["size_unpacked"] = ""
+    info_result["downloads"] = _coerce_int(info_result.get("downloads"))
+    info_result["rating"] = _coerce_int(info_result.get("rating"))
+    info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
+    info_result["rating_summary"] = _steam_rating_summary(
+        info_result["rating"],
+        info_result["votes_count"],
+    )
+    info_result["dependencies"] = {"count": 0, "items": []}
+    info_result["conflicts"] = {"count": 0, "items": []}
+    info_result["id"] = _coerce_int(info_result.get("id"), modpack_id)
+    info_result["public"] = _coerce_int(info_result.get("public"))
+    info_result["no_many_screenshots"] = len(resources["items"]) <= 1
+
+    page_html = handler.render(
+        "modpack.html",
+        info=info_result,
+        tags=tags,
+        resources=resources,
+        modpack_mods=modpack_mods,
+        authors=authors,
+        mod_access=mod_access,
+        right_edit=right_edit_mod,
+        vote_access=profile_vote_access,
+        data=[info_result],
+        is_modpack_data=True,
+    )
+
+    return handler.finish(page_html)
+
 async def user(user_id):
     launge = "ru"
 
@@ -1692,6 +1878,8 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=mod_view_and_edit)
     for route in app_config.ROUTES["mod"]["add"]:
         app.add_url_rule(route, view_func=add_mod)
+    for route in app_config.ROUTES["modpack"]["view"]:
+        app.add_url_rule(route, view_func=mod_view_and_edit)
     for route in app_config.ROUTES["modpack"]["add"]:
         app.add_url_rule(route, view_func=add_mod)
     for route in app_config.ROUTES["modpack"]["edit"]:

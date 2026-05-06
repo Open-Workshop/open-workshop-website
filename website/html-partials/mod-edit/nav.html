@@ -1,6 +1,9 @@
+{% set is_modpack_edit = (edit_page.entity_kind | default('mod')) == 'modpack' %}
+{% set view_href = '/modpack/' ~ info['id'] if is_modpack_edit else '/mod/' ~ info['id'] %}
+{% set view_title = 'Открыть страницу модпака' if is_modpack_edit else 'Открыть страницу мода' %}
 <div class="standart-panel mod-edit-nav">
-  <a class="mod-edit-nav__save dark button-style" href="/mod/{{ info['id'] }}" title="Открыть страницу мода">
-    <img src="/assets/images/svg/white/eye.svg" style="padding: 5px;" alt="Открыть страницу мода">
+  <a class="mod-edit-nav__save dark button-style" href="{{ view_href }}" title="{{ view_title }}">
+    <img src="/assets/images/svg/white/eye.svg" style="padding: 5px;" alt="{{ view_title }}">
   </a>
 
   <div class="navigation mod-edit-nav__group" variants="in-mod-page, in-catalog-view, params-mod">

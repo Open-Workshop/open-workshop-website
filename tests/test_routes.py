@@ -862,6 +862,140 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["resources"]["items"][0]["type"], "logo")
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/pack-logo.webp")
         self.assertEqual(render_kwargs["resources"]["items"][1]["type"], "screenshot")
+        nav_html = main.app.jinja_env.get_template("html-partials/mod-edit/nav.html").render(
+            info={"id": 42},
+            edit_page={"entity_kind": "modpack"},
+        )
+        self.assertIn('href="/modpack/42"', nav_html)
+        self.assertIn("Открыть страницу модпака", nav_html)
+        self.assertNotIn('href="/mod/42"', nav_html)
+
+    async def test_modpack_view_uses_public_template(self) -> None:
+        handler = StubHandler(
+            authenticated=False,
+            modpack_access={
+                "authenticated": False,
+                "owner_id": -1,
+                "login_method": None,
+                "info": {
+                    "value": True,
+                    "reason": "Мод доступен для просмотра",
+                    "reason_code": "public",
+                },
+                "edit": {
+                    "title": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "description": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "short_description": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                    "authors": {"value": False, "reason": "Недоступно", "reason_code": "forbidden"},
+                },
+                "delete": {
+                    "value": False,
+                    "reason": "Удаление недоступно",
+                    "reason_code": "forbidden",
+                },
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 42,
+                        "name": "Pack Example",
+                        "short_description": "Short",
+                        "description": "[b]Long[/b]",
+                        "source": "local",
+                        "source_id": None,
+                        "game_id": 5,
+                        "public": 1,
+                        "adult": False,
+                        "created_at": "2026-04-22T10:00:00+00:00",
+                        "updated_at": "2026-04-24T10:00:00+00:00",
+                        "rating": 88,
+                        "votes_count": 7,
+                        "current_vote": None,
+                        "downloads": 12,
+                        "authors": {},
+                        "tags": [{"id": 301, "name": "Challenge"}],
+                        "resources": [
+                            {
+                                "id": 501,
+                                "owner_id": 42,
+                                "type": "logo",
+                                "url": "https://cdn.example/pack-logo.webp",
+                                "sort_order": 0,
+                            },
+                            {
+                                "id": 502,
+                                "owner_id": 42,
+                                "type": "screenshot",
+                                "url": "https://cdn.example/pack-shot.webp",
+                                "sort_order": 1,
+                            },
+                        ],
+                    },
+                ),
+                (200, {"id": 5, "name": "Game"}),
+                (
+                    200,
+                    {
+                        "modpack_id": 42,
+                        "items": [
+                            {"mod_id": 11, "sort_order": 2, "auto_added": True},
+                        ],
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {
+                                "id": 11,
+                                "name": "Core Mod",
+                                "source": "steam",
+                                "game_id": 5,
+                                "public": 0,
+                                "adult": False,
+                                "condition": "published",
+                                "rating": 88,
+                                "votes_count": 7,
+                                "downloads": 3,
+                                "size": 0,
+                                "size_unpacked": 0,
+                            }
+                        ],
+                    },
+                ),
+                (200, {"items": [{"owner_id": 11, "url": "https://cdn.example/core.webp"}]}),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/modpack/42"):
+                result = await main.mod_view_and_edit(42)
+
+        self.assertEqual(result["template"], "modpack.html")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertTrue(render_kwargs["is_modpack_data"])
+        self.assertEqual(render_kwargs["info"]["game"]["id"], 5)
+        self.assertEqual(render_kwargs["info"]["rating_summary"]["label"], "Очень положительные")
+        self.assertEqual(render_kwargs["info"]["logo"], "https://cdn.example/pack-logo.webp")
+        self.assertEqual(render_kwargs["tags"], [{"id": 301, "name": "Challenge"}])
+        self.assertEqual(len(render_kwargs["resources"]["items"]), 2)
+        self.assertEqual(render_kwargs["modpack_mods"][0]["id"], 11)
+        self.assertEqual(render_kwargs["modpack_mods"][0]["rating"], 88)
+        self.assertEqual(render_kwargs["modpack_mods"][0]["rating_summary"]["label"], "Очень положительные")
+        self.assertTrue(render_kwargs["modpack_mods"][0]["auto_added"])
+        self.assertIn(("get_modpack_access", 42, None, None), handler.calls)
+        self.assertNotIn(("get_mod_access", 42, None, None), handler.calls)
+        self.assertEqual(
+            handler.fetch_calls,
+            [
+                ("/modpacks/42", "GET"),
+                ("/games/5", "GET"),
+                ("/modpacks/42/mods", "GET"),
+                ("/mods?page_size=1&ids=11", "GET"),
+                ("/resources?page_size=50&owner_type=mods&owner_ids=11&types=logo", "GET"),
+            ],
+        )
 
     def test_mod_add_template_exposes_adult_toggle(self) -> None:
         mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
@@ -976,6 +1110,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("async function updateModpackMods(items)", script)
         self.assertIn("entityApiPaths.mods_update", script)
         self.assertIn('\"mods_update\": {\"method\": \"PUT\", \"path\": \"/modpacks/{modpack_id}/mods\"}', app_config)
+        self.assertIn('\"view\": [\"/modpack/<int:mod_id>\", \"/modpack/<int:mod_id>.html\"]', app_config)
 
     def test_mod_edit_templates_expose_relation_editors(self) -> None:
         mod_main = (ROOT / "website/html-partials/mod-edit/page-main.html").read_text(encoding="utf-8")
@@ -1142,19 +1277,47 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("function applySteamRatingSummary(node, summary)", mod_script)
         self.assertIn("function parseCurrentVote(value)", mod_script)
         self.assertIn("Нет оценок", mod_script)
+        self.assertIn("const entityKind = String(widget.dataset.entityKind || 'mod')", mod_script)
+        self.assertIn("const entityApiPaths = apiPaths[entityKind] || apiPaths.mod || {}", mod_script)
         self.assertIn("setRatingButtonState(widget, parseCurrentVote(widget.dataset.currentVote));", mod_script)
         self.assertIn("const nextValue = currentVote === value ? 0 : value;", mod_script)
-        self.assertIn("widget.dataset.currentVote = String(value);", mod_script)
-        self.assertLess(mod_page.index("mod-tags-title"), mod_page.index("Авторы"))
-        self.assertLess(mod_page.index("Авторы"), mod_page.index("Ссылки"))
-        self.assertIn("info['conflicts']['count'] > 0", mod_page)
-        self.assertIn("for item in conflicts.values()", mod_page)
-        self.assertIn("mod-dependencies-optional-heading", mod_page)
-        self.assertIn("<h3>Опциональные</h3>", mod_page)
-        self.assertIn("selectattr('optional')", mod_page)
-        self.assertIn("rejectattr('optional')", mod_page)
-        self.assertIn(".mod-dependencies-optional-heading", mod_styles)
-        self.assertIn("margin-top: 10pt;", mod_styles)
+        self.assertIn("function initModpackSelectionControls()", mod_script)
+        self.assertIn("function triggerModpackDownloads(widget)", mod_script)
+        self.assertIn("data-modpack-download-selected", mod_script)
+
+    def test_modpack_template_exposes_public_sections(self) -> None:
+        modpack_page = (ROOT / "website/modpack.html").read_text(encoding="utf-8")
+        modpack_styles = (ROOT / "website/assets/styles/pages/modpack.css").read_text(encoding="utf-8")
+        standart_html = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
+
+        self.assertIn('data-entity-kind="modpack"', modpack_page)
+        self.assertIn('class="outline-container mod-rating-panel"', modpack_page)
+        self.assertIn("modpack-mods-panel", modpack_page)
+        self.assertNotIn("modpack-short-description", modpack_page)
+        self.assertLess(modpack_page.index("mod-description"), modpack_page.index("modpack-mods-panel"))
+        self.assertIn("modpack-mods-panel__header", modpack_page)
+        self.assertIn("modpack-mods-panel__actions", modpack_page)
+        self.assertIn("modpack-mods-panel__select-all", modpack_page)
+        self.assertIn("modpack-mod__main", modpack_page)
+        self.assertIn("modpack-mod__select", modpack_page)
+        self.assertIn("data-modpack-download-widget", modpack_page)
+        self.assertIn("data-modpack-select-all", modpack_page)
+        self.assertIn("data-modpack-select-item", modpack_page)
+        self.assertIn("data-modpack-download-selected", modpack_page)
+        self.assertNotIn("Автодобавлен", modpack_page)
+        self.assertIn("Open Modpack", modpack_page)
+        self.assertIn("/assets/styles/pages/modpack.css", modpack_page)
+        self.assertIn("is_modpack_data", standart_html)
+        self.assertIn("Logo of modpack", standart_html)
+        self.assertIn(".modpack-mods-panel", modpack_styles)
+        self.assertIn(".modpack-mods-panel__header", modpack_styles)
+        self.assertIn(".modpack-mods-panel__actions", modpack_styles)
+        self.assertIn(".modpack-mods-panel__select-all", modpack_styles)
+        self.assertIn(".modpack-mod__main", modpack_styles)
+        self.assertIn(".modpack-mod__select", modpack_styles)
+        self.assertIn(".modpack-mod.is-selected", modpack_styles)
+        self.assertIn(".modpack-download-selected", modpack_styles)
+        self.assertNotIn(".modpack-short-description", modpack_styles)
 
     def test_steam_rating_summary_uses_steam_like_thresholds(self) -> None:
         self.assertEqual(main._steam_rating_summary(0, 0)["label"], "Нет оценок")

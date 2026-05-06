@@ -145,11 +145,148 @@
     });
   }
 
+  function getModpackDownloadItems(widget) {
+    if (!(widget instanceof Element)) return [];
+    return Array.from(widget.querySelectorAll('[data-modpack-select-item]')).filter(function (node) {
+      return node instanceof HTMLInputElement;
+    });
+  }
+
+  function updateModpackDownloadState(widget) {
+    if (!(widget instanceof Element)) return;
+
+    const items = getModpackDownloadItems(widget);
+    const selectAll = widget.querySelector('[data-modpack-select-all]');
+    const downloadButton = widget.querySelector('[data-modpack-download-selected]');
+    const selectedCount = items.reduce(function (count, item) {
+      return count + (item.checked ? 1 : 0);
+    }, 0);
+
+    if (selectAll instanceof HTMLInputElement) {
+      selectAll.checked = items.length > 0 && selectedCount === items.length;
+      selectAll.indeterminate = selectedCount > 0 && selectedCount < items.length;
+      selectAll.disabled = items.length === 0;
+    }
+
+    if (downloadButton instanceof HTMLButtonElement) {
+      const baseLabel = downloadButton.dataset.baseLabel || downloadButton.textContent.trim() || 'Скачать выбранное';
+      downloadButton.dataset.baseLabel = baseLabel;
+      downloadButton.disabled = selectedCount === 0;
+      downloadButton.textContent = selectedCount > 0 ? `${baseLabel} (${selectedCount})` : baseLabel;
+    }
+
+    items.forEach(function (item) {
+      const card = item.closest('.modpack-mod');
+      if (card instanceof Element) {
+        card.classList.toggle('is-selected', item.checked);
+      }
+    });
+  }
+
+  function queueModpackDownload(widget, modId, index) {
+    if (!(widget instanceof Element)) return;
+    const downloadSink = widget.querySelector('[data-modpack-download-sink]') || document.createElement('div');
+
+    if (!(downloadSink instanceof Element)) return;
+    if (!downloadSink.parentNode) {
+      downloadSink.dataset.modpackDownloadSink = 'true';
+      downloadSink.setAttribute('aria-hidden', 'true');
+      downloadSink.style.display = 'none';
+      widget.appendChild(downloadSink);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.hidden = true;
+    iframe.tabIndex = -1;
+    iframe.src = `/mod/${modId}/download`;
+    downloadSink.appendChild(iframe);
+    window.setTimeout(function () {
+      if (iframe.parentNode) {
+        iframe.remove();
+      }
+    }, 30000 + index * 1000);
+  }
+
+  function triggerModpackDownloads(widget) {
+    if (!(widget instanceof Element)) return;
+
+    const selectedItems = getModpackDownloadItems(widget).filter(function (item) {
+      return item.checked;
+    });
+
+    if (!selectedItems.length) {
+      showToast('Скачивание', 'Выберите хотя бы один мод для загрузки', 'info');
+      return;
+    }
+
+    selectedItems.forEach(function (item, index) {
+      const modId = Number.parseInt(item.value || '0', 10);
+      if (!Number.isFinite(modId) || modId <= 0) return;
+      window.setTimeout(function () {
+        queueModpackDownload(widget, modId, index);
+      }, index * 350);
+    });
+
+    showToast(
+      'Скачивание',
+      `Запускаем ${selectedItems.length} ${pluralizeRu(selectedItems.length, ['загрузку', 'загрузки', 'загрузок'])}`,
+      'info',
+    );
+  }
+
+  function initModpackSelectionControls() {
+    const widget = document.querySelector('[data-modpack-download-widget]');
+    if (!widget) return;
+
+    const items = getModpackDownloadItems(widget);
+    const selectAll = widget.querySelector('[data-modpack-select-all]');
+    const downloadButton = widget.querySelector('[data-modpack-download-selected]');
+
+    if (!items.length) {
+      if (selectAll instanceof HTMLInputElement) {
+        selectAll.disabled = true;
+      }
+      if (downloadButton instanceof HTMLButtonElement) {
+        downloadButton.disabled = true;
+        downloadButton.dataset.baseLabel = downloadButton.dataset.baseLabel || downloadButton.textContent.trim();
+      }
+      return;
+    }
+
+    items.forEach(function (item) {
+      item.addEventListener('change', function () {
+        updateModpackDownloadState(widget);
+      });
+    });
+
+    if (selectAll instanceof HTMLInputElement) {
+      selectAll.addEventListener('change', function () {
+        const checked = selectAll.checked;
+        items.forEach(function (item) {
+          item.checked = checked;
+        });
+        updateModpackDownloadState(widget);
+      });
+    }
+
+    if (downloadButton instanceof HTMLButtonElement) {
+      downloadButton.dataset.baseLabel = downloadButton.dataset.baseLabel || downloadButton.textContent.trim();
+      downloadButton.addEventListener('click', function () {
+        triggerModpackDownloads(widget);
+      });
+    }
+
+    updateModpackDownloadState(widget);
+  }
+
   async function sendRatingVote(widget, value) {
     if (!(widget instanceof Element)) return;
 
     const apiPaths = getApiPaths();
-    const endpoint = apiPaths.mod && apiPaths.mod.rating ? apiPaths.mod.rating : null;
+    const entityKind = String(widget.dataset.entityKind || 'mod').trim().toLowerCase() || 'mod';
+    const entityApiPaths = apiPaths[entityKind] || apiPaths.mod || {};
+    const endpoint = entityApiPaths.rating || (apiPaths.mod && apiPaths.mod.rating ? apiPaths.mod.rating : null);
+    const pathParams = entityKind === 'modpack' ? { modpack_id: Number(widget.dataset.modId || 0) } : { mod_id: Number(widget.dataset.modId || 0) };
     const modId = Number(widget.dataset.modId || 0);
     const canVote = widget.dataset.canVote === 'true';
     const voteReason = widget.dataset.voteReason || 'Голосование недоступно';
@@ -167,7 +304,7 @@
 
     setRatingBusy(widget, true);
     try {
-      const result = await request(apiUrl(formatPath(endpoint.path, { mod_id: modId })), {
+      const result = await request(apiUrl(formatPath(endpoint.path, pathParams)), {
         method: endpoint.method,
         data: { value },
         parseAs: 'json',
@@ -250,6 +387,7 @@
     }
 
     initModRatingWidget();
+    initModpackSelectionControls();
   }
 
   if (document.readyState === 'loading') {

@@ -268,6 +268,7 @@ ROUTES: dict = {
         "add": ["/mod/add", "/mod/add.html"],
     },
     "modpack": {
+        "view": ["/modpack/<int:mod_id>", "/modpack/<int:mod_id>.html"],
         "add": ["/modpack/add", "/modpack/add.html"],
         "edit": [
             "/modpack/<int:mod_id>/edit",
