@@ -156,6 +156,7 @@
       }
 
       if (selectedList instanceof Element) {
+        applyConflictNodeState(new Set());
         selectedList.querySelectorAll('[data-picker-ghost="true"]').forEach(function (node) {
           node.remove();
         });
@@ -279,6 +280,22 @@
       return related;
     }
 
+    function applyConflictNodeState(conflictNodeIds) {
+      const selectedList = getSelectedList();
+      if (!(selectedList instanceof Element)) {
+        return;
+      }
+
+      const conflictIds = conflictNodeIds instanceof Set ? conflictNodeIds : new Set();
+      selectedList.querySelectorAll('[data-picker-id]').forEach(function (node) {
+        const nodeId = normalizeId(node.dataset.pickerId);
+        node.classList.toggle(
+          'modpack-dependency-graph__conflict-node',
+          nodeId > 0 && conflictIds.has(nodeId),
+        );
+      });
+    }
+
     function syncHoverFocus() {
       const hoverRoot = getHoverRoot();
       const selectedList = getSelectedList();
@@ -369,6 +386,25 @@
       existing.optional = Boolean(existing.optional && optional);
       existing.required = Boolean(existing.required || required || fromBuild);
       existing.fromBuild = Boolean(existing.fromBuild || fromBuild);
+      edgesByKey.set(key, existing);
+      return existing;
+    }
+
+    function addConflictEdge(edgesByKey, sourceId, targetId) {
+      const normalizedSourceId = normalizeId(sourceId);
+      const normalizedTargetId = normalizeId(targetId);
+      if (!normalizedSourceId || !normalizedTargetId || normalizedSourceId === normalizedTargetId) {
+        return null;
+      }
+
+      const lowId = Math.min(normalizedSourceId, normalizedTargetId);
+      const highId = Math.max(normalizedSourceId, normalizedTargetId);
+      const key = lowId + '<->' + highId;
+      const existing = edgesByKey.get(key) || {
+        sourceId: lowId,
+        targetId: highId,
+      };
+
       edgesByKey.set(key, existing);
       return existing;
     }
@@ -669,7 +705,7 @@
         }
       });
 
-      model.edges.forEach(function (edge) {
+      function appendEdgePath(edge, kind) {
         const sourceElement = nodeElements.get(edge.sourceId);
         const targetElement = nodeElements.get(edge.targetId);
         if (!(sourceElement instanceof Element) || !(targetElement instanceof Element)) {
@@ -692,30 +728,44 @@
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.classList.add('modpack-dependency-graph__edge');
-        path.classList.add(edge.required ? 'modpack-dependency-graph__edge--required' : 'modpack-dependency-graph__edge--optional');
-        if (!edge.required) {
-          path.classList.add('modpack-dependency-graph__edge--dashed');
-        }
+        path.dataset.edgeSourceId = String(edge.sourceId);
+        path.dataset.edgeTargetId = String(edge.targetId);
 
-        const sourceSelected = Boolean(sourceElement.closest('[data-picker-slot="selected"]'));
-        const targetSelected = Boolean(targetElement.closest('[data-picker-slot="selected"]'));
-        if (!sourceSelected || !targetSelected) {
-          path.classList.add('modpack-dependency-graph__edge--faded');
+        if (kind === 'conflict') {
+          path.classList.add('modpack-dependency-graph__edge--conflict');
+        } else {
+          path.classList.add(edge.required ? 'modpack-dependency-graph__edge--required' : 'modpack-dependency-graph__edge--optional');
+          if (!edge.required) {
+            path.classList.add('modpack-dependency-graph__edge--dashed');
+          }
+
+          const sourceSelected = Boolean(sourceElement.closest('[data-picker-slot="selected"]'));
+          const targetSelected = Boolean(targetElement.closest('[data-picker-slot="selected"]'));
+          if (!sourceSelected || !targetSelected) {
+            path.classList.add('modpack-dependency-graph__edge--faded');
+          }
+
+          path.setAttribute(
+            'marker-end',
+            edge.required
+              ? 'url(#modpack-dependency-arrow-required)'
+              : 'url(#modpack-dependency-arrow-optional)',
+          );
         }
 
         path.setAttribute(
           'd',
           'M ' + startX + ' ' + startY + ' C ' + routeX + ' ' + startY + ', ' + routeX + ' ' + endY + ', ' + endX + ' ' + endY,
         );
-        path.dataset.edgeSourceId = String(edge.sourceId);
-        path.dataset.edgeTargetId = String(edge.targetId);
-        path.setAttribute(
-          'marker-end',
-          edge.required
-            ? 'url(#modpack-dependency-arrow-required)'
-            : 'url(#modpack-dependency-arrow-optional)',
-        );
         edgesRoot.appendChild(path);
+      }
+
+      (Array.isArray(model.edges) ? model.edges : []).forEach(function (edge) {
+        appendEdgePath(edge, 'dependency');
+      });
+
+      (Array.isArray(model.conflictEdges) ? model.conflictEdges : []).forEach(function (edge) {
+        appendEdgePath(edge, 'conflict');
       });
     }
 
@@ -730,30 +780,52 @@
         return;
       }
 
-      setStatus('Строим граф зависимостей...', 'loading');
+      setStatus('Строим граф зависимостей и конфликтов...', 'loading');
       clearGraph();
       ensureGraphFrame();
 
       const requestId = ++refreshToken;
       let buildGraph = null;
+      let conflictGraph = null;
       let buildGraphFailed = false;
+      let conflictGraphFailed = false;
       let truncated = false;
 
-      if (api && typeof api.buildMissingDependencies === 'function') {
-        try {
-          buildGraph = await api.buildMissingDependencies(selectedIds);
-        } catch (error) {
-          buildGraphFailed = true;
-          buildGraph = null;
-        }
-      }
+      const dependencyPromise = api && typeof api.buildMissingDependencies === 'function'
+        ? api.buildMissingDependencies(selectedIds)
+            .then(function (result) {
+              return { ok: true, data: result };
+            })
+            .catch(function () {
+              return { ok: false, data: null };
+            })
+        : Promise.resolve({ ok: false, data: null });
+
+      const conflictPromise = api && typeof api.buildConflicts === 'function'
+        ? api.buildConflicts(selectedIds)
+            .then(function (result) {
+              return { ok: true, data: result };
+            })
+            .catch(function () {
+              return { ok: false, data: null };
+            })
+        : Promise.resolve({ ok: false, data: null });
+
+      const buildResults = await Promise.all([dependencyPromise, conflictPromise]);
 
       if (requestId !== refreshToken) {
         return;
       }
 
+      buildGraph = buildResults[0] && buildResults[0].data ? buildResults[0].data : null;
+      buildGraphFailed = Boolean(api && typeof api.buildMissingDependencies === 'function' && !(buildResults[0] && buildResults[0].ok));
+      conflictGraph = buildResults[1] && buildResults[1].data ? buildResults[1].data : null;
+      conflictGraphFailed = Boolean(api && typeof api.buildConflicts === 'function' && !(buildResults[1] && buildResults[1].ok));
+
       const nodesById = new Map();
       const edgesByKey = new Map();
+      const conflictEdgesByKey = new Map();
+      const conflictNodeIds = new Set();
       const initialFrontier = [];
 
       if (buildGraph && Array.isArray(buildGraph.nodes)) {
@@ -785,6 +857,20 @@
             kind: 'selected',
           });
           initialFrontier.push(nodeId);
+        });
+      }
+
+      if (conflictGraph && Array.isArray(conflictGraph.edges)) {
+        conflictGraph.edges.forEach(function (edge) {
+          const sourceId = normalizeId(edge && edge.source_mod_id);
+          const targetId = normalizeId(edge && edge.target_mod_id);
+          if (!sourceId || !targetId) {
+            return;
+          }
+
+          addConflictEdge(conflictEdgesByKey, sourceId, targetId);
+          conflictNodeIds.add(sourceId);
+          conflictNodeIds.add(targetId);
         });
       }
 
@@ -925,6 +1011,7 @@
           optional: Boolean(edge.optional),
         };
       });
+      const conflictEdges = Array.from(conflictEdgesByKey.values());
 
       const selectedList = getSelectedList();
       const edgesRoot = getEdgesRoot();
@@ -944,15 +1031,23 @@
           insertGhostItem(selectedList, createNodeElement(node));
         });
 
+      applyConflictNodeState(conflictNodeIds);
+
       lastModel = {
         nodes,
         edges,
+        conflictEdges,
+        conflictNodeIds,
         ...buildDirectAdjacency(edges),
       };
 
       if (graphRoot) {
-        if (buildGraphFailed) {
+        if (buildGraphFailed && conflictGraphFailed) {
+          graphRoot.dataset.graphNotice = 'Не удалось построить граф и проверить конфликты';
+        } else if (buildGraphFailed) {
           graphRoot.dataset.graphNotice = 'Не удалось построить полный граф, показываю прямые связи';
+        } else if (conflictGraphFailed) {
+          graphRoot.dataset.graphNotice = 'Не удалось проверить конфликты, показываю зависимости';
         } else if (truncated) {
           graphRoot.dataset.graphNotice = 'Показаны первые ' + MAX_GRAPH_NODES + ' модов';
         } else {

@@ -268,27 +268,6 @@
     titleText.textContent = String(options.name || '');
     title.appendChild(titleText);
 
-    if (showViewLink && options.slot === 'selected') {
-      if (itemId !== '') {
-        const viewLink = document.createElement('a');
-        viewLink.className = 'modpack-mods-edit__view-link';
-        viewLink.href = `/mod/${encodeURIComponent(itemId)}`;
-        viewLink.target = '_blank';
-        viewLink.rel = 'noopener noreferrer';
-        viewLink.title = 'Открыть страницу мода';
-        viewLink.setAttribute('aria-label', 'Открыть страницу мода');
-        viewLink.setAttribute('data-picker-ignore-toggle', 'true');
-
-        const viewIcon = document.createElement('img');
-        viewIcon.src = '/assets/images/svg/white/eye.svg';
-        viewIcon.alt = '';
-        viewIcon.setAttribute('aria-hidden', 'true');
-
-        viewLink.appendChild(viewIcon);
-        title.appendChild(viewLink);
-      }
-    }
-
     const actions = document.createElement('div');
     actions.className = 'picker-editor__item-actions';
 
@@ -327,6 +306,25 @@
       removeIcon.src = '/assets/images/removal-triangle.svg';
       removeIcon.alt = removeActionAlt || (relationKind === 'conflicts' ? 'Убрать конфликт' : 'Убрать зависимость');
       actions.appendChild(removeIcon);
+    }
+
+    if (showViewLink && options.slot === 'selected' && itemId !== '') {
+      const viewLink = document.createElement('a');
+      viewLink.className = 'modpack-mods-edit__view-link';
+      viewLink.href = `/mod/${encodeURIComponent(itemId)}`;
+      viewLink.target = '_blank';
+      viewLink.rel = 'noopener noreferrer';
+      viewLink.title = 'Открыть страницу мода';
+      viewLink.setAttribute('aria-label', 'Открыть страницу мода');
+      viewLink.setAttribute('data-picker-ignore-toggle', 'true');
+
+      const viewIcon = document.createElement('img');
+      viewIcon.src = '/assets/images/svg/white/eye.svg';
+      viewIcon.alt = '';
+      viewIcon.setAttribute('aria-hidden', 'true');
+
+      viewLink.appendChild(viewIcon);
+      actions.appendChild(viewLink);
     }
 
     const header = document.createElement('div');
