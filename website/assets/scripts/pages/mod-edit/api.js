@@ -270,6 +270,142 @@
       return result.data;
     }
 
+    function normalizeIdList(ids) {
+      const normalizedIds = [];
+      const seenIds = new Set();
+
+      (Array.isArray(ids) ? ids : []).forEach(function (id) {
+        const normalizedId = Number(id);
+        if (!Number.isFinite(normalizedId) || normalizedId <= 0 || seenIds.has(normalizedId)) {
+          return;
+        }
+
+        seenIds.add(normalizedId);
+        normalizedIds.push(normalizedId);
+      });
+
+      return normalizedIds;
+    }
+
+    function chunkArray(values, chunkSize) {
+      const items = Array.isArray(values) ? values : [];
+      const safeSize = Math.max(1, Number(chunkSize) || 1);
+      const chunks = [];
+
+      for (let index = 0; index < items.length; index += safeSize) {
+        chunks.push(items.slice(index, index + safeSize));
+      }
+
+      return chunks;
+    }
+
+    async function fetchModDependencies(modIdValue) {
+      const endpoint = modApiPaths.dependencies;
+      const normalizedModId = Number(modIdValue);
+      if (!endpoint || !Number.isFinite(normalizedModId) || normalizedModId <= 0) {
+        return [];
+      }
+
+      const result = await requestEndpoint(endpoint, {
+        pathParams: { mod_id: normalizedModId },
+        parseAs: 'json',
+        fallbackError: 'Не удалось получить зависимости мода',
+      });
+
+      return Array.isArray(result.data && result.data.items)
+        ? result.data.items.map(function (item) {
+          return {
+            mod_id: Number(item && item.mod_id),
+            optional: Boolean(item && item.optional),
+          };
+        }).filter(function (item) {
+          return Number.isFinite(item.mod_id) && item.mod_id > 0;
+        })
+        : [];
+    }
+
+    async function fetchModsByIds(ids) {
+      const normalizedIds = normalizeIdList(ids);
+      if (normalizedIds.length === 0) {
+        return [];
+      }
+
+      const batches = chunkArray(normalizedIds, 50);
+      const cardsById = new Map();
+
+      await Promise.all(batches.map(async function (batchIds) {
+        const [modsResult, resourcesResult] = await Promise.all([
+          requestEndpoint(modApiPaths.list, {
+            query: {
+              page_size: batchIds.length,
+              ids: batchIds,
+            },
+            parseAs: 'json',
+            fallbackError: 'Не удалось получить список модов',
+          }),
+          requestEndpoint(apiPaths.resource.list, {
+            query: {
+              page_size: 50,
+              owner_type: 'mods',
+              owner_ids: batchIds,
+              types: ['logo'],
+            },
+            parseAs: 'json',
+            fallbackError: 'Не удалось получить изображения модов',
+          }).catch(function () {
+            return { data: { items: [] } };
+          }),
+        ]);
+
+        const namesById = new Map();
+        const imagesById = new Map();
+
+        if (modsResult && modsResult.data && Array.isArray(modsResult.data.items)) {
+          modsResult.data.items.forEach(function (modInfo) {
+            if (!modInfo || modInfo.id === undefined || modInfo.id === null) {
+              return;
+            }
+
+            const normalizedId = Number(modInfo.id);
+            if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+              return;
+            }
+
+            namesById.set(normalizedId, String(modInfo.name || ''));
+          });
+        }
+
+        if (resourcesResult && resourcesResult.data && Array.isArray(resourcesResult.data.items)) {
+          resourcesResult.data.items.forEach(function (resource) {
+            if (!resource || resource.owner_id === undefined || resource.owner_id === null || !resource.url) {
+              return;
+            }
+
+            const normalizedOwnerId = Number(resource.owner_id);
+            if (!Number.isFinite(normalizedOwnerId) || normalizedOwnerId <= 0 || imagesById.has(normalizedOwnerId)) {
+              return;
+            }
+
+            imagesById.set(normalizedOwnerId, String(resource.url));
+          });
+        }
+
+        batchIds.forEach(function (modIdValue) {
+          cardsById.set(modIdValue, {
+            id: modIdValue,
+            name: namesById.get(modIdValue) || `Мод #${modIdValue}`,
+            img: imagesById.get(modIdValue) || window.OWCore.getImageFallback(),
+          });
+        });
+      }));
+
+      return normalizedIds
+        .map(function (modIdValue) {
+          return cardsById.get(modIdValue) || null;
+        })
+        .filter(Boolean);
+    }
+
     async function addResourceUrl(resource) {
       const sortOrder = Number(resource && resource.sortOrder !== undefined ? resource.sortOrder : 0);
       return requestEndpoint(apiPaths.resource.add, {
@@ -510,6 +646,8 @@
       updateTag,
       updateDependency,
       updateDependencyOptional,
+      fetchModDependencies,
+      fetchModsByIds,
       updateConflict,
       upsertAuthor,
       deleteAuthor,

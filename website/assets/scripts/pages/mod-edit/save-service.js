@@ -37,6 +37,10 @@
       ? window.OWUI.createSaveProgress(progressRoot)
       : null;
 
+    function isGhostPickerNode(node) {
+      return node instanceof Element && String(node.dataset.pickerGhost || 'false') === 'true';
+    }
+
     function getPickerChanges(editorId, includeOptional = false) {
       const editor = window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
       if (!editor) {
@@ -44,11 +48,7 @@
       }
 
       const state = editor.getState();
-      const selectedNodes = editor.root
-        ? Array.from(editor.root.querySelectorAll('[data-picker-slot="selected"] [data-picker-id]')).filter(function (node) {
-          return !node.classList.contains('is-hidden');
-        })
-        : [];
+      const selectedNodes = getPickerSelectedNodes(editorId);
       const optionalById = {};
       const optionalStartById = {};
 
@@ -89,7 +89,7 @@
       }
 
       return Array.from(editor.root.querySelectorAll('[data-picker-slot="selected"] [data-picker-id]')).filter(function (node) {
-        return !node.classList.contains('is-hidden');
+        return !node.classList.contains('is-hidden') && !isGhostPickerNode(node);
       });
     }
 

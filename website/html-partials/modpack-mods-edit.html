@@ -3,29 +3,35 @@
 {% set game_info = info.get('game') if info is defined else none %}
 {% set game_id = game_info.get('id') if game_info and game_info.get('id') else '' %}
 {% set editor_id = editor_id if editor_id is defined else 'modpack-mods-editor' %}
+{% set graph_id = editor_id ~ '-graph' %}
 
-<div class="modpack-mods-edit__actions">
-  <button
-    type="button"
-    class="button-style button-style-small modpack-mods-edit__auto-build"
-    data-action="modpack-autodependencies-build"
-    title="Подобрать и отметить автозависимости для выбранных модов"
-  >
-    Подобрать автозависимости
-  </button>
+<div class="modpack-mods-edit">
+  <div class="modpack-mods-edit__actions">
+    <button
+      type="button"
+      class="button-style button-style-small modpack-mods-edit__auto-build"
+      data-action="modpack-autodependencies-build"
+      title="Подобрать и отметить автозависимости для выбранных модов"
+    >
+      Подобрать автозависимости
+    </button>
+  </div>
+
+  {{ render_relation_editor(
+    items=modpack_mod_items,
+    game=game_id,
+    editor_id=editor_id,
+    editor_kind='dependencies',
+    button_text='Добавить мод',
+    selected_empty_text='Модов не выбрано',
+    results_empty_text='Не найдено',
+    remove_action_alt='Убрать мод',
+    image_alt='Логотип мода',
+    show_optional_toggle=false,
+    show_view_link=true,
+    show_dependency_graph=true,
+    dependency_graph_id=graph_id,
+    panel_classes='modpack-mods-edit__panel--graph',
+    load_scripts=false
+  ) }}
 </div>
-
-{{ render_relation_editor(
-  items=modpack_mod_items,
-  game=game_id,
-  editor_id=editor_id,
-  editor_kind='dependencies',
-  button_text='Добавить мод',
-  selected_empty_text='Модов не выбрано',
-  results_empty_text='Не найдено',
-  remove_action_alt='Убрать мод',
-  image_alt='Логотип мода',
-  show_optional_toggle=false,
-  show_view_link=true,
-  load_scripts=false
-) }}

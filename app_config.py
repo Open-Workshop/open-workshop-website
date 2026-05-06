@@ -497,6 +497,7 @@ EDIT_PAGE_CONFIGS: dict = {
             "/assets/scripts/vendors/dependence-edit.js",
             "/assets/scripts/pages/mod-edit/api.js",
             "/assets/scripts/pages/mod-edit/modpack-autodependencies.js",
+            "/assets/scripts/pages/mod-edit/modpack-dependency-graph.js",
             "/assets/scripts/pages/mod-edit/media-manager.js",
             "/assets/scripts/pages/mod-edit/authors-manager.js",
             "/assets/scripts/pages/mod-edit/catalog-preview.js",

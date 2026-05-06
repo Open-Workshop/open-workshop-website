@@ -157,6 +157,18 @@
       modpackAutoDependencies.bind();
     }
 
+    const modpackDependencyGraph = showModpackMods
+      ? runtime.requireFactory('mod-edit-modpack-dependency-graph')({
+        api,
+        editorId: 'modpack-mods-editor',
+        editorRoot: root.querySelector('#modpack-mods-editor'),
+        graphRoot: root.querySelector('[data-modpack-dependency-graph-root]'),
+      })
+      : null;
+    if (modpackDependencyGraph && typeof modpackDependencyGraph.bind === 'function') {
+      modpackDependencyGraph.bind();
+    }
+
     const publicController = bindPublicToggle(root.querySelector('[data-action="mod-toggle-public"]'));
 
     root.addEventListener('click', function (event) {

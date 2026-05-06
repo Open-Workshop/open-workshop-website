@@ -97,6 +97,16 @@
       return Array.from(listNode.querySelectorAll('[data-picker-id]'));
     }
 
+    function isGhost(node) {
+      return node instanceof Element && String(node.dataset.pickerGhost || 'false') === 'true';
+    }
+
+    function getSelectableItems(listNode) {
+      return getItems(listNode).filter(function (node) {
+        return !isGhost(node);
+      });
+    }
+
     function getItemId(node) {
       return String(node.dataset.pickerId || '');
     }
@@ -134,13 +144,13 @@
     }
 
     function findById(listNode, itemId) {
-      return getItems(listNode).find(function (node) {
+      return getSelectableItems(listNode).find(function (node) {
         return getItemId(node) === String(itemId);
       }) || null;
     }
 
     function findByName(listNode, nameKey) {
-      return getItems(listNode).find(function (node) {
+      return getSelectableItems(listNode).find(function (node) {
         return getNameKey(getItemName(node)) === nameKey;
       }) || null;
     }
@@ -320,6 +330,15 @@
       const itemId = getItemId(target);
       if (itemId === '') return;
 
+      if (isGhost(target)) {
+        target.dataset.pickerGhost = 'false';
+        target.dataset.pickerSaved = 'true';
+        target.classList.remove('modpack-dependency-graph__ghost-item');
+        syncResultSelection(itemId);
+        notifySelectionChange();
+        return;
+      }
+
       const itemName = getItemName(target);
       const selectedNode = findById(selectedList, itemId);
       const visibleSelectedNode = selectedNode && isVisible(selectedNode) ? selectedNode : null;
@@ -440,7 +459,7 @@
     }
 
     function clearVisibleSelection() {
-      getItems(selectedList)
+      getSelectableItems(selectedList)
         .filter(isVisible)
         .forEach(function (node) {
           toggle(node);
@@ -458,7 +477,7 @@
     }
 
     function getState() {
-      const selectedItems = getItems(selectedList);
+      const selectedItems = getSelectableItems(selectedList);
 
       return {
         all: selectedItems.map(mapNode),

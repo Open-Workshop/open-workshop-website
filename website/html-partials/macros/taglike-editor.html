@@ -131,27 +131,30 @@
   {% endif %}
 >
   <div class="picker-editor__shell">
-    <div class="picker-editor__selected-list" data-picker-slot="selected">
-      {{ caller('selected') }}
-      <p class="picker-editor__empty">{{ selected_empty_text }}</p>
-    </div>
-
-    <button type="button" class="picker-editor__toggle{% if trigger_classes %} {{ trigger_classes }}{% endif %}" data-picker-toggle>{{ trigger_text }}</button>
-
-    <div class="picker-editor__popup" data-picker-popup>
-      <input class="picker-editor__search" data-picker-search type="text" placeholder="{{ search_placeholder }}">
-
-      <div class="picker-editor__results-list" data-picker-slot="results">
-        {{ caller('results') }}
-        <p class="picker-editor__empty">{{ results_empty_text }}</p>
+    <div class="picker-editor__main">
+      <div class="picker-editor__selected-list" data-picker-slot="selected">
+        {{ caller('selected') }}
+        <p class="picker-editor__empty">{{ selected_empty_text }}</p>
+        {{ caller('after') }}
       </div>
 
-      <div class="picker-editor__footer">
-        <p class="picker-editor__show-more" data-picker-show-more hidden></p>
-        {% if can_create %}
-          <button type="button" class="small picker-editor__create-button" data-picker-create>{{ create_button_text }}</button>
-        {% endif %}
-        {{ caller('footer') }}
+      <button type="button" class="picker-editor__toggle{% if trigger_classes %} {{ trigger_classes }}{% endif %}" data-picker-toggle>{{ trigger_text }}</button>
+
+      <div class="picker-editor__popup" data-picker-popup>
+        <input class="picker-editor__search" data-picker-search type="text" placeholder="{{ search_placeholder }}">
+
+        <div class="picker-editor__results-list" data-picker-slot="results">
+          {{ caller('results') }}
+          <p class="picker-editor__empty">{{ results_empty_text }}</p>
+        </div>
+
+        <div class="picker-editor__footer">
+          <p class="picker-editor__show-more" data-picker-show-more hidden></p>
+          {% if can_create %}
+            <button type="button" class="small picker-editor__create-button" data-picker-create>{{ create_button_text }}</button>
+          {% endif %}
+          {{ caller('footer') }}
+        </div>
       </div>
     </div>
   </div>
@@ -220,6 +223,9 @@
   context=None,
   show_optional_toggle=false,
   show_view_link=false,
+  panel_classes='',
+  show_dependency_graph=false,
+  dependency_graph_id='',
   load_scripts=true
 ) -%}
 {% set relation_context = {'game_id': game} %}
@@ -240,6 +246,7 @@
   results_empty_text=results_empty_text,
   show_optional_toggle=show_optional_toggle,
   show_view_link=show_view_link,
+  panel_classes=panel_classes,
   item_image_alt=image_alt,
   remove_action_alt=remove_action_alt
 ) %}
@@ -261,6 +268,21 @@
         show_view_link
       ) }}
     {% endfor %}
+  {% elif section == 'after' and show_dependency_graph %}
+    {% set graph_root_id = dependency_graph_id if dependency_graph_id else editor_id ~ '-graph' %}
+    <section
+      id="{{ graph_root_id }}"
+      class="modpack-dependency-graph modpack-dependency-graph--overlay"
+      data-modpack-dependency-graph-root="true"
+      data-modpack-dependency-graph-editor="{{ editor_id }}"
+    >
+      <svg
+        class="modpack-dependency-graph__edges"
+        data-modpack-dependency-graph-edges
+        aria-hidden="true"
+      ></svg>
+      <p class="modpack-dependency-graph__empty" data-modpack-dependency-graph-empty>Выберите моды, чтобы увидеть зависимости</p>
+    </section>
   {% endif %}
 {% endcall %}
 
@@ -289,6 +311,8 @@
   remove_action_alt='Убрать зависимость',
   image_alt='Логотип мода',
   show_optional_toggle=show_optional_toggle,
+  show_dependency_graph=false,
+  dependency_graph_id='',
   load_scripts=load_scripts
 ) }}
 {%- endmacro %}
@@ -305,6 +329,8 @@
   remove_action_alt='Убрать конфликт',
   image_alt='Логотип мода',
   show_optional_toggle=false,
+  show_dependency_graph=false,
+  dependency_graph_id='',
   load_scripts=load_scripts
 ) }}
 {%- endmacro %}
