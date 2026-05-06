@@ -16,6 +16,7 @@
     );
 
     const MAX_GRAPH_NODES = 120;
+    const AUTO_DEPENDENCIES_CHANGE_EVENT = 'ow:modpack-autodependencies-change';
     const KIND_PRIORITY = {
       selected: 0,
       required: 1,
@@ -504,14 +505,40 @@
         : 'Убрать мод';
       const showViewLink = editorRoot instanceof Element && String(editorRoot.dataset.pickerShowViewLink || 'false') === 'true';
 
+      function createAutoBadge() {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'tag-link-yellow modpack-auto-badge';
+        button.setAttribute('data-action', 'modpack-auto-added-toggle');
+        button.setAttribute('data-modpack-auto-badge', 'true');
+        button.setAttribute('title', 'Убрать автозависимость');
+        button.setAttribute('aria-label', 'Убрать автозависимость');
+
+        const label = document.createElement('span');
+        label.className = 'modpack-auto-badge__label';
+        label.textContent = 'Автозависимость';
+
+        const remove = document.createElement('span');
+        remove.className = 'modpack-auto-badge__remove';
+        remove.setAttribute('aria-hidden', 'true');
+        remove.textContent = '×';
+
+        button.appendChild(label);
+        button.appendChild(remove);
+        return button;
+      }
+
       const element = document.createElement('div');
       element.className = 'picker-editor__item picker-editor__item--row modpack-dependency-graph__ghost-item';
       element.dataset.pickerId = String(node.id);
       element.dataset.pickerName = String(node.name || '');
       element.dataset.pickerSlot = 'selected';
       element.dataset.pickerGhost = 'true';
+      element.dataset.pickerGhostOrigin = 'true';
+      element.dataset.pickerAutoAdded = 'true';
       element.dataset.pickerSaved = 'true';
       element.dataset.pickerPending = 'false';
+      element.classList.add('is-auto-added');
 
       const image = document.createElement('img');
       image.className = 'picker-editor__item-media';
@@ -532,6 +559,7 @@
       titleText.className = 'picker-editor__item-title-text';
       titleText.textContent = node.name || ('Мод #' + node.id);
       title.appendChild(titleText);
+      title.appendChild(createAutoBadge());
 
       const actions = document.createElement('div');
       actions.className = 'picker-editor__item-actions picker-editor__item-actions--header';
@@ -950,6 +978,34 @@
         return;
       }
 
+      if (event.detail.materializedGhost || event.detail.dematerializedGhost) {
+        return;
+      }
+
+      if (editorRoot instanceof Element && String(editorRoot.dataset.modpackAutoDependenciesUpdating || 'false') === 'true') {
+        return;
+      }
+
+      refreshGraph().catch(function () {
+        setStatus('Не удалось построить граф зависимостей', 'error');
+      });
+    }
+
+    function handleAutoDependenciesChange(event) {
+      if (!event || !event.detail || event.detail.key !== editorId) {
+        return;
+      }
+
+      if (event.detail.source === 'model') {
+        if (lastModel) {
+          window.requestAnimationFrame(function () {
+            drawEdges(lastModel);
+            syncHoverFocus();
+          });
+        }
+        return;
+      }
+
       refreshGraph().catch(function () {
         setStatus('Не удалось построить граф зависимостей', 'error');
       });
@@ -1011,6 +1067,7 @@
       }
 
       editorRoot.addEventListener('ow:picker-selection-change', handleSelectionChange);
+      editorRoot.addEventListener(AUTO_DEPENDENCIES_CHANGE_EVENT, handleAutoDependenciesChange);
       bindResizeListeners();
       refreshGraph().catch(function () {
         setStatus('Не удалось построить граф зависимостей', 'error');
@@ -1022,6 +1079,7 @@
       bound = false;
 
       editorRoot.removeEventListener('ow:picker-selection-change', handleSelectionChange);
+      editorRoot.removeEventListener(AUTO_DEPENDENCIES_CHANGE_EVENT, handleAutoDependenciesChange);
 
       if (resizeObserver) {
         resizeObserver.disconnect();
@@ -1053,6 +1111,9 @@
       bind,
       refresh: refreshGraph,
       dispose,
+      getModel() {
+        return lastModel;
+      },
     };
   });
 })();

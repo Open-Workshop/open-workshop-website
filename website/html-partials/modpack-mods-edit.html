@@ -6,17 +6,6 @@
 {% set graph_id = editor_id ~ '-graph' %}
 
 <div class="modpack-mods-edit">
-  <div class="modpack-mods-edit__actions">
-    <button
-      type="button"
-      class="button-style button-style-small modpack-mods-edit__auto-build"
-      data-action="modpack-autodependencies-build"
-      title="Подобрать и отметить автозависимости для выбранных модов"
-    >
-      Подобрать автозависимости
-    </button>
-  </div>
-
   {{ render_relation_editor(
     items=modpack_mod_items,
     game=game_id,

@@ -186,7 +186,7 @@
       updateEmptyState(resultsList);
     }
 
-    function notifySelectionChange() {
+    function notifySelectionChange(extraDetail) {
       syncListState();
       requestLayout(root);
 
@@ -197,6 +197,7 @@
           key,
           state: getState(),
           context: getContext(),
+          ...(extraDetail || {}),
         },
       }));
 
@@ -221,6 +222,7 @@
       element.dataset.pickerSlot = String(options.slot || '');
       element.dataset.pickerSaved = options.saved ? 'true' : 'false';
       element.dataset.pickerPending = options.pendingCreate ? 'true' : 'false';
+      element.dataset.pickerManualRemoved = options.manualRemoved ? 'true' : 'false';
 
       element.classList.toggle('is-selected', Boolean(options.selected));
       element.classList.toggle('is-pending', Boolean(options.pendingCreate));
@@ -333,9 +335,10 @@
       if (isGhost(target)) {
         target.dataset.pickerGhost = 'false';
         target.dataset.pickerSaved = 'true';
+        target.dataset.pickerGhostOrigin = 'true';
         target.classList.remove('modpack-dependency-graph__ghost-item');
         syncResultSelection(itemId);
-        notifySelectionChange();
+        notifySelectionChange({ materializedGhost: true });
         return;
       }
 
@@ -343,14 +346,33 @@
       const selectedNode = findById(selectedList, itemId);
       const visibleSelectedNode = selectedNode && isVisible(selectedNode) ? selectedNode : null;
 
+      if (
+        visibleSelectedNode
+        && String(visibleSelectedNode.dataset.pickerGhostOrigin || 'false') === 'true'
+      ) {
+        visibleSelectedNode.dataset.pickerGhost = 'true';
+        visibleSelectedNode.dataset.pickerSaved = 'true';
+        visibleSelectedNode.dataset.pickerPending = 'false';
+        visibleSelectedNode.dataset.pickerAutoAdded = 'true';
+        visibleSelectedNode.dataset.pickerManualRemoved = 'false';
+        visibleSelectedNode.classList.add('modpack-dependency-graph__ghost-item');
+        syncResultSelection(itemId);
+        notifySelectionChange({ dematerializedGhost: true });
+        return;
+      }
+
       if (visibleSelectedNode) {
         if (isSaved(visibleSelectedNode)) {
           visibleSelectedNode.classList.add('is-hidden');
+          if (String(visibleSelectedNode.dataset.pickerAutoAdded || 'false') !== 'true') {
+            visibleSelectedNode.dataset.pickerManualRemoved = 'true';
+          }
         } else {
           visibleSelectedNode.remove();
         }
       } else if (selectedNode) {
         selectedNode.classList.remove('is-hidden');
+        selectedNode.dataset.pickerManualRemoved = 'false';
       } else {
         insertItem(selectedList, createItem({
           slot: 'selected',
@@ -389,6 +411,7 @@
         }
 
         selectedNode.classList.remove('is-hidden');
+        selectedNode.dataset.pickerManualRemoved = 'false';
         syncResultSelection(getItemId(selectedNode));
         notifySelectionChange();
         return;
@@ -441,6 +464,7 @@
         if (existing) {
           existing.dataset.pickerSaved = 'true';
           existing.classList.remove('is-hidden');
+          existing.dataset.pickerManualRemoved = 'false';
           existing.__pickerData = item;
         } else {
           insertItem(selectedList, createItem({

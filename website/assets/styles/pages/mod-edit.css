@@ -165,19 +165,6 @@ button.public-mod-toggle:active {
   min-width: 0;
 }
 
-.modpack-mods-edit__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 2px 0 0;
-}
-
-.modpack-mods-edit__auto-build {
-  width: fit-content;
-}
-
 .modpack-mods-edit {
   display: flex;
   flex-direction: column;
@@ -220,6 +207,10 @@ button.public-mod-toggle:active {
 
 .modpack-dependency-graph__ghost-item {
   opacity: 0.5;
+}
+
+.modpack-dependency-graph__ghost-item .modpack-auto-badge {
+  display: none;
 }
 
 .modpack-dependency-graph__edge {
