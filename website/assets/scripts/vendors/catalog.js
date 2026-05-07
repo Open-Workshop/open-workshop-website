@@ -381,6 +381,8 @@
       let path = '';
       if (isModpackMode) {
         requestSettings.pop('user');
+        const selectedGameId = String(requestSettings.get('game_id', requestSettings.get('game', '')) || '').trim();
+        requestSettings.pop('public');
         requestSettings.pop('sgame');
         requestSettings.pop('game');
         requestSettings.pop('game_id');
@@ -392,13 +394,20 @@
         requestSettings.pop('dependencies');
         requestSettings.pop('excluded_dependencies');
         requestSettings.pop('excluded_conflicts');
-        requestSettings.pop('tags');
-        requestSettings.pop('excluded_tags');
         requestSettings.pop('genres');
         requestSettings.pop('size_min');
         requestSettings.pop('size_max');
         requestSettings.pop('size_unpacked_min');
         requestSettings.pop('size_unpacked_max');
+        if (selectedGameId !== '') {
+          requestSettings.set('game_id', selectedGameId);
+        }
+        if (requestSettings.get('tags', '').length > 0) {
+          requestSettings.set('tags', requestSettings.get('tags').split('_').filter(Boolean));
+        }
+        if (requestSettings.get('excluded_tags', '').length > 0) {
+          requestSettings.set('excluded_tags', requestSettings.get('excluded_tags').split('_').filter(Boolean));
+        }
         requestSettings.set('include', includeFields);
         requestSettings.set(
           'sort',

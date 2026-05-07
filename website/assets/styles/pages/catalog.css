@@ -114,6 +114,30 @@ div#settings-catalog > div#settings-menu > setting.catalog-search-line > input[t
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting {
     padding: 2px 0;
 }
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting {
+    display: block;
+    padding: 0;
+    cursor: default;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    padding: 2px 0 0;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    text-decoration: none;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__item.is-active {
+    pointer-events: none;
+}
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls {
     width: 100%;
     margin: 5px 0;
@@ -329,6 +353,9 @@ div#settings-catalog > div#settings-menu > .catalog-game-filter[hidden],
 div#settings-catalog > div#settings-menu > .catalog-game-select-filter[hidden] {
     display: none !important;
 }
+main.catalog[data-catalog-kind="modpack"] .catalog-mod-only {
+    display: none !important;
+}
 div#settings-catalog > div#settings-menu > .catalog-dependencies-title {
     width: 100%;
     max-width: 400px;
@@ -421,6 +448,15 @@ select.game > option.game {
 }
 
 select.mod > option.mod {
+    display: none;
+}
+
+select.mod > option.rating {
+    display: none;
+}
+
+select.modpack > option.game,
+select.modpack > option.mod {
     display: none;
 }
 

@@ -1067,17 +1067,34 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("const catalogMode = getCatalogKind();", catalog_script)
         self.assertIn("modpack: new Set(['downloads', 'rating', 'created_at', 'name'])", catalog_script)
         self.assertIn("const includeFields = ['short_description', 'dates'];", catalog_script)
+        self.assertIn("const selectedGameId = String(requestSettings.get('game_id', requestSettings.get('game', '')) || '').trim();", catalog_script)
+        self.assertIn("requestSettings.set('game_id', selectedGameId);", catalog_script)
+        self.assertIn("requestSettings.set('tags', requestSettings.get('tags').split('_').filter(Boolean));", catalog_script)
+        self.assertIn("requestSettings.set('excluded_tags', requestSettings.get('excluded_tags').split('_').filter(Boolean));", catalog_script)
         self.assertIn("includeFields.push('statistics');", catalog_script)
         self.assertIn("requestSettings.set('include', includeFields);", catalog_script)
         self.assertIn("path = apiPaths.modpack.list.path;", catalog_script)
         self.assertIn("const renderEntityKind = isModpackMode ? 'modpack' : (isGameMode ? 'game' : 'mod');", catalog_script)
         self.assertIn("buildContextTag(element, renderEntityKind, contextSortMode)", catalog_script)
         self.assertIn("normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), 'modpack')", catalog_script)
+        self.assertIn("function syncCatalogModeSwitch(mode)", catalog_params)
+        self.assertIn("function setCatalogKind(mode)", catalog_params)
+        self.assertIn("URLManager.updateParams(queryUpdates);", catalog_params)
+        self.assertIn("function syncCatalogSelectedGamePreview(gameID)", catalog_params)
+        self.assertIn("bindPickerEvents();", catalog_params)
+        self.assertIn("syncCatalogSelectedGamePreview", catalog_params)
+        self.assertNotIn("function normalizeCatalogPublicMode(value)", catalog_params)
+        self.assertNotIn("function syncCatalogPublicMode(mode, options = {})", catalog_params)
+        self.assertNotIn("catalogPublicMode", catalog_params)
+        self.assertNotIn("catalog-public-select", catalog_params)
+        self.assertNotIn("catalog-public-setting", catalog_params)
 
         self.assertIn("if (getCatalogKind() === 'modpack') return '';", catalog_params)
         self.assertIn("key: 'author_id'", catalog_params)
+        self.assertIn("setCatalogKind(normalizedTargetKind);", catalog_params)
+        self.assertIn("sortOptionsList(sortMode);", catalog_params)
+        self.assertNotIn("window.location.assign(", catalog_params)
         self.assertIn("const ownerType = catalogKind === 'modpack'", catalog_params)
-        self.assertIn("? 'modpacks'", catalog_params)
 
         self.assertIn("const entityKind = String(settings.entityKind || cardData.entity_kind || (isGame ? 'game' : 'mod')).trim().toLowerCase()", cards_script)
         self.assertIn("entityKind === 'modpack' ? '/modpack/'", cards_script)
@@ -1852,9 +1869,29 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_index_catalog_template_supports_modpack_mode(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")
         self.assertIn("data-catalog-kind=\"{{ catalog_kind }}\"", index)
-        self.assertIn("{% if catalog_kind == 'modpack' %}", index)
+        self.assertIn("catalog-mode-switch", index)
+        self.assertIn('data-action="catalog-toggle-mode"', index)
+        self.assertIn('href="/?catalog_kind=modpack"', index)
+        self.assertIn('data-action="catalog-toggle-game-mode"', index)
+        self.assertIn('catalog-game-select-filter', index)
+        self.assertIn("catalog-mod-only", index)
+        self.assertIn("catalog-tags-editor", index)
         self.assertIn("Сортировка по загрузкам", index)
         self.assertIn("Каталог {{ catalog_entity_label | lower }} пользователя {{ catalog_user.username }}", index)
+
+    async def test_catalog_kind_query_uses_index_template(self) -> None:
+        handler = StubHandler()
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/?catalog_kind=modpack&name=Hospital&page=4"):
+                result = await main.unified_route()
+
+        self.assertEqual(result["template"], "index.html")
+        self.assertEqual(handler.render_calls[0][0], "index.html")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertTrue(render_kwargs["catalog"])
+        self.assertEqual(render_kwargs["catalog_kind"], "modpack")
+        self.assertEqual(render_kwargs["catalog_canonical"], "/?catalog_kind=modpack")
 
     async def test_user_modpacks_route_uses_modpack_catalog_config(self) -> None:
         handler = StubHandler(

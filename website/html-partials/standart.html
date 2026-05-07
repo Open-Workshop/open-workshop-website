@@ -63,7 +63,7 @@
     <link rel="preload" as="image" href="/assets/images/loading.webp"/>
     <link rel="prefetch" as="image" href="{{ ow.assets.images.fallback }}"/>
     <link rel="preconnect" href="{{ ow.api.base }}" />
-    <link rel="canonical" href="https://openworkshop.miskler.ru">
+    <link rel="canonical" href="https://openworkshop.miskler.ru{{ catalog_canonical | default('') }}">
     {% endif %}
     
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml"/>

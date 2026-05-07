@@ -1711,6 +1711,7 @@
     const setting = settingElement instanceof Element ? settingElement : getGameSetting();
     const input = setting ? setting.querySelector('input') : null;
     const params = URLManager.getParams();
+    const catalogKind = getCatalogKind();
     const currentSort = String(params.get('sort', '-downloads') || '');
     const checked = !(input && input.checked);
     const hasDependencies =
@@ -1732,8 +1733,11 @@
       input.checked = checked;
     }
 
-    sortOptionsList(checked);
-    const sortState = syncCatalogSortForMode(currentSort, checked);
+    let sortState = { sort: currentSort };
+    if (catalogKind !== 'modpack') {
+      sortOptionsList(checked);
+      sortState = syncCatalogSortForMode(currentSort, checked);
+    }
 
     const tagsValidation = await validateCatalogTagsForContext(
       getCatalogTagSelectionForValidation(),
@@ -1750,7 +1754,7 @@
       new Dictionary({ key: 'page', value: 0 }),
     ];
 
-    if (sortState.sort !== currentSort) {
+    if (catalogKind !== 'modpack' && sortState.sort !== currentSort) {
       updates.push(new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }));
     }
 
@@ -1759,7 +1763,7 @@
       updates.push(new Dictionary({ key: 'excluded_tags', value: '', default: '' }));
     }
 
-    if (checked) {
+    if (checked && catalogKind !== 'modpack') {
       clearSelectedDependencies();
       clearSelectedConflicts();
       updates.push(new Dictionary({ key: 'dependencies', value: '', default: '' }));
@@ -1770,7 +1774,9 @@
     URLManager.updateParams(updates);
     syncDependenceSearchGame(checked ? '' : params.get('game', ''));
     syncConflictsSearchGame(checked ? '' : params.get('game', ''));
-    setCatalogGameSpecificFiltersVisible(!checked);
+    if (catalogKind !== 'modpack') {
+      setCatalogGameSpecificFiltersVisible(!checked);
+    }
     setCatalogGameSelectionFiltersVisible(checked);
 
     const settingsCatalog = document.getElementById('settings-catalog');
@@ -1783,16 +1789,25 @@
 
   async function selectGame(gameID) {
     const params = URLManager.getParams();
+    const catalogKind = getCatalogKind();
     const currentSort = String(params.get('sort', '-downloads') || '');
-    sortOptionsList(false);
-    const sortState = syncCatalogSortForMode(currentSort, false);
-    URLManager.updateParams([
+    let sortState = { sort: currentSort };
+    if (catalogKind !== 'modpack') {
+      sortOptionsList(false);
+      sortState = syncCatalogSortForMode(currentSort, false);
+    }
+    const updates = [
       new Dictionary({ key: 'sgame', value: 'no', default: 'yes' }),
       new Dictionary({ key: 'game', value: gameID, default: '' }),
       new Dictionary({ key: 'tags', value: '', default: '' }),
       new Dictionary({ key: 'excluded_tags', value: '', default: '' }),
-      new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }),
       new Dictionary({ key: 'page', value: 0 }),
+    ];
+    if (catalogKind !== 'modpack' && sortState.sort !== currentSort) {
+      updates.splice(4, 0, new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }));
+    }
+    URLManager.updateParams([
+      ...updates,
     ]);
 
     const gameSetting = getGameSetting();
@@ -1814,12 +1829,53 @@
     syncConflictsSearchGame(gameID);
     pendingTagSync = false;
     clearSelectedTags();
+    setSettingChecked(getGameSetting(), false);
 
-    setCatalogGameSpecificFiltersVisible(true);
+    if (catalogKind !== 'modpack') {
+      setCatalogGameSpecificFiltersVisible(true);
+    }
     setCatalogGameSelectionFiltersVisible(false);
 
     await loadCatalogRangeFeed();
     resetCatalog();
+  }
+
+  async function syncCatalogSelectedGamePreview(gameID) {
+    const normalizedGameID = String(gameID || '').trim();
+    if (!normalizedGameID) return;
+
+    const gameListPath = apiPaths.game.list.path;
+    const resourcesPath = apiPaths.resource.list.path;
+    const gameIds = [normalizedGameID].filter(Boolean);
+    const gameParams = new URLSearchParams();
+    gameIds.forEach(function (id) {
+      gameParams.append('ids', id);
+    });
+    gameParams.append('page_size', '1');
+
+    const [gameResponse, logoResponse] = await Promise.all([
+      fetch(`${apiUrl(gameListPath)}?${gameParams.toString()}`),
+      fetch(`${apiUrl(resourcesPath)}?owner_type=games&owner_ids=${gameIds.join('&owner_ids=')}&types=logo&only_urls=true`),
+    ]);
+
+    if (!gameResponse.ok || !logoResponse.ok) {
+      return;
+    }
+
+    const [data, logo] = await Promise.all([gameResponse.json(), logoResponse.json()]);
+    const normalizedData = window.OWCore.normalizeCollectionResponse(data);
+    const normalizedLogo = window.OWCore.normalizeCollectionResponse(logo);
+    const setting = getGameSetting();
+    if (!setting) return;
+
+    const img = setting.querySelector('img');
+    const label = setting.querySelector('label');
+    if (img && Array.isArray(normalizedLogo.items) && normalizedLogo.items[0]) {
+      img.setAttribute('src', normalizedLogo.items[0].url || normalizedLogo.items[0]);
+    }
+    if (label && normalizedData.items && normalizedData.items[0]) {
+      label.textContent = normalizedData.items[0].name;
+    }
   }
 
   function searchByName(input) {
@@ -1849,6 +1905,106 @@
     }
 
     URLManager.updateParam('page', 0);
+    resetCatalog();
+  }
+
+  function syncCatalogModeSwitch(mode) {
+    const normalizedMode = resolveCatalogMode(mode);
+    document.querySelectorAll('.catalog-mode-switch__item').forEach(function (item) {
+      const itemKind = String(item.dataset.catalogKind || '').trim().toLowerCase();
+      const isActive = itemKind === normalizedMode;
+      item.classList.toggle('button-style-toggled', isActive);
+      item.classList.toggle('is-active', isActive);
+      if (isActive) {
+        item.setAttribute('aria-current', 'page');
+      } else {
+        item.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function setCatalogKind(mode) {
+    const normalizedMode = resolveCatalogMode(mode);
+    if (root) {
+      if (normalizedMode === 'modpack') {
+        root.dataset.catalogKind = 'modpack';
+      } else {
+        delete root.dataset.catalogKind;
+      }
+    }
+    syncCatalogModeSwitch(normalizedMode);
+    return normalizedMode;
+  }
+
+  async function navigateCatalogMode(targetKind) {
+    const normalizedTargetKind = String(targetKind || '').trim().toLowerCase();
+    if (normalizedTargetKind !== 'modpack' && normalizedTargetKind !== 'mod') {
+      return;
+    }
+
+    const currentKind = getCatalogKind();
+    if (currentKind === normalizedTargetKind) {
+      return;
+    }
+
+    const params = URLManager.getParams();
+    const currentSgame = params.get('sgame', 'yes') === 'yes';
+    const currentSort = String(params.get('sort', '-downloads') || '');
+    const queryUpdates = [];
+    const sortMode = normalizedTargetKind === 'modpack' ? 'modpack' : currentSgame;
+    const sortState = syncCatalogSortForMode(currentSort, sortMode);
+
+    setCatalogKind(normalizedTargetKind);
+    sortOptionsList(sortMode);
+    syncCatalogAdultMode(normalizeCatalogAdultMode(params.get('adult', '')));
+
+    [
+      'game_type',
+      'types',
+      'dependencies_mode',
+      'depen',
+      'dependencies',
+      'excluded_dependencies',
+      'excluded_conflicts',
+      'genres',
+      'size_min',
+      'size_max',
+      'size_unpacked_min',
+      'size_unpacked_max',
+      'trigger',
+    ].forEach(function (key) {
+      if (params.get(key, '') !== '') {
+        queryUpdates.push(new Dictionary({ key, value: '', default: '' }));
+      }
+    });
+
+    if (normalizedTargetKind === 'modpack') {
+      queryUpdates.push(new Dictionary({ key: 'catalog_kind', value: 'modpack', default: '' }));
+    } else {
+      queryUpdates.push(new Dictionary({ key: 'catalog_kind', value: '', default: '' }));
+    }
+
+    if (sortState.sort !== currentSort) {
+      queryUpdates.push(new Dictionary({ key: 'sort', value: sortState.sort, default: '-downloads' }));
+    }
+
+    queryUpdates.push(new Dictionary({ key: 'page', value: 0 }));
+    URLManager.updateParams(queryUpdates);
+
+    if (normalizedTargetKind === 'modpack') {
+      setCatalogRangeControlsDisabled(true);
+    } else {
+      sortOptionsList(currentSgame);
+      setCatalogGameSpecificFiltersVisible(!currentSgame);
+      setCatalogGameSelectionFiltersVisible(currentSgame);
+      await loadCatalogRangeFeed();
+    }
+
+    const gameId = params.get('game', '');
+    if (gameId !== '') {
+      await syncCatalogSelectedGamePreview(gameId);
+    }
+
     resetCatalog();
   }
 
@@ -2171,24 +2327,20 @@
     }
 
     const cleanupKeys = [
-      'sgame',
-      'game',
       'game_type',
       'types',
+      'public',
       'dependencies',
       'excluded_dependencies',
       'excluded_conflicts',
       'dependencies_mode',
       'depen',
       'independents',
-      'tags',
-      'excluded_tags',
       'genres',
       'size_min',
       'size_max',
       'size_unpacked_min',
       'size_unpacked_max',
-      'include',
     ];
     const cleanupUpdates = cleanupKeys
       .filter(function (key) {
@@ -2217,6 +2369,12 @@
     const adultMode = normalizeCatalogAdultMode(params.get('adult', ''));
     syncCatalogAdultMode(adultMode);
     setCatalogSearchValues(params.get('name', ''));
+    const sgame = params.get('sgame', 'yes') === 'yes';
+    setSettingChecked(getGameSetting(), sgame);
+    syncTagsSearchGame(params.get('game', ''));
+    setCatalogGameSelectionFiltersVisible(sgame);
+    await syncCatalogSelectedGamePreview(params.get('game', ''));
+    bindPickerEvents();
     bindInfiniteScroll();
     resetCatalog();
   }
@@ -2402,38 +2560,7 @@
     setCatalogGameSpecificFiltersVisible(!sgame);
     setCatalogGameSelectionFiltersVisible(sgame);
 
-    if (params.get('game', '') !== '') {
-      const gameListPath = apiPaths.game.list.path;
-      const resourcesPath = apiPaths.resource.list.path;
-      const gameIds = [params.get('game', '')].filter(Boolean);
-      const gameParams = new URLSearchParams();
-      gameIds.forEach(function (id) {
-        gameParams.append('ids', id);
-      });
-      gameParams.append('page_size', '1');
-
-      const [gameResponse, logoResponse] = await Promise.all([
-        fetch(`${apiUrl(gameListPath)}?${gameParams.toString()}`),
-        fetch(`${apiUrl(resourcesPath)}?owner_type=games&owner_ids=${gameIds.join('&owner_ids=')}&types=logo&only_urls=true`),
-      ]);
-
-      if (gameResponse.ok && logoResponse.ok) {
-        const [data, logo] = await Promise.all([gameResponse.json(), logoResponse.json()]);
-        const normalizedData = window.OWCore.normalizeCollectionResponse(data);
-        const normalizedLogo = window.OWCore.normalizeCollectionResponse(logo);
-        const setting = getGameSetting();
-        if (setting) {
-          const img = setting.querySelector('img');
-          const label = setting.querySelector('label');
-          if (img && Array.isArray(normalizedLogo.items) && normalizedLogo.items[0]) {
-            img.setAttribute('src', normalizedLogo.items[0].url || normalizedLogo.items[0]);
-          }
-          if (label && normalizedData.items && normalizedData.items[0]) {
-            label.textContent = normalizedData.items[0].name;
-          }
-        }
-      }
-    }
+    await syncCatalogSelectedGamePreview(params.get('game', ''));
 
     bindPickerEvents();
     bindInfiniteScroll();
@@ -2480,6 +2607,16 @@
 
     if (action === 'catalog-toggle-game-mode') {
       void toggleGameMode(target);
+      return;
+    }
+
+    if (action === 'catalog-toggle-mode') {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) {
+        return;
+      }
+
+      event.preventDefault();
+      navigateCatalogMode(target.dataset.catalogKind);
       return;
     }
 

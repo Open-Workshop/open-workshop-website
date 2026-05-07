@@ -784,11 +784,33 @@ async def status_badge(slug):
 
 async def unified_route():
     url = request.path
-    if url == '/': url = '/index'
-    if not url.endswith('.html'): url += '.html'
+    catalog = False
+    catalog_kind = ""
+    catalog_canonical = ""
+    template_name = ""
+    requested_catalog_kind = str(request.args.get("catalog_kind", "")).strip().lower()
+
+    if url == "/":
+        url = "/index"
+
+    if url in {"/index", "/index.html"}:
+        catalog = True
+        if requested_catalog_kind == "modpack":
+            catalog_kind = "modpack"
+            catalog_canonical = "/?catalog_kind=modpack"
+        template_name = "index.html"
+    else:
+        if not url.endswith(".html"):
+            url += ".html"
+        template_name = url[1:]
 
     async with UserHandler() as handler:
-        page_html = handler.render(url[1:], catalog=(url=='/index.html'))
+        render_kwargs = {"catalog": catalog}
+        if catalog_kind:
+            render_kwargs["catalog_kind"] = catalog_kind
+        if catalog_canonical:
+            render_kwargs["catalog_canonical"] = catalog_canonical
+        page_html = handler.render(template_name, **render_kwargs)
         return handler.finish(page_html)
 
 
