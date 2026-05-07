@@ -28,6 +28,41 @@ MOD_EVENTS_INDEX_DATABASE = "website"
 Сайт использует `access` только на стороне сервера для проверки прав и доступности кнопок.  
 Для локального запуска рядом с `manager` укажите `ACCESS_SERVICE_URL` в `ow_config.py` и убедитесь, что браузер не получает этот адрес в публичном JSON-конфиге.
 
+## Тесты
+
+В проекте есть два уровня тестов:
+
+- Python-тесты проверяют серверные маршруты, шаблоны, access policy, рендер описаний и sitemap/event-index логику.
+- JS unit-тесты в `tests/js/` проверяют поведение браузерных модулей без хрупких проверок строк в исходниках.
+
+Запуск JS unit-тестов:
+
+```bash
+node --test tests/js
+```
+
+Эти тесты используют встроенный `node:test`, поэтому `package.json` и npm-зависимости для них не нужны. Сейчас JS-набор покрывает:
+
+- сборку API-запросов каталога для режимов `game`, `mod` и `modpack`;
+- нормализацию фильтров `tags`, `excluded_tags`, `dependencies`, `excluded_dependencies`, `excluded_conflicts`, `game_type/types` и `adult`;
+- очистку URL-параметров под активный режим каталога;
+- нормализацию сортировок перед запросом к manager API;
+- поведение карточек каталога: загрузку логотипов через resources API, пропуск placeholder-карточек, защиту от устаревших request token и ссылки modpack-карточек.
+
+Запуск Python route/template-среза по каталогу:
+
+```bash
+./venv/bin/python -m pytest tests/test_routes.py -q -k catalog
+```
+
+Полный Python-набор:
+
+```bash
+./venv/bin/python -m pytest tests -q
+```
+
+Подробности по JS-тестам лежат в `tests/js/README.md`.
+
 ## Uptrace telemetry
 
 Сервер отправляет трейсы в Uptrace через OpenTelemetry, если задан `UPTRACE_DSN`.
