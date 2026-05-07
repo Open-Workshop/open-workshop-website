@@ -6,6 +6,7 @@
 
   const { getApiPaths, apiUrl } = window.OWCore;
   const apiPaths = getApiPaths();
+  const catalogCore = window.OWCatalogCore || {};
 
   let blocking = false;
   let outOfCards = false;
@@ -28,6 +29,9 @@
   }
 
   function resolveCatalogMode(mode) {
+    if (typeof catalogCore.resolveCatalogMode === 'function') {
+      return catalogCore.resolveCatalogMode(mode);
+    }
     if (mode === 'game' || mode === 'mod' || mode === 'modpack') {
       return mode;
     }
@@ -999,26 +1003,6 @@
     select.classList.remove('modpack');
   }
 
-  const CATALOG_SORT_ALIASES = {
-    creation: 'created_at',
-    downloads: 'downloads',
-    mods: 'mods_count',
-    mods_downloads: 'downloads',
-    plugins_count: 'dependents_count',
-    update: 'file_updated_at',
-    updated_at: 'file_updated_at',
-  };
-  const CATALOG_SORT_ALLOWED_VALUES = {
-    game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
-    mod: new Set(['downloads', 'rating', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name']),
-    modpack: new Set(['downloads', 'rating', 'created_at', 'name']),
-  };
-  const CATALOG_SORT_DEFAULT_VALUES = {
-    game: 'mods_count',
-    mod: 'downloads',
-    modpack: 'downloads',
-  };
-
   function getCatalogSortSelect() {
     return document.querySelector('select#sort-select');
   }
@@ -1028,37 +1012,33 @@
   }
 
   function normalizeCatalogSortValue(sortMode) {
-    const normalizedSort = String(sortMode || '')
-      .replace(/^-/, '')
-      .toLowerCase();
-    return CATALOG_SORT_ALIASES[normalizedSort] || normalizedSort;
+    if (typeof catalogCore.normalizeCatalogSortValue === 'function') {
+      return catalogCore.normalizeCatalogSortValue(sortMode);
+    }
+    return String(sortMode || '').replace(/^-/, '').toLowerCase();
   }
 
   function getCatalogSortDefaultValue(catalogMode) {
-    const resolvedMode = resolveCatalogMode(catalogMode);
-    return CATALOG_SORT_DEFAULT_VALUES[resolvedMode] || CATALOG_SORT_DEFAULT_VALUES.mod;
+    if (typeof catalogCore.getCatalogSortStateForMode === 'function') {
+      return catalogCore.getCatalogSortStateForMode('', catalogMode).value;
+    }
+    return resolveCatalogMode(catalogMode) === 'game' ? 'mods_count' : 'downloads';
   }
 
   function isCatalogSortAllowedForMode(sortValue, catalogMode) {
-    const normalizedSort = normalizeCatalogSortValue(sortValue);
-    const resolvedMode = resolveCatalogMode(catalogMode);
-    const allowedValues = CATALOG_SORT_ALLOWED_VALUES[resolvedMode] || CATALOG_SORT_ALLOWED_VALUES.mod;
-    return allowedValues.has(normalizedSort);
+    if (typeof catalogCore.isCatalogSortAllowedForMode === 'function') {
+      return catalogCore.isCatalogSortAllowedForMode(sortValue, catalogMode);
+    }
+    return Boolean(normalizeCatalogSortValue(sortValue));
   }
 
   function getCatalogSortStateForMode(sortMode, catalogMode) {
-    const rawSort = String(sortMode || '').trim();
-    const descending = rawSort.startsWith('-');
-    const normalizedSort = normalizeCatalogSortValue(rawSort);
-    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, catalogMode)
-      ? normalizedSort
-      : getCatalogSortDefaultValue(catalogMode);
-
-    return {
-      descending,
-      sort: (descending ? '-' : '') + allowedSort,
-      value: allowedSort,
-    };
+    if (typeof catalogCore.getCatalogSortStateForMode === 'function') {
+      return catalogCore.getCatalogSortStateForMode(sortMode, catalogMode);
+    }
+    const value = normalizeCatalogSortValue(sortMode) || getCatalogSortDefaultValue(catalogMode);
+    const descending = String(sortMode || '').trim().startsWith('-');
+    return { descending, sort: (descending ? '-' : '') + value, value };
   }
 
   function syncCatalogSortForMode(sortMode, catalogMode) {
@@ -1191,72 +1171,38 @@
   }
 
   function resolveCatalogState(params = URLManager.getParams()) {
+    if (typeof catalogCore.resolveCatalogState === 'function') {
+      return catalogCore.resolveCatalogState({
+        catalogKind: getCatalogKind(),
+        hasUserFilter: Boolean(getCatalogUserFilter()),
+        sgame: params.get('sgame', undefined),
+      });
+    }
+
     const catalogKind = getCatalogKind() === 'modpack' ? 'modpack' : 'mod';
     const defaultSgame = catalogKind === 'modpack' && getCatalogUserFilter() ? 'no' : 'yes';
     const isGameView = params.get('sgame', defaultSgame) === 'yes';
-    const view = isGameView ? 'game' : catalogKind;
-
     return {
       catalogKind,
       defaultSgame,
       isGameView,
-      view,
+      view: isGameView ? 'game' : catalogKind,
     };
   }
 
-  const CATALOG_VIEW_CLEANUP_KEYS = {
-    game: [
-      'public',
-      'dependencies',
-      'excluded_dependencies',
-      'excluded_conflicts',
-      'dependencies_mode',
-      'depen',
-      'independents',
-      'dependents_count_min',
-      'dependents_count_max',
-      'size_min',
-      'size_max',
-      'size_unpacked_min',
-      'size_unpacked_max',
-    ],
-    mod: [
-      'public',
-      'game_type',
-      'types',
-      'genres',
-    ],
-    modpack: [
-      'public',
-      'game_type',
-      'types',
-      'dependencies',
-      'excluded_dependencies',
-      'excluded_conflicts',
-      'dependencies_mode',
-      'depen',
-      'independents',
-      'dependents_count_min',
-      'dependents_count_max',
-      'genres',
-      'size_min',
-      'size_max',
-      'size_unpacked_min',
-      'size_unpacked_max',
-    ],
-  };
-
-  function getCatalogCleanupKeysForView(view) {
-    return CATALOG_VIEW_CLEANUP_KEYS[view] || [];
-  }
-
   function buildCatalogCleanupUpdates(params, state, extraKeys = []) {
-    const keys = Array.from(new Set([
-      ...getCatalogCleanupKeysForView(state.view),
-      ...extraKeys,
-    ]));
+    if (typeof catalogCore.buildCatalogCleanupOps === 'function') {
+      return catalogCore.buildCatalogCleanupOps(params, state, extraKeys)
+        .map(function (operation) {
+          return new Dictionary({
+            key: operation.key,
+            value: operation.value,
+            default: operation.defaultValue,
+          });
+        });
+    }
 
-    return keys
+    return extraKeys
       .filter(function (key) {
         return params.get(key, '') !== '';
       })

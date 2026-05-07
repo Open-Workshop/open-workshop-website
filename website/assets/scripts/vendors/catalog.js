@@ -3,6 +3,7 @@
 (function () {
   const { getApiPaths, apiUrl } = window.OWCore;
   const apiPaths = getApiPaths();
+  const catalogCore = window.OWCatalogCore || {};
 
   const masonrySettings = {
     columnWidth: 318,
@@ -35,6 +36,9 @@
   }
 
   function resolveCatalogMode(mode) {
+    if (typeof catalogCore.resolveCatalogMode === 'function') {
+      return catalogCore.resolveCatalogMode(mode);
+    }
     if (mode === 'game' || mode === 'mod' || mode === 'modpack') {
       return mode;
     }
@@ -58,83 +62,46 @@
     return false;
   }
 
-  const CATALOG_SORT_ALIASES = {
-    creation: 'created_at',
-    downloads: 'downloads',
-    mods: 'mods_count',
-    mods_downloads: 'downloads',
-    plugins_count: 'dependents_count',
-    rating: 'rating',
-    update: 'file_updated_at',
-    updated_at: 'file_updated_at',
-  };
-  const CATALOG_SORT_ALLOWED_VALUES = {
-    game: new Set(['mods_count', 'downloads', 'created_at', 'name']),
-    mod: new Set(['downloads', 'size', 'file_updated_at', 'dependents_count', 'created_at', 'name', 'rating']),
-    modpack: new Set(['downloads', 'rating', 'created_at', 'name']),
-  };
-  const CATALOG_SORT_DEFAULT_VALUES = {
-    game: 'mods_count',
-    mod: 'downloads',
-    modpack: 'downloads',
-  };
-
   function getContextSortMode(sortMode) {
-    const normalizedSort = String(sortMode || '')
-      .replace(/^-/, '')
-      .toLowerCase();
-    const aliases = {
-      downloads: 'DOWNLOADS',
-      mods_downloads: 'DOWNLOADS',
-      created_at: 'CREATION',
-      file_updated_at: 'UPDATE',
-      updated_at: 'UPDATE',
-      mods_count: 'MODS',
-      dependents_count: 'DEPENDENTS',
-      size: 'SIZE',
-      rating: 'RATING',
-    };
-    return aliases[normalizedSort] || normalizedSort.toUpperCase();
+    if (typeof catalogCore.getContextSortMode === 'function') {
+      return catalogCore.getContextSortMode(sortMode);
+    }
+    return String(sortMode || '').replace(/^-/, '').toUpperCase();
   }
 
   function normalizeCatalogSortValue(sortMode) {
-    const normalizedSort = String(sortMode || '')
-      .replace(/^-/, '')
-      .toLowerCase();
-    return CATALOG_SORT_ALIASES[normalizedSort] || normalizedSort;
+    if (typeof catalogCore.normalizeCatalogSortValue === 'function') {
+      return catalogCore.normalizeCatalogSortValue(sortMode);
+    }
+    return String(sortMode || '').replace(/^-/, '').toLowerCase();
   }
 
   function getCatalogSortDefaultValue(catalogMode) {
-    const resolvedMode = resolveCatalogMode(catalogMode);
-    return CATALOG_SORT_DEFAULT_VALUES[resolvedMode] || CATALOG_SORT_DEFAULT_VALUES.mod;
+    if (typeof catalogCore.getCatalogSortStateForMode === 'function') {
+      return catalogCore.getCatalogSortStateForMode('', catalogMode).value;
+    }
+    return resolveCatalogMode(catalogMode) === 'game' ? 'mods_count' : 'downloads';
   }
 
   function isCatalogSortAllowedForMode(sortValue, catalogMode) {
-    const normalizedSort = normalizeCatalogSortValue(sortValue);
-    const resolvedMode = resolveCatalogMode(catalogMode);
-    const allowedValues = CATALOG_SORT_ALLOWED_VALUES[resolvedMode] || CATALOG_SORT_ALLOWED_VALUES.mod;
-    return allowedValues.has(normalizedSort);
+    if (typeof catalogCore.isCatalogSortAllowedForMode === 'function') {
+      return catalogCore.isCatalogSortAllowedForMode(sortValue, catalogMode);
+    }
+    return Boolean(normalizeCatalogSortValue(sortValue));
   }
 
   function normalizeCatalogSortForManager(sortMode, catalogMode) {
-    const rawSort = String(sortMode || '').trim();
-    const descending = rawSort.startsWith('-');
-    const normalizedSort = normalizeCatalogSortValue(rawSort);
-    const resolvedMode = resolveCatalogMode(catalogMode);
-    const allowedSort = isCatalogSortAllowedForMode(normalizedSort, resolvedMode)
-      ? normalizedSort
-      : getCatalogSortDefaultValue(resolvedMode);
-    const managerSort = allowedSort === 'downloads' && resolvedMode === 'game'
-      ? 'mods_downloads'
-      : allowedSort;
-
-    return descending ? '-' + managerSort : managerSort;
+    if (typeof catalogCore.normalizeCatalogSortForManager === 'function') {
+      return catalogCore.normalizeCatalogSortForManager(sortMode, catalogMode);
+    }
+    return String(sortMode || getCatalogSortDefaultValue(catalogMode));
   }
 
   function normalizeCatalogGameTypeForManager(value) {
-    const normalized = String(value || 'all').trim().toLowerCase();
-    if (normalized === 'app' || normalized === 'game') return normalized;
-    return 'all';
+    if (typeof catalogCore.normalizeCatalogGameTypeForManager === 'function') {
+      return catalogCore.normalizeCatalogGameTypeForManager(value);
+    }
+    return String(value || 'all').trim().toLowerCase();
   }
 
   function buildContextTag(element, catalogMode, contextSortMode) {
@@ -367,176 +334,26 @@
       const doplink = URLManager.genString(settings.duplicate().pop('page').pop('trigger'));
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
       const catalogMode = getCatalogKind();
-      const isModpackMode = catalogMode === 'modpack';
-      const isGameMode = settings.get('sgame', 'yes') == 'yes';
-      const renderEntityKind = isGameMode ? 'game' : (isModpackMode ? 'modpack' : 'mod');
+      const requestPlan = catalogCore.buildCatalogRequest({
+        catalogKind: catalogMode,
+        pageSize: 30,
+        paths: {
+          game: apiPaths.game.list.path,
+          mod: apiPaths.mod.list.path,
+          modpack: apiPaths.modpack.list.path,
+        },
+        settings,
+      });
+      const isGameMode = requestPlan.isGameMode;
+      const renderEntityKind = requestPlan.renderEntityKind;
       settings.set('page_size', 30);
       settings.pop('statistics');
       settings.pop('dates');
       settings.pop('trigger');
       settings.pop('include');
 
-      const requestSettings = settings.duplicate();
-      requestSettings.pop('catalog_kind');
-      const includeFields = ['short_description', 'dates'];
-      let path = '';
-      if (isModpackMode && !isGameMode) {
-        requestSettings.pop('user');
-        const selectedGameId = String(requestSettings.get('game_id', requestSettings.get('game', '')) || '').trim();
-        requestSettings.pop('public');
-        requestSettings.pop('sgame');
-        requestSettings.pop('game');
-        requestSettings.pop('game_id');
-        requestSettings.pop('game_type');
-        requestSettings.pop('types');
-        requestSettings.pop('dependencies_mode');
-        requestSettings.pop('independents');
-        requestSettings.pop('depen');
-        requestSettings.pop('dependencies');
-        requestSettings.pop('excluded_dependencies');
-        requestSettings.pop('excluded_conflicts');
-        requestSettings.pop('genres');
-        requestSettings.pop('size_min');
-        requestSettings.pop('size_max');
-        requestSettings.pop('size_unpacked_min');
-        requestSettings.pop('size_unpacked_max');
-        if (selectedGameId !== '') {
-          requestSettings.set('game_id', selectedGameId);
-        }
-        if (requestSettings.get('tags', '').length > 0) {
-          requestSettings.set('tags', requestSettings.get('tags').split('_').filter(Boolean));
-        }
-        if (requestSettings.get('excluded_tags', '').length > 0) {
-          requestSettings.set('excluded_tags', requestSettings.get('excluded_tags').split('_').filter(Boolean));
-        }
-        requestSettings.set('include', includeFields);
-        requestSettings.set(
-          'sort',
-          normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), 'modpack'),
-        );
-        path = apiPaths.modpack.list.path;
-      } else {
-        const keys = [['depen', 'independents']];
-        keys.forEach((key) => {
-          if (requestSettings.get(key[0]) != undefined) {
-            requestSettings.replaceKey(key[0], key[1]);
-          }
-        });
-
-        const rawDependencies = String(requestSettings.get('dependencies', '') || '');
-        const rawExcludedDependencies = String(requestSettings.get('excluded_dependencies', '') || '');
-        const rawExcludedConflicts = String(requestSettings.get('excluded_conflicts', '') || '');
-        const dependencies = rawDependencies
-          .replaceAll('_', ',')
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .split(',')
-          .map((id) => String(id).trim())
-          .filter((id) => /^\d+$/.test(id));
-        const excludedDependencies = rawExcludedDependencies
-          .replaceAll('_', ',')
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .split(',')
-          .map((id) => String(id).trim())
-          .filter((id) => /^\d+$/.test(id));
-        const excludedConflicts = rawExcludedConflicts
-          .replaceAll('_', ',')
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .split(',')
-          .map((id) => String(id).trim())
-          .filter((id) => /^\d+$/.test(id));
-        const independentMode = String(requestSettings.get('independents', 'no')) === 'yes';
-        requestSettings.pop('dependencies_mode');
-        if (independentMode) {
-          requestSettings.pop('dependencies');
-          requestSettings.pop('excluded_dependencies');
-        } else {
-          if (dependencies.length > 0) {
-            requestSettings.set('dependencies', dependencies);
-          } else {
-            requestSettings.pop('dependencies');
-          }
-
-          if (excludedDependencies.length > 0) {
-            requestSettings.set('excluded_dependencies', excludedDependencies);
-          } else {
-            requestSettings.pop('excluded_dependencies');
-          }
-
-          if (dependencies.length > 0 || excludedDependencies.length > 0) {
-            requestSettings.set('sgame', 'no');
-            requestSettings.set('independents', 'no');
-          }
-        }
-        if (excludedConflicts.length > 0) {
-          requestSettings.set('excluded_conflicts', excludedConflicts);
-          requestSettings.set('sgame', 'no');
-        } else {
-          requestSettings.pop('excluded_conflicts');
-        }
-
-        if (isGameMode) {
-          includeFields.push('statistics');
-        }
-        const gameType = normalizeCatalogGameTypeForManager(requestSettings.get('game_type', requestSettings.get('types', 'all')));
-        requestSettings.pop('dependencies_mode');
-        requestSettings.pop('independents');
-        requestSettings.pop('sgame');
-        if (isGameMode) {
-          requestSettings.pop('adult');
-          requestSettings.pop('dependencies');
-          requestSettings.pop('excluded_dependencies');
-          requestSettings.pop('excluded_conflicts');
-          requestSettings.pop('tags');
-          requestSettings.pop('excluded_tags');
-          requestSettings.pop('dependents_count_min');
-          requestSettings.pop('dependents_count_max');
-          requestSettings.pop('size_min');
-          requestSettings.pop('size_max');
-          requestSettings.pop('size_unpacked_min');
-          requestSettings.pop('size_unpacked_max');
-          requestSettings.pop('game_type');
-          requestSettings.pop('types');
-          if (gameType !== 'all') {
-            requestSettings.set('types', gameType);
-          }
-          if (requestSettings.get('genres', '').length > 0) {
-            requestSettings.set('genres', requestSettings.get('genres').split('_').filter(Boolean));
-          }
-        } else {
-          const adultValue = requestSettings.get('adult', '');
-          if (adultValue === '' || adultValue === undefined || adultValue === null) {
-            requestSettings.set('adult', '0');
-          }
-          requestSettings.pop('game_type');
-          requestSettings.pop('types');
-          requestSettings.pop('genres');
-        }
-        requestSettings.set('include', includeFields);
-        requestSettings.set(
-          'sort',
-          normalizeCatalogSortForManager(requestSettings.get('sort', '-downloads'), isGameMode ? 'game' : 'mod'),
-        );
-        if (isGameMode) {
-          requestSettings.pop('game');
-        } else if (requestSettings.get('game') != undefined) {
-          requestSettings.replaceKey('game', 'game_id');
-        }
-
-        if (!isGameMode && requestSettings.get('tags', '').length > 0) {
-          requestSettings.set('tags', requestSettings.get('tags').split('_').filter(Boolean));
-        }
-
-        if (!isGameMode && requestSettings.get('excluded_tags', '').length > 0) {
-          requestSettings.set('excluded_tags', requestSettings.get('excluded_tags').split('_').filter(Boolean));
-        }
-
-        const gamesPath = apiPaths.game.list.path;
-        const modsPath = apiPaths.mod.list.path;
-        path = isGameMode ? gamesPath : modsPath;
-      }
+      const requestSettings = new Dictionary(requestPlan.requestParams);
+      const path = requestPlan.path;
       const url =
         apiUrl(path) +
         URLManager.genString(requestSettings, new Dictionary({ size: 'page_size' }));
