@@ -120,23 +120,31 @@ div#settings-catalog > div#settings-menu > setting.catalog-mode-setting {
     cursor: default;
 }
 div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
     width: 100%;
     padding: 2px 0 0;
 }
-div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__item {
-    flex: 1;
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__label {
     min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     text-align: center;
-    text-decoration: none;
+    white-space: nowrap;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    transition: color 0.14s ease, opacity 0.14s ease;
+    cursor: pointer;
 }
-div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__item.is-active {
-    pointer-events: none;
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch[data-active-kind="mod"] > .catalog-mode-switch__label--mod,
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch[data-active-kind="modpack"] > .catalog-mode-switch__label--modpack {
+    color: #ffffff;
+    opacity: 1;
+}
+div#settings-catalog > div#settings-menu > setting.catalog-mode-setting > .catalog-mode-switch > .catalog-mode-switch__checkbox {
+    margin: 0;
+    justify-self: center;
 }
 div#settings-catalog > div#settings-menu > setting.catalog-sort-setting > div.with-button.catalog-sort-controls {
     width: 100%;
@@ -349,11 +357,7 @@ div#settings-catalog > div#settings-menu > setting.catalog-range-setting > .cata
 div#settings-catalog > div#settings-menu > setting.catalog-range-setting > .catalog-range-panel > .catalog-range-group > .catalog-range-slider > input[type="range"][data-range-role="max"] {
     z-index: 3;
 }
-div#settings-catalog > div#settings-menu > .catalog-game-filter[hidden],
-div#settings-catalog > div#settings-menu > .catalog-game-select-filter[hidden] {
-    display: none !important;
-}
-main.catalog[data-catalog-kind="modpack"] .catalog-mod-only {
+div#settings-catalog > div#settings-menu > [data-catalog-views][hidden] {
     display: none !important;
 }
 div#settings-catalog > div#settings-menu > .catalog-dependencies-title {

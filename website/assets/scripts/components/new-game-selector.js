@@ -116,6 +116,15 @@
         logo.src = logoUrl;
       });
       setOpen(false);
+
+      document.dispatchEvent(new CustomEvent('ow:catalog-game-select', {
+        bubbles: true,
+        detail: {
+          gameId: String(gameId),
+          gameName,
+          gameLogo: logoUrl,
+        },
+      }));
     }
 
     async function refreshResults() {
@@ -162,11 +171,15 @@
 
       const card = target.closest('.in-popup-game-card');
       if (card && resultsRoot.contains(card)) {
+        event.stopPropagation();
         applySelectedGame(card);
         return;
       }
 
-      if (target.closest('.popup-game-select')) return;
+      if (target.closest('.popup-game-select')) {
+        event.stopPropagation();
+        return;
+      }
       setOpen(!container.classList.contains('active'));
     });
 

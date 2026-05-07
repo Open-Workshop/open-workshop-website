@@ -368,8 +368,8 @@
       const contextSortMode = getContextSortMode(settings.get('sort', '-downloads'));
       const catalogMode = getCatalogKind();
       const isModpackMode = catalogMode === 'modpack';
-      const isGameMode = !isModpackMode && settings.get('sgame', 'yes') == 'yes';
-      const renderEntityKind = isModpackMode ? 'modpack' : (isGameMode ? 'game' : 'mod');
+      const isGameMode = settings.get('sgame', 'yes') == 'yes';
+      const renderEntityKind = isGameMode ? 'game' : (isModpackMode ? 'modpack' : 'mod');
       settings.set('page_size', 30);
       settings.pop('statistics');
       settings.pop('dates');
@@ -377,9 +377,10 @@
       settings.pop('include');
 
       const requestSettings = settings.duplicate();
+      requestSettings.pop('catalog_kind');
       const includeFields = ['short_description', 'dates'];
       let path = '';
-      if (isModpackMode) {
+      if (isModpackMode && !isGameMode) {
         requestSettings.pop('user');
         const selectedGameId = String(requestSettings.get('game_id', requestSettings.get('game', '')) || '').trim();
         requestSettings.pop('public');
@@ -417,14 +418,14 @@
       } else {
         const keys = [['depen', 'independents']];
         keys.forEach((key) => {
-          if (settings.get(key[0]) != undefined) {
-            settings.replaceKey(key[0], key[1]);
+          if (requestSettings.get(key[0]) != undefined) {
+            requestSettings.replaceKey(key[0], key[1]);
           }
         });
 
-        const rawDependencies = String(settings.get('dependencies', '') || '');
-        const rawExcludedDependencies = String(settings.get('excluded_dependencies', '') || '');
-        const rawExcludedConflicts = String(settings.get('excluded_conflicts', '') || '');
+        const rawDependencies = String(requestSettings.get('dependencies', '') || '');
+        const rawExcludedDependencies = String(requestSettings.get('excluded_dependencies', '') || '');
+        const rawExcludedConflicts = String(requestSettings.get('excluded_conflicts', '') || '');
         const dependencies = rawDependencies
           .replaceAll('_', ',')
           .replaceAll('[', '')
@@ -446,49 +447,63 @@
           .split(',')
           .map((id) => String(id).trim())
           .filter((id) => /^\d+$/.test(id));
-        const independentMode = String(settings.get('independents', 'no')) === 'yes';
-        settings.pop('dependencies_mode');
+        const independentMode = String(requestSettings.get('independents', 'no')) === 'yes';
+        requestSettings.pop('dependencies_mode');
         if (independentMode) {
-          settings.pop('dependencies');
-          settings.pop('excluded_dependencies');
+          requestSettings.pop('dependencies');
+          requestSettings.pop('excluded_dependencies');
         } else {
           if (dependencies.length > 0) {
-            settings.set('dependencies', dependencies);
+            requestSettings.set('dependencies', dependencies);
           } else {
-            settings.pop('dependencies');
+            requestSettings.pop('dependencies');
           }
 
           if (excludedDependencies.length > 0) {
-            settings.set('excluded_dependencies', excludedDependencies);
+            requestSettings.set('excluded_dependencies', excludedDependencies);
           } else {
-            settings.pop('excluded_dependencies');
+            requestSettings.pop('excluded_dependencies');
           }
 
           if (dependencies.length > 0 || excludedDependencies.length > 0) {
-            settings.set('sgame', 'no');
-            settings.set('independents', 'no');
+            requestSettings.set('sgame', 'no');
+            requestSettings.set('independents', 'no');
           }
         }
         if (excludedConflicts.length > 0) {
-          settings.set('excluded_conflicts', excludedConflicts);
-          settings.set('sgame', 'no');
+          requestSettings.set('excluded_conflicts', excludedConflicts);
+          requestSettings.set('sgame', 'no');
         } else {
-          settings.pop('excluded_conflicts');
+          requestSettings.pop('excluded_conflicts');
         }
 
         if (isGameMode) {
           includeFields.push('statistics');
         }
-        const gameType = normalizeCatalogGameTypeForManager(settings.get('game_type', settings.get('types', 'all')));
+        const gameType = normalizeCatalogGameTypeForManager(requestSettings.get('game_type', requestSettings.get('types', 'all')));
         requestSettings.pop('dependencies_mode');
         requestSettings.pop('independents');
         requestSettings.pop('sgame');
         if (isGameMode) {
           requestSettings.pop('adult');
+          requestSettings.pop('dependencies');
+          requestSettings.pop('excluded_dependencies');
+          requestSettings.pop('excluded_conflicts');
+          requestSettings.pop('tags');
+          requestSettings.pop('excluded_tags');
+          requestSettings.pop('dependents_count_min');
+          requestSettings.pop('dependents_count_max');
+          requestSettings.pop('size_min');
+          requestSettings.pop('size_max');
+          requestSettings.pop('size_unpacked_min');
+          requestSettings.pop('size_unpacked_max');
           requestSettings.pop('game_type');
           requestSettings.pop('types');
           if (gameType !== 'all') {
             requestSettings.set('types', gameType);
+          }
+          if (requestSettings.get('genres', '').length > 0) {
+            requestSettings.set('genres', requestSettings.get('genres').split('_').filter(Boolean));
           }
         } else {
           const adultValue = requestSettings.get('adult', '');
@@ -497,6 +512,7 @@
           }
           requestSettings.pop('game_type');
           requestSettings.pop('types');
+          requestSettings.pop('genres');
         }
         requestSettings.set('include', includeFields);
         requestSettings.set(
@@ -509,16 +525,12 @@
           requestSettings.replaceKey('game', 'game_id');
         }
 
-        if (settings.get('tags', '').length > 0) {
-          settings.set('tags', settings.get('tags').split('_').filter(Boolean));
+        if (!isGameMode && requestSettings.get('tags', '').length > 0) {
+          requestSettings.set('tags', requestSettings.get('tags').split('_').filter(Boolean));
         }
 
-        if (settings.get('excluded_tags', '').length > 0) {
-          settings.set('excluded_tags', settings.get('excluded_tags').split('_').filter(Boolean));
-        }
-
-        if (settings.get('genres', '').length > 0) {
-          settings.set('genres', settings.get('genres').split('_').filter(Boolean));
+        if (!isGameMode && requestSettings.get('excluded_tags', '').length > 0) {
+          requestSettings.set('excluded_tags', requestSettings.get('excluded_tags').split('_').filter(Boolean));
         }
 
         const gamesPath = apiPaths.game.list.path;

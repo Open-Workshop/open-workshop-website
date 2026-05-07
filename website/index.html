@@ -15,42 +15,35 @@
 
     <div id="settings-menu">
       {% if not catalog_user %}
-      <setting class="with-events catalog-mode-setting">
-        <div class="catalog-mode-switch" role="tablist" aria-label="Переключение каталога">
-          <a
-            href="/"
-            class="button-style button-style-small catalog-mode-switch__item{% if catalog_kind != 'modpack' %} button-style-toggled is-active{% endif %}"
+      <setting class="with-events catalog-mode-setting" data-catalog-views="mod modpack">
+        <div class="catalog-mode-switch" role="group" aria-label="Переключение каталога" data-active-kind="{% if catalog_kind == 'modpack' %}modpack{% else %}mod{% endif %}">
+          <label class="catalog-mode-switch__label catalog-mode-switch__label--mod" for="catalog-mode-toggle">Моды</label>
+          <input
+            id="catalog-mode-toggle"
+            type="checkbox"
+            class="catalog-mode-switch__checkbox"
             data-action="catalog-toggle-mode"
-            data-catalog-kind="mod"
-            {% if catalog_kind != 'modpack' %}aria-current="page"{% endif %}
-          >Моды</a>
-          <a
-            href="/?catalog_kind=modpack"
-            class="button-style button-style-small catalog-mode-switch__item{% if catalog_kind == 'modpack' %} button-style-toggled is-active{% endif %}"
-            data-action="catalog-toggle-mode"
-            data-catalog-kind="modpack"
-            {% if catalog_kind == 'modpack' %}aria-current="page"{% endif %}
-          >Модпаки</a>
+            {% if catalog_kind == 'modpack' %}checked{% endif %}
+            aria-label="Переключение каталога между модами и модпаками"
+          >
+          <label class="catalog-mode-switch__label catalog-mode-switch__label--modpack" for="catalog-mode-toggle">Модпаки</label>
         </div>
       </setting>
-      <hr>
       {% endif %}
 
       {% if catalog_user %}
-      <div class="catalog-filter" id="catalog-user-filter" data-user-id="{{ catalog_user.id }}" data-author-id="{{ catalog_user.id }}" data-user-name="{{ catalog_user.username }}">
+      <div class="catalog-filter" id="catalog-user-filter" data-catalog-views="mod modpack" data-user-id="{{ catalog_user.id }}" data-author-id="{{ catalog_user.id }}" data-user-name="{{ catalog_user.username }}">
         <span class="catalog-filter__label">{{ catalog_entity_label }} {{ catalog_user.username }}</span>
         <button class="catalog-filter__clear" type="button" data-action="catalog-clear-user" title="Сбросить фильтр">×</button>
       </div>
       {% endif %}
 
-      <setting class="in-full with-events catalog-search-line">
+      <setting class="in-full with-events catalog-search-line" data-catalog-views="game mod modpack">
         <input type="search" placeholder="Поиск..." id="search-in-catalog-menu" autocomplete="off" data-action="catalog-search">
         <button type="button" class="small catalog-search-refresh" title="Обновить каталог" data-action="catalog-refresh" data-target="#search-in-catalog-menu">↻</button>
       </setting>
 
-      <hr class="in-full">
-
-      <setting class="with-events catalog-sort-setting">
+      <setting class="with-events catalog-sort-setting" data-catalog-views="game mod modpack">
         <div class="with-button catalog-sort-controls">
           <select id="sort-select" title="Сортировка" data-action="catalog-sort-select">
             <option class="game" value="mods_count" selected>Сортировка по количеству модов</option>
@@ -69,9 +62,7 @@
         </div>
       </setting>
 
-      <hr>
-
-      <setting class="with-events catalog-adult-setting">
+      <setting class="with-events catalog-adult-setting" data-catalog-views="mod modpack">
         <label class="catalog-adult-setting__label" for="catalog-adult-select">Контент 18+</label>
         <select id="catalog-adult-select" title="Фильтр 18+" data-action="catalog-adult-select">
           <option value="-1">Без фильтра</option>
@@ -80,9 +71,7 @@
         </select>
       </setting>
 
-      <hr>
-
-      <setting class="with-events catalog-types-setting catalog-mod-only">
+      <setting class="with-events catalog-types-setting catalog-mod-only" data-catalog-views="mod">
         <label class="catalog-types-setting__label" for="mod-type-select">Тип модов</label>
         <select id="mod-type-select" title="Тип модов" data-action="catalog-mod-type-select">
           <option value="all" selected>Все</option>
@@ -94,17 +83,13 @@
         </select>
       </setting>
 
-      <hr class="catalog-mod-only">
-
-      <setting id="game-select" data-action="catalog-toggle-game-mode">
+      <setting id="game-select" data-action="catalog-toggle-game-mode" data-catalog-views="game mod modpack">
         <input type="checkbox" hidden>
         <img src="/assets/images/choose-man.webp" alt="Лого выбранной игры">
         <label>Выбрать игру</label>
       </setting>
 
-      <hr class="catalog-game-select-filter">
-
-      <setting class="with-events catalog-game-type-setting catalog-game-select-filter">
+      <setting class="with-events catalog-game-type-setting catalog-game-select-filter" data-catalog-views="game">
         <label class="catalog-game-type-setting__label" for="catalog-game-type-select">Тип игр</label>
         <select id="catalog-game-type-select" title="Тип игр" data-action="catalog-game-type-select">
           <option value="all" selected>Все</option>
@@ -113,15 +98,11 @@
         </select>
       </setting>
 
-      <hr class="catalog-game-select-filter">
-
-      <setting class="with-events catalog-genres-setting catalog-game-select-filter">
+      <setting class="with-events catalog-genres-setting catalog-game-select-filter" data-catalog-views="game">
         {{ render_genres_editor({}, 'catalog-genres-editor', false, 'Выбрать жанры') }}
       </setting>
 
-      <hr class="catalog-mod-only">
-
-      <setting class="with-events catalog-range-setting catalog-mod-only">
+      <setting class="with-events catalog-range-setting catalog-mod-only" data-catalog-views="mod">
         <div class="catalog-range-panel">
           <div class="catalog-range-group" data-range-key="size">
             <div class="catalog-range-group__header">
@@ -153,30 +134,24 @@
         </div>
       </setting>
 
-      <hr class="catalog-mod-only">
-
-      <setting id="depen" class="catalog-mod-only" data-action="catalog-toggle-independent">
+      <setting id="depen" class="catalog-mod-only" data-action="catalog-toggle-independent" data-catalog-views="mod">
         <input type="checkbox">
         <label>Независимые моды</label>
       </setting>
       
-      <setting class="with-events catalog-dependencies-setting catalog-mod-only">
+      <setting class="with-events catalog-dependencies-setting catalog-mod-only" data-catalog-views="mod">
         {% with dependencies={}, game=0, dependence_button_text='Плагины для модов', editor_id='catalog-dependencies-editor' %}
           {% include 'html-partials/mod-dependence-edit.html' %}
         {% endwith %}
       </setting>
 
-      <hr class="catalog-mod-only">
-
-      <setting class="with-events catalog-dependencies-setting catalog-conflicts-setting catalog-mod-only">
+      <setting class="with-events catalog-dependencies-setting catalog-conflicts-setting catalog-mod-only" data-catalog-views="mod">
         {% with conflicts={}, game=0, conflict_button_text='Исключить конфликт', editor_id='catalog-conflicts-editor' %}
           {% include 'html-partials/mod-conflict-edit.html' %}
         {% endwith %}
       </setting>
 
-      <hr class="catalog-mod-only">
-
-      <setting class="with-events catalog-tags-setting catalog-game-filter">
+      <setting class="with-events catalog-tags-setting catalog-game-filter" data-catalog-views="mod modpack">
         {{ render_tags_editor({}, 0, false, 'catalog-tags-editor') }}
       </setting>
     </div>
