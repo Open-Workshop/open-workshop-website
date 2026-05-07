@@ -44,6 +44,7 @@ _STATUS_BADGE_CACHE_TTL_SECONDS = 60
 SHORT_WORDS = [
     "b", "list", "h1", "h2", "h3", "h4", "h5", "h6", "*", "u", "url"
 ]
+RATING_LABEL_PREFIX = "🏅 "
 
 
 def _compact_json_list(values) -> str:
@@ -132,8 +133,9 @@ def _steam_rating_summary(rating, votes_count) -> dict:
     rating_value = max(0, min(100, _coerce_int(rating)))
 
     if votes_value <= 0:
+        label = f"{RATING_LABEL_PREFIX}Нет оценок"
         return {
-            "label": "Нет оценок",
+            "label": label,
             "title": "Нет оценок",
             "rating": 0,
             "votes_count": 0,
@@ -141,30 +143,31 @@ def _steam_rating_summary(rating, votes_count) -> dict:
         }
 
     if rating_value >= 95:
-        label = "Крайне положительные"
+        plain_label = "Крайне положительные"
         tone = "positive-extreme"
     elif rating_value >= 80:
-        label = "Очень положительные"
+        plain_label = "Очень положительные"
         tone = "positive-strong"
     elif rating_value >= 70:
-        label = "В основном положительные"
+        plain_label = "В основном положительные"
         tone = "positive"
     elif rating_value >= 40:
-        label = "Смешанные"
+        plain_label = "Смешанные"
         tone = "mixed"
     elif rating_value >= 20:
-        label = "В основном отрицательные"
+        plain_label = "В основном отрицательные"
         tone = "negative"
     elif rating_value >= 10:
-        label = "Очень отрицательные"
+        plain_label = "Очень отрицательные"
         tone = "negative-strong"
     else:
-        label = "Крайне отрицательные"
+        plain_label = "Крайне отрицательные"
         tone = "negative-extreme"
 
+    label = f"{RATING_LABEL_PREFIX}{plain_label}"
     return {
         "label": label,
-        "title": f"{label} · {rating_value}% · {votes_value} {_pluralize_ru(votes_value, ('голос', 'голоса', 'голосов'))}",
+        "title": f"{plain_label} · {rating_value}% · {votes_value} {_pluralize_ru(votes_value, ('голос', 'голоса', 'голосов'))}",
         "rating": rating_value,
         "votes_count": votes_value,
         "tone": tone,

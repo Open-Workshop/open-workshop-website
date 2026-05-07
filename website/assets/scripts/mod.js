@@ -63,10 +63,11 @@
   function formatSteamRatingSummary(rating, votesCount) {
     const votesValue = Math.max(0, Math.trunc(coerceNumber(votesCount, 0)));
     const ratingValue = Math.max(0, Math.min(100, Math.trunc(coerceNumber(rating, 0))));
+    const labelPrefix = '🏅 ';
 
     if (votesValue <= 0) {
       return {
-        label: 'Нет оценок',
+        label: labelPrefix + 'Нет оценок',
         title: 'Нет оценок',
         rating: 0,
         votesCount: 0,
@@ -74,35 +75,35 @@
       };
     }
 
-    let label;
+    let plainLabel;
     let tone;
 
     if (ratingValue >= 95) {
-      label = 'Крайне положительные';
+      plainLabel = 'Крайне положительные';
       tone = 'positive-extreme';
     } else if (ratingValue >= 80) {
-      label = 'Очень положительные';
+      plainLabel = 'Очень положительные';
       tone = 'positive-strong';
     } else if (ratingValue >= 70) {
-      label = 'В основном положительные';
+      plainLabel = 'В основном положительные';
       tone = 'positive';
     } else if (ratingValue >= 40) {
-      label = 'Смешанные';
+      plainLabel = 'Смешанные';
       tone = 'mixed';
     } else if (ratingValue >= 20) {
-      label = 'В основном отрицательные';
+      plainLabel = 'В основном отрицательные';
       tone = 'negative';
     } else if (ratingValue >= 10) {
-      label = 'Очень отрицательные';
+      plainLabel = 'Очень отрицательные';
       tone = 'negative-strong';
     } else {
-      label = 'Крайне отрицательные';
+      plainLabel = 'Крайне отрицательные';
       tone = 'negative-extreme';
     }
 
     return {
-      label,
-      title: `${label} · ${ratingValue}% · ${votesValue} ${pluralizeRu(votesValue, ['голос', 'голоса', 'голосов'])}`,
+      label: labelPrefix + plainLabel,
+      title: `${plainLabel} · ${ratingValue}% · ${votesValue} ${pluralizeRu(votesValue, ['голос', 'голоса', 'голосов'])}`,
       rating: ratingValue,
       votesCount: votesValue,
       tone,
