@@ -17,5 +17,8 @@
   {% endif %}
 
   <button id="page-save-button" data-action="user-save-profile">Сохранить</button>
+  {% if tag_access is defined and tag_access.any %}
+  <a id="page-tags-link-button" class="button-style" href="/tags">Теги</a>
+  {% endif %}
   <a id="page-profile-link-button" class="button-style" href="/user/{{ user_data.general.id }}">В профиль</a>
 </pager>

@@ -1,0 +1,242 @@
+main.tags-admin {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.tags-admin__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.tags-admin__header h1 {
+    margin-bottom: var(--space-1);
+}
+
+.tags-admin__header p,
+.tags-admin__muted,
+.tags-admin__empty p {
+    color: var(--interactive-a);
+    line-height: 1.35;
+}
+
+.tags-admin__header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.tags-admin__summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+}
+
+.tags-admin__summary article {
+    margin: 0;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background-color: var(--panel-on-page-background);
+}
+
+.tags-admin__summary h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: 28px;
+    margin-bottom: var(--space-1);
+}
+
+.tags-admin__summary p {
+    color: var(--interactive-a);
+}
+
+.tags-admin__layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+}
+
+.tags-admin__sidebar,
+.tags-admin__panel,
+.tags-admin__form,
+.tags-admin__list,
+.tags-admin__tag-main,
+.tags-admin__groups-list,
+.tags-admin__group-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.tags-admin__sidebar,
+.tags-admin__panel,
+.tags-admin__form,
+.tags-admin__list,
+.tags-admin__groups-list,
+.tags-admin__group-row {
+    gap: var(--space-2);
+}
+
+.tags-admin__sidebar {
+    position: sticky;
+    top: calc(var(--header-height) + var(--space-3));
+}
+
+.tags-admin__panel {
+    align-items: stretch;
+}
+
+.tags-admin__panel > h2 {
+    width: 100%;
+    text-align: center;
+}
+
+.tags-admin__field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.tags-admin__field > span {
+    color: var(--interactive-a);
+}
+
+.tags-admin input.tags-admin__input,
+.tags-admin select.tags-admin__input {
+    width: 100%;
+    margin: 0;
+}
+
+.tags-admin input.tags-admin__input:disabled,
+.tags-admin select.tags-admin__input:disabled {
+    opacity: 0.72;
+}
+
+.tags-admin select.tags-admin__input {
+    cursor: pointer;
+}
+
+.tags-admin__primary {
+    align-self: flex-start;
+}
+
+.tags-admin__panel--list {
+    min-width: 0;
+}
+
+.tags-admin__tag-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    cursor: default;
+}
+
+.outline-container > .element.tags-admin__tag-card {
+    align-items: stretch;
+}
+
+.outline-container > .element.tags-admin__tag-card:hover {
+    background-color: rgba(15, 15, 15, 0.65);
+}
+
+.tags-admin__tag-card.is-dirty,
+.tags-admin__group-row.is-dirty {
+    outline: 1px solid rgb(194, 164, 0);
+}
+
+.tags-admin__tag-card.is-busy,
+.tags-admin__group-row.is-busy {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.tags-admin__tag-card.is-error,
+.tags-admin__group-row.is-error {
+    outline: 1px solid red;
+}
+
+.tags-admin__tag-main {
+    min-width: 0;
+    gap: var(--space-2);
+}
+
+.tags-admin__tag-meta,
+.tags-admin__tag-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.tags-admin__tag-actions {
+    justify-content: flex-end;
+}
+
+.tags-admin__group-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.tags-admin__field--row {
+    width: 100%;
+}
+
+.tags-admin__action {
+    min-width: 115px;
+}
+
+.tags-admin__empty {
+    width: 100%;
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+}
+
+@media screen and (max-width: 900px) {
+    .tags-admin__layout,
+    .tags-admin__summary {
+        grid-template-columns: 1fr;
+    }
+
+    .tags-admin__sidebar {
+        position: static;
+    }
+}
+
+@media screen and (max-width: 650px) {
+    main.tags-admin {
+        margin: 0;
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+    }
+
+    .tags-admin__header,
+    .tags-admin__header-actions,
+    .tags-admin__tag-actions,
+    .tags-admin__group-actions {
+        align-items: stretch;
+    }
+
+    .tags-admin__header-actions,
+    .tags-admin__tag-actions,
+    .tags-admin__group-actions,
+    .tags-admin__action,
+    .tags-admin__header-actions > .button-style {
+        width: 100%;
+    }
+}

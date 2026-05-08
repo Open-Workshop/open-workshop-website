@@ -32,6 +32,8 @@ Disallow: /mod/*/edit
 Allow: /modpack/*
 Disallow: /modpack/*/edit
 
+Disallow: /tags
+
 Allow: /user/*
 Disallow: /user/*/settings
 

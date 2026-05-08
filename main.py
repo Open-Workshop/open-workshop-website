@@ -319,6 +319,81 @@ async def _load_paged_results(handler: UserHandler, base_url: str, *, page_size:
     return collected_results
 
 
+def _optional_int(value) -> int | None:
+    try:
+        return None if value in (None, "") else int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _tag_game_ids_from_item(item: dict) -> set[int]:
+    game_ids: set[int] = set()
+    game_id = _optional_int(item.get("game_id"))
+    if game_id is not None:
+        game_ids.add(game_id)
+
+    games_payload = item.get("games")
+    if isinstance(games_payload, list):
+        for game_item in games_payload:
+            raw_game_id = game_item.get("id") if isinstance(game_item, dict) else game_item
+            game_item_id = _optional_int(raw_game_id)
+            if game_item_id is not None:
+                game_ids.add(game_item_id)
+
+    return game_ids
+
+
+async def _load_game_name_map(handler: UserHandler, game_ids) -> dict[int, str]:
+    normalized_ids = sorted({
+        game_id
+        for game_id in (_optional_int(value) for value in game_ids)
+        if game_id is not None
+    })
+    if not normalized_ids:
+        return {}
+
+    game_list_path = app_config.api_path("game", "list")
+    game_name_map: dict[int, str] = {}
+    for index in range(0, len(normalized_ids), 50):
+        batch_ids = normalized_ids[index:index + 50]
+        raw_games = await _load_paged_results(
+            handler,
+            _build_query_url(game_list_path, {"ids": batch_ids}),
+            page_size=50,
+        )
+        for game in raw_games:
+            if not isinstance(game, dict):
+                continue
+
+            game_id = _optional_int(game.get("id"))
+            game_name = str(game.get("name") or "").strip()
+            if game_id is not None and game_name:
+                game_name_map[game_id] = game_name
+
+    return game_name_map
+
+
+def _normalize_tag_groups(raw_groups) -> list[dict[str, object]]:
+    tag_groups = []
+    for item in raw_groups:
+        if not isinstance(item, dict):
+            continue
+
+        group_id = _optional_int(item.get("id"))
+        group_name = str(item.get("name") or "").strip()
+        if group_id is None or not group_name:
+            continue
+
+        tag_groups.append({
+            **item,
+            "id": group_id,
+            "name": group_name,
+        })
+
+    tag_groups.sort(key=lambda group: str(group["name"]).lower())
+    return tag_groups
+
+
 async def _load_mod_cards_by_ids(
     handler: UserHandler,
     mod_ids,
@@ -1931,7 +2006,184 @@ async def user_settings(user_id):
 
         info_profile['delete_user'] = info_profile['general']['username'] is None
 
-        return handler.finish(handler.render("user-settings.html", user_data=info_profile, user_access=editable, profile_access=editable))
+        tag_access = await handler.get_tag_access()
+
+        return handler.finish(handler.render(
+            "user-settings.html",
+            user_data=info_profile,
+            user_access=editable,
+            profile_access=editable,
+            tag_access=tag_access,
+        ))
+
+async def tags_admin():
+    async with UserHandler() as handler:
+        if not handler.authenticated or handler.id < 0:
+            page = handler.render("error.html", error="Войдите или создайте аккаунт", error_title="Не авторизован")
+            return handler.finish(page), 403
+
+        tag_access = await handler.get_tag_access()
+        if not tag_access.get("any"):
+            page = handler.render(
+                "error.html",
+                error="Страница доступна только пользователям с правами управления тегами",
+                error_title="Отказано в доступе",
+            )
+            return handler.finish(page), 403
+
+        query_name = str(request.args.get("name", "")).strip()
+        tag_list_path = app_config.api_path("tag", "list")
+        query_params = {}
+        if query_name:
+            query_params["name"] = query_name
+        query_params["include"] = ["orphaned", "group", "games"]
+
+        raw_tags, raw_groups = await asyncio.gather(
+            _load_paged_results(
+                handler,
+                _build_query_url(tag_list_path, query_params),
+                page_size=50,
+            ),
+            _load_paged_results(
+                handler,
+                app_config.api_path("tag_group", "list"),
+                page_size=50,
+            ),
+        )
+        tag_groups = _normalize_tag_groups(raw_groups)
+        tag_group_names = {group["id"]: group["name"] for group in tag_groups}
+        game_name_map = await _load_game_name_map(
+            handler,
+            {
+                game_id
+                for item in raw_tags
+                if isinstance(item, dict)
+                for game_id in _tag_game_ids_from_item(item)
+            },
+        )
+
+        tags = []
+        for item in raw_tags:
+            if not isinstance(item, dict):
+                continue
+
+            tag_id = _optional_int(item.get("id"))
+            if tag_id is None:
+                continue
+
+            game_id = _optional_int(item.get("game_id"))
+
+            game_name = ""
+            game_payload = item.get("game")
+            if isinstance(game_payload, dict):
+                game_name = str(game_payload.get("name") or "")
+
+            group_id = None
+            group_name = ""
+            group_payload = item.get("group")
+            if isinstance(group_payload, dict):
+                group_id = _optional_int(group_payload.get("id"))
+                group_name = str(group_payload.get("name") or "")
+
+            if group_id is None:
+                group_id = _optional_int(item.get("group_id"))
+            group_name = str(item.get("group_name") or group_name or tag_group_names.get(group_id) or "")
+
+            game_name = str(item.get("game_name") or game_name or "")
+            games = []
+            seen_game_ids = set()
+            games_payload = item.get("games")
+            if isinstance(games_payload, list):
+                for game_item in games_payload:
+                    game_item_id = None
+                    game_item_name = ""
+
+                    if isinstance(game_item, dict):
+                        raw_game_item_id = game_item.get("id")
+                        game_item_name = str(game_item.get("name") or "")
+                    else:
+                        raw_game_item_id = game_item
+
+                    game_item_id = _optional_int(raw_game_item_id)
+
+                    if game_item_id is None and not game_item_name:
+                        continue
+                    if game_item_id is not None:
+                        if game_item_id in seen_game_ids:
+                            continue
+                        seen_game_ids.add(game_item_id)
+                        game_item_name = game_item_name or game_name_map.get(game_item_id, "")
+
+                    games.append({
+                        "id": game_item_id,
+                        "name": game_item_name,
+                        "label": game_item_name or f"ID {game_item_id}",
+                    })
+
+            if game_id is not None and game_id not in seen_game_ids:
+                game_name = game_name or game_name_map.get(game_id, "")
+                games.append({
+                    "id": game_id,
+                    "name": game_name,
+                    "label": game_name or f"ID {game_id}",
+                })
+                seen_game_ids.add(game_id)
+
+            orphaned_value = item.get("orphaned")
+            if isinstance(orphaned_value, str):
+                is_orphaned = orphaned_value.strip().lower() in {"1", "true", "yes", "on"}
+            else:
+                is_orphaned = bool(orphaned_value)
+
+            if group_name:
+                scope_label = group_name
+            elif group_id is not None:
+                scope_label = f"Группа #{group_id}"
+            elif games:
+                scope_label = ", ".join(game["label"] for game in games[:3])
+                if len(games) > 3:
+                    scope_label = f"{scope_label} +{len(games) - 3}"
+            elif is_orphaned:
+                scope_label = "Бесхозный тег"
+            else:
+                scope_label = "Без группы"
+
+            tags.append({
+                **item,
+                "id": tag_id,
+                "name": str(item.get("name") or ""),
+                "game_id": game_id,
+                "game_name": game_name,
+                "group_id": group_id,
+                "group_name": group_name,
+                "scope_label": scope_label,
+                "games": games,
+                "visible_games": games[:8],
+                "games_count": len(games),
+                "games_extra_count": max(0, len(games) - 8),
+                "is_global": not games and group_id is None,
+                "is_orphaned": is_orphaned,
+            })
+
+        tags_with_group_total = sum(1 for tag in tags if tag["group_id"] is not None or tag["group_name"])
+        tags_with_games_total = sum(1 for tag in tags if tag["games_count"] > 0)
+        tags_orphaned_total = sum(1 for tag in tags if tag["is_orphaned"])
+        tag_groups_total = len(tag_groups)
+
+        page_html = handler.render(
+            "tags.html",
+            tags=tags,
+            tags_total=len(tags),
+            tag_groups=tag_groups,
+            tag_groups_total=tag_groups_total,
+            tags_with_group_total=tags_with_group_total,
+            tags_with_games_total=tags_with_games_total,
+            tags_orphaned_total=tags_orphaned_total,
+            query_name=query_name,
+            tags_search_active=bool(query_name),
+            tag_access=tag_access,
+        )
+        return handler.finish(page_html)
 
 async def user_mods(user_id):
     return await _render_user_catalog_page(user_id, "Моды")
@@ -1987,6 +2239,8 @@ def register_routes() -> None:
         app.add_url_rule(route, view_func=add_game)
     for route in app_config.ROUTES["game"]["edit"]:
         app.add_url_rule(route, view_func=game_edit)
+    for route in app_config.ROUTES["tags"]:
+        app.add_url_rule(route, view_func=tags_admin, strict_slashes=False)
 
     for route in app_config.ROUTES["user"]["view"]:
         app.add_url_rule(route, view_func=user, strict_slashes=False)

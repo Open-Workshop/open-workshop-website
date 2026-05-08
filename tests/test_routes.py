@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import main
-from access_policy import build_profile_access
+from access_policy import build_profile_access, build_tag_access
 
 
 def _profile_access_source(reason_code: str, *, rights_value: bool = False) -> dict:
@@ -60,6 +60,29 @@ def _profile_access_source(reason_code: str, *, rights_value: bool = False) -> d
     }
 
 
+def _tag_access_source(*, add: bool = False, edit: bool = False, delete: bool = False) -> dict:
+    return {
+        "authenticated": True,
+        "owner_id": 7,
+        "login_method": "google",
+        "add": {
+            "value": add,
+            "reason": "Можно создать тег" if add else "Создание тегов недоступно",
+            "reason_code": "admin" if add else "forbidden",
+        },
+        "edit": {
+            "value": edit,
+            "reason": "Можно редактировать тег" if edit else "Редактирование тегов недоступно",
+            "reason_code": "admin" if edit else "forbidden",
+        },
+        "delete": {
+            "value": delete,
+            "reason": "Можно удалить тег" if delete else "Удаление тегов недоступно",
+            "reason_code": "admin" if delete else "forbidden",
+        },
+    }
+
+
 def _profile_payload(user_id: int, username: str = "Alice") -> dict:
     return {
         "general": {
@@ -94,6 +117,7 @@ class StubHandler:
         game_add_access: dict | None = None,
         game_access: dict | None = None,
         profile_access: dict | None = None,
+        tag_access: dict | None = None,
         fetch_results: list[tuple[int, object]] | None = None,
     ) -> None:
         self.authenticated = authenticated
@@ -108,6 +132,7 @@ class StubHandler:
         self.game_add_access = game_add_access
         self.game_access = game_access
         self.profile_access = profile_access
+        self.tag_access = tag_access
         self.fetch_results = list(fetch_results or [])
         self.fetch_calls: list[tuple[str, str]] = []
         self.render_calls: list[tuple[str, dict]] = []
@@ -147,6 +172,10 @@ class StubHandler:
     async def get_profile_access(self, profile_id: int) -> dict:
         self.calls.append(("get_profile_access", profile_id))
         return self.profile_access or {}
+
+    async def get_tag_access(self) -> dict:
+        self.calls.append(("get_tag_access",))
+        return self.tag_access or {}
 
     async def fetch(self, url: str, method: str = "GET", data=None, headers=None):
         self.fetch_calls.append((url, method))
@@ -997,6 +1026,139 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             ],
         )
 
+    async def test_tags_admin_route_renders_tag_list(self) -> None:
+        tag_access = build_tag_access(_tag_access_source(add=True, edit=True, delete=True))
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=1,
+            tag_access=tag_access,
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 1, "name": "Action", "orphaned": True},
+                            {"id": 2, "name": "Challenge", "group": {"id": 4, "name": "Meta"}, "games": [5]},
+                        ],
+                        "pagination": {"total": 2},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 4, "name": "Meta"},
+                            {"id": 2, "name": "Genre"},
+                        ],
+                        "pagination": {"total": 2},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 5, "name": "Minecraft"},
+                        ],
+                        "pagination": {"total": 1},
+                    },
+                ),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/tags?name=action"):
+                result = await main.tags_admin()
+
+        self.assertEqual(result["template"], "tags.html")
+        self.assertIn(("get_tag_access",), handler.calls)
+        self.assertNotIn(("get_profile_access", 1), handler.calls)
+        self.assertEqual(
+            handler.fetch_calls[0][0],
+            "/tags?name=action&include=orphaned&include=group&include=games&page_size=50",
+        )
+        self.assertEqual(handler.fetch_calls[1][0], "/tag-groups?page_size=50")
+        self.assertEqual(handler.fetch_calls[2][0], "/games?ids=5&page_size=50")
+        render_kwargs = handler.render_calls[0][1]
+        self.assertIs(render_kwargs["tag_access"], tag_access)
+        self.assertEqual(render_kwargs["tags_total"], 2)
+        self.assertEqual(render_kwargs["tag_groups_total"], 2)
+        self.assertEqual([group["name"] for group in render_kwargs["tag_groups"]], ["Genre", "Meta"])
+        self.assertEqual(render_kwargs["tags_with_group_total"], 1)
+        self.assertEqual(render_kwargs["tags_with_games_total"], 1)
+        self.assertEqual(render_kwargs["tags_orphaned_total"], 1)
+        self.assertEqual(render_kwargs["query_name"], "action")
+        self.assertTrue(render_kwargs["tags_search_active"])
+        self.assertTrue(render_kwargs["tags"][0]["is_global"])
+        self.assertTrue(render_kwargs["tags"][0]["is_orphaned"])
+        self.assertFalse(render_kwargs["tags"][1]["is_global"])
+        self.assertEqual(render_kwargs["tags"][1]["group_name"], "Meta")
+        self.assertEqual(render_kwargs["tags"][1]["games"][0]["id"], 5)
+        self.assertEqual(render_kwargs["tags"][1]["games"][0]["label"], "Minecraft")
+
+    async def test_tags_admin_route_ignores_legacy_orphaned_query_flag(self) -> None:
+        tag_access = build_tag_access(_tag_access_source(add=True, edit=True, delete=True))
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=1,
+            tag_access=tag_access,
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 7, "name": "Lonely", "orphaned": True, "games": []},
+                            {"id": 8, "name": "Grouped", "orphaned": False, "group": {"id": 3, "name": "Meta"}},
+                        ],
+                        "pagination": {"total": 2},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 3, "name": "Meta"},
+                        ],
+                        "pagination": {"total": 1},
+                    },
+                ),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/tags?orphaned=true&name=lonely"):
+                result = await main.tags_admin()
+
+        self.assertEqual(result["template"], "tags.html")
+        self.assertEqual(
+            handler.fetch_calls[0][0],
+            "/tags?name=lonely&include=orphaned&include=group&include=games&page_size=50",
+        )
+        self.assertEqual(handler.fetch_calls[1][0], "/tag-groups?page_size=50")
+        self.assertEqual(len(handler.fetch_calls), 2)
+        render_kwargs = handler.render_calls[0][1]
+        self.assertEqual(render_kwargs["tag_groups_total"], 1)
+        self.assertTrue(render_kwargs["tags"][0]["is_orphaned"])
+        self.assertEqual(render_kwargs["tags"][0]["scope_label"], "Бесхозный тег")
+        self.assertFalse(render_kwargs["tags"][1]["is_orphaned"])
+        self.assertEqual(render_kwargs["tags"][1]["scope_label"], "Meta")
+
+    async def test_tags_admin_route_denies_user_without_tag_crud_rights(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=1,
+            tag_access=build_tag_access(_tag_access_source()),
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/tags"):
+                result = await main.tags_admin()
+
+        self.assertEqual(result[1], 403)
+        self.assertEqual(handler.render_calls[0][0], "error.html")
+        self.assertIn("правами управления тегами", handler.render_calls[0][1]["error"])
+        self.assertEqual(handler.fetch_calls, [])
+        self.assertEqual(handler.calls, [("get_tag_access",)])
+
     def test_mod_add_template_exposes_adult_toggle(self) -> None:
         mod_add = (ROOT / "website/mod-add.html").read_text(encoding="utf-8")
         self.assertIn('id="mod-adult"', mod_add)
@@ -1079,6 +1241,11 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('\"tags\": {\"method\": \"GET\", \"path\": \"/modpacks/{modpack_id}/tags\"}', app_config)
         self.assertIn('\"tags_add\": {\"method\": \"POST\", \"path\": \"/modpacks/{modpack_id}/tags/{tag_id}\"}', app_config)
         self.assertIn('\"tags_delete\": {\"method\": \"DELETE\", \"path\": \"/modpacks/{modpack_id}/tags/{tag_id}\"}', app_config)
+        self.assertIn('\"list\": {\"method\": \"GET\", \"path\": \"/tags\"}', app_config)
+        self.assertIn('\"tag_group\": {', app_config)
+        self.assertIn('\"add\": {\"method\": \"POST\", \"path\": \"/tag-groups\"}', app_config)
+        self.assertIn('\"edit\": {\"method\": \"PATCH\", \"path\": \"/tag-groups/{group_id}\"}', app_config)
+        self.assertIn('\"delete\": {\"method\": \"DELETE\", \"path\": \"/tag-groups/{group_id}\"}', app_config)
         self.assertIn("async function updateModpackMods(items)", script)
         self.assertIn("entityApiPaths.mods_update", script)
         self.assertIn('\"mods_update\": {\"method\": \"PUT\", \"path\": \"/modpacks/{modpack_id}/mods\"}', app_config)
@@ -1290,6 +1457,57 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(".modpack-mod.is-selected", modpack_styles)
         self.assertIn(".modpack-download-selected", modpack_styles)
         self.assertNotIn(".modpack-short-description", modpack_styles)
+
+    def test_tags_admin_template_exposes_crud_layout(self) -> None:
+        template = (ROOT / "website/tags.html").read_text(encoding="utf-8")
+        styles = (ROOT / "website/assets/styles/pages/tags.css").read_text(encoding="utf-8")
+        script = (ROOT / "website/assets/scripts/pages/tags-admin.js").read_text(encoding="utf-8")
+
+        self.assertIn("data-tags-admin-root", template)
+        self.assertIn("data-tags-can-add", template)
+        self.assertIn("data-tags-can-edit", template)
+        self.assertIn("data-tags-can-delete", template)
+        self.assertIn("data-tags-create-form", template)
+        self.assertIn("data-tags-create-group", template)
+        self.assertIn("data-tags-row", template)
+        self.assertIn("data-tags-row-group", template)
+        self.assertIn("data-tags-original-group-id", template)
+        self.assertIn('data-action="tag-save"', template)
+        self.assertIn('data-action="tag-delete"', template)
+        self.assertIn("data-groups-create-form", template)
+        self.assertIn("data-groups-row", template)
+        self.assertIn('data-action="group-save"', template)
+        self.assertIn('data-action="group-delete"', template)
+        self.assertIn("tags-admin__header", template)
+        self.assertIn("tags-admin__summary", template)
+        self.assertIn("tags-admin__layout", template)
+        self.assertIn("tags-admin__tag-card", template)
+        self.assertIn('action="/tags"', template)
+        self.assertNotIn('name="orphaned"', template)
+        self.assertIn("orphaned-статус", template)
+        self.assertIn("tag.visible_games", template)
+        self.assertIn("outline-container", template)
+        self.assertNotIn("tags-admin__hero", template)
+        self.assertIn(".tags-admin__header", styles)
+        self.assertIn(".tags-admin__summary", styles)
+        self.assertIn(".tags-admin__layout", styles)
+        self.assertIn(".tags-admin__tag-card", styles)
+        self.assertIn(".tags-admin__group-row", styles)
+        self.assertIn(".tags-admin__group-actions", styles)
+        self.assertNotIn(".tags-admin__mode-switch", styles)
+        self.assertIn(".tags-admin__action", styles)
+        self.assertNotIn("radial-gradient", styles)
+        self.assertIn("tagApi.add", script)
+        self.assertIn("tagApi.edit", script)
+        self.assertIn("tagApi.delete", script)
+        self.assertIn("groupApi.add", script)
+        self.assertIn("groupApi.edit", script)
+        self.assertIn("groupApi.delete", script)
+        self.assertIn("tagsCanEdit", script)
+        self.assertIn("data-tags-row-name", script)
+        self.assertIn("data-groups-row-name", script)
+        self.assertIn("window.location.reload()", script)
+        self.assertIn("normalizeTagName", script)
 
     def test_steam_rating_summary_uses_steam_like_thresholds(self) -> None:
         self.assertEqual(main._steam_rating_summary(0, 0)["label"], "🏅 Нет оценок")
@@ -1664,8 +1882,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('my_modpacks', footer)
         self.assertIn('rating_history', header)
         self.assertIn('rating_history', footer)
+        self.assertIn('tags', header)
+        self.assertIn('tags', footer)
         self.assertIn('История голосов', header)
         self.assertIn('История голосов', footer)
+        self.assertIn('session_access.tag_access.any', header)
+        self.assertIn('session_access.tag_access.any', footer)
+        self.assertIn('href": "/tags"', (ROOT / "app_config.py").read_text(encoding="utf-8"))
         self.assertIn('Создать модпак', header)
         self.assertIn('Создать модпак', footer)
         self.assertIn('Мои модпаки', header)
@@ -1731,6 +1954,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_robots_disallow_modpack_edit(self) -> None:
         robots = (ROOT / "website/robots.txt").read_text(encoding="utf-8")
         self.assertIn('Disallow: /modpack/*/edit', robots)
+        self.assertIn('Disallow: /tags', robots)
 
     def test_standard_template_loads_footer_status_script(self) -> None:
         standart = (ROOT / "website/html-partials/standart.html").read_text(encoding="utf-8")
@@ -1738,11 +1962,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_user_settings_admin_fetches_rights_and_private_data(self) -> None:
         profile_access = build_profile_access(_profile_access_source("admin", rights_value=True))
+        tag_access = build_tag_access(_tag_access_source(add=True, edit=True, delete=True))
         handler = StubHandler(
             authenticated=True,
             handler_id=1,
             response=None,
             profile_access=profile_access,
+            tag_access=tag_access,
             fetch_results=[
                 (200, _profile_payload(2, "Bob")),
             ],
@@ -1755,8 +1981,16 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["template"], "user-settings.html")
         self.assertEqual(handler.render_calls[0][0], "user-settings.html")
         self.assertIs(handler.render_calls[0][1]["user_access"], profile_access)
+        self.assertIs(handler.render_calls[0][1]["tag_access"], tag_access)
         self.assertEqual(handler.fetch_calls[0][0], "/profiles/2?include=general&include=rights&include=private")
-        self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
+        self.assertEqual([call[0] for call in handler.calls], ["get_profile_access", "get_tag_access"])
+        nav_html = main.app.jinja_env.get_template("html-partials/user-settings/nav.html").render(
+            user_data={"general": {"id": 2}},
+            user_access=profile_access,
+            tag_access=tag_access,
+        )
+        self.assertIn("page-tags-link-button", nav_html)
+        self.assertIn('href="/tags"', nav_html)
 
     async def test_user_settings_self_reuses_cached_profile_without_extra_fetch(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
@@ -1777,7 +2011,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.render_calls[0][0], "user-settings.html")
         self.assertIs(handler.render_calls[0][1]["profile_access"], profile_access)
         self.assertEqual(handler.fetch_calls, [])
-        self.assertEqual([call[0] for call in handler.calls], ["get_profile_access"])
+        self.assertEqual([call[0] for call in handler.calls], ["get_profile_access", "get_tag_access"])
 
     def test_healthz_returns_ok(self) -> None:
         with main.app.test_client() as client:

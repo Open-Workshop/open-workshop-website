@@ -99,24 +99,52 @@ def build_modpack_add_access(source: Any) -> dict[str, Any]:
     return build_mod_add_access(source)
 
 
+def build_simple_crud_access(
+    source: Any,
+    *,
+    default_reason: str = "Требуются права администратора",
+) -> dict[str, Any]:
+    context = _context_payload(source)
+    add = _right(_mapping_value(source, "add", None), default_reason=default_reason)
+    edit = _right(_mapping_value(source, "edit", None), default_reason=default_reason)
+    delete = _right(_mapping_value(source, "delete", None), default_reason=default_reason)
+
+    payload = {
+        **context,
+        "add": add,
+        "edit": edit,
+        "delete": delete,
+    }
+    payload["any"] = any(_right_value(right) for right in (add, edit, delete))
+    return payload
+
+
+def build_tag_access(source: Any) -> dict[str, Any]:
+    return build_simple_crud_access(source, default_reason="Управление тегами недоступно")
+
+
 def build_session_access(
     context: Any,
     mod_add: Any | None = None,
     modpack_add: Any | None = None,
     game_add: Any | None = None,
+    tag_access: Any | None = None,
 ) -> dict[str, Any]:
     payload = _context_payload(context)
     mod_add_right = build_mod_add_access(mod_add)
     modpack_add_right = build_modpack_add_access(modpack_add if modpack_add is not None else mod_add)
     game_add_right = build_game_add_access(game_add)
+    tag_right = build_tag_access(tag_access)
 
     payload["mod_add"] = mod_add_right
     payload["modpack_add"] = modpack_add_right
     payload["game_add"] = game_add_right
+    payload["tag_access"] = tag_right
     payload["can_add_mod"] = _right_value(mod_add_right["add"])
     payload["can_add_modpack"] = _right_value(modpack_add_right["add"])
     payload["can_add_game"] = _right_value(game_add_right["add"])
     payload["can_edit_game"] = payload["can_add_game"]
+    payload["can_manage_tags"] = bool(tag_right["any"])
     return payload
 
 

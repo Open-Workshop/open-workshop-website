@@ -23,6 +23,7 @@ PUBLIC_CONFIG: dict = {
             {"id": "my_modpacks", "href": "/user/{id}/modpacks"},
             {"id": "rating_history", "href": "/user/{id}/rating/history"},
             {"id": "settings", "href": "/user/{id}/settings"},
+            {"id": "tags", "href": "/tags"},
         ],
         "legal": {
             "cookies": "/legal/cookies",
@@ -170,6 +171,12 @@ PUBLIC_CONFIG: dict = {
                 "edit": {"method": "PATCH", "path": "/tags/{tag_id}"},
                 "delete": {"method": "DELETE", "path": "/tags/{tag_id}"},
             },
+            "tag_group": {
+                "add": {"method": "POST", "path": "/tag-groups"},
+                "list": {"method": "GET", "path": "/tag-groups"},
+                "edit": {"method": "PATCH", "path": "/tag-groups/{group_id}"},
+                "delete": {"method": "DELETE", "path": "/tag-groups/{group_id}"},
+            },
         },
     },
     "assets": {
@@ -285,6 +292,10 @@ ROUTES: dict = {
             "/game/<int:game_id>/edit.html",
         ],
     },
+    "tags": [
+        "/tags",
+        "/tags.html",
+    ],
     "user": {
         "view": ["/user/<int:user_id>", "/user/<int:user_id>.html"],
         "settings": ["/user/<int:user_id>/settings", "/user/<int:user_id>/settings.html"],

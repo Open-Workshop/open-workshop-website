@@ -24,7 +24,7 @@
     <hr>
     <div class="phone-menu-actions">
         <a href="/">На главную</a>
-        {% set nav_labels = { 'about': 'О проекте', 'api': 'API', 'upload_mod': 'Загрузить мод', 'upload_modpack': 'Создать модпак', 'my_mods': 'Мои моды', 'my_modpacks': 'Мои модпаки', 'rating_history': 'История голосов', 'settings': 'Настройки' } %}
+        {% set nav_labels = { 'about': 'О проекте', 'api': 'API', 'upload_mod': 'Загрузить мод', 'upload_modpack': 'Создать модпак', 'my_mods': 'Мои моды', 'my_modpacks': 'Мои модпаки', 'rating_history': 'История голосов', 'settings': 'Настройки', 'tags': 'Теги' } %}
         {% for item in ow.site.nav %}
         <a href="{{ item.href }}" {% if item.translate == 'no' %}translate="no"{% endif %}>{{ nav_labels[item.id] }}</a>
         {% endfor %}
@@ -51,6 +51,10 @@
         {% endif %}
         {% elif item.id == 'upload_modpack' %}
         {% if session_access and session_access.can_add_modpack %}
+        <a href="{{ href }}">{{ nav_labels[item.id] }}</a>
+        {% endif %}
+        {% elif item.id == 'tags' %}
+        {% if session_access and session_access.tag_access.any %}
         <a href="{{ href }}">{{ nav_labels[item.id] }}</a>
         {% endif %}
         {% else %}

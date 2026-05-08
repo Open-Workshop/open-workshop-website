@@ -7,6 +7,7 @@ from access_policy import (
     build_mod_rights,
     build_profile_access,
     build_session_access,
+    build_tag_access,
 )
 
 
@@ -80,6 +81,8 @@ class AccessPolicyTests(unittest.TestCase):
         self.assertFalse(access["can_add_modpack"])
         self.assertFalse(access["can_add_game"])
         self.assertFalse(access["can_edit_game"])
+        self.assertFalse(access["can_manage_tags"])
+        self.assertFalse(access["tag_access"]["any"])
 
     def test_session_access_uses_separate_modpack_add_rights(self) -> None:
         source = {
@@ -118,12 +121,35 @@ class AccessPolicyTests(unittest.TestCase):
             },
         }
 
-        access = build_session_access(source, mod_add=mod_add, modpack_add=modpack_add)
+        tag_access = {
+            "authenticated": True,
+            "owner_id": 5,
+            "login_method": "google",
+            "add": {
+                "value": True,
+                "reason": "Можно создать тег",
+                "reason_code": "admin",
+            },
+            "edit": {
+                "value": False,
+                "reason": "Редактирование тегов недоступно",
+                "reason_code": "forbidden",
+            },
+            "delete": {
+                "value": False,
+                "reason": "Удаление тегов недоступно",
+                "reason_code": "forbidden",
+            },
+        }
+
+        access = build_session_access(source, mod_add=mod_add, modpack_add=modpack_add, tag_access=tag_access)
 
         self.assertFalse(access["can_add_mod"])
         self.assertTrue(access["can_add_modpack"])
+        self.assertTrue(access["can_manage_tags"])
         self.assertFalse(access["mod_add"]["add"]["value"])
         self.assertTrue(access["modpack_add"]["add"]["value"])
+        self.assertTrue(access["tag_access"]["add"]["value"])
 
     def test_profile_access_marks_self_and_admin(self) -> None:
         self_access = build_profile_access(_profile_source("self", rights_value=False))
@@ -138,6 +164,24 @@ class AccessPolicyTests(unittest.TestCase):
         self.assertTrue(admin_access["admin"])
         self.assertTrue(admin_access["any"])
         self.assertTrue(admin_access["edit"]["rights"]["value"])
+
+    def test_tag_access_marks_any_crud_right(self) -> None:
+        access = build_tag_access({
+            "authenticated": True,
+            "owner_id": 7,
+            "login_method": "google",
+            "add": {"value": False, "reason": "Нет", "reason_code": "forbidden"},
+            "edit": {"value": True, "reason": "Можно", "reason_code": "admin"},
+            "delete": {"value": False, "reason": "Нет", "reason_code": "forbidden"},
+        })
+
+        self.assertFalse(access["add"]["value"])
+        self.assertTrue(access["edit"]["value"])
+        self.assertFalse(access["delete"]["value"])
+        self.assertTrue(access["any"])
+
+        denied_access = build_tag_access(None)
+        self.assertFalse(denied_access["any"])
 
     def test_mod_rights_keep_authors_permission_separate(self) -> None:
         source = {

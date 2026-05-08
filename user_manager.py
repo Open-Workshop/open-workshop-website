@@ -13,6 +13,7 @@ from access_policy import (
     build_modpack_add_access,
     build_profile_access,
     build_session_access,
+    build_tag_access,
 )
 
 
@@ -199,12 +200,14 @@ class UserHandler:
         mod_add_code, mod_add = await self._cached_access(("mod-add",), "/mod", method="PUT")
         modpack_add_code, modpack_add = await self._cached_access(("modpack-add",), "/modpack", method="PUT")
         game_add_code, game_add = await self._cached_access(("game-add",), "/game", method="PUT")
+        tag_access_code, tag_access = await self._cached_access(("tag-crud",), "/tags", method="PATCH")
 
         self.session_access = build_session_access(
             self.access_context,
             mod_add if mod_add_code == 200 and isinstance(mod_add, dict) else None,
             modpack_add if modpack_add_code == 200 and isinstance(modpack_add, dict) else None,
             game_add if game_add_code == 200 and isinstance(game_add, dict) else None,
+            tag_access if tag_access_code == 200 and isinstance(tag_access, dict) else None,
         )
         return self.session_access
 
@@ -219,6 +222,10 @@ class UserHandler:
     async def get_game_add_access(self) -> dict:
         code, payload = await self._cached_access(("game-add",), "/game", method="PUT")
         return build_game_add_access(payload if code == 200 and isinstance(payload, dict) else None)
+
+    async def get_tag_access(self) -> dict:
+        code, payload = await self._cached_access(("tag-crud",), "/tags", method="PATCH")
+        return build_tag_access(payload if code == 200 and isinstance(payload, dict) else None)
 
     async def get_mod_access(
         self,
