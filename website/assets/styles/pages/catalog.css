@@ -360,6 +360,44 @@ div#settings-catalog > div#settings-menu > setting.catalog-range-setting > .cata
 div#settings-catalog > div#settings-menu > [data-catalog-views][hidden] {
     display: none !important;
 }
+div#settings-catalog > div#settings-menu > setting.catalog-tags-setting {
+    align-items: stretch;
+    cursor: default;
+}
+.catalog-tags-filter-panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+}
+.catalog-tags-filter-panel > .picker-editor,
+.catalog-tags-filter-panel .catalog-tag-group-picker {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+}
+.catalog-tags-filter-panel > .picker-editor > .picker-editor__shell,
+.catalog-tag-group-picker > .picker-editor__shell {
+    padding: 6px;
+}
+.catalog-tag-groups {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color);
+}
+.catalog-tag-groups[hidden] {
+    display: none !important;
+}
+.catalog-tag-groups > .catalog-tag-group-picker[hidden] {
+    display: none !important;
+}
+.catalog-tag-groups > .catalog-tag-group-picker + .catalog-tag-group-picker {
+    border-top: 1px solid var(--border-color);
+}
+.catalog-tag-group-picker .picker-editor__toggle {
+    max-width: 100%;
+}
 div#settings-catalog > div#settings-menu > .catalog-dependencies-title {
     width: 100%;
     max-width: 400px;

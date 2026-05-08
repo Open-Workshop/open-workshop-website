@@ -1950,6 +1950,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
 
     def test_index_catalog_template_supports_modpack_mode(self) -> None:
         index = (ROOT / "website/index.html").read_text(encoding="utf-8")
+        catalog_params = (ROOT / "website/assets/scripts/catalog-params.js").read_text(encoding="utf-8")
+        tags_edit = (ROOT / "website/assets/scripts/vendors/tags-edit.js").read_text(encoding="utf-8")
+        catalog_styles = (ROOT / "website/assets/styles/pages/catalog.css").read_text(encoding="utf-8")
         self.assertIn("data-catalog-kind=\"{{ catalog_kind }}\"", index)
         self.assertIn("catalog-mode-switch", index)
         self.assertIn("data-active-kind=\"{% if catalog_kind == 'modpack' %}modpack{% else %}mod{% endif %}\"", index)
@@ -1965,8 +1968,23 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('data-catalog-views="game mod modpack"', index)
         self.assertIn("catalog-mod-only", index)
         self.assertIn("catalog-tags-editor", index)
+        self.assertIn("catalog-tags-filter-panel", index)
+        self.assertIn("Добавить базовый тег", index)
+        self.assertIn("data-catalog-tag-groups-root", index)
+        self.assertIn("catalog-tag-groups", index)
         self.assertIn("Сортировка по загрузкам", index)
         self.assertIn("Каталог {{ catalog_entity_label | lower }} пользователя {{ catalog_user.username }}", index)
+        self.assertIn("syncCatalogTagGroupFilters", catalog_params)
+        self.assertIn("payload.tag_groups", catalog_params)
+        self.assertIn("getTagFilterEditors", catalog_params)
+        self.assertIn("'catalog-tag-group-' + String(groupId", catalog_params)
+        self.assertIn("'Выбрать ' + group.name", catalog_params)
+        self.assertIn("group.name + ' не выбрано'", catalog_params)
+        self.assertIn("tagGroupTagsEndpoint", tags_edit)
+        self.assertIn("pickerContextTagGroupId", tags_edit)
+        self.assertIn(".catalog-tags-filter-panel", catalog_styles)
+        self.assertIn(".catalog-tag-groups", catalog_styles)
+        self.assertIn(".catalog-tag-group-picker", catalog_styles)
 
     async def test_catalog_kind_query_uses_index_template(self) -> None:
         handler = StubHandler()

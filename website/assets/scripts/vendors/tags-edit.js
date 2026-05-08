@@ -3,9 +3,10 @@
 (function () {
   if (!window.OWPickerEditors || !window.OWCore) return;
 
-  const { getApiPaths, apiUrl } = window.OWCore;
+  const { getApiPaths, apiUrl, formatPath } = window.OWCore;
   const apiPaths = getApiPaths();
   const tagsPath = apiPaths.tag.list.path;
+  const tagGroupTagsEndpoint = apiPaths.tag_group && apiPaths.tag_group.tags ? apiPaths.tag_group.tags : null;
   const noGameValues = new Set(['', '0', 'none', 'null', 'undefined']);
   const CATALOG_TAG_FILTER_MODES = {
     tags: 'tags',
@@ -43,8 +44,16 @@
     return noGameValues.has(rawValue.toLowerCase()) ? '' : rawValue;
   }
 
+  function normalizeTagGroupId(value) {
+    const rawValue = String(value || '').trim();
+    return noGameValues.has(rawValue.toLowerCase()) ? '' : rawValue;
+  }
+
   function isCatalogEditor(root) {
-    return root && root.id === 'catalog-tags-editor';
+    if (!root) return false;
+    if (root.id === 'catalog-tags-editor') return true;
+    if (root.dataset.catalogTagFilter === 'true') return true;
+    return root.id.indexOf('catalog-tag-group-') === 0;
   }
 
   function getCatalogTagMode(itemId) {
@@ -70,7 +79,16 @@
     });
   }
 
-  function buildTagsUrl(params) {
+  function getTagsPathForContext(context) {
+    const tagGroupId = normalizeTagGroupId(context && context.tagGroupId);
+    if (!tagGroupId || !tagGroupTagsEndpoint || !tagGroupTagsEndpoint.path) {
+      return tagsPath;
+    }
+
+    return formatPath(tagGroupTagsEndpoint.path, { group_id: tagGroupId });
+  }
+
+  function buildTagsUrl(params, context) {
     const query = new URLSearchParams();
 
     Object.entries(params || {}).forEach(function ([key, value]) {
@@ -86,11 +104,12 @@
     });
 
     const queryString = query.toString();
-    return queryString === '' ? apiUrl(tagsPath) : `${apiUrl(tagsPath)}?${queryString}`;
+    const path = getTagsPathForContext(context || {});
+    return queryString === '' ? apiUrl(path) : `${apiUrl(path)}?${queryString}`;
   }
 
-  async function fetchTags(params) {
-    const response = await fetch(buildTagsUrl(params), { credentials: 'include' });
+  async function fetchTags(params, context) {
+    const response = await fetch(buildTagsUrl(params, context), { credentials: 'include' });
     if (!response.ok) {
       const responseText = await response.text().catch(function () { return ''; });
       throw new Error(parseResponseMessage(responseText, `Ошибка (${response.status})`));
@@ -193,6 +212,7 @@
         pendingPrefix: 'pending-tag',
         context: {
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
+          tagGroupId: normalizeTagGroupId(root.dataset.pickerContextTagGroupId || root.dataset.catalogTagGroupId),
         },
         emptyNameMessage: 'Введите название нового тега',
         duplicateMessage: 'Этот тег уже выбран',
@@ -205,11 +225,15 @@
             name: queryValue,
           };
           const gameId = normalizeGameId(editor.getContext().gameId);
+          const tagGroupId = normalizeTagGroupId(editor.getContext().tagGroupId);
           if (gameId !== '') {
             params.game_id = gameId;
           }
+          if (tagGroupId !== '' && getTagsPathForContext(editor.getContext()) === tagsPath) {
+            params.group_id = tagGroupId;
+          }
 
-          const data = await fetchTags(params);
+          const data = await fetchTags(params, editor.getContext());
           const normalized = window.OWCore.normalizeCollectionResponse(data);
           return {
             results: Array.isArray(normalized.items) ? normalized.items : [],
@@ -221,11 +245,15 @@
             ids,
           };
           const gameId = normalizeGameId(editor.getContext().gameId);
+          const tagGroupId = normalizeTagGroupId(editor.getContext().tagGroupId);
           if (gameId !== '') {
             params.game_id = gameId;
           }
+          if (tagGroupId !== '' && getTagsPathForContext(editor.getContext()) === tagsPath) {
+            params.group_id = tagGroupId;
+          }
 
-          const data = await fetchTags(params);
+          const data = await fetchTags(params, editor.getContext());
           const normalized = window.OWCore.normalizeCollectionResponse(data);
           return Array.isArray(normalized.items) ? normalized.items : [];
         },
@@ -251,4 +279,6 @@
   }
 
   initTagEditors();
+  window.OWTagsEditors = window.OWTagsEditors || {};
+  window.OWTagsEditors.init = initTagEditors;
 })();

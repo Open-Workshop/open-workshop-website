@@ -59,6 +59,31 @@
     return document.getElementById('catalog-tags-editor');
   }
 
+  function getTagFilterRoots() {
+    const roots = Array.from(document.querySelectorAll('[data-picker-editor-kind="tags"]'))
+      .filter(function (node) {
+        return node.id === 'catalog-tags-editor' || node.dataset.catalogTagFilter === 'true';
+      });
+    const mainRoot = getTagsEditorRoot();
+    if (mainRoot && !roots.includes(mainRoot)) {
+      roots.unshift(mainRoot);
+    }
+    return roots;
+  }
+
+  function getTagFilterEditors() {
+    if (!window.OWPickerEditors) return [];
+    return getTagFilterRoots()
+      .map(function (editorRoot) {
+        return window.OWPickerEditors.get(editorRoot.id);
+      })
+      .filter(Boolean);
+  }
+
+  function getTagGroupFiltersRoot() {
+    return document.querySelector('[data-catalog-tag-groups-root]');
+  }
+
   function getGenresEditor() {
     return window.OWPickerEditors ? window.OWPickerEditors.get('catalog-genres-editor') : null;
   }
@@ -217,10 +242,11 @@
 
   function getTagItemNodes(itemId) {
     const normalizedId = String(itemId || '').trim();
-    const root = getTagsEditorRoot();
-    if (!root || normalizedId === '') return [];
+    if (normalizedId === '') return [];
 
-    return Array.from(root.querySelectorAll('[data-picker-id="' + normalizedId + '"]'));
+    return getTagFilterRoots().flatMap(function (editorRoot) {
+      return Array.from(editorRoot.querySelectorAll('[data-picker-id="' + normalizedId + '"]'));
+    });
   }
 
   function applyTagItemModeToNode(itemNode, mode, selected) {
@@ -755,6 +781,131 @@
     });
   }
 
+  function normalizeCatalogTagGroupItems(rawGroups) {
+    const items = Array.isArray(rawGroups) ? rawGroups : [];
+    return items
+      .map(function (item) {
+        const id = String(item && item.id !== undefined ? item.id : '').trim();
+        const name = String(item && item.name !== undefined ? item.name : '').trim();
+        if (!/^\d+$/.test(id) || !name) return null;
+        return { id, name };
+      })
+      .filter(Boolean)
+      .sort(function (left, right) {
+        return left.name.localeCompare(right.name, 'ru-RU');
+      });
+  }
+
+  function buildCatalogTagGroupEditorId(groupId) {
+    return 'catalog-tag-group-' + String(groupId || '').trim() + '-editor';
+  }
+
+  function createCatalogTagGroupEditor(group) {
+    const editorId = buildCatalogTagGroupEditorId(group.id);
+    const editor = document.createElement('div');
+    editor.id = editorId;
+    editor.className = 'picker-editor picker-editor--chips catalog-tag-group-picker';
+    editor.dataset.pickerEditor = '';
+    editor.dataset.pickerEditorKind = 'tags';
+    editor.dataset.catalogTagFilter = 'true';
+    editor.dataset.catalogTagGroupId = group.id;
+    editor.dataset.pickerContextGameId = '';
+    editor.dataset.pickerContextTagGroupId = group.id;
+    editor.dataset.pickerShowOptionalToggle = 'false';
+    editor.dataset.pickerShowViewLink = 'false';
+    editor.dataset.pickerItemImageAlt = '';
+    editor.dataset.pickerRemoveActionAlt = '';
+    editor.setAttribute('import-height', '#' + editorId + ' .picker-editor__shell');
+
+    const shell = document.createElement('div');
+    shell.className = 'picker-editor__shell';
+    const main = document.createElement('div');
+    main.className = 'picker-editor__main';
+
+    const selectedList = document.createElement('div');
+    selectedList.className = 'picker-editor__selected-list';
+    selectedList.dataset.pickerSlot = 'selected';
+    const selectedEmpty = document.createElement('p');
+    selectedEmpty.className = 'picker-editor__empty';
+    selectedEmpty.textContent = group.name + ' не выбрано';
+    selectedList.appendChild(selectedEmpty);
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'picker-editor__toggle small';
+    toggle.dataset.pickerToggle = '';
+    toggle.textContent = 'Выбрать ' + group.name;
+
+    const popup = document.createElement('div');
+    popup.className = 'picker-editor__popup';
+    popup.dataset.pickerPopup = '';
+
+    const search = document.createElement('input');
+    search.className = 'picker-editor__search';
+    search.dataset.pickerSearch = '';
+    search.type = 'text';
+    search.placeholder = 'Поиск...';
+
+    const resultsList = document.createElement('div');
+    resultsList.className = 'picker-editor__results-list';
+    resultsList.dataset.pickerSlot = 'results';
+    const resultsEmpty = document.createElement('p');
+    resultsEmpty.className = 'picker-editor__empty';
+    resultsEmpty.textContent = 'Не найдено';
+    resultsList.appendChild(resultsEmpty);
+
+    const footer = document.createElement('div');
+    footer.className = 'picker-editor__footer';
+    const showMore = document.createElement('p');
+    showMore.className = 'picker-editor__show-more';
+    showMore.dataset.pickerShowMore = '';
+    showMore.hidden = true;
+    footer.appendChild(showMore);
+
+    popup.append(search, resultsList, footer);
+    main.append(selectedList, toggle, popup);
+    shell.appendChild(main);
+    editor.appendChild(shell);
+
+    return editor;
+  }
+
+  function syncCatalogTagGroupFilters(rawGroups) {
+    const container = getTagGroupFiltersRoot();
+    if (!container) return false;
+
+    const groups = normalizeCatalogTagGroupItems(rawGroups);
+    const signature = groups.map(function (group) {
+      return group.id + ':' + group.name;
+    }).join('|');
+
+    if (container.dataset.catalogTagGroupsSignature === signature) {
+      return false;
+    }
+
+    container.replaceChildren();
+    container.hidden = groups.length === 0;
+    container.dataset.catalogTagGroupsSignature = signature;
+
+    groups.forEach(function (group) {
+      container.appendChild(createCatalogTagGroupEditor(group));
+    });
+
+    if (window.OWTagsEditors && typeof window.OWTagsEditors.init === 'function') {
+      window.OWTagsEditors.init();
+    }
+
+    bindPickerEvents();
+    syncTagsSearchGame(URLManager.getParams().get('game', ''));
+    void hydrateTagsFilter(Array.from(new Set([
+      ...parseTagsParam(URLManager.getParams().get('tags', '')),
+      ...parseTagsParam(URLManager.getParams().get('excluded_tags', '')),
+    ])));
+    applyCatalogState(resolveCatalogState());
+
+    return true;
+  }
+
   function updateCatalogRangeGroupState(key, values, bounds, activeRole = '') {
     const group = getCatalogRangeGroup(key);
     const slider = getCatalogRangeSliderNode(key);
@@ -887,6 +1038,7 @@
 
     if (!feedUrl) {
       catalogRangeFeed = null;
+      syncCatalogTagGroupFilters([]);
       return false;
     }
 
@@ -930,6 +1082,7 @@
         size: sizeBounds,
         size_unpacked: unpackedBounds,
       };
+      syncCatalogTagGroupFilters(payload.tag_groups);
 
       const hasSizeBounds = sizeBounds.min !== null && sizeBounds.max !== null;
       const hasUnpackedBounds = unpackedBounds.min !== null && unpackedBounds.max !== null;
@@ -969,6 +1122,7 @@
       return false;
     } catch (error) {
       catalogRangeFeed = null;
+      syncCatalogTagGroupFilters([]);
       setCatalogRangeControlsDisabled(true);
       return false;
     }
@@ -1276,10 +1430,11 @@
     }
 
     if (view !== 'mod' && view !== 'modpack') {
-      const tagsEditor = getTagsEditor();
-      if (tagsEditor && typeof tagsEditor.close === 'function') {
-        tagsEditor.close();
-      }
+      getTagFilterEditors().forEach(function (tagsEditor) {
+        if (tagsEditor && typeof tagsEditor.close === 'function') {
+          tagsEditor.close();
+        }
+      });
     }
 
     if (view !== 'game') {
@@ -1398,34 +1553,38 @@
   }
 
   function getSelectedTagIds() {
-    const editor = getTagsEditor();
-    if (!editor) return [];
-
-    return editor.getState().visible
-      .map(function (item) {
-        return String(item.id);
-      })
-      .filter(function (id) {
-        return id.length > 0;
+    const ids = new Set();
+    getTagFilterEditors().forEach(function (editor) {
+      editor.getState().visible.forEach(function (item) {
+        const itemId = String(item.id || '').trim();
+        if (itemId.length > 0) {
+          ids.add(itemId);
+        }
       });
+    });
+    return Array.from(ids);
   }
 
   function getSelectedTagSelection() {
-    const editor = getTagsEditor();
+    const seen = new Set();
     const selection = {
       tags: [],
       excluded_tags: [],
     };
 
-    if (!editor) return selection;
+    getTagFilterEditors().forEach(function (editor) {
+      editor.getState().visible.forEach(function (item) {
+        const itemId = String(item.id || '').trim();
+        if (!itemId || seen.has(itemId)) return;
 
-    editor.getState().visible.forEach(function (item) {
-      const itemId = String(item.id || '').trim();
-      if (!itemId) return;
-
-      const mode = getTagItemMode(itemId);
-      selection[mode].push(itemId);
+        seen.add(itemId);
+        const mode = getTagItemMode(itemId);
+        selection[mode].push(itemId);
+      });
     });
+
+    selection.tags.sort(function (a, b) { return Number(a) - Number(b); });
+    selection.excluded_tags.sort(function (a, b) { return Number(a) - Number(b); });
 
     return selection;
   }
@@ -1468,16 +1627,17 @@
   }
 
   function clearSelectedTags() {
-    const editor = getTagsEditor();
-    const root = getTagsEditorRoot();
-    if (!editor) {
+    const editors = getTagFilterEditors();
+    if (!editors.length) {
       tagItemModes.clear();
       return;
     }
 
     suppressTagSync = true;
     try {
-      editor.clearVisibleSelection();
+      editors.forEach(function (editor) {
+        editor.clearVisibleSelection();
+      });
     } finally {
       suppressTagSync = false;
       pendingTagSync = false;
@@ -1485,11 +1645,11 @@
 
     tagItemModes.clear();
 
-    if (root) {
-      root.querySelectorAll('[data-picker-id]').forEach(function (itemNode) {
+    getTagFilterRoots().forEach(function (editorRoot) {
+      editorRoot.querySelectorAll('[data-picker-id]').forEach(function (itemNode) {
         applyTagItemModeToNode(itemNode, CATALOG_TAG_FILTER_MODES.tags);
       });
-    }
+    });
   }
 
   function setDependenciesEditorDisabled(disabled) {
@@ -1538,12 +1698,12 @@
   }
 
   function syncTagsSearchGame(gameID) {
-    const editor = getTagsEditor();
-    if (!editor) return;
-    editor.setContext({ gameId: gameID ? String(gameID) : '' });
-    if (editor.isOpen()) {
-      editor.refresh();
-    }
+    getTagFilterEditors().forEach(function (editor) {
+      editor.setContext({ gameId: gameID ? String(gameID) : '' });
+      if (editor.isOpen()) {
+        editor.refresh();
+      }
+    });
   }
 
   function getCatalogTagSelectionForValidation() {
@@ -1762,12 +1922,14 @@
   }
 
   async function hydrateTagsFilter(ids) {
-    const editor = getTagsEditor();
-    if (!ids.length || !editor) return;
+    const editors = getTagFilterEditors();
+    if (!ids.length || !editors.length) return;
 
     suppressTagSync = true;
     try {
-      await editor.setDefaultSelected(ids);
+      await Promise.all(editors.map(function (editor) {
+        return editor.setDefaultSelected(ids);
+      }));
     } finally {
       suppressTagSync = false;
     }
@@ -2310,8 +2472,8 @@
     infiniteScrollObserver.observe(sentinel);
   }
 
-  function handleTagsSelectionChange() {
-    const editor = getTagsEditor();
+  function handleTagsSelectionChange(event) {
+    const editor = event && event.detail && event.detail.editor ? event.detail.editor : getTagsEditor();
     if (!editor) return;
     if (suppressTagSync) return;
 
@@ -2364,12 +2526,13 @@
   }
 
   function bindPickerEvents() {
-    const tagsRoot = document.getElementById('catalog-tags-editor');
-    if (tagsRoot && tagsRoot.dataset.catalogBound !== '1') {
+    getTagFilterRoots().forEach(function (tagsRoot) {
+      if (tagsRoot.dataset.catalogBound === '1') return;
+
       tagsRoot.dataset.catalogBound = '1';
       tagsRoot.addEventListener('ow:picker-selection-change', handleTagsSelectionChange);
       tagsRoot.addEventListener('ow:picker-open-change', handleTagsOpenChange);
-    }
+    });
 
     const genresRoot = document.getElementById('catalog-genres-editor');
     if (genresRoot && genresRoot.dataset.catalogBound !== '1') {

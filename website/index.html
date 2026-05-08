@@ -152,7 +152,10 @@
       </setting>
 
       <setting class="with-events catalog-tags-setting catalog-game-filter" data-catalog-views="mod modpack">
-        {{ render_tags_editor({}, 0, false, 'catalog-tags-editor') }}
+        <div class="standart-panel catalog-tags-filter-panel">
+          {{ render_tags_editor({}, 0, false, 'catalog-tags-editor', 'Добавить базовый тег') }}
+          <div class="catalog-tag-groups" data-catalog-tag-groups-root hidden></div>
+        </div>
       </setting>
     </div>
   </div>
