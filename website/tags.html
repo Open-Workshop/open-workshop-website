@@ -3,6 +3,7 @@
 <link href="/assets/styles/pages/tags.css" rel="stylesheet"/>
 {% set tag_access = tag_access|default({}, true) %}
 {% set tag_groups = tag_groups|default([], true) %}
+{% set tag_tree_sections = tag_tree_sections|default([], true) %}
 {% set can_add_tag = tag_access.get("add", {}).get("value", False) %}
 {% set can_edit_tag = tag_access.get("edit", {}).get("value", False) %}
 {% set can_delete_tag = tag_access.get("delete", {}).get("value", False) %}
@@ -27,6 +28,10 @@
       <span class="tag-link" translate="no">{{ query_name }}</span>
       <a class="button-style button-style-small dark" href="/tags">Сбросить</a>
       {% endif %}
+      <button type="button" class="button-style button-style-small tags-admin__save-button" data-action="tags-save-all" disabled>
+        Сохранить изменения
+        <span class="tags-admin__save-count" data-tags-pending-count>0</span>
+      </button>
       <a class="button-style button-style-small dark" href="/user/{{ session_access.owner_id }}/settings">Настройки</a>
     </div>
   </section>
@@ -63,7 +68,7 @@
         <h2>Новый тег</h2>
 
         {% if can_add_tag %}
-        <form class="tags-admin__form" data-tags-create-form>
+        <form class="tags-admin__form" data-tags-create-form autocomplete="off">
           <label class="tags-admin__field">
             <span>Название</span>
             <input
@@ -78,7 +83,7 @@
 
           <label class="tags-admin__field">
             <span>Группа</span>
-            <select class="tags-admin__input tags-admin__select" data-tags-create-group>
+            <select class="tags-admin__input tags-admin__select" data-tags-create-group autocomplete="off">
               <option value="">Без группы</option>
               {% for group in tag_groups %}
               <option value="{{ group.id }}">{{ group.name }}</option>
@@ -86,7 +91,7 @@
             </select>
           </label>
 
-          <button type="submit" class="small tags-admin__primary">Создать</button>
+          <button type="submit" class="small tags-admin__primary">Добавить в очередь</button>
         </form>
         {% else %}
         <p class="tags-admin__muted">Создание тегов недоступно для текущего аккаунта.</p>
@@ -97,7 +102,7 @@
         <h2>Группы</h2>
 
         {% if can_add_tag %}
-        <form class="tags-admin__form" data-groups-create-form>
+        <form class="tags-admin__form" data-groups-create-form autocomplete="off">
           <label class="tags-admin__field">
             <span>Новая группа</span>
             <input
@@ -109,7 +114,7 @@
               autocomplete="off"
             >
           </label>
-          <button type="submit" class="small tags-admin__primary">Создать группу</button>
+          <button type="submit" class="small tags-admin__primary">Добавить в очередь</button>
         </form>
         {% endif %}
 
@@ -121,6 +126,7 @@
             data-groups-row
             data-group-id="{{ group.id }}"
             data-groups-original-name="{{ group.name }}"
+            autocomplete="off"
           >
             <span class="tag-link" translate="no">#{{ group.id }}</span>
             <label class="tags-admin__field">
@@ -136,7 +142,6 @@
               >
             </label>
             <div class="tags-admin__group-actions">
-              <button type="submit" class="small tags-admin__action" data-action="group-save" {% if not can_edit_tag %}disabled{% endif %}>Сохранить</button>
               <button type="button" class="small dark tags-admin__action tags-admin__action--delete" data-action="group-delete" {% if not can_delete_tag %}disabled{% endif %}>Удалить</button>
             </div>
           </form>
@@ -149,7 +154,7 @@
 
       <section class="outline-container tags-admin__panel">
         <h2>Поиск</h2>
-        <form class="tags-admin__form" method="get" action="/tags">
+        <form class="tags-admin__form" method="get" action="/tags" autocomplete="off">
           <label class="tags-admin__field">
             <span>Название</span>
             <input
@@ -169,77 +174,123 @@
         <h2>Связи</h2>
         <p class="tags-admin__muted">Карточки показывают группу, привязанные игры и orphaned-статус без отдельного режима просмотра.</p>
       </section>
+
+      <section class="outline-container tags-admin__panel tags-admin__pending-panel" data-tags-pending-panel>
+        <h2>Черновик изменений</h2>
+        <p class="tags-admin__muted">
+          В очереди: <strong data-tags-pending-count>0</strong>. Можно спокойно пройтись по дереву, а потом сохранить всё разом.
+        </p>
+        <p class="tags-admin__muted" data-tags-pending-empty>Пока нет изменений.</p>
+        <ol class="tags-admin__pending-list" data-tags-pending-list hidden></ol>
+        <button type="button" class="small tags-admin__primary tags-admin__save-button" data-action="tags-save-all" disabled>
+          Сохранить изменения
+        </button>
+      </section>
     </aside>
 
     <section class="outline-container tags-admin__panel tags-admin__panel--list">
-      <h2>Список тегов</h2>
+      <h2>Дерево тегов</h2>
 
-      {% if tags|length > 0 %}
-      <div class="tags-admin__list">
-        {% for tag in tags %}
-        <form
-          class="element tags-admin__tag-card"
-          data-tags-row
-          data-tag-id="{{ tag.id }}"
-          data-tags-original-name="{{ tag.name }}"
-          data-tags-original-group-id="{{ tag.group_id or '' }}"
+      {% if tag_tree_sections|length > 0 %}
+      <div class="tags-admin__tag-tree" data-tag-tree>
+        {% for section in tag_tree_sections %}
+        <section
+          class="tags-admin__tree-section{% if not section.expanded_by_default %} is-collapsed{% endif %}{% if section.empty %} is-empty{% endif %}{% if section.problem %} is-problem{% endif %}"
+          data-tag-tree-section="{{ section.id }}"
+          data-section-default-open="{{ 'true' if section.expanded_by_default else 'false' }}"
         >
-          <div class="tags-admin__tag-main">
-            <div class="tags-admin__tag-meta">
-              <span class="tag-link" translate="no">#{{ tag.id }}</span>
-              {% if tag.group_name %}
-              <span class="tag-link-blue" title="Группа тегов">Группа: {{ tag.group_name }}</span>
-              {% elif tag.group_id %}
-              <span class="tag-link-blue" title="Группа тегов">Группа #{{ tag.group_id }}</span>
-              {% else %}
-              <span class="tag-link-blue">Без группы</span>
-              {% endif %}
-              {% if tag.visible_games|length > 0 %}
-                {% for game in tag.visible_games %}
-                <span class="tag-link-green" title="Привязка к игре">{{ game.label }}</span>
-                {% endfor %}
-                {% if tag.games_extra_count > 0 %}
-                <span class="tag-link-green" title="Еще игр">+{{ tag.games_extra_count }}</span>
-                {% endif %}
-              {% endif %}
-              {% if tag.is_orphaned %}
-              <span class="tag-link-orange">orphaned</span>
-              {% endif %}
-            </div>
+          <button
+            type="button"
+            class="tags-admin__tree-toggle"
+            data-tag-tree-toggle
+            aria-expanded="{{ 'true' if section.expanded_by_default else 'false' }}"
+          >
+            <span class="tags-admin__tree-title">{{ section.title }}</span>
+            <span class="tag-link" translate="no">{{ section.count }}</span>
+            {% if section.kind == "orphaned" and section.count > 0 %}
+            <span class="tag-link-orange">разобрать</span>
+            {% elif section.empty %}
+            <span class="tag-link">пусто</span>
+            {% endif %}
+            <span class="tags-admin__tree-description">{{ section.description }}</span>
+          </button>
 
-            <label class="tags-admin__field tags-admin__field--row">
-              <span>Название тега</span>
-              <input
-                type="text"
-                class="tags-admin__input tags-admin__input--name"
-                data-tags-row-name
-                value="{{ tag.name }}"
-                maxlength="120"
+          <div class="tags-admin__tree-items" data-tag-tree-items>
+            {% if section.tags|length > 0 %}
+              {% for tag in section.tags %}
+              <form
+                class="element tags-admin__tag-card tags-admin__tag-card--tree"
+                data-tag-tree-item
+                data-tags-row
+                data-tag-id="{{ tag.id }}"
+                data-tags-original-name="{{ tag.name }}"
+                data-tags-original-group-id="{{ tag.group_id or '' }}"
                 autocomplete="off"
-                {% if not can_edit_tag %}disabled{% endif %}
               >
-            </label>
+                <div class="tags-admin__tag-main">
+                  <div class="tags-admin__tag-meta">
+                    <span class="tag-link" translate="no">#{{ tag.id }}</span>
+                    {% if tag.group_name %}
+                    <span class="tag-link-blue" title="Группа тегов">Группа: {{ tag.group_name }}</span>
+                    {% elif tag.group_id %}
+                    <span class="tag-link-blue" title="Группа тегов">Группа #{{ tag.group_id }}</span>
+                    {% else %}
+                    <span class="tag-link-blue">Без группы</span>
+                    {% endif %}
+                    {% if tag.visible_games|length > 0 %}
+                      {% for game in tag.visible_games %}
+                      <span class="tag-link-green" title="Привязка к игре">{{ game.label }}</span>
+                      {% endfor %}
+                      {% if tag.games_extra_count > 0 %}
+                      <span class="tag-link-green" title="Еще игр">+{{ tag.games_extra_count }}</span>
+                      {% endif %}
+                    {% endif %}
+                    {% if tag.is_orphaned %}
+                    <span class="tag-link-orange">orphaned</span>
+                    {% endif %}
+                  </div>
 
-            <label class="tags-admin__field tags-admin__field--row">
-              <span>Группа</span>
-              <select
-                class="tags-admin__input tags-admin__select"
-                data-tags-row-group
-                {% if not can_edit_tag %}disabled{% endif %}
-              >
-                <option value="">Без группы</option>
-                {% for group in tag_groups %}
-                <option value="{{ group.id }}"{% if tag.group_id == group.id %} selected{% endif %}>{{ group.name }}</option>
-                {% endfor %}
-              </select>
-            </label>
-          </div>
+                  <label class="tags-admin__field tags-admin__field--row">
+                    <span>Название тега</span>
+                    <input
+                      type="text"
+                      class="tags-admin__input tags-admin__input--name"
+                      data-tags-row-name
+                      value="{{ tag.name }}"
+                      maxlength="120"
+                      autocomplete="off"
+                      {% if not can_edit_tag %}disabled{% endif %}
+                    >
+                  </label>
 
-          <div class="tags-admin__tag-actions">
-            <button type="submit" class="small tags-admin__action" data-action="tag-save" {% if not can_edit_tag %}disabled{% endif %}>Сохранить</button>
-            <button type="button" class="small dark tags-admin__action tags-admin__action--delete" data-action="tag-delete" {% if not can_delete_tag %}disabled{% endif %}>Удалить</button>
+                  <label class="tags-admin__field tags-admin__field--row">
+                    <span>Группа</span>
+                    <select
+                      class="tags-admin__input tags-admin__select"
+                      data-tags-row-group
+                      autocomplete="off"
+                      {% if not can_edit_tag %}disabled{% endif %}
+                    >
+                      <option value="">Без группы</option>
+                      {% for group in tag_groups %}
+                      <option value="{{ group.id }}"{% if tag.group_id == group.id %} selected{% endif %}>{{ group.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </label>
+                </div>
+
+                <div class="tags-admin__tag-actions">
+                  <button type="button" class="small dark tags-admin__action tags-admin__action--delete" data-action="tag-delete" {% if not can_delete_tag %}disabled{% endif %}>Удалить</button>
+                </div>
+              </form>
+              {% endfor %}
+            {% else %}
+            <div class="tags-admin__tree-empty">
+              <p>В этой ветке пока нет тегов.</p>
+            </div>
+            {% endif %}
           </div>
-        </form>
+        </section>
         {% endfor %}
       </div>
       {% else %}
@@ -253,6 +304,8 @@
       {% endif %}
     </section>
   </div>
+
+  {% include "html-partials/save-progress.html" %}
 </main>
 
 <script src="/assets/scripts/pages/tags-admin.js"></script>

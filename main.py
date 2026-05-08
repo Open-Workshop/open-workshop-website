@@ -394,6 +394,244 @@ def _normalize_tag_groups(raw_groups) -> list[dict[str, object]]:
     return tag_groups
 
 
+def _build_tag_tree_sections(tags: list[dict], tag_groups: list[dict], *, query_name: str = "") -> list[dict[str, object]]:
+    def sorted_tags(section_tags: list[dict]) -> list[dict]:
+        return sorted(section_tags, key=lambda tag: (str(tag.get("name") or "").lower(), int(tag.get("id") or 0)))
+
+    query_active = bool(str(query_name or "").strip())
+    group_by_id = {
+        group["id"]: {
+            "id": f"group-{group['id']}",
+            "kind": "group",
+            "title": str(group["name"]),
+            "group_id": group["id"],
+            "tags": [],
+        }
+        for group in tag_groups
+    }
+    unknown_group_ids: list[int] = []
+    orphaned_tags: list[dict] = []
+    ungrouped_tags: list[dict] = []
+
+    for tag in tags:
+        if tag.get("is_orphaned"):
+            orphaned_tags.append(tag)
+            continue
+
+        group_id = tag.get("group_id")
+        if group_id is None:
+            ungrouped_tags.append(tag)
+            continue
+
+        if group_id not in group_by_id:
+            unknown_group_ids.append(group_id)
+            group_by_id[group_id] = {
+                "id": f"group-{group_id}",
+                "kind": "group",
+                "title": str(tag.get("group_name") or f"Группа #{group_id}"),
+                "group_id": group_id,
+                "tags": [],
+            }
+        group_by_id[group_id]["tags"].append(tag)
+
+    sections: list[dict[str, object]] = [
+        {
+            "id": "orphaned",
+            "kind": "orphaned",
+            "title": "Orphaned",
+            "description": "Теги, которые API пометил как бесхозные",
+            "tags": sorted_tags(orphaned_tags),
+            "problem": bool(orphaned_tags),
+        },
+        {
+            "id": "ungrouped",
+            "kind": "ungrouped",
+            "title": "Без группы",
+            "description": "Теги без назначенной группы",
+            "tags": sorted_tags(ungrouped_tags),
+            "problem": False,
+        },
+    ]
+
+    group_sections = [group_by_id[group["id"]] for group in tag_groups]
+    for group_id in sorted(set(unknown_group_ids)):
+        if group_id not in {group["id"] for group in tag_groups}:
+            group_sections.append(group_by_id[group_id])
+
+    for section in group_sections:
+        section["tags"] = sorted_tags(section["tags"])
+        section["description"] = "Группа тегов"
+        section["problem"] = False
+        sections.append(section)
+
+    normalized_sections = []
+    for section in sections:
+        section_tags = section["tags"]
+        if query_active and not section_tags:
+            continue
+
+        section["count"] = len(section_tags)
+        section["empty"] = not section_tags
+        section["expanded_by_default"] = query_active or bool(section_tags) or section["kind"] in {"orphaned", "ungrouped"}
+        normalized_sections.append(section)
+
+    return normalized_sections
+
+
+async def _load_tag_group_tags_map(handler: UserHandler, tag_groups: list[dict], *, query_name: str = "") -> dict[int, list]:
+    if not tag_groups:
+        return {}
+
+    query_params = {}
+    if query_name:
+        query_params["name"] = query_name
+
+    async def load_group_tags(group: dict) -> tuple[int, list]:
+        group_id = int(group["id"])
+        group_tags_path = app_config.api_path("tag_group", "tags").format(group_id=group_id)
+        return group_id, await _load_paged_results(
+            handler,
+            _build_query_url(group_tags_path, query_params),
+            page_size=50,
+        )
+
+    results = await asyncio.gather(*(load_group_tags(group) for group in tag_groups))
+    return {group_id: tags for group_id, tags in results}
+
+
+def _normalize_tag_items(
+    raw_tags,
+    *,
+    tag_group_names: dict[int, str],
+    game_name_map: dict[int, str],
+    default_group: dict | None = None,
+) -> list[dict]:
+    default_group_id = _optional_int(default_group.get("id")) if isinstance(default_group, dict) else None
+    default_group_name = str(default_group.get("name") or "") if isinstance(default_group, dict) else ""
+    tags = []
+
+    for item in raw_tags:
+        if not isinstance(item, dict):
+            continue
+
+        tag_id = _optional_int(item.get("id"))
+        if tag_id is None:
+            continue
+
+        game_id = _optional_int(item.get("game_id"))
+
+        game_name = ""
+        game_payload = item.get("game")
+        if isinstance(game_payload, dict):
+            game_name = str(game_payload.get("name") or "")
+
+        group_id = None
+        group_name = ""
+        group_payload = item.get("group")
+        if isinstance(group_payload, dict):
+            group_id = _optional_int(group_payload.get("id"))
+            group_name = str(group_payload.get("name") or "")
+
+        if group_id is None:
+            group_id = _optional_int(item.get("group_id"))
+        if group_id is None:
+            group_id = default_group_id
+        group_name = str(item.get("group_name") or group_name or tag_group_names.get(group_id) or default_group_name or "")
+
+        game_name = str(item.get("game_name") or game_name or "")
+        games = []
+        seen_game_ids = set()
+        games_payload = item.get("games")
+        if isinstance(games_payload, list):
+            for game_item in games_payload:
+                game_item_id = None
+                game_item_name = ""
+
+                if isinstance(game_item, dict):
+                    raw_game_item_id = game_item.get("id")
+                    game_item_name = str(game_item.get("name") or "")
+                else:
+                    raw_game_item_id = game_item
+
+                game_item_id = _optional_int(raw_game_item_id)
+
+                if game_item_id is None and not game_item_name:
+                    continue
+                if game_item_id is not None:
+                    if game_item_id in seen_game_ids:
+                        continue
+                    seen_game_ids.add(game_item_id)
+                    game_item_name = game_item_name or game_name_map.get(game_item_id, "")
+
+                games.append({
+                    "id": game_item_id,
+                    "name": game_item_name,
+                    "label": game_item_name or f"ID {game_item_id}",
+                })
+
+        if game_id is not None and game_id not in seen_game_ids:
+            game_name = game_name or game_name_map.get(game_id, "")
+            games.append({
+                "id": game_id,
+                "name": game_name,
+                "label": game_name or f"ID {game_id}",
+            })
+            seen_game_ids.add(game_id)
+
+        orphaned_value = item.get("orphaned")
+        if isinstance(orphaned_value, str):
+            is_orphaned = orphaned_value.strip().lower() in {"1", "true", "yes", "on"}
+        else:
+            is_orphaned = bool(orphaned_value)
+
+        if group_name:
+            scope_label = group_name
+        elif group_id is not None:
+            scope_label = f"Группа #{group_id}"
+        elif games:
+            scope_label = ", ".join(game["label"] for game in games[:3])
+            if len(games) > 3:
+                scope_label = f"{scope_label} +{len(games) - 3}"
+        elif is_orphaned:
+            scope_label = "Бесхозный тег"
+        else:
+            scope_label = "Без группы"
+
+        tags.append({
+            **item,
+            "id": tag_id,
+            "name": str(item.get("name") or ""),
+            "game_id": game_id,
+            "game_name": game_name,
+            "group_id": group_id,
+            "group_name": group_name,
+            "scope_label": scope_label,
+            "games": games,
+            "visible_games": games[:8],
+            "games_count": len(games),
+            "games_extra_count": max(0, len(games) - 8),
+            "is_global": not games and group_id is None,
+            "is_orphaned": is_orphaned,
+        })
+
+    return tags
+
+
+def _merge_tags_by_id(*tag_lists: list[dict]) -> list[dict]:
+    merged: dict[int, dict] = {}
+    for tag_list in tag_lists:
+        for tag in tag_list:
+            tag_id = tag.get("id")
+            if tag_id is None:
+                continue
+
+            current = merged.get(tag_id)
+            if current is None or (current.get("group_id") is None and tag.get("group_id") is not None):
+                merged[tag_id] = tag
+
+    return sorted(merged.values(), key=lambda tag: (str(tag.get("name") or "").lower(), int(tag.get("id") or 0)))
+
+
 async def _load_mod_cards_by_ids(
     handler: UserHandler,
     mod_ids,
@@ -2052,127 +2290,49 @@ async def tags_admin():
         )
         tag_groups = _normalize_tag_groups(raw_groups)
         tag_group_names = {group["id"]: group["name"] for group in tag_groups}
+        raw_group_tags_by_id = await _load_tag_group_tags_map(handler, tag_groups, query_name=query_name)
+        all_raw_tags = [
+            item
+            for raw_group_tags in raw_group_tags_by_id.values()
+            for item in raw_group_tags
+        ]
+        all_raw_tags.extend(raw_tags)
         game_name_map = await _load_game_name_map(
             handler,
             {
                 game_id
-                for item in raw_tags
+                for item in all_raw_tags
                 if isinstance(item, dict)
                 for game_id in _tag_game_ids_from_item(item)
             },
         )
 
-        tags = []
-        for item in raw_tags:
-            if not isinstance(item, dict):
-                continue
+        ungrouped_tags = _normalize_tag_items(
+            raw_tags,
+            tag_group_names=tag_group_names,
+            game_name_map=game_name_map,
+        )
+        grouped_tags = []
+        for group in tag_groups:
+            grouped_tags.extend(_normalize_tag_items(
+                raw_group_tags_by_id.get(int(group["id"]), []),
+                tag_group_names=tag_group_names,
+                game_name_map=game_name_map,
+                default_group=group,
+            ))
 
-            tag_id = _optional_int(item.get("id"))
-            if tag_id is None:
-                continue
-
-            game_id = _optional_int(item.get("game_id"))
-
-            game_name = ""
-            game_payload = item.get("game")
-            if isinstance(game_payload, dict):
-                game_name = str(game_payload.get("name") or "")
-
-            group_id = None
-            group_name = ""
-            group_payload = item.get("group")
-            if isinstance(group_payload, dict):
-                group_id = _optional_int(group_payload.get("id"))
-                group_name = str(group_payload.get("name") or "")
-
-            if group_id is None:
-                group_id = _optional_int(item.get("group_id"))
-            group_name = str(item.get("group_name") or group_name or tag_group_names.get(group_id) or "")
-
-            game_name = str(item.get("game_name") or game_name or "")
-            games = []
-            seen_game_ids = set()
-            games_payload = item.get("games")
-            if isinstance(games_payload, list):
-                for game_item in games_payload:
-                    game_item_id = None
-                    game_item_name = ""
-
-                    if isinstance(game_item, dict):
-                        raw_game_item_id = game_item.get("id")
-                        game_item_name = str(game_item.get("name") or "")
-                    else:
-                        raw_game_item_id = game_item
-
-                    game_item_id = _optional_int(raw_game_item_id)
-
-                    if game_item_id is None and not game_item_name:
-                        continue
-                    if game_item_id is not None:
-                        if game_item_id in seen_game_ids:
-                            continue
-                        seen_game_ids.add(game_item_id)
-                        game_item_name = game_item_name or game_name_map.get(game_item_id, "")
-
-                    games.append({
-                        "id": game_item_id,
-                        "name": game_item_name,
-                        "label": game_item_name or f"ID {game_item_id}",
-                    })
-
-            if game_id is not None and game_id not in seen_game_ids:
-                game_name = game_name or game_name_map.get(game_id, "")
-                games.append({
-                    "id": game_id,
-                    "name": game_name,
-                    "label": game_name or f"ID {game_id}",
-                })
-                seen_game_ids.add(game_id)
-
-            orphaned_value = item.get("orphaned")
-            if isinstance(orphaned_value, str):
-                is_orphaned = orphaned_value.strip().lower() in {"1", "true", "yes", "on"}
-            else:
-                is_orphaned = bool(orphaned_value)
-
-            if group_name:
-                scope_label = group_name
-            elif group_id is not None:
-                scope_label = f"Группа #{group_id}"
-            elif games:
-                scope_label = ", ".join(game["label"] for game in games[:3])
-                if len(games) > 3:
-                    scope_label = f"{scope_label} +{len(games) - 3}"
-            elif is_orphaned:
-                scope_label = "Бесхозный тег"
-            else:
-                scope_label = "Без группы"
-
-            tags.append({
-                **item,
-                "id": tag_id,
-                "name": str(item.get("name") or ""),
-                "game_id": game_id,
-                "game_name": game_name,
-                "group_id": group_id,
-                "group_name": group_name,
-                "scope_label": scope_label,
-                "games": games,
-                "visible_games": games[:8],
-                "games_count": len(games),
-                "games_extra_count": max(0, len(games) - 8),
-                "is_global": not games and group_id is None,
-                "is_orphaned": is_orphaned,
-            })
+        tags = _merge_tags_by_id(ungrouped_tags, grouped_tags)
 
         tags_with_group_total = sum(1 for tag in tags if tag["group_id"] is not None or tag["group_name"])
         tags_with_games_total = sum(1 for tag in tags if tag["games_count"] > 0)
         tags_orphaned_total = sum(1 for tag in tags if tag["is_orphaned"])
         tag_groups_total = len(tag_groups)
+        tag_tree_sections = _build_tag_tree_sections(tags, tag_groups, query_name=query_name)
 
         page_html = handler.render(
             "tags.html",
             tags=tags,
+            tag_tree_sections=tag_tree_sections,
             tags_total=len(tags),
             tag_groups=tag_groups,
             tag_groups_total=tag_groups_total,

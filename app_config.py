@@ -174,6 +174,7 @@ PUBLIC_CONFIG: dict = {
             "tag_group": {
                 "add": {"method": "POST", "path": "/tag-groups"},
                 "list": {"method": "GET", "path": "/tag-groups"},
+                "tags": {"method": "GET", "path": "/tag-groups/{group_id}/tags"},
                 "edit": {"method": "PATCH", "path": "/tag-groups/{group_id}"},
                 "delete": {"method": "DELETE", "path": "/tag-groups/{group_id}"},
             },

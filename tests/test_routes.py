@@ -1038,7 +1038,6 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     {
                         "items": [
                             {"id": 1, "name": "Action", "orphaned": True},
-                            {"id": 2, "name": "Challenge", "group": {"id": 4, "name": "Meta"}, "games": [5]},
                         ],
                         "pagination": {"total": 2},
                     },
@@ -1051,6 +1050,22 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                             {"id": 2, "name": "Genre"},
                         ],
                         "pagination": {"total": 2},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [],
+                        "pagination": {"total": 0},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 2, "name": "Action Challenge", "group": {"id": 4, "name": "Meta"}, "games": [5]},
+                        ],
+                        "pagination": {"total": 1},
                     },
                 ),
                 (
@@ -1077,12 +1092,18 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             "/tags?name=action&include=orphaned&include=group&include=games&page_size=50",
         )
         self.assertEqual(handler.fetch_calls[1][0], "/tag-groups?page_size=50")
-        self.assertEqual(handler.fetch_calls[2][0], "/games?ids=5&page_size=50")
+        self.assertEqual(handler.fetch_calls[2][0], "/tag-groups/2/tags?name=action&page_size=50")
+        self.assertEqual(handler.fetch_calls[3][0], "/tag-groups/4/tags?name=action&page_size=50")
+        self.assertEqual(handler.fetch_calls[4][0], "/games?ids=5&page_size=50")
         render_kwargs = handler.render_calls[0][1]
         self.assertIs(render_kwargs["tag_access"], tag_access)
         self.assertEqual(render_kwargs["tags_total"], 2)
         self.assertEqual(render_kwargs["tag_groups_total"], 2)
         self.assertEqual([group["name"] for group in render_kwargs["tag_groups"]], ["Genre", "Meta"])
+        self.assertEqual([section["title"] for section in render_kwargs["tag_tree_sections"]], ["Orphaned", "Meta"])
+        self.assertEqual(render_kwargs["tag_tree_sections"][0]["count"], 1)
+        self.assertTrue(render_kwargs["tag_tree_sections"][0]["problem"])
+        self.assertEqual(render_kwargs["tag_tree_sections"][1]["tags"][0]["games"][0]["label"], "Minecraft")
         self.assertEqual(render_kwargs["tags_with_group_total"], 1)
         self.assertEqual(render_kwargs["tags_with_games_total"], 1)
         self.assertEqual(render_kwargs["tags_orphaned_total"], 1)
@@ -1107,7 +1128,6 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     {
                         "items": [
                             {"id": 7, "name": "Lonely", "orphaned": True, "games": []},
-                            {"id": 8, "name": "Grouped", "orphaned": False, "group": {"id": 3, "name": "Meta"}},
                         ],
                         "pagination": {"total": 2},
                     },
@@ -1119,6 +1139,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                             {"id": 3, "name": "Meta"},
                         ],
                         "pagination": {"total": 1},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [],
+                        "pagination": {"total": 0},
                     },
                 ),
             ],
@@ -1134,13 +1161,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             "/tags?name=lonely&include=orphaned&include=group&include=games&page_size=50",
         )
         self.assertEqual(handler.fetch_calls[1][0], "/tag-groups?page_size=50")
-        self.assertEqual(len(handler.fetch_calls), 2)
+        self.assertEqual(handler.fetch_calls[2][0], "/tag-groups/3/tags?name=lonely&page_size=50")
+        self.assertEqual(len(handler.fetch_calls), 3)
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["tag_groups_total"], 1)
+        self.assertEqual([section["title"] for section in render_kwargs["tag_tree_sections"]], ["Orphaned"])
         self.assertTrue(render_kwargs["tags"][0]["is_orphaned"])
         self.assertEqual(render_kwargs["tags"][0]["scope_label"], "Бесхозный тег")
-        self.assertFalse(render_kwargs["tags"][1]["is_orphaned"])
-        self.assertEqual(render_kwargs["tags"][1]["scope_label"], "Meta")
 
     async def test_tags_admin_route_denies_user_without_tag_crud_rights(self) -> None:
         handler = StubHandler(
@@ -1244,6 +1271,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('\"list\": {\"method\": \"GET\", \"path\": \"/tags\"}', app_config)
         self.assertIn('\"tag_group\": {', app_config)
         self.assertIn('\"add\": {\"method\": \"POST\", \"path\": \"/tag-groups\"}', app_config)
+        self.assertIn('\"tags\": {\"method\": \"GET\", \"path\": \"/tag-groups/{group_id}/tags\"}', app_config)
         self.assertIn('\"edit\": {\"method\": \"PATCH\", \"path\": \"/tag-groups/{group_id}\"}', app_config)
         self.assertIn('\"delete\": {\"method\": \"DELETE\", \"path\": \"/tag-groups/{group_id}\"}', app_config)
         self.assertIn("async function updateModpackMods(items)", script)
@@ -1472,16 +1500,28 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("data-tags-row", template)
         self.assertIn("data-tags-row-group", template)
         self.assertIn("data-tags-original-group-id", template)
-        self.assertIn('data-action="tag-save"', template)
         self.assertIn('data-action="tag-delete"', template)
         self.assertIn("data-groups-create-form", template)
         self.assertIn("data-groups-row", template)
-        self.assertIn('data-action="group-save"', template)
         self.assertIn('data-action="group-delete"', template)
+        self.assertIn('data-action="tags-save-all"', template)
+        self.assertIn("data-tags-pending-count", template)
+        self.assertIn("data-tags-pending-list", template)
+        self.assertIn("html-partials/save-progress.html", template)
+        self.assertIn("Черновик изменений", template)
+        self.assertIn("Добавить в очередь", template)
+        self.assertNotIn('data-action="tag-save"', template)
+        self.assertNotIn('data-action="group-save"', template)
+        self.assertIn("tag_tree_sections", template)
+        self.assertIn("data-tag-tree", template)
+        self.assertIn("data-tag-tree-section", template)
+        self.assertIn("data-tag-tree-toggle", template)
+        self.assertIn("data-tag-tree-item", template)
         self.assertIn("tags-admin__header", template)
         self.assertIn("tags-admin__summary", template)
         self.assertIn("tags-admin__layout", template)
         self.assertIn("tags-admin__tag-card", template)
+        self.assertIn("Дерево тегов", template)
         self.assertIn('action="/tags"', template)
         self.assertNotIn('name="orphaned"', template)
         self.assertIn("orphaned-статус", template)
@@ -1492,6 +1532,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(".tags-admin__summary", styles)
         self.assertIn(".tags-admin__layout", styles)
         self.assertIn(".tags-admin__tag-card", styles)
+        self.assertIn(".tags-admin__tag-tree", styles)
+        self.assertIn(".tags-admin__tree-section", styles)
+        self.assertIn(".tags-admin__tree-toggle", styles)
+        self.assertIn(".tags-admin__pending-panel", styles)
+        self.assertIn(".tags-admin__pending-item", styles)
+        self.assertIn(".tags-admin__save-button", styles)
+        self.assertIn(".is-pending-delete", styles)
         self.assertIn(".tags-admin__group-row", styles)
         self.assertIn(".tags-admin__group-actions", styles)
         self.assertNotIn(".tags-admin__mode-switch", styles)
@@ -1506,6 +1553,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("tagsCanEdit", script)
         self.assertIn("data-tags-row-name", script)
         self.assertIn("data-groups-row-name", script)
+        self.assertIn("collectChanges", script)
+        self.assertIn("saveAllChanges", script)
+        self.assertIn("pendingTags", script)
+        self.assertIn("pendingGroups", script)
+        self.assertIn("beforeunload", script)
+        self.assertIn("data-tag-tree-toggle", script)
+        self.assertIn("localStorage", script)
         self.assertIn("window.location.reload()", script)
         self.assertIn("normalizeTagName", script)
 
