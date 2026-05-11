@@ -40,6 +40,10 @@ main.tags-admin {
     gap: var(--space-1);
 }
 
+.tags-admin__merge-button {
+    white-space: nowrap;
+}
+
 .tags-admin__save-count {
     min-width: 22px;
     padding: 1px 7px;

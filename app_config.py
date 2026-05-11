@@ -168,6 +168,7 @@ PUBLIC_CONFIG: dict = {
             "tag": {
                 "add": {"method": "POST", "path": "/tags"},
                 "list": {"method": "GET", "path": "/tags"},
+                "merge": {"method": "POST", "path": "/tags/merge"},
                 "edit": {"method": "PATCH", "path": "/tags/{tag_id}"},
                 "delete": {"method": "DELETE", "path": "/tags/{tag_id}"},
             },

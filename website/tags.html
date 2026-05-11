@@ -32,7 +32,11 @@
         Сохранить изменения
         <span class="tags-admin__save-count" data-tags-pending-count>0</span>
       </button>
-      <a class="button-style button-style-small dark" href="/user/{{ session_access.owner_id }}/settings">Настройки</a>
+      {% if can_add_tag and can_delete_tag %}
+      <button type="button" class="button-style button-style-small dark tags-admin__merge-button" data-action="tags-merge-duplicates" disabled>
+        Объединить дубликаты (0 -> 0)
+      </button>
+      {% endif %}
     </div>
   </section>
 

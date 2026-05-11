@@ -13,6 +13,7 @@
   const groupCreateForm = root.querySelector('[data-groups-create-form]');
   const groupCreateInput = root.querySelector('[data-groups-create-input]');
   const saveButtons = Array.from(root.querySelectorAll('[data-action="tags-save-all"]'));
+  const mergeDuplicateButtons = Array.from(root.querySelectorAll('[data-action="tags-merge-duplicates"]'));
   const pendingCountNodes = Array.from(root.querySelectorAll('[data-tags-pending-count]'));
   const pendingList = root.querySelector('[data-tags-pending-list]');
   const pendingEmpty = root.querySelector('[data-tags-pending-empty]');
@@ -269,8 +270,8 @@
     const input = form.querySelector('[data-tags-row-name]');
     const groupSelect = form.querySelector('[data-tags-row-group]');
     const deleteButton = form.querySelector('[data-action="tag-delete"]');
-    const originalName = normalizeTagName(form.dataset.tagsOriginalName);
-    const originalGroupValue = normalizeGroupValue(form.dataset.tagsOriginalGroupId);
+    const originalName = getOriginalRowName(form);
+    const originalGroupValue = getOriginalRowGroupValue(form);
     const currentName = normalizeTagName(input ? input.value : '');
     const currentGroupValue = normalizeGroupValue(groupSelect ? groupSelect.value : '');
     const deleted = form.dataset.tagsPendingDelete === 'true';
@@ -345,6 +346,14 @@
     return normalizeGroupValue(select ? select.value : '');
   }
 
+  function getOriginalRowName(form) {
+    return normalizeTagName(form ? form.dataset.tagsOriginalName : '');
+  }
+
+  function getOriginalRowGroupValue(form) {
+    return normalizeGroupValue(form ? form.dataset.tagsOriginalGroupId : '');
+  }
+
   function getGroupRowName(form) {
     if (!form) return '';
     const input = form.querySelector('[data-groups-row-name]');
@@ -409,8 +418,8 @@
     root.querySelectorAll(rowSelector).forEach(function (form) {
       const tagId = getRowId(form);
       const name = getRowName(form);
-      const originalName = normalizeTagName(form.dataset.tagsOriginalName);
-      const originalGroupValue = normalizeGroupValue(form.dataset.tagsOriginalGroupId);
+      const originalName = getOriginalRowName(form);
+      const originalGroupValue = getOriginalRowGroupValue(form);
       const groupValue = getRowGroupValue(form);
       const deleted = form.dataset.tagsPendingDelete === 'true';
 
@@ -478,6 +487,46 @@
     changes.hasChanges = changes.count > 0;
 
     return changes;
+  }
+
+  function getDuplicateMergePlan() {
+    const buckets = new Map();
+    const groups = [];
+    let sourceTotal = 0;
+
+    root.querySelectorAll(rowSelector).forEach(function (form) {
+      const tagId = getRowId(form);
+      const title = getOriginalRowName(form);
+      const groupValue = getOriginalRowGroupValue(form);
+      if (!tagId || !title || form.dataset.tagsPendingDelete === 'true') return;
+
+      const nameKey = title.toLocaleLowerCase('ru-RU');
+      const bucketKey = `${groupValue || 'no-group'}:${nameKey}`;
+      let bucket = buckets.get(bucketKey);
+      if (!bucket) {
+        bucket = {
+          ids: [],
+          title,
+          groupId: groupValue ? Number(groupValue) : null,
+        };
+        buckets.set(bucketKey, bucket);
+      }
+
+      bucket.ids.push(tagId);
+    });
+
+    buckets.forEach(function (bucket) {
+      if (bucket.ids.length < 2) return;
+      groups.push(bucket);
+      sourceTotal += bucket.ids.length;
+    });
+
+    return {
+      groups,
+      sourceTotal,
+      targetTotal: groups.length,
+      hasDuplicates: groups.length > 0,
+    };
   }
 
   function appendPendingItem(fragment, options) {
@@ -595,6 +644,10 @@
 
   function syncCollector() {
     const changes = collectChanges();
+    const mergePlan = getDuplicateMergePlan();
+    const canMergeDuplicates = permissions.add && permissions.delete;
+    const disableMergeDuplicates = saveInProgress || changes.hasChanges || !canMergeDuplicates || !mergePlan.hasDuplicates;
+    let mergeDuplicatesTitle = '';
 
     pendingCountNodes.forEach(function (node) {
       node.textContent = String(changes.count);
@@ -604,6 +657,26 @@
       button.disabled = saveInProgress || !changes.hasChanges;
       button.classList.toggle('disabled', saveInProgress || !changes.hasChanges);
       button.setAttribute('aria-busy', saveInProgress ? 'true' : 'false');
+    });
+
+    if (!canMergeDuplicates) {
+      mergeDuplicatesTitle = 'Нужны права на добавление и удаление тегов';
+    } else if (changes.hasChanges) {
+      mergeDuplicatesTitle = 'Сначала сохраните или уберите текущий черновик изменений';
+    } else if (!mergePlan.hasDuplicates) {
+      mergeDuplicatesTitle = 'Дубликаты в рамках одинаковых групп не найдены';
+    }
+
+    mergeDuplicateButtons.forEach(function (button) {
+      button.disabled = disableMergeDuplicates;
+      button.classList.toggle('disabled', disableMergeDuplicates);
+      button.setAttribute('aria-busy', saveInProgress ? 'true' : 'false');
+      button.textContent = `Объединить дубликаты (${mergePlan.sourceTotal} -> ${mergePlan.targetTotal})`;
+      if (mergeDuplicatesTitle) {
+        button.title = mergeDuplicatesTitle;
+      } else {
+        button.removeAttribute('title');
+      }
     });
 
     root.classList.toggle('has-pending-changes', changes.hasChanges);
@@ -806,6 +879,90 @@
     return Number.isFinite(groupId) && groupId > 0 ? groupId : null;
   }
 
+  async function mergeDuplicateTags() {
+    if (saveInProgress) return;
+
+    const changes = collectChanges();
+    if (changes.hasChanges) {
+      showToast('Сначала сохраните изменения', 'Объединение дубликатов доступно только без черновика изменений', 'warning');
+      return;
+    }
+
+    if (!permissions.add || !permissions.delete) {
+      showToast('Недоступно', 'Для объединения нужны права на добавление и удаление тегов', 'warning');
+      return;
+    }
+
+    if (!tagApi.merge || !tagApi.merge.path) {
+      showToast('Ошибка', 'В API не найден endpoint объединения тегов', 'danger');
+      return;
+    }
+
+    const mergePlan = getDuplicateMergePlan();
+    if (!mergePlan.hasDuplicates) {
+      showToast('Дубликаты не найдены', 'Одинаковых тегов в рамках одних групп нет', 'info');
+      return;
+    }
+
+    const confirmationText = `Объединить ${mergePlan.sourceTotal} тегов в ${mergePlan.targetTotal}? Исходные теги будут удалены после переноса связей.`;
+    if (typeof window.confirm === 'function' && !window.confirm(confirmationText)) return;
+
+    const savePlan = [
+      { key: 'tag-merge', label: 'Объединяем дубликаты' },
+      { key: 'finish', label: 'Завершаем объединение' },
+      { key: 'reloading', label: 'Перезагружаем страницу' },
+    ];
+    let mergeCompleted = false;
+    saveInProgress = true;
+    syncAll();
+
+    if (saveProgress) {
+      saveProgress.start({
+        title: 'Объединяем дубликаты',
+        message: 'Переносим связи тегов и удаляем исходные дубликаты. Не закрывайте страницу до завершения.',
+        steps: savePlan,
+      });
+    }
+
+    try {
+      await runOperationList(mergePlan.groups, 'tag-merge', 'Объединяем группу', async function (group) {
+        await requestTag(tagApi.merge, {
+          data: {
+            tags: group.ids,
+            group_id: group.groupId,
+            title: group.title,
+          },
+          fallbackError: 'Не удалось объединить дубликаты',
+          parseAs: 'json',
+        });
+      });
+
+      setProgressStep('finish', 'active', 'Дубликаты объединены');
+      setProgressStep('finish', 'complete', 'Дубликаты объединены');
+      setProgressStep('reloading', 'active', 'Перезагружаем страницу...');
+      if (saveProgress && typeof saveProgress.setProgress === 'function') {
+        saveProgress.setProgress(100);
+      }
+
+      showToast('Готово', `Объединено ${mergePlan.sourceTotal} тегов в ${mergePlan.targetTotal}`, 'success');
+      mergeCompleted = true;
+      await waitForReloadPaint();
+      suppressNextUnload = true;
+      window.location.reload();
+    } catch (error) {
+      if (saveProgress && typeof saveProgress.fail === 'function') {
+        saveProgress.fail(error && error.message ? error.message : 'Не удалось объединить дубликаты');
+      }
+      showToast('Ошибка', error && error.message ? error.message : 'Не удалось объединить дубликаты', 'danger');
+    } finally {
+      saveInProgress = false;
+      syncAll();
+      if (!mergeCompleted && saveProgress && typeof saveProgress.close === 'function') {
+        saveProgress.close();
+      }
+    }
+  }
+
   async function saveAllChanges() {
     if (saveInProgress) return;
 
@@ -995,6 +1152,11 @@
     const action = actionNode.dataset.action;
     if (action === 'tags-save-all') {
       saveAllChanges();
+      return;
+    }
+
+    if (action === 'tags-merge-duplicates') {
+      mergeDuplicateTags();
       return;
     }
 
