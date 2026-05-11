@@ -412,6 +412,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "conflicts": {"count": 0, "items": []},
                         "game": {"id": 5, "name": "Game"},
                         "authors": {},
+                        "tags": [
+                            {"id": 37, "name": "Creative"},
+                            {"id": 133, "name": "v0.1.3", "group": {"id": 1, "name": "Version"}},
+                        ],
                     },
                 ),
                 (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
@@ -446,6 +450,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/logo.webp")
         self.assertTrue(render_kwargs["info"]["no_many_screenshots"])
         self.assertEqual(render_kwargs["info"]["git_url"], "https://github.com/example/repo")
+        self.assertEqual(
+            [
+                (section["title"], [tag["name"] for tag in section["tags"]])
+                for section in render_kwargs["tag_display_sections"]
+            ],
+            [("Базовые теги", ["Creative"]), ("Version", ["v0.1.3"])],
+        )
 
     async def test_mod_view_includes_vote_access_for_authenticated_user(self) -> None:
         profile_access = build_profile_access(_profile_access_source("self", rights_value=False))
@@ -964,7 +975,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "current_vote": None,
                         "downloads": 12,
                         "authors": {},
-                        "tags": [{"id": 301, "name": "Challenge"}],
+                        "tags": [
+                            {"id": 301, "name": "Challenge"},
+                            {"id": 6, "name": "1.3", "group": {"id": 1, "name": "Version"}},
+                        ],
                         "resources": [
                             {
                                 "id": 501,
@@ -1028,7 +1042,20 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["info"]["game"]["id"], 5)
         self.assertEqual(render_kwargs["info"]["rating_summary"]["label"], "🏅 Очень положительные")
         self.assertEqual(render_kwargs["info"]["logo"], "https://cdn.example/pack-logo.webp")
-        self.assertEqual(render_kwargs["tags"], [{"id": 301, "name": "Challenge"}])
+        self.assertEqual(
+            render_kwargs["tags"],
+            [
+                {"id": 301, "name": "Challenge"},
+                {"id": 6, "name": "1.3", "group": {"id": 1, "name": "Version"}},
+            ],
+        )
+        self.assertEqual(
+            [
+                (section["title"], [tag["name"] for tag in section["tags"]])
+                for section in render_kwargs["tag_display_sections"]
+            ],
+            [("Базовые теги", ["Challenge"]), ("Version", ["1.3"])],
+        )
         self.assertEqual(len(render_kwargs["resources"]["items"]), 2)
         self.assertEqual(render_kwargs["modpack_mods"][0]["id"], 11)
         self.assertEqual(render_kwargs["modpack_mods"][0]["rating"], 88)
@@ -1459,6 +1486,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("data-git-url-source", mod_page)
         self.assertIn("data-git-favicon", mod_page)
         self.assertIn("info.get('git_url') or ''", mod_page)
+        self.assertIn("render_tag_display_sections", mod_page)
+        self.assertIn("tag_display_sections", mod_page)
+        self.assertIn("mod-tags-panel", mod_styles)
+        self.assertIn("mod-tags-panel__section", mod_styles)
         self.assertIn(".mod-rating-panel__actions", mod_styles)
         self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", mod_styles)
         self.assertIn("max-width: 150px;", mod_styles)
@@ -1499,6 +1530,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("Автодобавлен", modpack_page)
         self.assertIn("Open Modpack", modpack_page)
         self.assertIn("/assets/styles/pages/modpack.css", modpack_page)
+        self.assertIn("render_tag_display_sections", modpack_page)
+        self.assertIn("tag_display_sections", modpack_page)
         self.assertIn("is_modpack_data", standart_html)
         self.assertIn("Logo of modpack", standart_html)
         self.assertIn(".modpack-mods-panel", modpack_styles)

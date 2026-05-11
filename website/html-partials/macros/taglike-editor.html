@@ -13,6 +13,26 @@
 </div>
 {%- endmacro %}
 
+{% macro render_tag_display_sections(tag_sections, entity_label='мода') -%}
+{% if tag_sections %}
+<div class="outline-container mod-tags-panel">
+  {% for section in tag_sections %}
+    {% set section_tags = section.tags if section.tags is defined and section.tags is not none else [] %}
+    {% if section_tags %}
+    <section class="mod-tags-panel__section mod-tags-panel__section--{{ section.kind if section.kind is defined else 'group' }}">
+      <h2 class="mod-tags-panel__title">{{ section.title }}:</h2>
+      <div class="mod-tags-panel__items">
+        {% for item in section_tags %}
+          <a class="tag-link dop-tag-link" id="{{ item.id }}" title="Тег {{ entity_label }}: {{ item.name }}"><h3 translate="no">{{ item.name }}</h3></a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}
+
 {% macro render_picker_row_item(
   item_id,
   item_name,

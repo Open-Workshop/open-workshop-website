@@ -61,6 +61,57 @@ a#mod-setting-gear:hover * {
     margin: 0;
 }
 
+.mod-tags-panel {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0;
+}
+
+.mod-tags-panel__section {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.mod-tags-panel__section + .mod-tags-panel__section {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.mod-tags-panel__title {
+    margin: 0;
+    flex: 0 0 auto;
+    text-align: left;
+    color: rgb(230, 238, 255);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.mod-tags-panel__items {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 1 1 auto;
+    gap: 4px;
+    min-width: 0;
+}
+
+.mod-tags-panel__items > .tag-link {
+    margin: 0;
+}
+
+.mod-tags-panel__items h3 {
+    margin: 0;
+}
+
 .mod-plugins-header {
     width: 100%;
     display: flex;

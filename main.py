@@ -608,6 +608,85 @@ def _build_scoped_tag_editor_data(
     return normalized_tags, _build_game_tag_editor_sections(normalized_tags, tag_groups, game_id=game_id)
 
 
+def _build_tag_display_sections(raw_tags) -> list[dict[str, object]]:
+    if not isinstance(raw_tags, list):
+        return []
+
+    def sorted_tags(section_tags: list[dict]) -> list[dict]:
+        return sorted(section_tags, key=lambda tag: (str(tag.get("name") or "").lower(), int(tag.get("id") or 0)))
+
+    tag_groups = _extract_tag_groups_from_items(raw_tags)
+    tag_group_names = {group["id"]: group["name"] for group in tag_groups}
+    normalized_tags = _merge_tags_by_id(
+        _normalize_tag_items(
+            raw_tags,
+            tag_group_names=tag_group_names,
+            game_name_map={},
+        ),
+    )
+    if not normalized_tags:
+        return []
+
+    group_ids = {group["id"] for group in tag_groups}
+    sections_by_group_id: dict[int, dict[str, object]] = {
+        group["id"]: {
+            "id": f"group-{group['id']}",
+            "kind": "group",
+            "title": str(group["name"]),
+            "group_id": group["id"],
+            "tags": [],
+        }
+        for group in tag_groups
+    }
+    unknown_group_ids: list[int] = []
+    ungrouped_tags: list[dict] = []
+
+    for tag in normalized_tags:
+        group_id = tag.get("group_id")
+        if group_id is None:
+            ungrouped_tags.append(tag)
+            continue
+
+        if group_id not in sections_by_group_id:
+            unknown_group_ids.append(group_id)
+            group_name = str(tag.get("group_name") or f"Группа #{group_id}")
+            sections_by_group_id[group_id] = {
+                "id": f"group-{group_id}",
+                "kind": "group",
+                "title": group_name,
+                "group_id": group_id,
+                "tags": [],
+            }
+
+        sections_by_group_id[group_id]["tags"].append(tag)
+
+    sections: list[dict[str, object]] = []
+    if ungrouped_tags:
+        sections.append({
+            "id": "ungrouped",
+            "kind": "ungrouped",
+            "title": "Базовые теги",
+            "tags": sorted_tags(ungrouped_tags),
+        })
+
+    for group in tag_groups:
+        section = sections_by_group_id[group["id"]]
+        if section["tags"]:
+            section["tags"] = sorted_tags(section["tags"])
+            sections.append(section)
+
+    for group_id in sorted(set(unknown_group_ids)):
+        if group_id in group_ids:
+            continue
+
+        section = sections_by_group_id[group_id]
+        if section["tags"]:
+            section["tags"] = sorted_tags(section["tags"])
+            sections.append(section)
+
+    return sections
+
+
 async def _load_entity_tag_editor_data(
     handler: UserHandler,
     selected_tags: list[dict],
@@ -1594,10 +1673,12 @@ async def mod_view_and_edit(mod_id):
                 data=[info_result],
             )
         else:
+            tag_display_sections = _build_tag_display_sections(tags)
             page_html = handler.render(
                 "mod.html",
                 info=info_result,
                 tags=tags,
+                tag_display_sections=tag_display_sections,
                 resources=resources,
                 dependencies=dependencies,
                 conflicts=conflicts,
@@ -2081,6 +2162,8 @@ async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_
     info_result["no_many_screenshots"] = len(resources_items) <= 1
 
     tags = _normalize_picker_items(info_result.get("tags"), "tags")
+    info_result["tags"] = tags
+    tag_display_sections = _build_tag_display_sections(tags)
 
     authors = []
     authors_source = info_result.get("authors") or {}
@@ -2162,6 +2245,7 @@ async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_
         "modpack.html",
         info=info_result,
         tags=tags,
+        tag_display_sections=tag_display_sections,
         resources=resources,
         modpack_mods=modpack_mods,
         authors=authors,
