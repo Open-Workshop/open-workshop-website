@@ -210,6 +210,54 @@
 <script src="/assets/scripts/vendors/game-genres-edit.js"></script>
 {%- endmacro %}
 
+{% macro render_grouped_tags_editor(tag_sections, editor_id='game-tags-editor', panel_title='Теги', panel_hint='Теги разбиты по группам, как в каталоге.', load_scripts=true) -%}
+<section
+  id="{{ editor_id }}"
+  class="standart-panel mod-edit__panel game-edit__tags-panel"
+  data-game-tags-group-root="true"
+>
+  <h3>{{ panel_title }}</h3>
+  <p class="ow-muted">{{ panel_hint }}</p>
+
+  <div class="game-edit__tag-groups">
+    {% for section in tag_sections %}
+      {% set section_editor_id = section.editor_id if section.editor_id is defined and section.editor_id else editor_id ~ '-' ~ section.id ~ '-editor' %}
+      {% set section_title = section.title if section.title is defined else 'Без названия' %}
+      {% set section_context = section.context if section.context is defined else none %}
+      {% set section_panel_classes = section.panel_classes if section.panel_classes is defined and section.panel_classes else 'game-edit__tag-group-picker' %}
+      {% set section_tags = section.tags if section.tags is defined and section.tags is not none else [] %}
+      {% set section_selected_empty_text = section.selected_empty_text if section.selected_empty_text is defined and section.selected_empty_text else section_title ~ ' не выбрано' %}
+      {% set section_trigger_text = section.trigger_text if section.trigger_text is defined and section.trigger_text else ('Выбрать без группы' if section.kind is defined and section.kind == 'ungrouped' else 'Выбрать ' ~ section_title) %}
+      {% call(section_slot) render_picker_editor(
+        root_id=section_editor_id,
+        editor_kind='tags',
+        modifier='picker-editor--chips',
+        panel_classes=section_panel_classes,
+        import_height='#' ~ section_editor_id ~ ' .picker-editor__shell',
+        context=section_context,
+        trigger_text=section_trigger_text,
+        search_placeholder='Поиск...',
+        selected_empty_text=section_selected_empty_text,
+        results_empty_text='Не найдено',
+        can_create=true,
+        create_button_text='Добавить новое'
+      ) %}
+        {% if section_slot == 'selected' %}
+          {% for item in section_tags %}
+            {{ render_picker_chip_item(item.id, item.name, true, false, false, true, 'Убрать тег') }}
+          {% endfor %}
+        {% endif %}
+      {% endcall %}
+    {% endfor %}
+  </div>
+</section>
+
+{% if load_scripts %}
+<script src="/assets/scripts/vendors/picker-editor.js"></script>
+<script src="/assets/scripts/vendors/tags-edit.js"></script>
+{% endif %}
+{%- endmacro %}
+
 {% macro render_relation_editor(
   items,
   game=0,

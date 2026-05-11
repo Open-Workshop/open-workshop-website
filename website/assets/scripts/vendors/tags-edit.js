@@ -6,6 +6,7 @@
   const { getApiPaths, apiUrl, formatPath } = window.OWCore;
   const apiPaths = getApiPaths();
   const tagsPath = apiPaths.tag.list.path;
+  const gameTagsEndpoint = apiPaths.game && apiPaths.game.tags ? apiPaths.game.tags : null;
   const tagGroupTagsEndpoint = apiPaths.tag_group && apiPaths.tag_group.tags ? apiPaths.tag_group.tags : null;
   const noGameValues = new Set(['', '0', 'none', 'null', 'undefined']);
   const CATALOG_TAG_FILTER_MODES = {
@@ -49,6 +50,16 @@
     return noGameValues.has(rawValue.toLowerCase()) ? '' : rawValue;
   }
 
+  function isUngroupedTagsContext(context) {
+    const normalized = String(context && (context.tagUngroupedOnly || context.tag_ungrouped_only) || '').trim().toLowerCase();
+    return normalized === 'true';
+  }
+
+  function isUngroupedTagsEditor(root) {
+    if (!root) return false;
+    return root.dataset.pickerContextTagUngroupedOnly === 'true';
+  }
+
   function isCatalogEditor(root) {
     if (!root) return false;
     if (root.id === 'catalog-tags-editor') return true;
@@ -80,12 +91,22 @@
   }
 
   function getTagsPathForContext(context) {
+    const tagUngroupedOnly = isUngroupedTagsContext(context);
     const tagGroupId = normalizeTagGroupId(context && context.tagGroupId);
-    if (!tagGroupId || !tagGroupTagsEndpoint || !tagGroupTagsEndpoint.path) {
+    const gameId = normalizeGameId(context && context.gameId);
+    if (tagGroupId && tagGroupTagsEndpoint && tagGroupTagsEndpoint.path) {
+      return formatPath(tagGroupTagsEndpoint.path, { group_id: tagGroupId });
+    }
+
+    if (tagUngroupedOnly) {
       return tagsPath;
     }
 
-    return formatPath(tagGroupTagsEndpoint.path, { group_id: tagGroupId });
+    if (gameId !== '' && gameTagsEndpoint && gameTagsEndpoint.path) {
+      return formatPath(gameTagsEndpoint.path, { game_id: gameId });
+    }
+
+    return tagsPath;
   }
 
   function buildTagsUrl(params, context) {
@@ -205,14 +226,16 @@
       root.dataset.owTagsEditorBound = 'true';
 
       const catalogEditorEnabled = isCatalogEditor(root);
+      const ungroupedOnlyEditor = isUngroupedTagsEditor(root);
 
       const editor = window.OWPickerEditors.create({
         root,
         key: root.id,
-        pendingPrefix: 'pending-tag',
+        pendingPrefix: `pending-tag-${root.id}`,
         context: {
           gameId: normalizeGameId(root.dataset.pickerContextGameId),
           tagGroupId: normalizeTagGroupId(root.dataset.pickerContextTagGroupId || root.dataset.catalogTagGroupId),
+          tagUngroupedOnly: ungroupedOnlyEditor ? 'true' : 'false',
         },
         emptyNameMessage: 'Введите название нового тега',
         duplicateMessage: 'Этот тег уже выбран',
@@ -220,42 +243,40 @@
           return createTagItemElement(options, catalogEditorEnabled);
         },
         async fetchSearchResults(queryValue, editor) {
+          const context = editor.getContext();
+          const path = getTagsPathForContext(context);
+          const gameId = normalizeGameId(context.gameId);
           const params = {
             page_size: 30,
             name: queryValue,
           };
-          const gameId = normalizeGameId(editor.getContext().gameId);
-          const tagGroupId = normalizeTagGroupId(editor.getContext().tagGroupId);
-          if (gameId !== '') {
+          if (gameId !== '' && (!gameTagsEndpoint || !gameTagsEndpoint.path || path !== formatPath(gameTagsEndpoint.path, { game_id: gameId }))) {
             params.game_id = gameId;
           }
-          if (tagGroupId !== '' && getTagsPathForContext(editor.getContext()) === tagsPath) {
-            params.group_id = tagGroupId;
-          }
 
-          const data = await fetchTags(params, editor.getContext());
+          const data = await fetchTags(params, context);
           const normalized = window.OWCore.normalizeCollectionResponse(data);
+          const items = Array.isArray(normalized.items) ? normalized.items : [];
           return {
-            results: Array.isArray(normalized.items) ? normalized.items : [],
-            databaseSize: Number(normalized.database_size),
+            results: items,
+            databaseSize: Number(normalized.database_size) || items.length,
           };
         },
         async fetchItemsByIds(ids, editor) {
+          const context = editor.getContext();
+          const path = getTagsPathForContext(context);
+          const gameId = normalizeGameId(context.gameId);
           const params = {
             ids,
           };
-          const gameId = normalizeGameId(editor.getContext().gameId);
-          const tagGroupId = normalizeTagGroupId(editor.getContext().tagGroupId);
-          if (gameId !== '') {
+          if (gameId !== '' && (!gameTagsEndpoint || !gameTagsEndpoint.path || path !== formatPath(gameTagsEndpoint.path, { game_id: gameId }))) {
             params.game_id = gameId;
           }
-          if (tagGroupId !== '' && getTagsPathForContext(editor.getContext()) === tagsPath) {
-            params.group_id = tagGroupId;
-          }
 
-          const data = await fetchTags(params, editor.getContext());
+          const data = await fetchTags(params, context);
           const normalized = window.OWCore.normalizeCollectionResponse(data);
-          return Array.isArray(normalized.items) ? normalized.items : [];
+          const items = Array.isArray(normalized.items) ? normalized.items : [];
+          return items;
         },
       });
 

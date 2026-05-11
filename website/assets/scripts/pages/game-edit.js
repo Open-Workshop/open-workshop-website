@@ -9,8 +9,9 @@
   const gameId = Number(root.dataset.gameId || 0);
   const saveButton = document.getElementById('save-game-button');
   const deleteButton = document.getElementById('delete-game-button');
-  const tagsEditorId = 'game-tags-editor';
   const genresEditorId = 'game-genres-editor';
+  const tagsGroupRootSelector = '[data-game-tags-group-root="true"]';
+  const tagsGroupEditorSelector = '.game-edit__tag-group-picker';
 
   let saveInProgress = false;
   let deleteInProgress = false;
@@ -72,8 +73,48 @@
       .filter(Number.isFinite);
   }
 
+  function uniqueNumericIds(values) {
+    return Array.from(new Set((Array.isArray(values) ? values : [])
+      .map(function (value) {
+        return Number(value);
+      })
+      .filter(Number.isFinite)));
+  }
+
   function getPickerEditor(editorId) {
     return window.OWPickerEditors ? window.OWPickerEditors.get(editorId) : null;
+  }
+
+  function getTagEditorRoots() {
+    const tagGroupsRoot = root.querySelector(tagsGroupRootSelector);
+    if (!tagGroupsRoot) {
+      return [];
+    }
+
+    return Array.from(tagGroupsRoot.querySelectorAll(tagsGroupEditorSelector));
+  }
+
+  function getTagEditors() {
+    return getTagEditorRoots()
+      .map(function (editorRoot) {
+        const editor = getPickerEditor(editorRoot.id);
+        if (!editor || typeof editor.getState !== 'function') {
+          return null;
+        }
+
+        return {
+          key: editor.key || editorRoot.id,
+          editor,
+          state: clonePickerState(editor.getState()),
+          context: editor.getContext ? editor.getContext() : {},
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function isUngroupedTagsContext(context) {
+    const normalized = String(context && (context.tagUngroupedOnly || context.tag_ungrouped_only) || '').trim().toLowerCase();
+    return normalized === 'true';
   }
 
   function emptyPickerState() {
@@ -164,18 +205,39 @@
     throw new Error('Не удалось разобрать ID для "' + entityLabel + '"');
   }
 
-  let tagsPickerState = readPickerState(tagsEditorId);
-  let genresPickerState = readPickerState(genresEditorId);
+  function collectTagChanges() {
+    const editors = getTagEditors();
+    const tagEditorsByKey = new Map();
+    const add = [];
+    const remove = [];
+    const create = [];
 
-  function bindPickerState(editorId, setState) {
-    const editorRoot = document.getElementById(editorId);
-    if (!(editorRoot instanceof Element)) return;
+    editors.forEach(function (entry) {
+      tagEditorsByKey.set(entry.key, entry.editor);
+      const currentState = entry.state || emptyPickerState();
+      const stateChanges = getPickerChangesFromState(currentState);
+      const context = entry.context || {};
+      const ungroupedOnly = isUngroupedTagsContext(context);
+      const groupId = ungroupedOnly ? '' : String(context.tagGroupId || context.tag_group_id || '').trim();
 
-    editorRoot.addEventListener('ow:picker-selection-change', function (event) {
-      if (!event.detail || event.detail.key !== editorId || !event.detail.state) return;
-      const nextState = clonePickerState(event.detail.state);
-      setState(nextState);
+      add.push(...stateChanges.add);
+      remove.push(...stateChanges.remove);
+      stateChanges.create.forEach(function (item) {
+        create.push({
+          tempId: item.tempId,
+          name: item.name,
+          groupId,
+          editorKey: entry.key,
+        });
+      });
     });
+
+    return {
+      add: uniqueNumericIds(add),
+      remove: uniqueNumericIds(remove),
+      create,
+      editors: tagEditorsByKey,
+    };
   }
 
   function initCatalogPreview() {
@@ -219,13 +281,15 @@
     throw new Error(parseResponseMessage(errorText, `Ошибка (${response.status})`));
   }
 
-  async function createNamedEntities(endpoint, fieldName, items, finalizeCallback, progress, stepKey, label) {
+  async function createNamedEntities(endpoint, fieldName, items, finalizeCallback, progress, stepKey, label, buildPayload) {
     const createdIds = [];
     const normalizedItems = Array.isArray(items)
       ? items.map(function (item) {
         return {
           tempId: item.tempId,
           name: normalizeEntityName(item.name),
+          groupId: String(item.groupId || '').trim(),
+          editorKey: String(item.editorKey || '').trim(),
         };
       }).filter(function (item) {
         return item.name !== '';
@@ -240,7 +304,16 @@
         progress.setStep(stepKey, 'active', `${label} ${index}/${total}`);
       }
 
-      const response = await sendJson(endpoint, { [fieldName]: item.name });
+      const payload = typeof buildPayload === 'function'
+        ? buildPayload(item)
+        : (() => {
+          const nextPayload = { [fieldName]: item.name };
+          if (String(item.groupId || '').trim() !== '') {
+            nextPayload.group_id = Number(item.groupId);
+          }
+          return nextPayload;
+        })();
+      const response = await sendJson(endpoint, payload);
       const createdId = parseCreatedEntityId(response.data, item.name);
 
       finalizeCallback(item.tempId, createdId);
@@ -317,12 +390,45 @@
     const mediaState = mediaManager && typeof mediaManager.getState === 'function'
       ? mediaManager.getState()
       : { changes: { new: [], changed: [], deleted: [] }, hasInvalidUrls: false };
-    const tags = getPickerChangesFromState(tagsPickerState);
-    const genres = getPickerChangesFromState(genresPickerState);
-    const tagsEditor = getPickerEditor(tagsEditorId);
     const genresEditor = getPickerEditor(genresEditorId);
+    const genresState = genresEditor && typeof genresEditor.getState === 'function'
+      ? clonePickerState(genresEditor.getState())
+      : emptyPickerState();
+    const tags = collectTagChanges();
+    const genres = getPickerChangesFromState(genresState);
     const createdTagDefinitions = Array.isArray(tags.create) ? tags.create : [];
     const createdGenreDefinitions = Array.isArray(genres.create) ? genres.create : [];
+    const tagsEditor = {
+      finalizeCreated(createdItem, realId) {
+        if (!createdItem) return;
+
+        const isObject = typeof createdItem === 'object';
+        const tempId = isObject
+          ? String(createdItem.tempId || '')
+          : String(createdItem || '');
+        const editorKey = isObject
+          ? String(createdItem.editorKey || '')
+          : '';
+
+        if (editorKey && tags.editors && typeof tags.editors.get === 'function') {
+          const editor = tags.editors.get(editorKey);
+          if (editor && typeof editor.finalizeCreated === 'function') {
+            editor.finalizeCreated(tempId, realId);
+            return;
+          }
+        }
+
+        if (!tempId || !tags.editors || typeof tags.editors.forEach !== 'function') {
+          return;
+        }
+
+        tags.editors.forEach(function (editor) {
+          if (editor && typeof editor.finalizeCreated === 'function') {
+            editor.finalizeCreated(tempId, realId);
+          }
+        });
+      },
+    };
 
     return {
       base,
@@ -688,12 +794,6 @@
   }
 
   initCatalogPreview();
-  bindPickerState(tagsEditorId, function (state) {
-    tagsPickerState = state;
-  });
-  bindPickerState(genresEditorId, function (state) {
-    genresPickerState = state;
-  });
 
   root.addEventListener('click', function (event) {
     const actionNode = event.target instanceof Element ? event.target.closest('[data-action]') : null;

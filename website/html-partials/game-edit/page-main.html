@@ -1,4 +1,4 @@
-{% from 'html-partials/macros/taglike-editor.html' import render_genres_editor, render_tags_editor with context %}
+{% from 'html-partials/macros/taglike-editor.html' import render_grouped_tags_editor, render_genres_editor with context %}
 
 <div id="page-main-game" class="mod-edit__page mod-edit__split">
   <section class="mod-edit__main">
@@ -29,7 +29,7 @@
       {% include 'html-partials/screenshots-edit.html' %}
     {% endwith %}
 
-    {{ render_tags_editor(game_tags, 0, true, 'game-tags-editor') }}
+    {{ render_grouped_tags_editor(game_tag_sections, 'game-tags-editor') }}
 
     {{ render_genres_editor(selected_genres, 'game-genres-editor') }}
   </aside>

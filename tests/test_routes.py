@@ -1288,6 +1288,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         mod_edit_page = (ROOT / "website/mod-edit.html").read_text(encoding="utf-8")
         mod_params = (ROOT / "website/html-partials/mod-edit/page-params.html").read_text(encoding="utf-8")
         taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
+        tags_edit = (ROOT / "website/assets/scripts/vendors/tags-edit.js").read_text(encoding="utf-8")
         dependence_script = (ROOT / "website/assets/scripts/vendors/dependence-edit.js").read_text(encoding="utf-8")
         media_manager_script = (ROOT / "website/assets/scripts/pages/mod-edit/media-manager.js").read_text(encoding="utf-8")
         self.assertIn("mod-conflicts-editor", mod_main)
@@ -1326,6 +1327,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("picker-editor__item-title--row", taglike_macros)
         self.assertIn("picker-editor__item-title-text", taglike_macros)
         self.assertIn("modpack-mods-edit__view-link", taglike_macros)
+        self.assertIn("gameTagsEndpoint", tags_edit)
+        self.assertIn("page_size: 30", tags_edit)
         self.assertIn("media-item__logo-toggle", taglike_macros)
         self.assertIn("media-item__logo-checkbox", taglike_macros)
         self.assertNotIn("picker-editor__optional-toggle-track", taglike_macros)
@@ -1874,6 +1877,109 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             script,
         )
 
+    async def test_game_edit_renders_grouped_tag_sections(self) -> None:
+        handler = StubHandler(
+            authenticated=True,
+            handler_id=1,
+            game_access={
+                "edit": {
+                    "title": {
+                        "value": True,
+                        "reason": "Можно редактировать игру",
+                        "reason_code": "allowed",
+                    }
+                }
+            },
+            fetch_results=[
+                (
+                    200,
+                    {
+                        "id": 5,
+                        "name": "Test Game",
+                        "short_description": "Short description",
+                        "description": "Long description",
+                        "source": "steam",
+                        "source_id": 42,
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [
+                            {"id": 11, "name": "Action", "group": {"id": 2, "name": "Genre"}},
+                            {"id": 12, "name": "Challenge", "group": {"id": 4, "name": "Meta"}},
+                            {"id": 13, "name": "Loose Tag"},
+                        ],
+                        "pagination": {"total": 3},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [],
+                        "pagination": {"total": 0},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [],
+                        "pagination": {"total": 0},
+                    },
+                ),
+                (
+                    200,
+                    {
+                        "items": [],
+                        "pagination": {"total": 0},
+                    },
+                ),
+            ],
+        )
+
+        with patch.object(main, "UserHandler", return_value=handler):
+            with main.app.test_request_context("/game/5"):
+                result = await main.game_edit(5)
+
+        self.assertEqual(result["template"], "mod-edit.html")
+        self.assertTrue(any(url.startswith("/games/5/tags?page_size=50") for url, _method in handler.fetch_calls))
+        self.assertFalse(any(url.startswith("/tag-groups") for url, _method in handler.fetch_calls))
+
+        render_kwargs = handler.render_calls[0][1]
+        self.assertEqual([section["title"] for section in render_kwargs["game_tag_sections"]], ["Genre", "Meta", "Без группы"])
+        self.assertEqual(render_kwargs["game_tag_sections"][0]["editor_id"], "game-tag-group-2-editor")
+        self.assertEqual(render_kwargs["game_tag_sections"][0]["context"]["game_id"], 5)
+        self.assertEqual(render_kwargs["game_tag_sections"][0]["tags"][0]["name"], "Action")
+        self.assertEqual(render_kwargs["game_tag_sections"][2]["kind"], "ungrouped")
+        self.assertEqual(render_kwargs["game_tag_sections"][2]["context"]["game_id"], 5)
+        self.assertEqual(render_kwargs["game_tag_sections"][2]["context"]["tag_ungrouped_only"], "true")
+
+    def test_game_edit_templates_and_scripts_expose_tag_group_ui(self) -> None:
+        game_main = (ROOT / "website/html-partials/game-edit/page-main.html").read_text(encoding="utf-8")
+        taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
+        game_styles = (ROOT / "website/assets/styles/pages/game-edit.css").read_text(encoding="utf-8")
+        game_script = (ROOT / "website/assets/scripts/pages/game-edit.js").read_text(encoding="utf-8")
+        tags_script = (ROOT / "website/assets/scripts/vendors/tags-edit.js").read_text(encoding="utf-8")
+
+        self.assertIn("render_grouped_tags_editor", taglike_macros)
+        self.assertIn('data-game-tags-group-root="true"', taglike_macros)
+        self.assertIn("render_grouped_tags_editor", game_main)
+        self.assertIn("game-tags-editor", game_main)
+        self.assertIn("game-edit__tag-groups", taglike_macros)
+        self.assertIn("game-edit__tag-group-picker", taglike_macros)
+        self.assertIn("Выбрать без группы", taglike_macros)
+        self.assertIn(".game-edit__tag-groups", game_styles)
+        self.assertIn(".game-edit__tag-group-picker", game_styles)
+        self.assertIn("collectTagChanges()", game_script)
+        self.assertIn("tags.editors", game_script)
+        self.assertIn("game-edit__tag-group-picker", game_script)
+        self.assertIn("group_id", game_script)
+        self.assertIn("gameTagsEndpoint", tags_script)
+        self.assertIn("page_size: 30", tags_script)
+        self.assertIn("tagUngroupedOnly", tags_script)
+        self.assertIn("pending-tag-${root.id}", tags_script)
+        self.assertIn("name: queryValue", tags_script)
+
     def test_status_badge_summary_uses_minimum_uptime_and_current_status(self) -> None:
         payload = {
             "heartbeatList": {
@@ -1980,6 +2086,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("'catalog-tag-group-' + String(groupId", catalog_params)
         self.assertIn("'Выбрать ' + group.name", catalog_params)
         self.assertIn("group.name + ' не выбрано'", catalog_params)
+        self.assertIn("gameTagsEndpoint", tags_edit)
         self.assertIn("tagGroupTagsEndpoint", tags_edit)
         self.assertIn("pickerContextTagGroupId", tags_edit)
         self.assertIn(".catalog-tags-filter-panel", catalog_styles)

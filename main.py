@@ -394,6 +394,33 @@ def _normalize_tag_groups(raw_groups) -> list[dict[str, object]]:
     return tag_groups
 
 
+def _extract_tag_groups_from_items(raw_tags) -> list[dict[str, object]]:
+    raw_groups = []
+    seen_group_ids: set[int] = set()
+
+    for item in raw_tags:
+        if not isinstance(item, dict):
+            continue
+
+        group = item.get("group")
+        if not isinstance(group, dict):
+            continue
+
+        group_id = _optional_int(group.get("id"))
+        group_name = str(group.get("name") or "").strip()
+        if group_id is None or not group_name or group_id in seen_group_ids:
+            continue
+
+        raw_groups.append({
+            **group,
+            "id": group_id,
+            "name": group_name,
+        })
+        seen_group_ids.add(group_id)
+
+    return _normalize_tag_groups(raw_groups)
+
+
 def _build_tag_tree_sections(tags: list[dict], tag_groups: list[dict], *, query_name: str = "") -> list[dict[str, object]]:
     def sorted_tags(section_tags: list[dict]) -> list[dict]:
         return sorted(section_tags, key=lambda tag: (str(tag.get("name") or "").lower(), int(tag.get("id") or 0)))
@@ -478,13 +505,100 @@ def _build_tag_tree_sections(tags: list[dict], tag_groups: list[dict], *, query_
     return normalized_sections
 
 
-async def _load_tag_group_tags_map(handler: UserHandler, tag_groups: list[dict], *, query_name: str = "") -> dict[int, list]:
+def _build_game_tag_editor_sections(tags: list[dict], tag_groups: list[dict], *, game_id: int | None = None) -> list[dict[str, object]]:
+    def sorted_tags(section_tags: list[dict]) -> list[dict]:
+        return sorted(section_tags, key=lambda tag: (str(tag.get("name") or "").lower(), int(tag.get("id") or 0)))
+
+    group_ids = {group["id"] for group in tag_groups}
+    sections_by_group_id: dict[int, dict[str, object]] = {
+        group["id"]: {
+            "id": f"group-{group['id']}",
+            "kind": "group",
+            "title": str(group["name"]),
+            "group_id": group["id"],
+            "editor_id": f"game-tag-group-{group['id']}-editor",
+            "trigger_text": f"Выбрать {group['name']}",
+            "selected_empty_text": f"{group['name']} не выбрано",
+            "panel_classes": "game-edit__tag-group-picker",
+            "context": {
+                "tag_group_id": group["id"],
+                **({"game_id": game_id} if game_id is not None else {}),
+            },
+            "tags": [],
+        }
+        for group in tag_groups
+    }
+    unknown_group_ids: list[int] = []
+    ungrouped_tags: list[dict] = []
+
+    for tag in tags:
+        group_id = tag.get("group_id")
+        if group_id is None:
+            ungrouped_tags.append(tag)
+            continue
+
+        if group_id not in sections_by_group_id:
+            unknown_group_ids.append(group_id)
+            group_name = str(tag.get("group_name") or f"Группа #{group_id}")
+            sections_by_group_id[group_id] = {
+                "id": f"group-{group_id}",
+                "kind": "group",
+                "title": group_name,
+                "group_id": group_id,
+                "editor_id": f"game-tag-group-{group_id}-editor",
+                "trigger_text": f"Выбрать {group_name}",
+                "selected_empty_text": f"{group_name} не выбрано",
+                "panel_classes": "game-edit__tag-group-picker",
+                "context": {
+                    "tag_group_id": group_id,
+                    **({"game_id": game_id} if game_id is not None else {}),
+                },
+                "tags": [],
+            }
+
+        sections_by_group_id[group_id]["tags"].append(tag)
+
+    sections: list[dict[str, object]] = [sections_by_group_id[group["id"]] for group in tag_groups]
+    for group_id in sorted(set(unknown_group_ids)):
+        if group_id not in group_ids:
+            sections.append(sections_by_group_id[group_id])
+
+    for section in sections:
+        section["tags"] = sorted_tags(section["tags"])
+
+    sections.append({
+        "id": "ungrouped",
+        "kind": "ungrouped",
+        "title": "Без группы",
+        "editor_id": "game-tag-ungrouped-editor",
+        "trigger_text": "Выбрать без группы",
+        "selected_empty_text": "Теги без группы не выбраны",
+        "panel_classes": "game-edit__tag-group-picker game-edit__tag-group-picker--ungrouped",
+        "context": {
+            "tag_ungrouped_only": "true",
+            **({"game_id": game_id} if game_id is not None else {}),
+        },
+        "tags": sorted_tags(ungrouped_tags),
+    })
+
+    return sections
+
+
+async def _load_tag_group_tags_map(
+    handler: UserHandler,
+    tag_groups: list[dict],
+    *,
+    game_id: int | None = None,
+    query_name: str = "",
+) -> dict[int, list]:
     if not tag_groups:
         return {}
 
     query_params = {}
     if query_name:
         query_params["name"] = query_name
+    if game_id is not None:
+        query_params["game_id"] = game_id
 
     async def load_group_tags(group: dict) -> tuple[int, list]:
         group_id = int(group["id"])
@@ -1537,12 +1651,12 @@ async def game_edit(game_id):
             return handler.finish(page), 403
 
         game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
-        tag_list_path = app_config.api_path("tag", "list")
+        game_tag_list_path = app_config.api_path("game", "tags").format(game_id=game_id)
         genre_list_path = app_config.api_path("genre", "list")
         game_genres_path = app_config.api_path("game", "genres").format(game_id=game_id)
         resources_list_path = app_config.api_path("resource", "list")
 
-        game_info_result, game_tags, all_genres_result, game_genres_result, game_resources_result = await asyncio.gather(
+        game_info_result, raw_game_tags, all_genres_result, game_genres_result, game_resources_result = await asyncio.gather(
             handler.fetch(
                 _build_query_url(
                     game_info_path,
@@ -1551,7 +1665,7 @@ async def game_edit(game_id):
                     },
                 )
             ),
-            _load_paged_results(handler, _build_query_url(tag_list_path, {"game_id": game_id}), page_size=50),
+            _load_paged_results(handler, game_tag_list_path, page_size=50),
             handler.fetch(_build_query_url(genre_list_path, {"page_size": 200})),
             handler.fetch(game_genres_path),
             handler.fetch(
@@ -1570,6 +1684,17 @@ async def game_edit(game_id):
         game_info_code, game_info = game_info_result
         if game_info_code != 200 or not isinstance(game_info, dict):
             return _render_api_error(handler, game_info, game_info_code)
+
+        tag_groups = _extract_tag_groups_from_items(raw_game_tags)
+        tag_group_names = {group["id"]: group["name"] for group in tag_groups}
+        game_tags = _merge_tags_by_id(
+            _normalize_tag_items(
+                raw_game_tags,
+                tag_group_names=tag_group_names,
+                game_name_map={},
+            )
+        )
+        game_tag_sections = _build_game_tag_editor_sections(game_tags, tag_groups, game_id=game_id)
 
         _, all_genres = all_genres_result
         _, game_genres = game_genres_result
@@ -1630,6 +1755,7 @@ async def game_edit(game_id):
             game=game_info,
             resources=game_resources,
             game_tags=game_tags,
+            game_tag_sections=game_tag_sections,
             available_genres=all_genres_items,
             selected_genres=selected_genres,
             selected_genre_ids=selected_genre_ids,
