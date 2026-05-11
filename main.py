@@ -374,6 +374,9 @@ async def _load_game_name_map(handler: UserHandler, game_ids) -> dict[int, str]:
 
 
 def _normalize_tag_groups(raw_groups) -> list[dict[str, object]]:
+    if not isinstance(raw_groups, list):
+        return []
+
     tag_groups = []
     for item in raw_groups:
         if not isinstance(item, dict):
@@ -582,6 +585,43 @@ def _build_game_tag_editor_sections(tags: list[dict], tag_groups: list[dict], *,
     })
 
     return sections
+
+
+def _build_scoped_tag_editor_data(
+    selected_tags: list[dict],
+    tag_groups: list[dict],
+    *,
+    game_id: int | None = None,
+) -> tuple[list[dict], list[dict[str, object]]]:
+    tag_group_names = {group["id"]: group["name"] for group in tag_groups}
+    normalized_tags = _merge_tags_by_id(
+        _normalize_tag_items(
+            selected_tags,
+            tag_group_names=tag_group_names,
+            game_name_map={},
+        ),
+    )
+    has_grouped_context = bool(tag_groups) or any(tag.get("group_id") is not None for tag in normalized_tags)
+    if not has_grouped_context:
+        return normalized_tags, []
+
+    return normalized_tags, _build_game_tag_editor_sections(normalized_tags, tag_groups, game_id=game_id)
+
+
+async def _load_entity_tag_editor_data(
+    handler: UserHandler,
+    selected_tags: list[dict],
+    *,
+    game_id: int | None = None,
+) -> tuple[list[dict], list[dict[str, object]]]:
+    tag_groups: list[dict] = []
+    if game_id is not None:
+        feed_path = app_config.api_path("mod", "feed")
+        feed_code, feed_payload = await handler.fetch(_build_query_url(feed_path, {"game": game_id}))
+        if feed_code == 200 and isinstance(feed_payload, dict):
+            tag_groups = _normalize_tag_groups(feed_payload.get("tag_groups") or [])
+
+    return _build_scoped_tag_editor_data(selected_tags, tag_groups, game_id=game_id)
 
 
 async def _load_tag_group_tags_map(
@@ -1286,7 +1326,6 @@ async def mod_view_and_edit(mod_id):
         # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
         resources_list_path = app_config.api_path("resource", "list")
-        tags_path = app_config.api_path("mod", "tags").format(mod_id=mod_id)
         info_include = [
             "dependencies",
             "conflicts",
@@ -1295,6 +1334,7 @@ async def mod_view_and_edit(mod_id):
             "dates",
             "game",
             "authors",
+            "tags",
         ]
 
         info_query = {
@@ -1316,20 +1356,17 @@ async def mod_view_and_edit(mod_id):
                     "types": ["logo", "screenshot"],
                 },
             ),
-            "tags": f"{tags_path}"
         }
 
         # Запрашиваем
-        info_result, resources_result, tags_result = await asyncio.gather(
+        info_result, resources_result = await asyncio.gather(
             handler.fetch(api_urls["info"]),
             handler.fetch(api_urls["resources"]),
-            handler.fetch(api_urls["tags"])
         )
 
         # Первичная распаковка данных
         info_code, info = info_result
         resources_code, resources = resources_result
-        tags_code, tags = tags_result
 
         # Проверка результатов
         if info_code != 200 or not isinstance(info, dict):
@@ -1345,6 +1382,7 @@ async def mod_view_and_edit(mod_id):
             info_result["date_edit"] = info_result["updated_at"]
 
         # Вторичная (косметическая на самом деле) распаковка
+        tags = info_result.get("tags")
         if isinstance(tags, dict):
             if str(mod_id) in tags:
                 tags = tags[str(mod_id)]
@@ -1356,6 +1394,19 @@ async def mod_view_and_edit(mod_id):
                 tags = []
         elif tags is None:
             tags = []
+        elif not isinstance(tags, list):
+            tags = []
+        else:
+            tags = [tag for tag in tags if isinstance(tag, dict)]
+
+        tag_sections = []
+        if edit_page:
+            game_id = _optional_int(info_result.get("game_id"))
+            if game_id is None and isinstance(info_result.get("game"), dict):
+                game_id = _optional_int(info_result["game"].get("id"))
+            if game_id is not None and game_id > 0:
+                tags, tag_sections = await _load_entity_tag_editor_data(handler, tags, game_id=game_id)
+        info_result["tags"] = tags
 
         user_is_author = False
         user_is_owner = False
@@ -1534,6 +1585,7 @@ async def mod_view_and_edit(mod_id):
                 conflicts=conflicts,
                 plugins=plugins,
                 plugins_more_count=plugins_more_count,
+                tag_sections=tag_sections,
                 mod_access=mod_access,
                 right_edit=right_edit_mod,
                 vote_access=profile_vote_access,
@@ -1804,7 +1856,6 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
 
     mods_list_path = app_config.api_path("mod", "list")
     resources_list_path = app_config.api_path("resource", "list")
-    tags_path = app_config.api_path("modpack", "tags").format(modpack_id=modpack_id)
 
     def _normalize_picker_items(payload, fallback_key: str | None = None) -> list[dict]:
         if isinstance(payload, dict):
@@ -1862,11 +1913,11 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
             modpack_mods = list(modpack_mod_cards.values())
 
     tags = _normalize_picker_items(info_result.get("tags"), "tags")
-    tags_code, tags_payload = await handler.fetch(tags_path)
-    if tags_code == 200:
-        fetched_tags = _normalize_picker_items(tags_payload, "tags")
-        if fetched_tags or not tags:
-            tags = fetched_tags
+    tag_sections = []
+    tag_game_id = _optional_int(info_result.get("game_id"))
+    if tag_game_id is not None and tag_game_id > 0:
+        tags, tag_sections = await _load_entity_tag_editor_data(handler, tags, game_id=tag_game_id)
+    info_result["tags"] = tags
 
     resources = {"items": _normalize_picker_items(info_result.get("resources"))}
     modpack_resources_url = _build_query_url(
@@ -1944,6 +1995,7 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
         authors=authors,
         is_mod_data=False,
         data=[info_result],
+        tag_sections=tag_sections,
     )
 
     return handler.finish(page_html)

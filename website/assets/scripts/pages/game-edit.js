@@ -11,7 +11,7 @@
   const deleteButton = document.getElementById('delete-game-button');
   const genresEditorId = 'game-genres-editor';
   const tagsGroupRootSelector = '[data-game-tags-group-root="true"]';
-  const tagsGroupEditorSelector = '.game-edit__tag-group-picker';
+  const tagsGroupEditorSelector = '[data-picker-editor-kind="tags"]';
 
   let saveInProgress = false;
   let deleteInProgress = false;

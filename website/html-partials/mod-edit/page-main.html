@@ -1,4 +1,4 @@
-{% from 'html-partials/macros/taglike-editor.html' import render_tags_editor with context %}
+{% from 'html-partials/macros/taglike-editor.html' import render_grouped_tags_editor, render_tags_editor with context %}
 {% set mod_git_url = info.get('git_url') or '' %}
 
 <div id="page-in-mod-page" class="mod-edit__page mod-edit__split">
@@ -30,7 +30,11 @@
     {% if edit_page.show_tags_editor is not defined or edit_page.show_tags_editor %}
     {% set game_info = info.get('game') if info is defined else none %}
     {% set game_id = game_info.get('id') if game_info and game_info.get('id') else '' %}
-    {{ render_tags_editor(tags, game_id, false, 'mod-tags-editor') }}
+    {% if tag_sections is defined and tag_sections %}
+      {{ render_grouped_tags_editor(tag_sections, 'mod-tags-editor') }}
+    {% else %}
+      {{ render_tags_editor(tags, game_id, false, 'mod-tags-editor') }}
+    {% endif %}
     {% endif %}
 
     {% if edit_page.show_git_panel is not defined or edit_page.show_git_panel %}

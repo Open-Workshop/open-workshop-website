@@ -335,6 +335,41 @@ button.public-mod-toggle:active {
   padding: 12px;
 }
 
+.mod-edit .catalog-tags-filter-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+.mod-edit .catalog-tags-filter-panel > .picker-editor,
+.mod-edit .catalog-tags-filter-panel .catalog-tag-group-picker {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.mod-edit .catalog-tags-filter-panel > .picker-editor > .picker-editor__shell,
+.mod-edit .catalog-tags-filter-panel .catalog-tag-group-picker > .picker-editor__shell {
+  padding: 6px;
+}
+
+.mod-edit .catalog-tag-groups {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);
+}
+
+.mod-edit .catalog-tag-groups > .catalog-tag-group-picker + .catalog-tag-group-picker {
+  border-top: 1px solid var(--border-color);
+}
+
+.mod-edit .catalog-tag-group-picker .picker-editor__toggle {
+  max-width: 100%;
+}
+
 .mod-edit__row {
   display: flex;
   align-items: center;

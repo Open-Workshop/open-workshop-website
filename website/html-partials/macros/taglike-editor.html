@@ -211,23 +211,55 @@
 {%- endmacro %}
 
 {% macro render_grouped_tags_editor(tag_sections, editor_id='game-tags-editor', panel_title='Теги', panel_hint='Теги разбиты по группам, как в каталоге.', load_scripts=true) -%}
-<section
+{% set base_section = namespace(value=none) %}
+{% set group_sections = namespace(count=0) %}
+{% for section in tag_sections %}
+  {% if section.kind is defined and section.kind == 'ungrouped' %}
+    {% set base_section.value = section %}
+  {% else %}
+    {% set group_sections.count = group_sections.count + 1 %}
+  {% endif %}
+{% endfor %}
+<div
   id="{{ editor_id }}"
-  class="standart-panel mod-edit__panel game-edit__tags-panel"
+  class="standart-panel catalog-tags-filter-panel"
   data-game-tags-group-root="true"
 >
-  <h3>{{ panel_title }}</h3>
-  <p class="ow-muted">{{ panel_hint }}</p>
+  {% if base_section.value is not none %}
+    {% set base_editor_id = editor_id ~ '-base-editor' %}
+    {% set base_context = base_section.value.context if base_section.value.context is defined else none %}
+    {% set base_tags = base_section.value.tags if base_section.value.tags is defined and base_section.value.tags is not none else [] %}
+    {% call(base_slot) render_picker_editor(
+      root_id=base_editor_id,
+      editor_kind='tags',
+      modifier='picker-editor--chips',
+      import_height='#' ~ base_editor_id ~ ' .picker-editor__shell',
+      context=base_context,
+      trigger_text='Добавить базовый тег',
+      search_placeholder='Поиск...',
+      selected_empty_text='Тегов не выбрано',
+      results_empty_text='Не найдено',
+      can_create=false
+    ) %}
+      {% if base_slot == 'selected' %}
+        {% for item in base_tags %}
+          {{ render_picker_chip_item(item.id, item.name, true, false, false, true, 'Убрать тег') }}
+        {% endfor %}
+      {% endif %}
+    {% endcall %}
+  {% endif %}
 
-  <div class="game-edit__tag-groups">
+  {% if group_sections.count > 0 %}
+  <div class="catalog-tag-groups">
     {% for section in tag_sections %}
+      {% if section.kind is not defined or section.kind != 'ungrouped' %}
       {% set section_editor_id = section.editor_id if section.editor_id is defined and section.editor_id else editor_id ~ '-' ~ section.id ~ '-editor' %}
       {% set section_title = section.title if section.title is defined else 'Без названия' %}
       {% set section_context = section.context if section.context is defined else none %}
-      {% set section_panel_classes = section.panel_classes if section.panel_classes is defined and section.panel_classes else 'game-edit__tag-group-picker' %}
+      {% set section_panel_classes = 'catalog-tag-group-picker' %}
       {% set section_tags = section.tags if section.tags is defined and section.tags is not none else [] %}
       {% set section_selected_empty_text = section.selected_empty_text if section.selected_empty_text is defined and section.selected_empty_text else section_title ~ ' не выбрано' %}
-      {% set section_trigger_text = section.trigger_text if section.trigger_text is defined and section.trigger_text else ('Выбрать без группы' if section.kind is defined and section.kind == 'ungrouped' else 'Выбрать ' ~ section_title) %}
+      {% set section_trigger_text = section.trigger_text if section.trigger_text is defined and section.trigger_text else 'Выбрать ' ~ section_title %}
       {% call(section_slot) render_picker_editor(
         root_id=section_editor_id,
         editor_kind='tags',
@@ -239,8 +271,7 @@
         search_placeholder='Поиск...',
         selected_empty_text=section_selected_empty_text,
         results_empty_text='Не найдено',
-        can_create=true,
-        create_button_text='Добавить новое'
+        can_create=false
       ) %}
         {% if section_slot == 'selected' %}
           {% for item in section_tags %}
@@ -248,9 +279,11 @@
           {% endfor %}
         {% endif %}
       {% endcall %}
+      {% endif %}
     {% endfor %}
   </div>
-</section>
+  {% endif %}
+</div>
 
 {% if load_scripts %}
 <script src="/assets/scripts/vendors/picker-editor.js"></script>

@@ -428,6 +428,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(handler.render_calls[0][0], "mod.html")
         self.assertIn("scope=all", handler.fetch_calls[0][0])
         self.assertIn("include=conflicts", handler.fetch_calls[0][0])
+        self.assertIn("include=tags", handler.fetch_calls[0][0])
         self.assertEqual(
             handler.fetch_calls[1][0],
             "/resources?page_size=30&owner_type=mods&owner_ids=42&types=logo&types=screenshot",
@@ -574,10 +575,13 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "conflicts": {"count": 1, "items": [77]},
                         "game": {"id": 5, "name": "Game"},
                         "authors": {},
+                        "tags": [
+                            {"id": 29, "name": "Wip"},
+                            {"id": 495, "name": "0.10", "group": {"id": 1, "name": "Version"}},
+                        ],
                     },
                 ),
                 (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
-                (200, {"items": []}),
                 (200, {"items": [{"id": 77, "name": "Conflict Mod"}]}),
                 (200, {"items": [{"id": 9, "owner_id": 77, "type": "logo", "url": "https://cdn.example/conflict.webp"}]}),
                 (200, {"items": []}),
@@ -591,6 +595,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["template"], "mod.html")
         self.assertIn("scope=all", handler.fetch_calls[0][0])
         self.assertIn("include=conflicts", handler.fetch_calls[0][0])
+        self.assertIn("include=tags", handler.fetch_calls[0][0])
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["info"]["conflicts"], {"count": 1, "items": [77]})
         self.assertIn(77, render_kwargs["conflicts"])
@@ -660,7 +665,6 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                     },
                 ),
                 (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
-                (200, {"items": []}),
                 (200, {"items": [
                     {"id": 11, "name": "Required Mod"},
                     {"id": 22, "name": "Optional Mod"},
@@ -737,10 +741,14 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "conflicts": {"count": 1, "items": [77]},
                         "game": {"id": 5, "name": "Game"},
                         "authors": {},
+                        "tags": [
+                            {"id": 29, "name": "Wip"},
+                            {"id": 495, "name": "0.10", "group": {"id": 1, "name": "Version"}},
+                        ],
                     },
                 ),
                 (200, {"items": [{"id": 1, "type": "logo", "url": "https://cdn.example/logo.webp"}]}),
-                (200, {"items": []}),
+                (200, {"tag_groups": [{"id": 1, "name": "Version"}]}),
                 (200, {"items": [{"id": 77, "name": "Conflict Mod"}]}),
                 (200, {"items": [{"id": 9, "owner_id": 77, "type": "logo", "url": "https://cdn.example/conflict.webp"}]}),
                 (200, {"items": []}),
@@ -754,11 +762,17 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["template"], "mod-edit.html")
         self.assertIn("scope=outgoing", handler.fetch_calls[0][0])
         self.assertIn("include=conflicts", handler.fetch_calls[0][0])
+        self.assertIn("include=tags", handler.fetch_calls[0][0])
+        self.assertIn("/mods/feed?game=5", [url for url, _method in handler.fetch_calls])
+        self.assertNotIn("/mods/42/tags", [url for url, _method in handler.fetch_calls])
         render_kwargs = handler.render_calls[0][1]
         self.assertEqual(render_kwargs["info"]["conflicts"], {"count": 1, "items": [77]})
         self.assertIn(77, render_kwargs["conflicts"])
         self.assertEqual(render_kwargs["conflicts"][77]["name"], "Conflict Mod")
         self.assertEqual(render_kwargs["conflicts"][77]["img"], "https://cdn.example/conflict.webp")
+        self.assertEqual([section["title"] for section in render_kwargs["tag_sections"]], ["Version", "Без группы"])
+        self.assertEqual(render_kwargs["tag_sections"][0]["tags"][0]["name"], "0.10")
+        self.assertEqual([tag["name"] for tag in render_kwargs["tags"]], ["0.10", "Wip"])
 
     async def test_modpack_edit_uses_modpack_edit_config(self) -> None:
         handler = StubHandler(
@@ -803,6 +817,10 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                         "current_vote": None,
                         "downloads": 3,
                         "authors": {},
+                        "tags": [
+                            {"id": 301, "name": "Challenge"},
+                            {"id": 495, "name": "0.10", "group": {"id": 1, "name": "Version"}},
+                        ],
                     },
                 ),
                 (200, {"id": 5, "name": "Game"}),
@@ -816,7 +834,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
                 ),
                 (200, {"items": [{"id": 11, "name": "Core Mod"}]}),
                 (200, {"items": [{"owner_id": 11, "url": "https://cdn.example/core.webp"}]}),
-                (200, {"items": [{"id": 301, "name": "Challenge"}]}),
+                (200, {"tag_groups": [{"id": 1, "name": "Version"}]}),
                 (
                     200,
                     {
@@ -874,7 +892,8 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
             "/resources?page_size=50&owner_type=mods&owner_ids=11&types=logo",
             [url for url, _method in handler.fetch_calls],
         )
-        self.assertIn("/modpacks/42/tags", [url for url, _method in handler.fetch_calls])
+        self.assertIn("/mods/feed?game=5", [url for url, _method in handler.fetch_calls])
+        self.assertNotIn("/modpacks/42/tags", [url for url, _method in handler.fetch_calls])
         self.assertIn(
             "/resources?page_size=30&owner_type=modpacks&owner_ids=42&types=logo&types=screenshot",
             [url for url, _method in handler.fetch_calls],
@@ -886,7 +905,9 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(render_kwargs["modpack_mods"][0]["img"], "https://cdn.example/core.webp")
         self.assertEqual(render_kwargs["modpack_mods"][0]["sort_order"], 2)
         self.assertTrue(render_kwargs["modpack_mods"][0]["auto_added"])
-        self.assertEqual(render_kwargs["tags"], [{"id": 301, "name": "Challenge"}])
+        self.assertEqual([tag["name"] for tag in render_kwargs["tags"]], ["0.10", "Challenge"])
+        self.assertEqual([section["title"] for section in render_kwargs["tag_sections"]], ["Version", "Без группы"])
+        self.assertEqual(render_kwargs["tag_sections"][0]["tags"][0]["name"], "0.10")
         self.assertEqual(len(render_kwargs["resources"]["items"]), 2)
         self.assertEqual(render_kwargs["resources"]["items"][0]["type"], "logo")
         self.assertEqual(render_kwargs["resources"]["items"][0]["url"], "https://cdn.example/pack-logo.webp")
@@ -1305,6 +1326,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("Укажите ссылку на репозиторий мода", mod_main)
         self.assertNotIn("<span>Git URL</span>", mod_main)
         self.assertLess(mod_main.index("mod-tags-editor"), mod_main.index("data-git-url-block"))
+        self.assertIn("render_grouped_tags_editor(tag_sections, 'mod-tags-editor')", mod_main)
         self.assertLess(mod_main.index("data-git-url-block"), mod_main.index("mod-dependencies-editor"))
         self.assertIn("html-partials/modpack-mods-edit.html", mod_main)
         self.assertIn("modpack-mods-editor", modpack_mods)
@@ -1957,7 +1979,7 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
     def test_game_edit_templates_and_scripts_expose_tag_group_ui(self) -> None:
         game_main = (ROOT / "website/html-partials/game-edit/page-main.html").read_text(encoding="utf-8")
         taglike_macros = (ROOT / "website/html-partials/macros/taglike-editor.html").read_text(encoding="utf-8")
-        game_styles = (ROOT / "website/assets/styles/pages/game-edit.css").read_text(encoding="utf-8")
+        mod_edit_styles = (ROOT / "website/assets/styles/pages/mod-edit.css").read_text(encoding="utf-8")
         game_script = (ROOT / "website/assets/scripts/pages/game-edit.js").read_text(encoding="utf-8")
         tags_script = (ROOT / "website/assets/scripts/vendors/tags-edit.js").read_text(encoding="utf-8")
 
@@ -1965,14 +1987,15 @@ class RouteTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('data-game-tags-group-root="true"', taglike_macros)
         self.assertIn("render_grouped_tags_editor", game_main)
         self.assertIn("game-tags-editor", game_main)
-        self.assertIn("game-edit__tag-groups", taglike_macros)
-        self.assertIn("game-edit__tag-group-picker", taglike_macros)
-        self.assertIn("Выбрать без группы", taglike_macros)
-        self.assertIn(".game-edit__tag-groups", game_styles)
-        self.assertIn(".game-edit__tag-group-picker", game_styles)
+        self.assertIn("catalog-tags-filter-panel", taglike_macros)
+        self.assertIn("catalog-tag-groups", taglike_macros)
+        self.assertIn("catalog-tag-group-picker", taglike_macros)
+        self.assertIn("Добавить базовый тег", taglike_macros)
+        self.assertIn(".catalog-tags-filter-panel", mod_edit_styles)
+        self.assertIn(".catalog-tag-group-picker", mod_edit_styles)
         self.assertIn("collectTagChanges()", game_script)
         self.assertIn("tags.editors", game_script)
-        self.assertIn("game-edit__tag-group-picker", game_script)
+        self.assertIn('[data-picker-editor-kind="tags"]', game_script)
         self.assertIn("group_id", game_script)
         self.assertIn("gameTagsEndpoint", tags_script)
         self.assertIn("page_size: 30", tags_script)
