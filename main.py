@@ -246,7 +246,7 @@ def _render_api_error(handler: UserHandler, payload, status_code: int | None = N
     return handler.finish(page), error_code
 
 
-def _prepare_profile_page_payload(profile_info, user_id: int, launge: str) -> dict:
+def _prepare_profile_page_payload(profile_info, user_id: int, language: str) -> dict:
     profile_info = _ensure_profile_payload(profile_info)
     profile_info['delete_user'] = profile_info['general']['username'] is None
 
@@ -256,11 +256,11 @@ def _prepare_profile_page_payload(profile_info, user_id: int, launge: str) -> di
     if profile_info["general"].get("mute_until"):
         input_date = parse_api_datetime(str(profile_info["general"]["mute_until"]))
         profile_info["general"]["mute_until_js"] = format_js_datetime(input_date)
-        profile_info["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=launge)
+        profile_info["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=language)
 
     input_date = parse_api_datetime(profile_info['general']['registration_date'])
     profile_info['general']['registration_date_js'] = format_js_datetime(input_date)
-    profile_info['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+    profile_info['general']['registration_date'] = dates.format_date(input_date, locale=language)
 
     profile_info['general']['rating'] = _coerce_int(profile_info['general'].get('rating'))
     profile_info['general']['votes_count'] = _coerce_int(profile_info['general'].get('votes_count'))
@@ -1020,6 +1020,304 @@ def _normalize_mod_collection_payload(payload: object) -> dict[str, object]:
     }
 
 
+def _normalize_picker_items(
+    payload,
+    *,
+    owner_id: int | None = None,
+    fallback_key: str | None = None,
+) -> list[dict]:
+    if isinstance(payload, dict):
+        owner_key = str(owner_id) if owner_id is not None else None
+        if owner_key and owner_key in payload:
+            payload = payload[owner_key]
+        elif "items" in payload or "results" in payload:
+            payload = _collection_items(payload)
+        elif fallback_key and isinstance(payload.get(fallback_key), list):
+            payload = payload[fallback_key]
+        else:
+            payload = []
+
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+
+    return []
+
+
+def _normalize_resources_payload(payload, *, owner_id: int | None = None) -> dict:
+    items = _normalize_picker_items(payload, owner_id=owner_id)
+    if isinstance(payload, dict):
+        return {**payload, "items": items}
+    return {"items": items}
+
+
+def _resolve_logo_resource(
+    resources_items: list[dict],
+    *,
+    current_logo: str = "",
+    fallback: str = "",
+) -> tuple[str, dict | None]:
+    logo_item = None
+    logo_url = str(current_logo or "")
+
+    for resource in resources_items:
+        if resource.get("type") == "logo" and resource.get("url"):
+            logo_url = str(resource["url"])
+            logo_item = resource
+            break
+
+    if not logo_url:
+        for resource in resources_items:
+            if resource.get("url"):
+                logo_url = str(resource["url"])
+                break
+
+    return logo_url or fallback, logo_item
+
+
+def _move_logo_resource_first(resources: dict, logo_item: dict | None) -> None:
+    if not logo_item:
+        return
+
+    resources_items = resources.get("items", [])
+    if isinstance(resources_items, list):
+        resources["items"] = [logo_item] + [item for item in resources_items if item is not logo_item]
+
+
+def _set_formatted_date(info: dict, raw_value, output_key: str, language: str) -> None:
+    input_date = parse_api_datetime(str(raw_value))
+    info[f"{output_key}_js"] = format_js_datetime(input_date)
+    info[output_key] = dates.format_date(input_date, locale=language)
+
+
+def _prepare_mod_dates(info: dict, language: str) -> None:
+    if "created_at" in info and "date_creation" not in info:
+        info["date_creation"] = info["created_at"]
+    if "file_updated_at" in info and "date_update_file" not in info:
+        info["date_update_file"] = info["file_updated_at"]
+    if "updated_at" in info and "date_edit" not in info:
+        info["date_edit"] = info["updated_at"]
+
+    for key in ("date_creation", "date_update_file"):
+        if info.get(key):
+            _set_formatted_date(info, info[key], key, language)
+
+
+def _prepare_modpack_dates(info: dict, language: str) -> None:
+    created_at = info.get("created_at")
+    if created_at:
+        _set_formatted_date(info, created_at, "date_creation", language)
+    else:
+        info["date_creation_js"] = ""
+        info["date_creation"] = ""
+
+    updated_at = info.get("updated_at") or created_at
+    if updated_at:
+        _set_formatted_date(info, updated_at, "date_update_file", language)
+    else:
+        info["date_update_file_js"] = info["date_creation_js"]
+        info["date_update_file"] = info["date_creation"]
+
+
+def _prepare_description_and_rating(info: dict) -> None:
+    info["short_description"] = str(info.get("short_description") or "")
+    info["description"] = str(info.get("description") or "")
+    info["description_html"] = render_description_html(info["description"])
+    info["rating"] = _coerce_int(info.get("rating"))
+    info["votes_count"] = _coerce_int(info.get("votes_count"))
+    info["rating_summary"] = _steam_rating_summary(
+        info["rating"],
+        info["votes_count"],
+    )
+
+
+async def _load_entity_authors(handler: UserHandler, authors_source) -> list[dict]:
+    if not isinstance(authors_source, dict) or len(authors_source) <= 0:
+        return []
+
+    profile_info_path = app_config.api_path("profile", "info")
+    authors_info = await asyncio.gather(
+        *[handler.fetch(profile_info_path.format(user_id=author_id)) for author_id in authors_source]
+    )
+
+    authors = []
+    for _status_code, author in authors_info:
+        if not isinstance(author, dict) or not isinstance(author.get("general"), dict):
+            continue
+
+        author_to_add = {**author["general"]}
+        author_id = author_to_add.get("id")
+        author_entry = authors_source.get(str(author_id), authors_source.get(author_id, {}))
+        if not isinstance(author_entry, dict):
+            author_entry = {}
+
+        author_to_add["owner"] = bool(author_entry.get("owner", False))
+        authors.append(author_to_add)
+
+    return authors
+
+
+async def _load_modpack_game(handler: UserHandler, game_id) -> dict:
+    normalized_game_id = _optional_int(game_id)
+    if normalized_game_id is None or normalized_game_id <= 0:
+        return {"id": 0, "name": "Игра не указана"}
+
+    game_info_path = app_config.api_path("game", "info").format(game_id=normalized_game_id)
+    game_code, game_info = await handler.fetch(game_info_path)
+    if game_code == 200 and isinstance(game_info, dict):
+        return game_info
+
+    return {"id": normalized_game_id, "name": f"Игра #{normalized_game_id}"}
+
+
+def _normalize_modpack_mod_items(payload) -> list[dict]:
+    raw_items = payload.get("items", []) if isinstance(payload, dict) else []
+    normalized_items = []
+    if not isinstance(raw_items, list):
+        return normalized_items
+
+    for index, item in enumerate(raw_items):
+        if not isinstance(item, dict):
+            continue
+
+        normalized_mod_id = _optional_int(item.get("mod_id", item.get("id")))
+        if normalized_mod_id is None:
+            continue
+
+        normalized_sort_order = _optional_int(item.get("sort_order"))
+        if normalized_sort_order is None:
+            normalized_sort_order = index
+
+        normalized_items.append({
+            "mod_id": normalized_mod_id,
+            "sort_order": normalized_sort_order,
+            "auto_added": bool(item.get("auto_added", False)),
+        })
+
+    normalized_items.sort(key=lambda item: (item["sort_order"], item["mod_id"]))
+    return normalized_items
+
+
+async def _load_modpack_mod_cards(
+    handler: UserHandler,
+    modpack_id: int,
+    mods_list_path: str,
+    resources_list_path: str,
+) -> list[dict]:
+    modpack_mods_path = app_config.api_path("modpack", "mods").format(modpack_id=modpack_id)
+    modpack_mods_code, modpack_mods_payload = await handler.fetch(modpack_mods_path)
+    if modpack_mods_code != 200 or not isinstance(modpack_mods_payload, dict):
+        return []
+
+    normalized_modpack_mod_items = _normalize_modpack_mod_items(modpack_mods_payload)
+    if not normalized_modpack_mod_items:
+        return []
+
+    modpack_mod_cards = await _load_mod_cards_by_ids(
+        handler,
+        normalized_modpack_mod_items,
+        mods_list_path,
+        resources_list_path,
+    )
+    return list(modpack_mod_cards.values())
+
+
+async def _load_mod_relation_cards(
+    handler: UserHandler,
+    info: dict,
+    raw_dependencies_payload,
+    mods_list_path: str,
+    resources_list_path: str,
+) -> tuple[dict, dict]:
+    dependencies = {}
+    if info["dependencies"]["count"] > 0:
+        dependency_items = (
+            raw_dependencies_payload.get("items", [])
+            if isinstance(raw_dependencies_payload, dict)
+            else info["dependencies"]["items"]
+        )
+        dependencies = await _load_mod_cards_by_ids(
+            handler,
+            dependency_items,
+            mods_list_path,
+            resources_list_path,
+        )
+
+    conflicts = {}
+    if info["conflicts"]["count"] > 0:
+        conflicts = await _load_mod_cards_by_ids(
+            handler,
+            info["conflicts"]["items"],
+            mods_list_path,
+            resources_list_path,
+        )
+
+    return dependencies, conflicts
+
+
+async def _load_mod_plugins(
+    handler: UserHandler,
+    mod_id: int,
+    mods_list_path: str,
+    resources_list_path: str,
+) -> tuple[dict, int]:
+    plugins = {}
+    plugins_database_size = 0
+    _, plugins_info = await handler.fetch(
+        _build_query_url(
+            mods_list_path,
+            {
+                "page_size": 2,
+                "dependencies": [mod_id],
+            },
+        )
+    )
+    if not isinstance(plugins_info, dict):
+        return plugins, 0
+
+    plugins_results = _collection_items(plugins_info)
+    plugins_database_size = max(_collection_total(plugins_info, len(plugins_results)) or 0, 0)
+    plugin_ids = []
+
+    for plugin in plugins_results:
+        if not isinstance(plugin, dict):
+            continue
+
+        plugin_id = plugin.get("id")
+        if plugin_id is None or str(plugin_id) == str(mod_id):
+            continue
+
+        plugin_key = str(plugin_id)
+        plugin_ids.append(plugin_id)
+        plugins[plugin_key] = {
+            "id": plugin_id,
+            "img": DEFAULT_IMAGE_FALLBACK,
+            "name": plugin.get("name", ""),
+        }
+
+    if len(plugin_ids) > 0:
+        _, plugins_resources = await handler.fetch(
+            _build_query_url(
+                resources_list_path,
+                {
+                    "page_size": 30,
+                    "owner_type": "mods",
+                    "owner_ids": plugin_ids,
+                    "types": ["logo"],
+                },
+            )
+        )
+        if isinstance(plugins_resources, dict):
+            for resource in _collection_items(plugins_resources):
+                if not isinstance(resource, dict):
+                    continue
+
+                plugin_key = str(resource.get("owner_id"))
+                if plugin_key in plugins and resource.get("url"):
+                    plugins[plugin_key]["img"] = resource["url"]
+
+    return plugins, max(plugins_database_size - len(plugins), 0)
+
+
 def _get_local_tz() -> datetime.tzinfo:
     tz_name = getattr(ow_config, "TIMEZONE", None)
     if tz_name:
@@ -1360,8 +1658,79 @@ async def unified_route():
         return handler.finish(page_html)
 
 
+async def _build_mod_render_context(
+    handler: UserHandler,
+    mod_id: int,
+    info_result: dict,
+    resources_payload,
+    *,
+    edit_page: bool,
+    language: str,
+) -> dict:
+    _prepare_mod_dates(info_result, language)
+
+    tags = _normalize_picker_items(info_result.get("tags"), owner_id=mod_id, fallback_key="tags")
+    tag_sections = []
+    if edit_page:
+        game_id = _optional_int(info_result.get("game_id"))
+        if game_id is None and isinstance(info_result.get("game"), dict):
+            game_id = _optional_int(info_result["game"].get("id"))
+        if game_id is not None and game_id > 0:
+            tags, tag_sections = await _load_entity_tag_editor_data(handler, tags, game_id=game_id)
+    info_result["tags"] = tags
+
+    authors = await _load_entity_authors(handler, info_result.get("authors") or {})
+    info_result["size"] = await tool.size_format(info_result.get("size"))
+    info_result["size_unpacked"] = await tool.size_format(info_result.get("size_unpacked"))
+
+    resources = _normalize_resources_payload(resources_payload)
+    resources_items = resources["items"]
+    logo_url, logo_item = _resolve_logo_resource(
+        resources_items,
+        current_logo=info_result.get("logo", ""),
+    )
+    info_result["logo"] = logo_url
+    if not edit_page:
+        _move_logo_resource_first(resources, logo_item)
+    info_result["no_many_screenshots"] = len(resources_items) <= 1
+
+    raw_dependencies_payload = info_result.get("dependencies")
+    info_result["dependencies"] = _normalize_mod_collection_payload(raw_dependencies_payload)
+    info_result["conflicts"] = _normalize_mod_collection_payload(info_result.get("conflicts"))
+    info_result["id"] = mod_id
+    _prepare_description_and_rating(info_result)
+
+    mods_list_path = app_config.api_path("mod", "list")
+    resources_list_path = app_config.api_path("resource", "list")
+    dependencies, conflicts = await _load_mod_relation_cards(
+        handler,
+        info_result,
+        raw_dependencies_payload,
+        mods_list_path,
+        resources_list_path,
+    )
+    plugins, plugins_more_count = await _load_mod_plugins(
+        handler,
+        mod_id,
+        mods_list_path,
+        resources_list_path,
+    )
+
+    return {
+        "info": info_result,
+        "tags": tags,
+        "tag_sections": tag_sections,
+        "resources": resources,
+        "dependencies": dependencies,
+        "conflicts": conflicts,
+        "plugins": plugins,
+        "plugins_more_count": plugins_more_count,
+        "authors": authors,
+    }
+
+
 async def mod_view_and_edit(mod_id):
-    launge = "ru"
+    language = "ru"
 
     async with UserHandler() as handler:
         request_path = request.path if has_request_context() else ""
@@ -1402,7 +1771,6 @@ async def mod_view_and_edit(mod_id):
                 return await _render_modpack_edit_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
             return await _render_modpack_view_page(handler, mod_id, mod_access, right_edit_mod, profile_vote_access)
 
-        # Определяем запросы
         info_path = app_config.api_path("mod", "info").format(mod_id=mod_id)
         resources_list_path = app_config.api_path("resource", "list")
         info_include = [
@@ -1437,207 +1805,26 @@ async def mod_view_and_edit(mod_id):
             ),
         }
 
-        # Запрашиваем
         info_result, resources_result = await asyncio.gather(
             handler.fetch(api_urls["info"]),
             handler.fetch(api_urls["resources"]),
         )
 
-        # Первичная распаковка данных
         info_code, info = info_result
-        resources_code, resources = resources_result
+        _resources_code, resources = resources_result
 
-        # Проверка результатов
         if info_code != 200 or not isinstance(info, dict):
-            # Сервер ответил на информацию о моде ошибкой, показываем человекочитаемую страницу.
             return _render_api_error(handler, info, info_code)
 
-        info_result = info
-        if "created_at" in info_result and "date_creation" not in info_result:
-            info_result["date_creation"] = info_result["created_at"]
-        if "file_updated_at" in info_result and "date_update_file" not in info_result:
-            info_result["date_update_file"] = info_result["file_updated_at"]
-        if "updated_at" in info_result and "date_edit" not in info_result:
-            info_result["date_edit"] = info_result["updated_at"]
-
-        # Вторичная (косметическая на самом деле) распаковка
-        tags = info_result.get("tags")
-        if isinstance(tags, dict):
-            if str(mod_id) in tags:
-                tags = tags[str(mod_id)]
-            elif "items" in tags or "results" in tags:
-                tags = _collection_items(tags)
-            elif "tags" in tags:
-                tags = tags["tags"]
-            else:
-                tags = []
-        elif tags is None:
-            tags = []
-        elif not isinstance(tags, list):
-            tags = []
-        else:
-            tags = [tag for tag in tags if isinstance(tag, dict)]
-
-        tag_sections = []
-        if edit_page:
-            game_id = _optional_int(info_result.get("game_id"))
-            if game_id is None and isinstance(info_result.get("game"), dict):
-                game_id = _optional_int(info_result["game"].get("id"))
-            if game_id is not None and game_id > 0:
-                tags, tag_sections = await _load_entity_tag_editor_data(handler, tags, game_id=game_id)
-        info_result["tags"] = tags
-
-        user_is_author = False
-        user_is_owner = False
-
-        authors = []
-        if len(info_result.get('authors', {})) > 0:
-            profile_info_path = app_config.api_path("profile", "info")
-            authors_info = await asyncio.gather(
-                *[handler.fetch(profile_info_path.format(user_id=author)) for author in info_result['authors']])
-
-            for status_code, author in authors_info:
-                author_to_add = author['general']
-                author_to_add['owner'] = info_result['authors'][str(author_to_add['id'])]['owner']
-
-                if handler.profile:
-                    if author_to_add['id'] == handler.profile['id']:
-                        user_is_author = True
-                        user_is_owner = author_to_add['owner']
-
-                authors.append(author_to_add)
-
-        info_result['size'] = await tool.size_format(info_result['size']) # Преобразовываем кол-во байт в читаемые человеком форматы
-        info_result['size_unpacked'] = await tool.size_format(info_result['size_unpacked'])
-
-        resources_results = _collection_items(resources) if isinstance(resources, dict) else []
-        if isinstance(resources, dict):
-            resources = {**resources, "items": resources_results}
-        else:
-            resources = {"items": resources_results}
-
-        logo_item = None
-        logo_url = str(info_result.get("logo", "") or "")
-        for image in resources_results: # Ищем логотип мода
-            if isinstance(image, dict) and image.get("type") == "logo" and image.get("url"):
-                logo_url = image["url"] # Фиксируем, что нашли его
-                logo_item = image
-                break
-
-        # Если отдельный logo-ресурс не найден, используем первое доступное изображение
-        # как fallback для OG-превью.
-        if not logo_url:
-            for image in resources_results:
-                if isinstance(image, dict) and image.get("url"):
-                    logo_url = image["url"]
-                    break
-
-        info_result["logo"] = logo_url
-
-        # На странице просмотра держим логотип в списке и выводим его первым
-        if logo_item and not edit_page:
-            resources["items"] = [logo_item] + [item for item in resources_results if item is not logo_item]
-
-        info_result["no_many_screenshots"] = len(resources_results) <= 1 # bool переменная для рендера шаблона, указка показывать ли меню навигации
-
-        raw_dependencies_payload = info_result.get("dependencies")
-        dependencies_payload = _normalize_mod_collection_payload(raw_dependencies_payload)
-        info_result["dependencies"] = dependencies_payload
-        conflicts_payload = _normalize_mod_collection_payload(info_result.get("conflicts"))
-        info_result["conflicts"] = conflicts_payload
-
-        for key in ["date_creation", "date_update_file"]: # Форматируем (обрабатываем) даты
-            input_date = parse_api_datetime(info_result[key])
-            info_result[f'{key}_js'] = format_js_datetime(input_date)
-            info_result[key] = dates.format_date(input_date, locale=launge)
-
-        info_result['id'] = mod_id # Фиксируем для рендера шаблона id мода
-        info_result["short_description"] = str(info_result.get("short_description") or "")
-        info_result["description"] = str(info_result.get("description") or "")
-        info_result["description_html"] = render_description_html(info_result["description"])
-        info_result["rating"] = _coerce_int(info_result.get("rating"))
-        info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
-        info_result["rating_summary"] = _steam_rating_summary(
-            info_result["rating"],
-            info_result["votes_count"],
+        context = await _build_mod_render_context(
+            handler,
+            mod_id,
+            info,
+            resources,
+            edit_page=edit_page,
+            language=language,
         )
-
-        mods_list_path = app_config.api_path("mod", "list")
-        resources_list_path = app_config.api_path("resource", "list")
-
-        dependencies = {}
-        if info_result["dependencies"]["count"] > 0: # Чекаем, есть ли зависимости
-            dependency_items = raw_dependencies_payload.get("items", []) if isinstance(raw_dependencies_payload, dict) else info_result["dependencies"]["items"]
-            dependencies = await _load_mod_cards_by_ids(
-                handler,
-                dependency_items,
-                mods_list_path,
-                resources_list_path,
-            )
-
-        conflicts = {}
-        if info_result["conflicts"]["count"] > 0:
-            conflicts = await _load_mod_cards_by_ids(
-                handler,
-                info_result["conflicts"]["items"],
-                mods_list_path,
-                resources_list_path,
-            )
-
-        plugins = {}
-        plugins_database_size = 0
-        _, plugins_info = await handler.fetch(
-            _build_query_url(
-                mods_list_path,
-                {
-                    "page_size": 2,
-                    "dependencies": [mod_id],
-                },
-            )
-        )
-        if isinstance(plugins_info, dict):
-            plugins_results = _collection_items(plugins_info)
-            plugins_database_size = max(_collection_total(plugins_info, len(plugins_results)) or 0, 0)
-
-            plugin_ids = []
-            for plugin in plugins_results:
-                if not isinstance(plugin, dict):
-                    continue
-
-                plugin_id = plugin.get('id')
-                if plugin_id is None or str(plugin_id) == str(mod_id):
-                    continue
-
-                plugin_key = str(plugin_id)
-                plugin_ids.append(plugin_id)
-                plugins[plugin_key] = {
-                    'id': plugin_id,
-                    'img': DEFAULT_IMAGE_FALLBACK,
-                    'name': plugin.get('name', '')
-                }
-
-            if len(plugin_ids) > 0:
-                _, plugins_resources = await handler.fetch(
-                    _build_query_url(
-                        resources_list_path,
-                        {
-                            "page_size": 30,
-                            "owner_type": "mods",
-                            "owner_ids": plugin_ids,
-                            "types": ["logo"],
-                        },
-                    )
-                )
-                if isinstance(plugins_resources, dict):
-                    for resource in _collection_items(plugins_resources):
-                        if not isinstance(resource, dict):
-                            continue
-
-                        plugin_key = str(resource.get('owner_id'))
-                        if plugin_key in plugins and resource.get('url'):
-                            plugins[plugin_key]['img'] = resource['url']
-
-        plugins_more_count = max(plugins_database_size - len(plugins), 0)
+        info_result = context["info"]
 
         if edit_page:
             edit_page_kind = page_kind if page_kind in app_config.EDIT_PAGE_CONFIGS else "mod"
@@ -1658,36 +1845,36 @@ async def mod_view_and_edit(mod_id):
                 edit_title=f"{info_result['name']} - edit {edit_title_suffix}",
                 edit_description=info_result["short_description"],
                 info=info_result,
-                tags=tags,
-                resources=resources,
-                dependencies=dependencies,
-                conflicts=conflicts,
-                plugins=plugins,
-                plugins_more_count=plugins_more_count,
-                tag_sections=tag_sections,
+                tags=context["tags"],
+                resources=context["resources"],
+                dependencies=context["dependencies"],
+                conflicts=context["conflicts"],
+                plugins=context["plugins"],
+                plugins_more_count=context["plugins_more_count"],
+                tag_sections=context["tag_sections"],
                 mod_access=mod_access,
                 right_edit=right_edit_mod,
                 vote_access=profile_vote_access,
-                authors=authors,
+                authors=context["authors"],
                 is_mod_data=False,
                 data=[info_result],
             )
         else:
-            tag_display_sections = _build_tag_display_sections(tags)
+            tag_display_sections = _build_tag_display_sections(context["tags"])
             page_html = handler.render(
                 "mod.html",
                 info=info_result,
-                tags=tags,
+                tags=context["tags"],
                 tag_display_sections=tag_display_sections,
-                resources=resources,
-                dependencies=dependencies,
-                conflicts=conflicts,
-                plugins=plugins,
-                plugins_more_count=plugins_more_count,
+                resources=context["resources"],
+                dependencies=context["dependencies"],
+                conflicts=context["conflicts"],
+                plugins=context["plugins"],
+                plugins_more_count=context["plugins_more_count"],
                 mod_access=mod_access,
                 right_edit=right_edit_mod,
                 vote_access=profile_vote_access,
-                authors=authors,
+                authors=context["authors"],
                 is_mod_data=True,
                 data=[info_result],
             )
@@ -1767,7 +1954,7 @@ async def add_game():
         return handler.finish(page)
 
 async def game_edit(game_id):
-    launge = "ru"
+    language = "ru"
 
     async with UserHandler() as handler:
         game_access = await handler.get_game_access(game_id)
@@ -1836,7 +2023,7 @@ async def game_edit(game_id):
         if game_info.get("date_creation"):
             input_date = parse_api_datetime(game_info["date_creation"])
             game_info["date_creation_js"] = format_js_datetime(input_date)
-            game_info["date_creation"] = dates.format_date(input_date, locale=launge)
+            game_info["date_creation"] = dates.format_date(input_date, locale=language)
 
         game_info["short_description"] = str(game_info.get("short_description") or "")
         game_info["description"] = str(game_info.get("description") or "")
@@ -1896,7 +2083,7 @@ async def game_edit(game_id):
 
 
 async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_mod, profile_vote_access):
-    launge = "ru"
+    language = "ru"
 
     info_path = app_config.api_path("modpack", "info").format(modpack_id=modpack_id)
     info_code, info = await handler.fetch(info_path)
@@ -1905,102 +2092,26 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
         return _render_api_error(handler, info, info_code)
 
     info_result = info
-
-    created_at = info_result.get("created_at")
-    if created_at:
-        input_date = parse_api_datetime(created_at)
-        info_result["date_creation_js"] = format_js_datetime(input_date)
-        info_result["date_creation"] = dates.format_date(input_date, locale=launge)
-    else:
-        info_result["date_creation_js"] = ""
-        info_result["date_creation"] = ""
-
-    updated_at = info_result.get("updated_at") or created_at
-    if updated_at:
-        input_date = parse_api_datetime(updated_at)
-        info_result["date_update_file_js"] = format_js_datetime(input_date)
-        info_result["date_update_file"] = dates.format_date(input_date, locale=launge)
-    else:
-        info_result["date_update_file_js"] = info_result["date_creation_js"]
-        info_result["date_update_file"] = info_result["date_creation"]
-
-    game_id = info_result.get("game_id")
-    if game_id:
-        game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
-        game_code, game_info = await handler.fetch(game_info_path)
-        if game_code == 200 and isinstance(game_info, dict):
-            info_result["game"] = game_info
-        else:
-            info_result["game"] = {"id": int(game_id), "name": f"Игра #{game_id}"}
-    else:
-        info_result["game"] = {"id": 0, "name": "Игра не указана"}
+    _prepare_modpack_dates(info_result, language)
+    info_result["game"] = await _load_modpack_game(handler, info_result.get("game_id"))
 
     mods_list_path = app_config.api_path("mod", "list")
     resources_list_path = app_config.api_path("resource", "list")
+    modpack_mods = await _load_modpack_mod_cards(
+        handler,
+        modpack_id,
+        mods_list_path,
+        resources_list_path,
+    )
 
-    def _normalize_picker_items(payload, fallback_key: str | None = None) -> list[dict]:
-        if isinstance(payload, dict):
-            if str(modpack_id) in payload:
-                payload = payload[str(modpack_id)]
-            elif "items" in payload or "results" in payload:
-                payload = _collection_items(payload)
-            elif fallback_key and isinstance(payload.get(fallback_key), list):
-                payload = payload[fallback_key]
-            else:
-                payload = []
-
-        if isinstance(payload, list):
-            return [item for item in payload if isinstance(item, dict)]
-
-        return []
-
-    modpack_mods_path = app_config.api_path("modpack", "mods").format(modpack_id=modpack_id)
-    modpack_mods = []
-    modpack_mods_code, modpack_mods_payload = await handler.fetch(modpack_mods_path)
-    if modpack_mods_code == 200 and isinstance(modpack_mods_payload, dict):
-        raw_modpack_mod_items = modpack_mods_payload.get("items", [])
-        normalized_modpack_mod_items = []
-        if isinstance(raw_modpack_mod_items, list):
-            for index, item in enumerate(raw_modpack_mod_items):
-                if not isinstance(item, dict):
-                    continue
-
-                raw_mod_id = item.get("mod_id", item.get("id"))
-                try:
-                    normalized_mod_id = int(raw_mod_id)
-                except (TypeError, ValueError):
-                    continue
-
-                raw_sort_order = item.get("sort_order", index)
-                try:
-                    normalized_sort_order = int(raw_sort_order)
-                except (TypeError, ValueError):
-                    normalized_sort_order = index
-
-                normalized_modpack_mod_items.append({
-                    "mod_id": normalized_mod_id,
-                    "sort_order": normalized_sort_order,
-                    "auto_added": bool(item.get("auto_added", False)),
-                })
-
-        normalized_modpack_mod_items.sort(key=lambda item: (item["sort_order"], item["mod_id"]))
-        if normalized_modpack_mod_items:
-            modpack_mod_cards = await _load_mod_cards_by_ids(
-                handler,
-                normalized_modpack_mod_items,
-                mods_list_path,
-                resources_list_path,
-            )
-            modpack_mods = list(modpack_mod_cards.values())
-
-    tags = _normalize_picker_items(info_result.get("tags"), "tags")
+    tags = _normalize_picker_items(info_result.get("tags"), owner_id=modpack_id, fallback_key="tags")
     tag_sections = []
     tag_game_id = _optional_int(info_result.get("game_id"))
     if tag_game_id is not None and tag_game_id > 0:
         tags, tag_sections = await _load_entity_tag_editor_data(handler, tags, game_id=tag_game_id)
     info_result["tags"] = tags
 
-    resources = {"items": _normalize_picker_items(info_result.get("resources"))}
+    resources = _normalize_resources_payload(info_result.get("resources"), owner_id=modpack_id)
     modpack_resources_url = _build_query_url(
         resources_list_path,
         {
@@ -2012,42 +2123,18 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
     )
     resources_code, resources_payload = await handler.fetch(modpack_resources_url)
     if resources_code == 200:
-        fetched_resources = _normalize_picker_items(resources_payload)
+        fetched_resources = _normalize_picker_items(resources_payload, owner_id=modpack_id)
         if fetched_resources or not resources["items"]:
             resources = {
                 **(resources_payload if isinstance(resources_payload, dict) else {}),
                 "items": fetched_resources,
             }
 
-    authors = []
-    authors_source = info_result.get("authors") or {}
-    if len(authors_source) > 0:
-        profile_info_path = app_config.api_path("profile", "info")
-        authors_info = await asyncio.gather(
-            *[handler.fetch(profile_info_path.format(user_id=author)) for author in authors_source]
-        )
-
-        for status_code, author in authors_info:
-            if not isinstance(author, dict) or "general" not in author:
-                continue
-
-            author_to_add = author["general"]
-            author_entry = authors_source.get(str(author_to_add["id"]), {})
-            author_to_add["owner"] = bool(author_entry.get("owner", False))
-            authors.append(author_to_add)
-
-    info_result["short_description"] = str(info_result.get("short_description") or "")
-    info_result["description"] = str(info_result.get("description") or "")
-    info_result["description_html"] = render_description_html(info_result["description"])
+    authors = await _load_entity_authors(handler, info_result.get("authors") or {})
+    _prepare_description_and_rating(info_result)
     info_result["size"] = ""
     info_result["size_unpacked"] = ""
-    info_result["downloads"] = int(info_result.get("downloads") or 0)
-    info_result["rating"] = _coerce_int(info_result.get("rating"))
-    info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
-    info_result["rating_summary"] = _steam_rating_summary(
-        info_result["rating"],
-        info_result["votes_count"],
-    )
+    info_result["downloads"] = _coerce_int(info_result.get("downloads"))
     info_result["logo"] = DEFAULT_IMAGE_FALLBACK
     info_result["no_many_screenshots"] = True
     info_result["dependencies"] = {"count": 0, "items": []}
@@ -2083,7 +2170,7 @@ async def _render_modpack_edit_page(handler, modpack_id, mod_access, right_edit_
 
 
 async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_mod, profile_vote_access):
-    launge = "ru"
+    language = "ru"
 
     info_path = app_config.api_path("modpack", "info").format(modpack_id=modpack_id)
     info_code, info = await handler.fetch(info_path)
@@ -2092,149 +2179,40 @@ async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_
         return _render_api_error(handler, info, info_code)
 
     info_result = info
+    _prepare_modpack_dates(info_result, language)
+    info_result["game"] = await _load_modpack_game(handler, info_result.get("game_id"))
 
-    created_at = info_result.get("created_at")
-    if created_at:
-        input_date = parse_api_datetime(created_at)
-        info_result["date_creation_js"] = format_js_datetime(input_date)
-        info_result["date_creation"] = dates.format_date(input_date, locale=launge)
-    else:
-        info_result["date_creation_js"] = ""
-        info_result["date_creation"] = ""
-
-    updated_at = info_result.get("updated_at") or created_at
-    if updated_at:
-        input_date = parse_api_datetime(updated_at)
-        info_result["date_update_file_js"] = format_js_datetime(input_date)
-        info_result["date_update_file"] = dates.format_date(input_date, locale=launge)
-    else:
-        info_result["date_update_file_js"] = info_result["date_creation_js"]
-        info_result["date_update_file"] = info_result["date_creation"]
-
-    game_id = info_result.get("game_id")
-    if game_id:
-        game_info_path = app_config.api_path("game", "info").format(game_id=game_id)
-        game_code, game_info = await handler.fetch(game_info_path)
-        if game_code == 200 and isinstance(game_info, dict):
-            info_result["game"] = game_info
-        else:
-            info_result["game"] = {"id": int(game_id), "name": f"Игра #{game_id}"}
-    else:
-        info_result["game"] = {"id": 0, "name": "Игра не указана"}
-
-    def _normalize_picker_items(payload, fallback_key: str | None = None) -> list[dict]:
-        if isinstance(payload, dict):
-            if str(modpack_id) in payload:
-                payload = payload[str(modpack_id)]
-            elif "items" in payload or "results" in payload:
-                payload = _collection_items(payload)
-            elif fallback_key and isinstance(payload.get(fallback_key), list):
-                payload = payload[fallback_key]
-            else:
-                payload = []
-
-        if isinstance(payload, list):
-            return [item for item in payload if isinstance(item, dict)]
-
-        return []
-
-    resources_items = _normalize_picker_items(info_result.get("resources"))
+    resources_items = _normalize_picker_items(info_result.get("resources"), owner_id=modpack_id)
     resources = {"items": list(resources_items)}
-    logo_item = None
-    logo_url = str(info_result.get("logo", "") or "")
-    for image in resources_items:
-        if image.get("type") == "logo" and image.get("url"):
-            logo_url = image["url"]
-            logo_item = image
-            break
-
-    if not logo_url:
-        for image in resources_items:
-            if image.get("url"):
-                logo_url = image["url"]
-                break
-
-    info_result["logo"] = logo_url or DEFAULT_IMAGE_FALLBACK
-
-    if logo_item:
-        resources["items"] = [logo_item] + [item for item in resources_items if item is not logo_item]
+    logo_url, logo_item = _resolve_logo_resource(
+        resources_items,
+        current_logo=info_result.get("logo", ""),
+        fallback=DEFAULT_IMAGE_FALLBACK,
+    )
+    info_result["logo"] = logo_url
+    _move_logo_resource_first(resources, logo_item)
 
     info_result["no_many_screenshots"] = len(resources_items) <= 1
 
-    tags = _normalize_picker_items(info_result.get("tags"), "tags")
+    tags = _normalize_picker_items(info_result.get("tags"), owner_id=modpack_id, fallback_key="tags")
     info_result["tags"] = tags
     tag_display_sections = _build_tag_display_sections(tags)
 
-    authors = []
-    authors_source = info_result.get("authors") or {}
-    if isinstance(authors_source, dict) and len(authors_source) > 0:
-        profile_info_path = app_config.api_path("profile", "info")
-        authors_info = await asyncio.gather(
-            *[handler.fetch(profile_info_path.format(user_id=author)) for author in authors_source]
-        )
-
-        for status_code, author in authors_info:
-            if not isinstance(author, dict) or "general" not in author:
-                continue
-
-            author_to_add = author["general"]
-            author_entry = authors_source.get(str(author_to_add["id"]), {})
-            author_to_add["owner"] = bool(author_entry.get("owner", False))
-            authors.append(author_to_add)
+    authors = await _load_entity_authors(handler, info_result.get("authors") or {})
 
     mods_list_path = app_config.api_path("mod", "list")
     resources_list_path = app_config.api_path("resource", "list")
-    modpack_mods = []
-    modpack_mods_path = app_config.api_path("modpack", "mods").format(modpack_id=modpack_id)
-    modpack_mods_code, modpack_mods_payload = await handler.fetch(modpack_mods_path)
-    if modpack_mods_code == 200 and isinstance(modpack_mods_payload, dict):
-        raw_modpack_mod_items = modpack_mods_payload.get("items", [])
-        normalized_modpack_mod_items = []
-        if isinstance(raw_modpack_mod_items, list):
-            for index, item in enumerate(raw_modpack_mod_items):
-                if not isinstance(item, dict):
-                    continue
+    modpack_mods = await _load_modpack_mod_cards(
+        handler,
+        modpack_id,
+        mods_list_path,
+        resources_list_path,
+    )
 
-                raw_mod_id = item.get("mod_id", item.get("id"))
-                try:
-                    normalized_mod_id = int(raw_mod_id)
-                except (TypeError, ValueError):
-                    continue
-
-                raw_sort_order = item.get("sort_order", index)
-                try:
-                    normalized_sort_order = int(raw_sort_order)
-                except (TypeError, ValueError):
-                    normalized_sort_order = index
-
-                normalized_modpack_mod_items.append({
-                    "mod_id": normalized_mod_id,
-                    "sort_order": normalized_sort_order,
-                    "auto_added": bool(item.get("auto_added", False)),
-                })
-
-        normalized_modpack_mod_items.sort(key=lambda item: (item["sort_order"], item["mod_id"]))
-        if normalized_modpack_mod_items:
-            modpack_mod_cards = await _load_mod_cards_by_ids(
-                handler,
-                normalized_modpack_mod_items,
-                mods_list_path,
-                resources_list_path,
-            )
-            modpack_mods = list(modpack_mod_cards.values())
-
-    info_result["short_description"] = str(info_result.get("short_description") or "")
-    info_result["description"] = str(info_result.get("description") or "")
-    info_result["description_html"] = render_description_html(info_result["description"])
+    _prepare_description_and_rating(info_result)
     info_result["size"] = ""
     info_result["size_unpacked"] = ""
     info_result["downloads"] = _coerce_int(info_result.get("downloads"))
-    info_result["rating"] = _coerce_int(info_result.get("rating"))
-    info_result["votes_count"] = _coerce_int(info_result.get("votes_count"))
-    info_result["rating_summary"] = _steam_rating_summary(
-        info_result["rating"],
-        info_result["votes_count"],
-    )
     info_result["dependencies"] = {"count": 0, "items": []}
     info_result["conflicts"] = {"count": 0, "items": []}
     info_result["id"] = _coerce_int(info_result.get("id"), modpack_id)
@@ -2259,7 +2237,7 @@ async def _render_modpack_view_page(handler, modpack_id, mod_access, right_edit_
     return handler.finish(page_html)
 
 async def user(user_id):
-    launge = "ru"
+    language = "ru"
 
     async with UserHandler() as handler:
         profile_access = await handler.get_profile_access(user_id)
@@ -2297,7 +2275,7 @@ async def user(user_id):
         if profile_info_code != 200:
             return _render_api_error(handler, profile_info, profile_info_code)
 
-        profile_info = _prepare_profile_page_payload(profile_info, user_id, launge)
+        profile_info = _prepare_profile_page_payload(profile_info, user_id, language)
 
         if profile_info['delete_user']:
             return handler.finish(handler.render("error.html", error="Профиль удален", error_title="Этот профиль удален!")), 404
@@ -2415,7 +2393,7 @@ async def user(user_id):
 
 
 async def user_rating_history(user_id):
-    launge = "ru"
+    language = "ru"
 
     async with UserHandler() as handler:
         profile_access = await handler.get_profile_access(user_id)
@@ -2441,7 +2419,7 @@ async def user_rating_history(user_id):
         if profile_info_code != 200:
             return _render_api_error(handler, profile_info, profile_info_code)
 
-        profile_info = _prepare_profile_page_payload(profile_info, user_id, launge)
+        profile_info = _prepare_profile_page_payload(profile_info, user_id, language)
         if profile_info['delete_user']:
             return handler.finish(handler.render("error.html", error="Профиль удален", error_title="Этот профиль удален!")), 404
 
@@ -2453,7 +2431,7 @@ async def user_rating_history(user_id):
         return handler.finish(page)
 
 async def user_settings(user_id):
-    launge = "ru"
+    language = "ru"
 
     async with UserHandler() as handler:
         editable = await handler.get_profile_access(user_id)
@@ -2486,7 +2464,7 @@ async def user_settings(user_id):
         if info_profile["general"].get("mute_until"):
             input_date = parse_api_datetime(str(info_profile["general"]["mute_until"]))
             info_profile["general"]["mute_until_js"] = format_js_datetime(input_date)
-            info_profile["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=launge)
+            info_profile["general"]["mute_until"] = dates.format_datetime(input_date, format="short", locale=language)
 
         if info_profile['general']['about'] is None or len(info_profile['general']['about']) <= 0:
             info_profile['general']['about_enable'] = False
@@ -2496,7 +2474,7 @@ async def user_settings(user_id):
 
         input_date = parse_api_datetime(info_profile['general']['registration_date'])
         info_profile['general']['registration_date_js'] = format_js_datetime(input_date)
-        info_profile['general']['registration_date'] = dates.format_date(input_date, locale=launge)
+        info_profile['general']['registration_date'] = dates.format_date(input_date, locale=language)
 
         if info_profile['general']['avatar_url'] is None or len(info_profile['general']['avatar_url']) <= 0:
             info_profile['general']['avatar_url'] = "/assets/images/no-avatar.jpg"
