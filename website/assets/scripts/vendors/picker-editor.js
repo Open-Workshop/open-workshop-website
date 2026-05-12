@@ -91,7 +91,10 @@
       pendingCounter: 0,
       requestCounter: 0,
       context: { ...(config.context || {}) },
+      loadingShowMoreHidden: true,
+      loadingShowMoreText: '',
     };
+    const editorKind = String(root.dataset.pickerEditorKind || '').trim().toLowerCase();
 
     function getItems(listNode) {
       return Array.from(listNode.querySelectorAll('[data-picker-id]'));
@@ -103,7 +106,7 @@
 
     function getSelectableItems(listNode) {
       return getItems(listNode).filter(function (node) {
-        return !isGhost(node);
+        return !isGhost(node) && !isLoadingPlaceholder(node);
       });
     }
 
@@ -130,6 +133,10 @@
 
     function isPending(node) {
       return node.dataset.pickerPending === 'true' || node.classList.contains('is-pending');
+    }
+
+    function isLoadingPlaceholder(node) {
+      return node.dataset.pickerLoadingPlaceholder === 'true' || node.classList.contains('picker-editor__item--loading');
     }
 
     function isVisible(node) {
@@ -232,6 +239,114 @@
       return element;
     }
 
+    function getLoadingPlaceholderVariant() {
+      const configured = normalizeName(config.loadingPlaceholderVariant).toLowerCase();
+      if (configured === 'chip' || configured === 'row') {
+        return configured;
+      }
+
+      return editorKind === 'tags' || editorKind === 'genres' ? 'chip' : 'row';
+    }
+
+    function getLoadingPlaceholderCount() {
+      const configuredCount = Number(config.loadingPlaceholderCount);
+      if (Number.isFinite(configuredCount) && configuredCount > 0) {
+        return Math.max(1, Math.min(Math.floor(configuredCount), 12));
+      }
+
+      return getLoadingPlaceholderVariant() === 'chip' ? 8 : 4;
+    }
+
+    function createLoadingPlaceholderItem(index) {
+      const variant = getLoadingPlaceholderVariant();
+      const element = document.createElement('div');
+      element.className = `picker-editor__item picker-editor__item--loading picker-editor__item--${variant}`;
+      element.dataset.pickerId = `loading-placeholder-${index + 1}`;
+      element.dataset.pickerName = `loading-placeholder-${index + 1}`;
+      element.dataset.pickerLoadingPlaceholder = 'true';
+      element.setAttribute('aria-hidden', 'true');
+      element.setAttribute('tabindex', '-1');
+
+      if (variant === 'chip') {
+        const bar = document.createElement('span');
+        const widths = [72, 96, 64, 120, 84, 140, 78, 104];
+        bar.className = 'picker-editor__placeholder-bar picker-editor__placeholder-bar--chip';
+        bar.style.width = `${widths[index % widths.length]}px`;
+        element.appendChild(bar);
+        return element;
+      }
+
+      const media = document.createElement('span');
+      media.className = 'picker-editor__placeholder-media';
+
+      const content = document.createElement('span');
+      content.className = 'picker-editor__placeholder-content';
+
+      const title = document.createElement('span');
+      title.className = 'picker-editor__placeholder-bar picker-editor__placeholder-bar--title';
+      title.style.width = `${[62, 74, 58, 68][index % 4]}%`;
+
+      const subtitle = document.createElement('span');
+      subtitle.className = 'picker-editor__placeholder-bar picker-editor__placeholder-bar--subtitle';
+      subtitle.style.width = `${[42, 56, 48, 38][index % 4]}%`;
+
+      content.appendChild(title);
+      content.appendChild(subtitle);
+      element.appendChild(media);
+      element.appendChild(content);
+      return element;
+    }
+
+    function clearLoadingPlaceholders() {
+      getItems(resultsList).filter(isLoadingPlaceholder).forEach(function (node) {
+        node.remove();
+      });
+    }
+
+    function captureShowMoreState() {
+      if (!showMoreNode) return;
+
+      state.loadingShowMoreHidden = showMoreNode.hidden;
+      state.loadingShowMoreText = showMoreNode.textContent;
+    }
+
+    function restoreShowMoreState() {
+      if (!showMoreNode) return;
+
+      showMoreNode.textContent = state.loadingShowMoreText;
+      showMoreNode.hidden = state.loadingShowMoreHidden;
+    }
+
+    function setLoadingState(isLoading) {
+      root.classList.toggle('is-loading', isLoading);
+      resultsList.classList.toggle('is-loading', isLoading);
+
+      if (isLoading) {
+        root.setAttribute('aria-busy', 'true');
+        resultsList.setAttribute('aria-busy', 'true');
+      } else {
+        root.removeAttribute('aria-busy');
+        resultsList.removeAttribute('aria-busy');
+      }
+    }
+
+    function showLoadingPlaceholders() {
+      clearLoadingPlaceholders();
+
+      const placeholderCount = getLoadingPlaceholderCount();
+      for (let index = 0; index < placeholderCount; index += 1) {
+        insertItem(resultsList, createLoadingPlaceholderItem(index));
+      }
+
+      if (showMoreNode) {
+        showMoreNode.hidden = true;
+      }
+
+      setLoadingState(true);
+      syncListState();
+      requestLayout(root);
+    }
+
     function isSelected(itemId) {
       const selectedNode = findById(selectedList, itemId);
       return Boolean(selectedNode && isVisible(selectedNode));
@@ -289,8 +404,8 @@
       const queryKey = getNameKey(queryValue);
       const requestId = ++state.requestCounter;
 
-      root.classList.add('is-loading');
-      resultsList.classList.add('is-loading');
+      captureShowMoreState();
+      showLoadingPlaceholders();
 
       try {
         const payload = await config.fetchSearchResults(queryValue, api);
@@ -316,11 +431,14 @@
         syncListState();
       } catch (error) {
         if (requestId !== state.requestCounter) return;
+        clearLoadingPlaceholders();
+        restoreShowMoreState();
+        syncListState();
         showToast('Ошибка', error.message || String(error), 'danger');
       } finally {
         if (requestId === state.requestCounter) {
-          root.classList.remove('is-loading');
-          resultsList.classList.remove('is-loading');
+          setLoadingState(false);
+          requestLayout(root);
         }
       }
     }
@@ -328,6 +446,7 @@
     function toggle(itemNode) {
       const target = resolveElement(itemNode);
       if (!target) return;
+      if (isLoadingPlaceholder(target)) return;
 
       const itemId = getItemId(target);
       if (itemId === '') return;

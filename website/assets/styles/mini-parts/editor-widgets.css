@@ -189,6 +189,77 @@
   flex: none;
 }
 
+.picker-editor__results-list.is-loading > .picker-editor__item:not(.picker-editor__item--loading) {
+  display: none;
+}
+
+.picker-editor__item--loading {
+  pointer-events: none;
+  user-select: none;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-bar,
+.picker-editor__item--loading .picker-editor__placeholder-media {
+  display: block;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.05));
+  background-size: 220% 100%;
+  animation: picker-placeholder-wave 1.3s ease-in-out infinite;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-bar {
+  min-height: 0.95rem;
+  border-radius: 999px;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-bar--chip {
+  height: 0.95rem;
+  margin: 0.15rem 0;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-media {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: var(--radius-sm);
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-content {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-bar--title {
+  height: 0.95rem;
+}
+
+.picker-editor__item--loading .picker-editor__placeholder-bar--subtitle {
+  height: 0.78rem;
+  width: 58%;
+  max-width: 180px;
+}
+
+@keyframes picker-placeholder-wave {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picker-editor__item--loading .picker-editor__placeholder-bar,
+  .picker-editor__item--loading .picker-editor__placeholder-media {
+    animation: none;
+  }
+}
+
 .picker-editor__item--chip {
   display: inline-flex;
   align-items: center;
