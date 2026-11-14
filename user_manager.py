@@ -297,6 +297,7 @@ class UserHandler:
             manager_address=config.MANAGER_ADDRESS,
             storage_address=config.STORAGE_ADDRESS,
             user_profile=self.profile,
+            analytics_user_id=self.id if self.authenticated and self.id >= 0 else None,
             user_rights=self.session_access,
             session_access=self.session_access,
             ow=app_config.PUBLIC_CONFIG,

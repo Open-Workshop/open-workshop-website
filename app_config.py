@@ -5,10 +5,15 @@ injected into templates/JS safely.
 """
 from __future__ import annotations
 
+import os
 import ow_config
 
 
 PUBLIC_CONFIG: dict = {
+    "analytics": {
+        "site_id": os.environ.get("RYBBIT_SITE_ID", ""),
+        "script_url": "https://analytics.miskler.ru/api/script.js",
+    },
     "site": {
         "name": "Open Workshop",
         "base_url": "https://openworkshop.miskler.ru",

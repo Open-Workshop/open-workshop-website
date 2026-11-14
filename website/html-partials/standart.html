@@ -73,6 +73,12 @@
     <link href="/assets/styles/mini-parts/toast-modern.css" rel="stylesheet"/>
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
     <script id="ow-config" type="application/json">{{ ow | tojson }}</script>
+    {% if ow.analytics.site_id %}
+    <script defer src="/assets/scripts/analytics.js"
+      data-site-id="{{ ow.analytics.site_id }}"
+      data-script-url="{{ ow.analytics.script_url }}"
+      data-user-id="{{ analytics_user_id if analytics_user_id is defined and analytics_user_id is not none else '' }}"></script>
+    {% endif %}
   </head>
 	  <body
       manager-url="{{ ow.api.base }}"
@@ -82,19 +88,6 @@
       data-can-add-game="{{ 'true' if session_access and session_access.can_add_game else 'false' }}"
       data-can-edit-game="{{ 'true' if session_access and session_access.can_edit_game else 'false' }}"
     >
-    <!-- Yandex.Metrika counter -->
-    <script type="text/javascript">
-        (function(m,e,t,r,i,k,a){
-            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-            m[i].l=1*new Date();
-            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=106507343', 'ym');
-
-        ym(106507343, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
-    </script>
-    <noscript><div><img src="https://mc.yandex.ru/watch/106507343" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-    <!-- /Yandex.Metrika counter -->
 
     {% include 'html-partials/header.html' %}
 

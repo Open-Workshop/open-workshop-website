@@ -24,10 +24,13 @@
         const apiPaths = window.OWCore.getApiPaths();
         const apiBase = window.OWCore.getApiBase();
         const sessionEndpoint = apiPaths.session.logout;
-        await fetch(`${apiBase}${sessionEndpoint.path}`, {
+        const response = await fetch(`${apiBase}${sessionEndpoint.path}`, {
             method: sessionEndpoint.method,
             credentials: 'include'
         });
+        if (response.ok && window.OWAnalytics) {
+            window.OWAnalytics.clearIdentity();
+        }
         location.reload();
     }
 
