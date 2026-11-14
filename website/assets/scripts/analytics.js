@@ -1,6 +1,8 @@
 (function () {
     const settings = document.currentScript.dataset;
     let userId = settings.userId || '';
+    const userName = (settings.userName || '').trim();
+    const userGrade = (settings.userGrade || '').trim();
     const identityKey = 'rybbit-user-id';
 
     // Rybbit reads the stored ID before its first pageview. Set it before
@@ -26,7 +28,13 @@
     tracker.src = trackerUrl.toString();
     tracker.async = true;
     tracker.onload = function () {
-        if (userId && window.rybbit) window.rybbit.identify(userId);
+        if (userId && window.rybbit) {
+            const traits = {};
+            if (userName) traits.username = userName;
+            if (settings.gradeKnown === 'true') traits.grade = userGrade || null;
+            if (Object.keys(traits).length) window.rybbit.identify(userId, traits);
+            else window.rybbit.identify(userId);
+        }
     };
     document.head.appendChild(tracker);
 
