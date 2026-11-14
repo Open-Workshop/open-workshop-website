@@ -72,4 +72,19 @@ test('logout during tracker loading cannot restore the old identity', () => {
     state.tracker.onload();
     assert.equal(state.values.has('rybbit-user-id'), false);
     assert.deepEqual(state.calls, [['clear']]);
+    assert.equal(state.window.OWAnalytics.getUserId(), '');
+});
+
+test('events are queued until the analytics script loads', () => {
+    const state = setup('7', '3');
+    const trackerApi = state.window.rybbit;
+    delete state.window.rybbit;
+    state.window.OWAnalytics.track('content_created', { entity_kind: 'mod', entity_id: '42' });
+    assert.deepEqual(state.calls, []);
+    state.window.rybbit = trackerApi;
+    state.tracker.onload();
+    assert.equal(state.calls[0][0], 'identify');
+    assert.deepEqual(JSON.parse(JSON.stringify(state.calls[1])), [
+        'event', 'content_created', { entity_kind: 'mod', entity_id: '42' }
+    ]);
 });

@@ -8,6 +8,14 @@
     const settings = options || {};
     const api = settings.api;
     const entityKind = String(settings.entityKind || 'mod').toLowerCase();
+    const entityId = Number(settings.entityId || 0);
+    function trackAction(name, details) {
+      try {
+        if (window.OWAnalytics && typeof window.OWAnalytics.track === 'function') {
+          window.OWAnalytics.track(name, details);
+        }
+      } catch (_) { /* analytics must not affect uploads */ }
+    }
     const ENTITY_FORMS = {
       mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
       modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
@@ -126,6 +134,14 @@
       }
 
       busy = true;
+      let failureReported = false;
+      function reportFailure(stage) {
+        if (failureReported) return;
+        failureReported = true;
+        trackAction('version_upload_failed', {
+          entity_kind: entityKind, entity_id: String(entityId), stage,
+        });
+      }
       runtime.setButtonBusy(uploadButton, true);
       notify({ stage: 'starting' });
 
@@ -186,6 +202,7 @@
 
           const poll = async function () {
             if (Date.now() - finalizeStart > maxFinalizeMs) {
+              reportFailure('processing_timeout');
               setStatus('Обработка занимает слишком долго');
               runtime.showToast(
                 'Обработка занимает слишком долго',
@@ -203,6 +220,9 @@
             const nextResult = info || null;
             const nextDate = nextResult ? nextResult.file_updated_at : null;
               if (nextDate && nextDate !== previousDate) {
+              trackAction('version_upload_completed', {
+                entity_kind: entityKind, entity_id: String(entityId), mode: uploadMode,
+              });
               setStatus('Новая версия сохранена');
               runtime.showToast('Готово', 'Новая версия ' + entityForms.genitive + ' загружена', 'success');
               notify({ stage: 'complete' });
@@ -236,6 +256,7 @@
               }
 
               if (data.event === 'error') {
+                reportFailure('processing');
                 setStatus('Ошибка загрузки');
                 runtime.showToast('Ошибка', data.message || 'Ошибка загрузки', 'danger');
               }
@@ -248,6 +269,7 @@
         await api.uploadBinaryToTransfer(uploadUrl, file);
         startFinalizePoll();
       } catch (error) {
+        reportFailure('transfer');
         busy = false;
         runtime.setButtonBusy(uploadButton, false);
         setStatus('Ошибка загрузки');

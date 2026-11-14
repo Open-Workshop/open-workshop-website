@@ -120,6 +120,7 @@
       ? runtime.requireFactory('mod-edit-upload-flow')({
         api,
         entityKind,
+        entityId: modId,
         uploadButton: root.querySelector('[data-action="mod-upload-version"]'),
         progressRoot: root.querySelector('[data-upload-progress-root]'),
       })
@@ -128,6 +129,7 @@
     const saveService = runtime.requireFactory('mod-edit-save-service')({
       api,
       entityKind,
+      entityId: modId,
       saveButton: root.querySelector('[data-action="mod-save"]'),
       deleteButton: root.querySelector('[data-action="mod-delete"]'),
       deleteConfirmInput: root.querySelector('#delete-mod-confirm'),

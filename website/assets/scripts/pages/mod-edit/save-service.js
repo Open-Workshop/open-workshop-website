@@ -23,6 +23,14 @@
     const conflictsEditorId = String(settings.conflictsEditorId || 'mod-conflicts-editor');
     const modpackModsEditorId = String(settings.modpackModsEditorId || 'modpack-mods-editor');
     const entityKind = String(settings.entityKind || 'mod').toLowerCase();
+    const entityId = Number(settings.entityId || 0);
+    function trackAction(name, details) {
+      try {
+        if (window.OWAnalytics && typeof window.OWAnalytics.track === 'function') {
+          window.OWAnalytics.track(name, details);
+        }
+      } catch (_) { /* analytics must not affect saving */ }
+    }
     const ENTITY_FORMS = {
       mod: { nominative: 'мод', genitive: 'мода', accusative: 'мод' },
       modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак' },
@@ -463,6 +471,13 @@
       }
 
       const savePlan = buildSavePlan(changes);
+      const analyticsDetails = {
+        entity_kind: entityKind,
+        entity_id: String(entityId),
+        sections: savePlan.map(function (step) { return step.key; }).filter(function (key) {
+          return key !== 'finish' && key !== 'reloading';
+        }),
+      };
       const hasStep = function (stepKey) {
         return savePlan.some(function (step) {
           return step.key === stepKey;
@@ -488,6 +503,16 @@
             saveProgress.setStep('base', 'active');
           }
           await api.updateMod(buildPatchPayload(changes.base));
+          const visibility = changes.base.public;
+          if (visibility && visibility.changed) {
+            const previous = Number(visibility.startValue);
+            const current = Number(visibility.value);
+            if (current === 0 && previous !== 0) {
+              trackAction('content_published', { entity_kind: entityKind, entity_id: String(entityId) });
+            } else if (previous === 0 && current !== 0) {
+              trackAction('content_unpublished', { entity_kind: entityKind, entity_id: String(entityId) });
+            }
+          }
         }
 
         if (hasStep('authors')) {
@@ -541,12 +566,14 @@
 
         runtime.showToast('Готово', 'Изменения сохранены', 'success');
         saveCompleted = true;
+        trackAction('content_edit_saved', analyticsDetails);
         await waitForReloadPaint();
         if (unloadGuard) {
           unloadGuard.suppressOnce();
         }
         window.location.reload();
       } catch (error) {
+        trackAction('content_edit_failed', analyticsDetails);
         if (saveProgress) {
           saveProgress.fail(error && error.message ? error.message : 'Не удалось сохранить изменения ' + entityForms.genitive);
         }

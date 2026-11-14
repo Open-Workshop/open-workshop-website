@@ -4,6 +4,17 @@
     const userName = (settings.userName || '').trim();
     const userGrade = (settings.userGrade || '').trim();
     const identityKey = 'rybbit-user-id';
+    const pendingEvents = [];
+
+    function sendEvent(name, properties) {
+        try {
+            if (!window.rybbit || typeof window.rybbit.event !== 'function') return false;
+            window.rybbit.event(name, properties || {});
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
 
     // Rybbit reads the stored ID before its first pageview. Set it before
     // loading the tracker so a shared browser cannot attribute it to an old user.
@@ -15,6 +26,12 @@
     }
 
     window.OWAnalytics = {
+        track(name, properties) {
+            if (!sendEvent(name, properties) && pendingEvents.length < 30) {
+                pendingEvents.push([name, properties]);
+            }
+        },
+        getUserId() { return userId; },
         clearIdentity() {
             userId = '';
             try { localStorage.removeItem(identityKey); } catch (_) { /* unavailable */ }
@@ -35,15 +52,16 @@
             if (Object.keys(traits).length) window.rybbit.identify(userId, traits);
             else window.rybbit.identify(userId);
         }
+        while (pendingEvents.length && sendEvent(...pendingEvents[0])) pendingEvents.shift();
     };
     document.head.appendChild(tracker);
 
     document.addEventListener('click', function (event) {
         const target = event.target instanceof Element ? event.target.closest('.download-button') : null;
-        if (!target || !window.rybbit) return;
+        if (!target) return;
         const isModpack = target.matches('[data-modpack-download-selected]');
         const match = (target.getAttribute('href') || '').match(/^\/mod\/(\d+)\/download(?:[?#]|$)/);
-        if (isModpack) window.rybbit.event('modpack_download_click');
-        else if (match) window.rybbit.event('mod_download_click', { mod_id: match[1] });
+        if (isModpack) window.OWAnalytics.track('modpack_download_click');
+        else if (match) window.OWAnalytics.track('mod_download_click', { mod_id: match[1] });
     });
 })();

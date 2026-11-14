@@ -74,7 +74,7 @@
     <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js"></script>
     <script id="ow-config" type="application/json">{{ ow | tojson }}</script>
     {% if ow.analytics.site_id %}
-    <script defer src="/assets/scripts/analytics.js?v=2"
+    <script defer src="/assets/scripts/analytics.js?v=3"
       data-site-id="{{ ow.analytics.site_id }}"
       data-script-url="{{ ow.analytics.script_url }}"
       data-user-id="{{ analytics_user_id if analytics_user_id is defined and analytics_user_id is not none else '' }}"

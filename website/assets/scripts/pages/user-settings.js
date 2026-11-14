@@ -6,6 +6,19 @@
   const ow = window.OWCore.getConfig ? window.OWCore.getConfig() : {};
   const rightsList = (ow.rights && ow.rights.list) || [];
   const userId = root.dataset.userId;
+  function trackProfileChange(name, section, extra) {
+    try {
+      const analytics = window.OWAnalytics;
+      if (!analytics || typeof analytics.track !== 'function') return;
+      const actorId = typeof analytics.getUserId === 'function' ? analytics.getUserId() : '';
+      analytics.track(name, {
+        target_user_id: String(userId),
+        scope: actorId ? (String(actorId) === String(userId) ? 'self' : 'other') : 'unknown',
+        section,
+        ...(extra || {}),
+      });
+    } catch (_) { /* analytics must not affect profile editing */ }
+  }
   const aboutView = document.querySelector('#page-profile article#mod-description');
   const avatarUploadEndpoint = apiPaths.mod && apiPaths.mod.file ? apiPaths.mod.file : null;
 
@@ -282,7 +295,9 @@
           'Профиль',
         );
         profileSaved = true;
+        trackProfileChange('profile_update_completed', 'profile', { fields: Object.keys(profilePayload) });
       } catch (error) {
+        trackProfileChange('profile_update_failed', 'profile');
         new Toast({
           title: 'Профиль',
           text: error && error.message ? error.message : 'При запросе на сервер произошла непредвиденная ошибка...',
@@ -320,7 +335,9 @@
           'Права',
         );
         rightsSaved = true;
+        trackProfileChange('profile_update_completed', 'permissions');
       } catch (error) {
+        trackProfileChange('profile_update_failed', 'permissions');
         new Toast({
           title: 'Права',
           text: error && error.message ? error.message : 'При запросе на сервер произошла непредвиденная ошибка...',
@@ -337,7 +354,9 @@
       try {
         await deleteAvatar();
         avatarSaved = true;
+        trackProfileChange('profile_update_completed', 'avatar_removed');
       } catch (error) {
+        trackProfileChange('profile_update_failed', 'avatar_removed');
         new Toast({
           title: 'Аватар',
           text: error && error.message ? error.message : 'Не удалось сбросить аватар',
@@ -351,7 +370,9 @@
       try {
         await uploadAvatar(avatarFile);
         avatarSaved = true;
+        trackProfileChange('profile_avatar_transfer_accepted', 'avatar_upload');
       } catch (error) {
+        trackProfileChange('profile_update_failed', 'avatar_upload');
         new Toast({
           title: 'Аватар',
           text: error && error.message ? error.message : 'Не удалось загрузить аватар',

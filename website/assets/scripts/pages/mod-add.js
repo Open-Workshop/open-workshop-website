@@ -17,6 +17,13 @@
     modpack: { nominative: 'модпак', genitive: 'модпака', accusative: 'модпак', pluralGenitive: 'модпаков' },
   };
   const entityForms = ENTITY_FORMS[entityKind] || ENTITY_FORMS.mod;
+  function trackAction(name, details) {
+    try {
+      if (window.OWAnalytics && typeof window.OWAnalytics.track === 'function') {
+        window.OWAnalytics.track(name, details);
+      }
+    } catch (_) { /* analytics must not affect creation */ }
+  }
   const apiBase = window.OWCore.getApiBase();
   const apiPaths = window.OWCore.getApiPaths();
   const modApi = apiPaths.mod || {};
@@ -351,8 +358,10 @@
         throw new Error('Не удалось получить ID ' + entityForms.genitive);
       }
 
+      trackAction('content_created', { entity_kind: entityKind, entity_id: String(createdModId) });
       window.location.href = `/${routePrefix}/${createdModId}/edit`;
     } catch (error) {
+      trackAction('content_creation_failed', { entity_kind: entityKind });
       printDanger(error && error.message ? error.message : 'Не удалось создать ' + entityForms.genitive);
       setSubmitInProgress(false);
     }
@@ -390,6 +399,14 @@
     }
 
     setSubmitInProgress(true);
+    let createdModId = null;
+    let uploadFailureReported = false;
+    let uploadStage = 'prepare';
+    function reportUploadFailure(stage) {
+      if (uploadFailureReported) return;
+      uploadFailureReported = true;
+      trackAction('initial_upload_failed', { entity_kind: entityKind, entity_id: String(createdModId), stage });
+    }
 
     try {
       const createdModResponse = await window.OWCore.request(apiBase + addModEndpoint.path, {
@@ -413,12 +430,13 @@
         throw new Error(extractErrorText(createdModResponse, `Ошибка (${createdModResponse.status})`));
       }
 
-      const createdModId = extractCreatedIdFromResponse(createdModResponse);
+      createdModId = extractCreatedIdFromResponse(createdModResponse);
 
       if (createdModId === null) {
         throw new Error('Не удалось получить ID ' + entityForms.genitive);
       }
 
+      trackAction('content_created', { entity_kind: entityKind, entity_id: String(createdModId) });
       showUploadProgress();
 
       const transfer = await startTransferViaManager({
@@ -470,6 +488,7 @@
 
         const poll = async () => {
           if (Date.now() - finalizeStart > maxFinalizeMs) {
+            reportUploadFailure('processing_timeout');
             hideUploadProgress();
             new Toast({
               title: 'Обработка занимает слишком долго',
@@ -488,6 +507,7 @@
             const data = await resp.json().catch(() => null);
             const condition = data ? data.condition : null;
             if (condition === 'published') {
+              trackAction('initial_upload_completed', { entity_kind: entityKind, entity_id: String(modId) });
               hideUploadProgress();
               window.location.href = `/${routePrefix}/${modId}/edit`;
               return;
@@ -499,6 +519,7 @@
         poll();
       }
 
+      uploadStage = 'transfer';
       fetch(finalUploadUrl, {
         method: 'POST',
         body: fileToUpload,
@@ -509,6 +530,7 @@
       })
         .then(async (resp) => {
           if (!resp.ok) {
+            reportUploadFailure('transfer');
             const text = await resp.text();
             new Toast({
               title: 'Ошибка загрузки',
@@ -524,6 +546,7 @@
           startFinalizePoll();
         })
         .catch(() => {
+          reportUploadFailure('transfer');
           new Toast({
             title: 'Сетевая ошибка',
             text: 'Не удалось отправить файл',
@@ -547,6 +570,7 @@
               startFinalizePoll();
               ws.close();
             } else if (msg.event === 'error') {
+              reportUploadFailure('processing');
               hideUploadProgress();
               new Toast({
                 title: 'Ошибка загрузки',
@@ -567,6 +591,8 @@
         };
       }
     } catch (error) {
+      if (createdModId === null) trackAction('content_creation_failed', { entity_kind: entityKind });
+      else reportUploadFailure(uploadStage);
       hideUploadProgress();
       new Toast({
         title: 'Ошибка загрузки',
