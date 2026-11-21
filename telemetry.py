@@ -216,6 +216,7 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
         from opentelemetry import trace
         from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
         from opentelemetry.instrumentation.flask import FlaskInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
         from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -253,6 +254,9 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
         )
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
+
+        # The sitemap index creates its SQLAlchemy engine lazily after startup.
+        SQLAlchemyInstrumentor().instrument()
 
         FlaskInstrumentor().instrument_app(
             app,

@@ -12,7 +12,8 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import ow_config
-from sqlalchemy import Column, DateTime, Integer, create_engine, inspect, text
+import sqlalchemy
+from sqlalchemy import Column, DateTime, Integer, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -108,7 +109,7 @@ def _create_index_database_if_needed() -> None:
         return
 
     database = _index_database()
-    server_engine = create_engine(_mysql_url(None), pool_pre_ping=True)
+    server_engine = sqlalchemy.create_engine(_mysql_url(None), pool_pre_ping=True)
     try:
         with server_engine.begin() as connection:
             connection.execute(
@@ -126,7 +127,7 @@ def _get_session_factory() -> sessionmaker:
 
     if _SessionLocal is None:
         _create_index_database_if_needed()
-        _engine = create_engine(_mysql_url(_index_database()), pool_pre_ping=True)
+        _engine = sqlalchemy.create_engine(_mysql_url(_index_database()), pool_pre_ping=True)
         Base.metadata.create_all(_engine)
         _drop_unused_columns(_engine)
         _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
