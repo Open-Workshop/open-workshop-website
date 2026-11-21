@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from aiohttp import ClientSession
 from flask import make_response, render_template, request
 
@@ -151,7 +153,7 @@ class UserHandler:
         headers: dict | None = None,
     ) -> tuple[int, str | dict | list]:
         return await self._request_external(
-            config.MANAGER_ADDRESS,
+            os.environ.get("OW_INTERNAL_MANAGER_URL", "").rstrip("/") or config.MANAGER_ADDRESS,
             url,
             method=method,
             data=data,
