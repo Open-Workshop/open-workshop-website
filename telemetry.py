@@ -266,6 +266,17 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
             excluded_urls=flask_excluded_urls,
             response_hook=_flask_response_hook,
         )
+        from flask import request
+        http_logger = logging.getLogger("ow.http")
+        http_logger.setLevel(logging.INFO)
+
+        @app.after_request
+        def log_traced_request(response):
+            if trace.get_current_span().get_span_context().is_valid:
+                route = request.url_rule.rule if request.url_rule is not None else "unmatched"
+                http_logger.info("HTTP %s %s -> %s", request.method, route, response.status_code)
+            return response
+
         aiohttp_instrumentor = AioHttpClientInstrumentor()
         try:
             aiohttp_instrumentor.instrument(
