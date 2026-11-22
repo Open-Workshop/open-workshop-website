@@ -13,6 +13,8 @@ from urllib.parse import quote_plus
 
 import ow_config
 import sqlalchemy
+from opentelemetry import propagate, trace
+from opentelemetry.context import Context
 from sqlalchemy import Column, DateTime, Integer, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -268,24 +270,36 @@ def invalidate_sitemap_cache() -> None:
 
 
 async def _handle_message(message: Any) -> None:
-    try:
-        payload = json.loads(message.data.decode("utf-8"))
-    except Exception:
-        logger.exception("Invalid NATS mod event payload")
-        await message.ack()
-        return
+    parent = propagate.extract(getattr(message, "headers", None) or {}, context=Context())
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span(
+        "NATS process mod event",
+        context=parent,
+        kind=trace.SpanKind.CONSUMER,
+        attributes={
+            "messaging.system": "nats",
+            "messaging.operation.name": "process",
+            "messaging.destination.name": str(getattr(message, "subject", "mods")),
+        },
+    ):
+        try:
+            payload = json.loads(message.data.decode("utf-8"))
+        except Exception:
+            logger.exception("Invalid NATS mod event payload")
+            await message.ack()
+            return
 
-    if not isinstance(payload, dict):
-        await message.ack()
-        return
+        if not isinstance(payload, dict):
+            await message.ack()
+            return
 
-    if record_mod_event(payload):
-        logger.info(
-            "Applied mod event event=%s id=%s",
-            payload.get("event"),
-            payload.get("id"),
-        )
-    await message.ack()
+        if record_mod_event(payload):
+            logger.info(
+                "Applied mod event event=%s id=%s",
+                payload.get("event"),
+                payload.get("id"),
+            )
+        await message.ack()
 
 
 async def _consume_events() -> None:

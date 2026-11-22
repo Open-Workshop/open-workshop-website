@@ -4,6 +4,7 @@ import os
 
 from aiohttp import ClientSession
 from flask import make_response, render_template, request
+from opentelemetry import trace
 
 import app_config
 import ow_config as config
@@ -62,6 +63,11 @@ class UserHandler:
 
         self.authenticated = bool(self.access_context.get("authenticated"))
         self.id = int(self.access_context.get("owner_id", -1) or -1) if self.authenticated else -1
+
+        if self.authenticated and self.id > 0:
+            span = trace.get_current_span()
+            if span.is_recording():
+                span.set_attribute("enduser.id", str(self.id))
 
         if not self.authenticated or self.id < 0:
             print("Запрос от анонимного юзера")

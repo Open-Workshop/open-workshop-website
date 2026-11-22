@@ -1,6 +1,10 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
 import ow_config
 from user_manager import UserHandler
 
@@ -36,3 +40,32 @@ class InternalManagerUrlTests(unittest.IsolatedAsyncioTestCase):
         with patch.dict("os.environ", {"OW_INTERNAL_ACCESS_URL": ""}):
             await handler.fetch_access("/context")
         self.assertEqual(handler._request_external.await_args.args[0], ow_config.ACCESS_SERVICE_URL)
+
+    async def test_verified_account_id_is_recorded_on_the_request_span(self):
+        exporter = InMemorySpanExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        tracer = provider.get_tracer(__name__)
+        handler = UserHandler()
+        handler.fetch_access = AsyncMock(return_value=(200, {"authenticated": True, "owner_id": 42}))
+        handler.get_session_access = AsyncMock(return_value={})
+        handler.fetch = AsyncMock(return_value=(200, {"general": {}}))
+
+        with tracer.start_as_current_span("GET /mod/{id}"):
+            await handler._initialize_profile()
+
+        self.assertEqual(exporter.get_finished_spans()[0].attributes["enduser.id"], "42")
+        provider.shutdown()
+
+    async def test_anonymous_request_has_no_account_id(self):
+        exporter = InMemorySpanExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        handler = UserHandler()
+        handler.fetch_access = AsyncMock(return_value=(200, {"authenticated": False}))
+
+        with provider.get_tracer(__name__).start_as_current_span("GET /mod/{id}"):
+            await handler._initialize_profile()
+
+        self.assertNotIn("enduser.id", exporter.get_finished_spans()[0].attributes)
+        provider.shutdown()
