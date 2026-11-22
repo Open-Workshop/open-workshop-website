@@ -29,6 +29,7 @@
             credentials: 'include'
         });
         if (response.ok && window.OWAnalytics) {
+            window.OWAnalytics.trackLogout('user_initiated');
             window.OWAnalytics.clearIdentity();
         }
         location.reload();

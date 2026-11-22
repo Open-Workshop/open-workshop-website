@@ -1,4 +1,5 @@
 import unittest
+import datetime
 from unittest.mock import AsyncMock, patch
 
 from opentelemetry.sdk.trace import TracerProvider
@@ -56,6 +57,25 @@ class InternalManagerUrlTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(exporter.get_finished_spans()[0].attributes["enduser.id"], "42")
         provider.shutdown()
+
+    async def test_anonymous_expired_session_and_access_failure_are_distinct(self):
+        expired = UserHandler()
+        expired.cookies = {"accessJS": (datetime.datetime.now() - datetime.timedelta(minutes=1)).strftime("%d.%m.%Y/%H:%M:%S")}
+        expired.fetch_access = AsyncMock(return_value=(200, {"authenticated": False}))
+        await expired._initialize_profile()
+        self.assertEqual(expired.analytics_session_state, "anonymous")
+        self.assertEqual(expired.analytics_logout_reason, "credentials_expired")
+
+        invalid = UserHandler()
+        invalid.cookies = {"accessJS": (datetime.datetime.now() + datetime.timedelta(minutes=1)).strftime("%d.%m.%Y/%H:%M:%S")}
+        invalid.fetch_access = AsyncMock(return_value=(200, {"authenticated": False}))
+        await invalid._initialize_profile()
+        self.assertEqual(invalid.analytics_logout_reason, "session_invalid")
+
+        unavailable = UserHandler()
+        unavailable.fetch_access = AsyncMock(return_value=(503, {}))
+        await unavailable._initialize_profile()
+        self.assertEqual(unavailable.analytics_session_state, "unknown")
 
     async def test_anonymous_request_has_no_account_id(self):
         exporter = InMemorySpanExporter()

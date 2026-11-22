@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import datetime
 
 from aiohttp import ClientSession
 from flask import make_response, render_template, request
@@ -29,6 +30,8 @@ class UserHandler:
 
         self.id = -1
         self.authenticated = False
+        self.analytics_session_state = "unknown"
+        self.analytics_logout_reason = "session_invalid"
         self.access_context = {}
         self.profile = None
         self.response = None
@@ -58,6 +61,17 @@ class UserHandler:
         context_code, context = await self.fetch_access("/context", method="POST", json_data={})
         if context_code == 200 and isinstance(context, dict):
             self.access_context = context
+            if isinstance(context.get("authenticated"), bool):
+                self.analytics_session_state = "authenticated" if context["authenticated"] else "anonymous"
+                if not context["authenticated"]:
+                    try:
+                        access_expiry = datetime.datetime.strptime(
+                            (self.cookies or {}).get("accessJS", ""), "%d.%m.%Y/%H:%M:%S"
+                        )
+                        if access_expiry <= datetime.datetime.now():
+                            self.analytics_logout_reason = "credentials_expired"
+                    except (TypeError, ValueError):
+                        pass
         else:
             self.access_context = {}
 
@@ -306,6 +320,8 @@ class UserHandler:
             storage_address=config.STORAGE_ADDRESS,
             user_profile=self.profile,
             analytics_user_id=self.id if self.authenticated and self.id >= 0 else None,
+            analytics_session_state=self.analytics_session_state,
+            analytics_logout_reason=self.analytics_logout_reason,
             user_rights=self.session_access,
             session_access=self.session_access,
             ow=app_config.PUBLIC_CONFIG,
