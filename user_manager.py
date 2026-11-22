@@ -171,7 +171,7 @@ class UserHandler:
         if json_data is None and method in {"POST", "PUT", "PATCH"}:
             json_data = {}
         return await self._request_external(
-            config.ACCESS_SERVICE_URL,
+            os.environ.get("OW_INTERNAL_ACCESS_URL", "").rstrip("/") or config.ACCESS_SERVICE_URL,
             url,
             method=method,
             data=data,
