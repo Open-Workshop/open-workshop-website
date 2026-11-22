@@ -2710,17 +2710,17 @@ async def sitemap():
 
         # Регенерируем не только по возрасту, но и если кэш-файл оказался пустым.
         if diff > datetime.timedelta(hours=5) or file_stat.st_size == 0:
-            print("sitemap.xml regenerate")
+            app.logger.info("sitemap.xml regenerate")
             page = await sitemapper.generate(file_path, site_host=site_host)
         else:
             should_regenerate = False
 
     if should_regenerate and "page" not in locals():
-        print("sitemap.xml generate")
+        app.logger.info("sitemap.xml generate")
         page = await sitemapper.generate(file_path, site_host=site_host)
 
     if "page" not in locals():
-        print("sitemap.xml relevant")
+        app.logger.info("sitemap.xml relevant")
         with open(file_path, "r") as file:
             page = file.read()
 

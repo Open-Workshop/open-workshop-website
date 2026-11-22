@@ -204,6 +204,9 @@ def setup_uptrace_telemetry(app: Flask) -> bool:
         _LOG.info("UPTRACE_DSN is not configured, telemetry is disabled.")
         return False
 
+    from trace_logging import install_trace_log_context
+    install_trace_log_context()
+
     service_name = _read_setting("OTEL_SERVICE_NAME", "open-workshop-website")
     service_version = _read_setting("OTEL_SERVICE_VERSION", "dev")
     service_environment = _read_setting("OTEL_DEPLOYMENT_ENVIRONMENT", "production")

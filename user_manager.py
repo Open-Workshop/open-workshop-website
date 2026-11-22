@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 import datetime
 
 from aiohttp import ClientSession
@@ -19,6 +20,10 @@ from access_policy import (
     build_session_access,
     build_tag_access,
 )
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class UserHandler:
@@ -84,7 +89,7 @@ class UserHandler:
                 span.set_attribute("enduser.id", str(self.id))
 
         if not self.authenticated or self.id < 0:
-            print("Запрос от анонимного юзера")
+            logger.info("Запрос от анонимного юзера")
             self.profile = False
             self.response = False
             self.response_code = 200
@@ -108,9 +113,9 @@ class UserHandler:
 
             self.id = int(self.access_context.get("owner_id", self.id))
             self.profile = result.get("general", False)
-            print(f"Запрос от юзера {self.id}")
+            logger.info("Запрос от юзера %s", self.id)
         else:
-            print("Запрос от не анонимного юзера (ошибка сервера, оставляем сессию, но профиль недоступен)")
+            logger.warning("Запрос от не анонимного юзера: профиль недоступен, сессия сохранена")
             self.profile = False
             self.response = False
 
@@ -129,7 +134,7 @@ class UserHandler:
                 url = "/" + url
             url = base_url + url
 
-        print(f"Запрос к внешнему серверу: {url}", flush=True)
+        logger.info("Запрос к внешнему серверу: %s", url.split("?", 1)[0])
 
         async with self.session.request(
             method,

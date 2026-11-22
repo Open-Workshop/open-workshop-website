@@ -1,9 +1,13 @@
 from flask import render_template
 from pathlib import Path
 import tempfile
+import logging
 import os
 import time
 import mod_event_index
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 async def generate(file_path: str, site_host: str) -> str:
@@ -23,7 +27,7 @@ async def generate(file_path: str, site_host: str) -> str:
 
     result = mod_event_index.list_sitemap_mods(limit=49000)
 
-    print("SITEMAP RENDER START FROM: " + str(time.time() - start))
+    logger.info("Sitemap data loaded in %.3f seconds", time.time() - start)
 
     start = time.time()
     page = render_template("html-partials/standart_sitemap.xml", data=result, site_host=site_host)
@@ -44,5 +48,5 @@ async def generate(file_path: str, site_host: str) -> str:
             os.unlink(temp_path)
         raise
 
-    print("SITEMAP RENDER FINISH: " + str(time.time() - start))
+    logger.info("Sitemap rendered in %.3f seconds", time.time() - start)
     return page
