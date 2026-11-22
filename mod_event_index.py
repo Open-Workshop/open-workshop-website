@@ -173,7 +173,9 @@ def _parse_event_time(value: object) -> datetime.datetime:
 
 
 def init_index() -> None:
-    _get_session_factory()
+    tracer = trace.get_tracer(__name__)
+    with tracer.start_as_current_span("startup.mod_index"):
+        _get_session_factory()
 
 
 def is_enabled() -> bool:

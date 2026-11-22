@@ -144,6 +144,32 @@ class ModEventIndexTests(unittest.TestCase):
             self.assertEqual(store, {})
 
 
+class IndexStartupTraceTests(unittest.TestCase):
+    def test_index_schema_checks_share_startup_trace(self) -> None:
+        exporter = InMemorySpanExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        tracer = provider.get_tracer(__name__)
+
+        def initialize():
+            for name in ("CREATE database", "DESCRIBE known_mods", "SHOW known_mods"):
+                with tracer.start_as_current_span(name):
+                    pass
+
+        with (
+            patch.object(mod_event_index.trace, "get_tracer", return_value=tracer),
+            patch.object(mod_event_index, "_get_session_factory", side_effect=initialize),
+        ):
+            mod_event_index.init_index()
+
+        spans = {span.name: span for span in exporter.get_finished_spans()}
+        root = spans["startup.mod_index"]
+        for name in ("CREATE database", "DESCRIBE known_mods", "SHOW known_mods"):
+            self.assertEqual(spans[name].parent.span_id, root.context.span_id)
+            self.assertEqual(spans[name].context.trace_id, root.context.trace_id)
+        provider.shutdown()
+
+
 class ModEventTraceTests(unittest.IsolatedAsyncioTestCase):
     async def test_nats_context_connects_producer_consumer_and_database(self) -> None:
         exporter = InMemorySpanExporter()
