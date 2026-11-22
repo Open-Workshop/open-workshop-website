@@ -15,7 +15,7 @@ import ow_config
 import sqlalchemy
 from opentelemetry import propagate, trace
 from opentelemetry.context import Context
-from sqlalchemy import Column, DateTime, Integer, inspect, text
+from sqlalchemy import Column, DateTime, Integer, inspect, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -237,10 +237,11 @@ def list_sitemap_mods(limit: int = 49000) -> list[dict[str, Any]]:
     session = _get_session_factory()()
     try:
         rows = (
-            session.query(KnownMod)
-            .order_by(KnownMod.id)
-            .limit(int(limit))
-            .all()
+            session.execute(
+                select(KnownMod.id, KnownMod.date_update_file)
+                .order_by(KnownMod.id)
+                .limit(int(limit))
+            ).all()
         )
         result = []
         for row in rows:

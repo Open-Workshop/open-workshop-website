@@ -6,6 +6,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from opentelemetry import propagate, trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -54,8 +57,11 @@ class FakeSession:
     def delete(self, row):
         self.store.pop(row.id, None)
 
-    def query(self, _model):
-        return FakeQuery(self.store)
+    def execute(self, stmt):
+        query = FakeQuery(self.store)
+        if stmt._limit_clause is not None:
+            query.limit(stmt._limit_clause.value)
+        return query
 
     def commit(self):
         return None
@@ -142,6 +148,21 @@ class ModEventIndexTests(unittest.TestCase):
             self.assertTrue(deleted)
             self.assertEqual(mod_event_index.list_sitemap_mods(), [])
             self.assertEqual(store, {})
+
+
+class SitemapQueryTests(unittest.TestCase):
+    def test_sitemap_reads_only_columns_in_id_order_and_applies_limit(self):
+        engine = create_engine("sqlite:///:memory:")
+        mod_event_index.Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        with factory.begin() as session:
+            for mod_id in (3, 1, 2):
+                session.add(mod_event_index.KnownMod(id=mod_id, date_update_file=mod_event_index._parse_event_time("2026-11-22T10:00:00Z")))
+        with patch.object(mod_event_index, "_SessionLocal", factory):
+            rows = mod_event_index.list_sitemap_mods(limit=2)
+        self.assertEqual([row["id"] for row in rows], [1, 2])
+        self.assertEqual(rows[0]["date_update_file"].isoformat(), "2026-11-22T10:00:00+00:00")
+        engine.dispose()
 
 
 class IndexStartupTraceTests(unittest.TestCase):
