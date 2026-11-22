@@ -171,6 +171,34 @@ class IndexStartupTraceTests(unittest.TestCase):
 
 
 class ModEventTraceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_nats_consumer_setup_has_one_trace_and_drains(self) -> None:
+        import nats
+
+        exporter = InMemorySpanExporter()
+        provider = TracerProvider()
+        provider.add_span_processor(SimpleSpanProcessor(exporter))
+        tracer = provider.get_tracer(__name__)
+        js = SimpleNamespace(pull_subscribe=AsyncMock(return_value=object()))
+        client = SimpleNamespace(jetstream=lambda: js, drain=AsyncMock())
+
+        async def connect(**_kwargs):
+            with tracer.start_as_current_span("NATS connect"):
+                return client
+
+        with (
+            patch.object(mod_event_index.trace, "get_tracer", return_value=tracer),
+            patch.object(mod_event_index, "_nats_servers", return_value=["nats://localhost:4222"]),
+            patch.object(mod_event_index._stop_event, "is_set", return_value=True),
+            patch.object(nats, "connect", side_effect=connect),
+        ):
+            await mod_event_index._consume_events()
+
+        spans = {span.name: span for span in exporter.get_finished_spans()}
+        self.assertEqual(spans["NATS connect"].parent.span_id, spans["NATS consumer connect"].context.span_id)
+        js.pull_subscribe.assert_awaited_once()
+        client.drain.assert_awaited_once()
+        provider.shutdown()
+
     async def test_nats_context_connects_producer_consumer_and_database(self) -> None:
         exporter = InMemorySpanExporter()
         provider = TracerProvider()

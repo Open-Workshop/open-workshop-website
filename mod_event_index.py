@@ -319,18 +319,24 @@ async def _consume_events() -> None:
         _read_setting("MOD_EVENTS_DURABLE", "open-workshop-website-mod-index")
     )
 
-    nc = await nats.connect(
-        servers=servers,
-        connect_timeout=_read_float("MOD_EVENTS_CONNECT_TIMEOUT_SECONDS", 2),
-        name="open-workshop-website",
-    )
+    nc = None
     try:
-        js = nc.jetstream()
-        subscription = await js.pull_subscribe(
-            subject,
-            durable=durable,
-            stream=stream,
-        )
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "NATS consumer connect",
+            attributes={"messaging.system": "nats", "messaging.destination.name": subject},
+        ):
+            nc = await nats.connect(
+                servers=servers,
+                connect_timeout=_read_float("MOD_EVENTS_CONNECT_TIMEOUT_SECONDS", 2),
+                name="open-workshop-website",
+            )
+            js = nc.jetstream()
+            subscription = await js.pull_subscribe(
+                subject,
+                durable=durable,
+                stream=stream,
+            )
 
         while not _stop_event.is_set():
             try:
@@ -344,7 +350,8 @@ async def _consume_events() -> None:
             for message in messages:
                 await _handle_message(message)
     finally:
-        await nc.drain()
+        if nc is not None:
+            await nc.drain()
 
 
 def _run_consumer_loop() -> None:
