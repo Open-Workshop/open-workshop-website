@@ -2,7 +2,7 @@ from flask import Flask, render_template, send_from_directory, request, make_res
 from pathlib import Path
 from babel import dates
 import datetime
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientTimeout
 from zoneinfo import ZoneInfo
 import asyncio
 import json
@@ -15,6 +15,7 @@ import mod_event_index
 from access_policy import build_mod_rights
 from description_renderer import render_description_html
 from user_manager import UserHandler
+from outbound_http import outbound_http
 import ow_config
 import app_config
 from telemetry import setup_uptrace_telemetry
@@ -1550,19 +1551,13 @@ def _build_status_badge_summary(slug: str, payload, *, cached: bool = False, sta
 
 async def _fetch_status_badge_payload(url: str):
     timeout = ClientTimeout(total=4)
-    async with ClientSession(timeout=timeout) as session:
-        async with session.get(url) as response:
-            if response.status >= 400:
-                return None
-
-            try:
-                return await response.json()
-            except Exception:
-                text = await response.text()
-                try:
-                    return json.loads(text)
-                except json.JSONDecodeError:
-                    return None
+    try:
+        status, content, _ = await outbound_http.request("GET", url, timeout=timeout)
+        if status >= 400:
+            return None
+        return json.loads(content) if isinstance(content, str) else content
+    except (ValueError, TypeError):
+        return None
 
 
 async def _load_status_badge_summary(slug: str) -> dict | None:

@@ -4,12 +4,12 @@ import os
 import logging
 import datetime
 
-from aiohttp import ClientSession
 from flask import make_response, render_template, request
 from opentelemetry import trace
 
 import app_config
 import ow_config as config
+from outbound_http import outbound_http
 from access_policy import (
     build_game_access,
     build_game_add_access,
@@ -28,7 +28,6 @@ logger.setLevel(logging.INFO)
 
 class UserHandler:
     def __init__(self):
-        self.session = None
         self.cookies = None
         self.cookie_params = {}
         self.changed_cookies = {}
@@ -45,7 +44,6 @@ class UserHandler:
         self._access_cache = {}
 
     async def __aenter__(self):
-        self.session = ClientSession()
         self.cookies = dict(request.cookies)
         for key in self.cookies.keys():
             self.cookie_params[key] = {}
@@ -53,7 +51,7 @@ class UserHandler:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        await self.session.close()
+        pass
 
     async def _initialize_profile(self):
         """
@@ -136,39 +134,32 @@ class UserHandler:
 
         logger.info("Запрос к внешнему серверу: %s", url.split("?", 1)[0])
 
-        async with self.session.request(
+        status, content, response_cookies = await outbound_http.request(
             method,
             url,
             data=data,
             json=json_data,
             headers=headers,
-            cookies=self.cookies,
-        ) as response:
-            for key, cookie in response.cookies.items():
-                self.cookies[key] = cookie.value
-                self.changed_cookies[key] = cookie
-                max_age = cookie.get("max-age")
-                if max_age is not None and not isinstance(max_age, int):
-                    try:
-                        max_age = int(float(max_age))
-                    except (ValueError, TypeError):
-                        max_age = None
-                self.cookie_params[key] = {
-                    "max_age": max_age,
-                    "secure": cookie.get("secure"),
-                    "httponly": cookie.get("httponly"),
-                    "path": cookie.get("path", "/"),
-                    "domain": cookie.get("domain"),
-                    "samesite": cookie.get("samesite"),
-                }
-
-            content_type = response.headers.get("Content-Type", "")
-            if content_type.startswith("application/json"):
-                content = await response.json()
-            else:
-                content = await response.text()
-
-            return response.status, content
+            cookies=dict(self.cookies),
+        )
+        for key, cookie in response_cookies.items():
+            self.cookies[key] = cookie.value
+            self.changed_cookies[key] = cookie
+            max_age = cookie.get("max-age")
+            if max_age is not None and not isinstance(max_age, int):
+                try:
+                    max_age = int(float(max_age))
+                except (ValueError, TypeError):
+                    max_age = None
+            self.cookie_params[key] = {
+                "max_age": max_age,
+                "secure": cookie.get("secure"),
+                "httponly": cookie.get("httponly"),
+                "path": cookie.get("path", "/"),
+                "domain": cookie.get("domain"),
+                "samesite": cookie.get("samesite"),
+            }
+        return status, content
 
     async def fetch(
         self,
