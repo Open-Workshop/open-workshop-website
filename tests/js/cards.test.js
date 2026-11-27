@@ -70,7 +70,7 @@ class FakeImageElement extends FakeElement {
   }
 }
 
-function createCardsRuntime({ cards = [], images = {}, resources = [] } = {}) {
+function createCardsRuntime({ cards = [], images = {}, resources = [], fetchOverride = null } = {}) {
   const requests = [];
   const source = fs.readFileSync(
     path.resolve(__dirname, '../../website/assets/scripts/vendors/cards.js'),
@@ -90,8 +90,9 @@ function createCardsRuntime({ cards = [], images = {}, resources = [] } = {}) {
     URLSearchParams,
     clearTimeout,
     console,
-    fetch: async (url) => {
+    fetch: async (url, options) => {
       requests.push(String(url));
+      if (fetchOverride) return fetchOverride(String(url), options);
       return {
         json: async () => ({ items: resources }),
         ok: true,
@@ -208,6 +209,77 @@ test('setterImgs does not request resources for stale catalog tokens', async () 
   await context.Cards.setterImgs(0, 'mods', 4);
 
   assert.deepEqual(requests, []);
+});
+
+test('starts image download without waiting for a slow blurhash response', async () => {
+  const image = createImage('preview-logo-card-1');
+  const imageUrl = 'https://storage.test/download/resource/mods/1/logo.webp';
+  let resolveBlurhash;
+  const pending = new Promise((resolve) => { resolveBlurhash = resolve; });
+  const { context } = createCardsRuntime({
+    images: { 'preview-logo-card-1': image },
+    resources: [{ owner_id: 1, url: imageUrl }],
+    fetchOverride: (url) => url.endsWith('/blurhashes')
+      ? pending
+      : Promise.resolve({ ok: true, json: async () => ({ items: [{ owner_id: 1, url: imageUrl }] }) }),
+  });
+
+  await context.Cards.setterImgs(0, 'mods', null, [{ id: 1 }]);
+  assert.equal(image.src, imageUrl);
+  resolveBlurhash({ ok: true, json: async () => ({ items: [] }) });
+});
+
+test('does not paint a late placeholder over a loaded or replaced image', async () => {
+  for (const state of ['loaded', 'replaced', 'stale']) {
+    const image = createImage('preview-logo-card-1');
+    const canvas = new FakeElement('', ['card-blurhash'], 'canvas');
+    canvas.hidden = true;
+    const media = new FakeElement('', ['card-media']);
+    media.querySelector = () => canvas;
+    image.closest = () => media;
+    const imageUrl = 'https://storage.test/download/resource/mods/1/logo.webp';
+    let resolveBlurhash;
+    let token = 1;
+    let draws = 0;
+    const pending = new Promise((resolve) => { resolveBlurhash = resolve; });
+    const { context } = createCardsRuntime({
+      images: { 'preview-logo-card-1': image },
+      fetchOverride: (url) => url.endsWith('/blurhashes')
+        ? pending
+        : Promise.resolve({ ok: true, json: async () => ({ items: [{ owner_id: 1, url: imageUrl }] }) }),
+    });
+    context.Catalog = { getRequestToken: () => token };
+    context.Blurhash.drawToCanvas = () => { draws += 1; return true; };
+    await context.Cards.setterImgs(0, 'mods', 1, [{ id: 1 }]);
+    if (state === 'loaded') image.complete = true;
+    if (state === 'replaced') image.src = '/fallback.webp';
+    if (state === 'stale') token = 2;
+    resolveBlurhash({ ok: true, json: async () => ({ items: [{ path: imageUrl, blurhash: 'test', width: 4, height: 3 }] }) });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(draws, 0, state);
+    assert.equal(canvas.hidden, true, state);
+  }
+});
+
+test('paints a timely placeholder while the image is still loading', async () => {
+  const image = createImage('preview-logo-card-1');
+  const canvas = new FakeElement('', ['card-blurhash'], 'canvas');
+  canvas.hidden = true;
+  const media = new FakeElement('', ['card-media']);
+  media.querySelector = () => canvas;
+  image.closest = () => media;
+  const imageUrl = 'https://storage.test/download/resource/mods/1/logo.webp';
+  const { context } = createCardsRuntime({
+    images: { 'preview-logo-card-1': image },
+    fetchOverride: (url) => Promise.resolve({ ok: true, json: async () => url.endsWith('/blurhashes')
+      ? { items: [{ path: imageUrl, blurhash: 'test', width: 4, height: 3 }] }
+      : { items: [{ owner_id: 1, url: imageUrl }] } }),
+  });
+  context.Blurhash.drawToCanvas = () => true;
+  await context.Cards.setterImgs(0, 'mods', null, [{ id: 1 }]);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(canvas.hidden, false);
+  assert.equal(image.src, imageUrl);
 });
 
 test('create marks adult modpack cards and links them to modpack detail pages', () => {

@@ -47,6 +47,10 @@ div.card-media canvas.card-blurhash {
     image-rendering: auto;
 }
 
+div.card-media canvas.card-blurhash[hidden] {
+    display: none;
+}
+
 div.card-media img {
     object-fit: cover;
     transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;

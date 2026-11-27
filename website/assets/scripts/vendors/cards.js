@@ -470,6 +470,8 @@ window.Cards = {
         image.addEventListener('error', function () { handlerImgErrorLoad(this) });
         image.addEventListener('load', function () {
             const media = this.closest('.card-media');
+            const canvas = media ? media.querySelector('canvas.card-blurhash') : null;
+            if (canvas) canvas.hidden = true;
             if (media && this.naturalWidth > 0 && this.naturalHeight > 0) {
                 media.style.aspectRatio = `${this.naturalWidth} / ${this.naturalHeight}`;
             }
@@ -710,15 +712,14 @@ window.Cards = {
             .filter(function (url) {
                 return isStorageDownloadUrl(url);
             })));
-        const blurhashMap = blurhashUrls.length ? await fetchBlurhashBatch(blurhashUrls) : new Map();
-        if (!isCurrentCatalogRequest(requestToken)) {
-            return;
-        }
         const seenIds = new Set();
-        let needsMasonry = false;
+        const pendingImages = [];
 
         function changeImage(img, pic) {
             if (!(img instanceof HTMLImageElement)) return;
+            const media = img.closest('.card-media');
+            const canvas = media ? media.querySelector('canvas.card-blurhash') : null;
+            if (canvas) canvas.hidden = true;
             img.style.opacity = '0';
             img.src = pic;
         }
@@ -730,11 +731,8 @@ window.Cards = {
                 : null;
 
             if (img) {
-                const blurhashData = blurhashMap.get(result.url);
-                if (blurhashData) {
-                    needsMasonry = paintCardBlurhash(img, blurhashData) || needsMasonry;
-                }
                 changeImage(img, result.url);
+                pendingImages.push({ image: img, id: result.owner_id, url: result.url, assignedSrc: img.src });
                 seenIds.add(String(result.owner_id));
             }
         }
@@ -753,8 +751,21 @@ window.Cards = {
             }
         }
 
-        if (needsMasonry && isCurrentCatalogRequest(requestToken)) {
-            requestCatalogMasonry();
+        if (blurhashUrls.length) {
+            // The image requests must not wait for placeholder generation.
+            void fetchBlurhashBatch(blurhashUrls).then(function (blurhashMap) {
+                if (!isCurrentCatalogRequest(requestToken)) return;
+                let needsMasonry = false;
+                pendingImages.forEach(function (entry) {
+                    if (document.getElementById('preview-logo-card-' + entry.id) !== entry.image) return;
+                    // A completed or replaced image (including its fallback) must
+                    // never be hidden or covered by a late placeholder.
+                    if (entry.image.src !== entry.assignedSrc || entry.image.complete) return;
+                    const data = blurhashMap.get(entry.url);
+                    if (data) needsMasonry = paintCardBlurhash(entry.image, data) || needsMasonry;
+                });
+                if (needsMasonry) requestCatalogMasonry();
+            });
         }
     },
 }
