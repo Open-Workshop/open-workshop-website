@@ -1,6 +1,8 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/user.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 
 {% set profile_rating_summary = user_data.general.rating_summary %}
 {% set has_user_collections = user_mods or user_modpacks %}
@@ -17,7 +19,7 @@
       {% endif %}
     </div>
 
-    <script src="/assets/scripts/user.js"></script>
+    <script defer src="/assets/scripts/user.js"></script>
 
     <div style="width: 100%">
       <h1 id="mod-name-title" style="padding-bottom: 3pt; padding-bottom: 3pt; display: flex; justify-content: space-between; align-items: center;" translate="no">

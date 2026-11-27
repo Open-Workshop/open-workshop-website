@@ -1,8 +1,10 @@
 {% extends 'html-partials/standart.html' %}
 {% from 'html-partials/macros/taglike-editor.html' import render_tag_display_sections %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
 <link href="/assets/styles/pages/modpack.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 
 {% set modpack_rating_summary = info.rating_summary %}
 
@@ -78,7 +80,7 @@
         {% endif %}
         </div>
 
-        <script src="/assets/scripts/mod.js"></script>
+        <script defer src="/assets/scripts/mod.js"></script>
     </div>
 
     <div class="right-bar">
@@ -98,7 +100,7 @@
             </div>
             {% endif %}
         </div>
-        <script src="/assets/scripts/images-list.js"></script>
+        <script defer src="/assets/scripts/images-list.js"></script>
         {% endif %}
 
 

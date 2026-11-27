@@ -1,6 +1,8 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
   <link href="/assets/styles/pages/mod-add.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 
   <main
     id="main-container"
@@ -85,9 +87,9 @@
   </main>
 
   {% if add_page.show_game_selector %}
-  <script src="/assets/scripts/components/new-game-selector.js"></script>
+  <script defer src="/assets/scripts/components/new-game-selector.js"></script>
   {% endif %}
-  <script src="/assets/scripts/pages/mod-add.js"></script>
+  <script defer src="/assets/scripts/pages/mod-add.js"></script>
 {% endblock %}
 
 

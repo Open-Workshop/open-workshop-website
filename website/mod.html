@@ -1,7 +1,9 @@
 {% extends 'html-partials/standart.html' %}
 {% from 'html-partials/macros/taglike-editor.html' import render_tag_display_sections %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/mod.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 {% set mod_git_url = info.get('git_url') or '' %}
 {% set current_vote = info.get('current_vote') %}
 {% set mod_rating_summary = info.rating_summary %}
@@ -33,7 +35,7 @@
         <article id="mod-description" class="ow-description-content">
         {{ info['description_html']|safe }}
         </article>
-        <script src="/assets/scripts/mod.js"></script>
+        <script defer src="/assets/scripts/mod.js"></script>
     </div>
 
     <div class="right-bar">
@@ -53,7 +55,7 @@
             </div>
             {% endif %}
         </div>
-        <script src="/assets/scripts/images-list.js"></script>
+        <script defer src="/assets/scripts/images-list.js"></script>
         {% endif %}
 
 

@@ -1,6 +1,8 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 <link rel="stylesheet" href="/assets/styles/pages/error.css">
+{% endblock %}
+{% block content %}
 
 <main class="error">
     <h1>{{ error }}</h1>

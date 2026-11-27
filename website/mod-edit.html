@@ -1,8 +1,10 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 {% for style in edit_page.styles %}
 <link href="{{ style }}" rel="stylesheet"/>
 {% endfor %}
+{% endblock %}
+{% block content %}
 
 <div
   id="{{ edit_page.root_id }}"
@@ -26,7 +28,7 @@
 </div>
 
 {% for script in edit_page.scripts %}
-<script src="{{ script }}"></script>
+<script defer src="{{ script }}"></script>
 {% endfor %}
 
 {% endblock %}

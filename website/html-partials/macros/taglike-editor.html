@@ -202,8 +202,8 @@
   {% endif %}
 {% endcall %}
 
-<script src="/assets/scripts/vendors/picker-editor.js"></script>
-<script src="/assets/scripts/vendors/tags-edit.js"></script>
+<script defer src="/assets/scripts/vendors/picker-editor.js"></script>
+<script defer src="/assets/scripts/vendors/tags-edit.js"></script>
 {%- endmacro %}
 
 {% macro render_genres_editor(selected_genres, editor_id='genres-editor', allow_create_new=true, trigger_text='Изменить жанры') -%}
@@ -226,8 +226,8 @@
   {% endif %}
 {% endcall %}
 
-<script src="/assets/scripts/vendors/picker-editor.js"></script>
-<script src="/assets/scripts/vendors/game-genres-edit.js"></script>
+<script defer src="/assets/scripts/vendors/picker-editor.js"></script>
+<script defer src="/assets/scripts/vendors/game-genres-edit.js"></script>
 {%- endmacro %}
 
 {% macro render_grouped_tags_editor(tag_sections, editor_id='game-tags-editor', panel_title='Теги', panel_hint='Теги разбиты по группам, как в каталоге.', load_scripts=true) -%}
@@ -306,8 +306,8 @@
 </div>
 
 {% if load_scripts %}
-<script src="/assets/scripts/vendors/picker-editor.js"></script>
-<script src="/assets/scripts/vendors/tags-edit.js"></script>
+<script defer src="/assets/scripts/vendors/picker-editor.js"></script>
+<script defer src="/assets/scripts/vendors/tags-edit.js"></script>
 {% endif %}
 {%- endmacro %}
 
@@ -388,8 +388,8 @@
 {% endcall %}
 
 {% if load_scripts %}
-<script src="/assets/scripts/vendors/picker-editor.js"></script>
-<script src="/assets/scripts/vendors/dependence-edit.js"></script>
+<script defer src="/assets/scripts/vendors/picker-editor.js"></script>
+<script defer src="/assets/scripts/vendors/dependence-edit.js"></script>
 {% endif %}
 {%- endmacro %}
 

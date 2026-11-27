@@ -1,6 +1,8 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/tags.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 {% set tag_access = tag_access|default({}, true) %}
 {% set tag_groups = tag_groups|default([], true) %}
 {% set tag_tree_sections = tag_tree_sections|default([], true) %}
@@ -312,7 +314,7 @@
   {% include "html-partials/save-progress.html" %}
 </main>
 
-<script src="/assets/scripts/pages/tags-admin.js"></script>
+<script defer src="/assets/scripts/pages/tags-admin.js"></script>
 {% endblock %}
 
 {% block title %}

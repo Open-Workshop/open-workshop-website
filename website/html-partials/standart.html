@@ -58,7 +58,7 @@
     <link href="/assets/styles/mini-parts/upload-file.css" rel="stylesheet"/>
     {% block page_head %}{% endblock %}
     {% if catalog %}
-    <script src="/assets/scripts/vendors/masonry.pkgd.min.js"></script>
+    <script defer src="/assets/scripts/vendors/masonry.pkgd.min.js"></script>
 
     <link rel="preload" as="image" href="/assets/images/loading.webp"/>
     <link rel="prefetch" as="image" href="{{ ow.assets.images.fallback }}"/>
@@ -96,33 +96,33 @@
     {% include 'html-partials/header.html' %}
 
     <div id="standart-container">
-      <script src="/assets/scripts/vendors/toast.min.js"></script>
+      <script defer src="/assets/scripts/vendors/toast.min.js"></script>
       <script type="module" src="/assets/scripts/vendors/images-zoom.js"></script>
 
-      <script src="/assets/scripts/ow-core.js"></script>
-      <script src="/assets/scripts/ow-logic.js"></script>
-      <script src="/assets/scripts/ow-ui.js"></script>
-      <script src="/assets/scripts/vendors/url-manager.js"></script>
-      <script src="/assets/scripts/vendors/cookie-manager.js"></script>
-      <script src="/assets/scripts/vendors/description-codec.js"></script>
-      <script src="/assets/scripts/vendors/formating.js"></script>
-      <script src="/assets/scripts/vendors/quill.js"></script>
-      <script src="/assets/scripts/vendors/desc-edit.js"></script>
-      <script src="/assets/scripts/components/description-module.js"></script>
-      <script src="/assets/scripts/components/upload-file.js"></script>
-      <script src="/assets/scripts/components/mod-git-link.js"></script>
-      <script src="/assets/scripts/vendors/blurhash.js"></script>
-      <script src="/assets/scripts/vendors/cards.js"></script>
+      <script defer src="/assets/scripts/ow-core.js"></script>
+      <script defer src="/assets/scripts/ow-logic.js"></script>
+      <script defer src="/assets/scripts/ow-ui.js"></script>
+      <script defer src="/assets/scripts/vendors/url-manager.js"></script>
+      <script defer src="/assets/scripts/vendors/cookie-manager.js"></script>
+      <script defer src="/assets/scripts/vendors/description-codec.js"></script>
+      <script defer src="/assets/scripts/vendors/formating.js"></script>
+      <script defer src="/assets/scripts/vendors/quill.js"></script>
+      <script defer src="/assets/scripts/vendors/desc-edit.js"></script>
+      <script defer src="/assets/scripts/components/description-module.js"></script>
+      <script defer src="/assets/scripts/components/upload-file.js"></script>
+      <script defer src="/assets/scripts/components/mod-git-link.js"></script>
+      <script defer src="/assets/scripts/vendors/blurhash.js"></script>
+      <script defer src="/assets/scripts/vendors/cards.js"></script>
       
-      <script src="/assets/scripts/main.js"></script>
+      <script defer src="/assets/scripts/main.js"></script>
 
       {% block content %}{% endblock %}
     </div>
 
     {% include 'html-partials/footer.html' %}
 
-    <script src="/assets/scripts/footer-status.js"></script>
-    <script src="/assets/scripts/login.js"></script>
+    <script defer src="/assets/scripts/footer-status.js"></script>
+    <script defer src="/assets/scripts/login.js"></script>
 
 </body>
 </html>

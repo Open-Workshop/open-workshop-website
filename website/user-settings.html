@@ -1,7 +1,9 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/user.css" rel="stylesheet"/>
 <link href="/assets/styles/pages/user-settings.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 
 {% set rights_labels = {
   'admin': 'Администратор',
@@ -57,8 +59,8 @@
   {% endif %}
 </main>
 
-<script src="/assets/scripts/vendors/pager-logic.js"></script>
-<script src="/assets/scripts/pages/user-settings.js"></script>
+<script defer src="/assets/scripts/vendors/pager-logic.js"></script>
+<script defer src="/assets/scripts/pages/user-settings.js"></script>
 {% endblock %}
 
 {% block title %}

@@ -1,6 +1,8 @@
 {% extends 'html-partials/standart.html' %}
-{% block content %}
+{% block page_head %}
 <link href="/assets/styles/pages/user.css" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
 
 <main class="user user-rating-history" data-user-id="{{ user_data.general.id }}" data-rating-history-page-size="50">
   <div class="outline-container user-rating-history__header-panel">
@@ -45,7 +47,7 @@
   </div>
 </main>
 
-<script src="/assets/scripts/pages/user-rating-history.js"></script>
+<script defer src="/assets/scripts/pages/user-rating-history.js"></script>
 {% endblock %}
 
 {% block title %}
