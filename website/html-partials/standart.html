@@ -27,19 +27,19 @@
     {% endif %}
 
 
-    <!-- основные -->
-    <link href="/assets/styles/style.css" rel="stylesheet"/>
-    <link href="/assets/styles/new-standart.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/mains.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/header.css" rel="stylesheet"/>
-    <link href="/assets/styles/mini-parts/footer.css" rel="stylesheet"/>
-
-    <!-- элементы -->
-    <link href="/assets/styles/elements/a.css" rel="stylesheet"/>
-    <link href="/assets/styles/elements/input.css" rel="stylesheet"/>
-    <link href="/assets/styles/elements/select.css" rel="stylesheet"/>
-    <link href="/assets/styles/elements/button.css" rel="stylesheet"/>
-    <link href="/assets/styles/elements/img.css" rel="stylesheet"/>
+    {# Keep the initial layout available even if an extension forces early rendering. #}
+    <style>
+      {% include 'assets/styles/style.css' %}
+      {% include 'assets/styles/new-standart.css' %}
+      {% include 'assets/styles/mini-parts/mains.css' %}
+      {% include 'assets/styles/mini-parts/header.css' %}
+      {% include 'assets/styles/mini-parts/footer.css' %}
+      {% include 'assets/styles/elements/a.css' %}
+      {% include 'assets/styles/elements/input.css' %}
+      {% include 'assets/styles/elements/select.css' %}
+      {% include 'assets/styles/elements/button.css' %}
+      {% include 'assets/styles/elements/img.css' %}
+    </style>
 
     <!-- структуры -->
     <link href="/assets/styles/mini-parts/balloon.css" rel="stylesheet"/>
