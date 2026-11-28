@@ -1,6 +1,6 @@
 # Open Workshop - Website
 
-Для установки проверенных зависимостей под Python 3.10 используйте `pip install -r requirements.lock`. После изменения зависимостей обновите lock-файл командой `uv pip compile requirements.txt --python-version 3.10 --output-file requirements.lock` и запустите тесты.
+Для установки проверенных зависимостей под Python 3.12 используйте `pip install -r requirements.lock`. После изменения зависимостей обновите lock-файл командой `uv pip compile requirements.txt --python-version 3.12 --output-file requirements.lock` и запустите тесты.
 
 GUI каталог backend сервера. Имеет следующие возможности:
 1. Адаптивная верстка - мобильный/десктопный форм фактор экрана.
